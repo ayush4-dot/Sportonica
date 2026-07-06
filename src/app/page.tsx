@@ -1,634 +1,529 @@
 "use client";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { createClient } from "@/lib/supabase/client";
+import { Search, PlusCircle, MapPin, Calendar, ArrowRight, Menu, X, ChevronDown, Zap, Users, Trophy, CircleDot, Target, Wind, Activity } from "lucide-react";
+import AnimatedBackground from "@/components/AnimatedBackground";
+import { useEvents, bookEvent, SPORT_COLOR } from "@/lib/hooks/useEvents";
+import { useProfile } from "@/lib/hooks/useProfile";
 
-import { useState } from "react";
-import {
-  Home as HomeIcon, Map, PlusCircle, Trophy, CreditCard,
-  CircleDot, Target, Wind, Activity, Zap,
-  MapPin, Users, Calendar, ChevronRight,
-  Search, Menu, X, TrendingUp, Shield,
-  Clock, Star, ArrowRight
-} from "lucide-react";
-
-const globalStyles = `
-  @keyframes rotateBall {
-    from { transform: rotate(0deg); }
-    to   { transform: rotate(360deg); }
-  }
-  @keyframes orbitPlane {
-    from { transform: rotateX(70deg) rotateY(-10deg) rotateZ(0deg); }
-    to   { transform: rotateX(70deg) rotateY(-10deg) rotateZ(360deg); }
-  }
-  @keyframes cricketSpin {
-    from { transform: rotateZ(0deg); }
-    to   { transform: rotateZ(-360deg); }
-  }
-  @keyframes haloPulse {
-    0%, 100% { opacity: 0.5; transform: scale(1); }
-    50%       { opacity: 1;   transform: scale(1.1); }
-  }
-  @keyframes ballDepth {
-    0%   { transform: translateX(-50%) rotateZ(0deg)    rotateX(-70deg) scale(0.65); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); }
-    25%  { transform: translateX(-50%) rotateZ(-90deg)  rotateX(-70deg) scale(1.15); filter: drop-shadow(0 25px 25px rgba(222,49,99,0.65)); }
-    50%  { transform: translateX(-50%) rotateZ(-180deg) rotateX(-70deg) scale(0.65); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); }
-    75%  { transform: translateX(-50%) rotateZ(-270deg) rotateX(-70deg) scale(0.45); filter: drop-shadow(0 2px 3px rgba(0,0,0,0.9)); }
-    100% { transform: translateX(-50%) rotateZ(-360deg) rotateX(-70deg) scale(0.65); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.8)); }
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  .nav-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 80px;
-    gap: 16px;
-  }
-  .nav-links { display: flex; gap: 40px; }
-  .nav-cta   { display: flex; align-items: center; background: rgba(30,41,59,0.08); padding: 4px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.3); }
-  .hamburger { display: none; background: transparent; border: none; cursor: pointer; font-size: 24px; color: #1e293b; }
-  .mobile-menu { display: none; flex-direction: column; gap: 0; background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.4); }
-  .mobile-menu a { display: block; padding: 14px 24px; font-size: 15px; font-weight: 600; color: #1e293b; text-decoration: none; border-top: 1px solid rgba(0,0,0,0.06); }
-  .mobile-menu-open { display: flex !important; }
-
-  .hero-inner {
-    display: flex;
-    align-items: center;
-    min-height: 90vh;
-    padding: 40px 80px;
-    gap: 40px;
-    position: relative;
-    z-index: 1;
-  }
-  .hero-ball {
-    position: absolute;
-    right: 4%;
-    top: 50%;
-    transform: translateY(-50%);
-    width: clamp(260px, 38vw, 460px);
-    height: clamp(260px, 38vw, 460px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    perspective: 1000px;
-    flex-shrink: 0;
-  }
-
-  .section-pad    { padding: 80px 48px; }
-  .section-pad-sm { padding: 64px 48px; }
-  .sports-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 16px;
-    max-width: 960px;
-    margin: 0 auto;
-  }
-  .how-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 24px;
-    max-width: 960px;
-    margin: 0 auto;
-  }
-  .matches-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 20px;
-  }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 32px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
-
-  @media (max-width: 768px) {
-    .nav-inner   { padding: 14px 20px; }
-    .nav-links   { display: none; }
-    .nav-cta     { display: none; }
-    .hamburger   { display: block; }
-    .hero-inner  {
-      flex-direction: column;
-      align-items: flex-start;
-      padding: 24px 20px 280px;
-      min-height: unset;
-    }
-    .hero-ball {
-      position: absolute;
-      right: 50%;
-      transform: translateX(50%);
-      bottom: 10px;
-      top: unset;
-      width: 240px;
-      height: 240px;
-    }
-    .section-pad    { padding: 48px 20px; }
-    .section-pad-sm { padding: 40px 20px; }
-    .sports-grid  { grid-template-columns: repeat(3, 1fr); gap: 10px; }
-    .how-grid     { grid-template-columns: 1fr 1fr; gap: 14px; }
-    .matches-grid { grid-template-columns: 1fr; }
-    .stats-grid   { grid-template-columns: repeat(2, 1fr); gap: 24px; }
-    .hero-card    { margin: 0 !important; max-width: 100% !important; }
-    .cta-card     { padding: 32px 20px !important; }
-    .matches-header { flex-direction: column; align-items: flex-start !important; }
-    .hero-h1      { font-size: 32px !important; letter-spacing: -1px !important; }
-    .section-h2   { font-size: 26px !important; }
-    .cta-h2       { font-size: 28px !important; }
-  }
-  @media (max-width: 480px) {
-    .sports-grid { grid-template-columns: repeat(2, 1fr); }
-    .how-grid    { grid-template-columns: 1fr; }
-  }
-`;
-
-const NAV_LINKS = [
-  { label: "Home", href: "/", icon: <HomeIcon size={15} /> },
-  { label: "Discover", href: "/discover", icon: <Map size={15} /> },
-  { label: "Host event", href: "/create", icon: <PlusCircle size={15} /> },
-  { label: "League", href: "/league", icon: <Trophy size={15} /> },
-  { label: "My card", href: "/profile", icon: <CreditCard size={15} /> },
+const SPORTS_PANELS = [
+  { sport:"Football",   label:"FOOTBALL",   color:"#22c55e", emoji:"⚽", desc:"Join pickup matches and leagues across Kathmandu's best grounds." },
+  { sport:"Cricket",    label:"CRICKET",    color:"#f97316", emoji:"🏏", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
+  { sport:"Basketball", label:"BASKETBALL", color:"#FFC93C", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
+  { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit futsal courts by the hour, any time." },
+  { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
+  { sport:"Badminton",  label:"BADMINTON",  color:"#DE3163", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
 ];
 
-const SPORTS = [
-  { name: "Football", icon: <CircleDot size={32} color="#22c55e" /> },
-  { name: "Cricket", icon: <Target size={32} color="#f97316" /> },
-  { name: "Basketball", icon: <Activity size={32} color="#f59e0b" /> },
-  { name: "Volleyball", icon: <Wind size={32} color="#3b82f6" /> },
-  { name: "Badminton", icon: <Zap size={32} color="#a855f7" /> },
-  { name: "Tennis", icon: <Activity size={32} color="#ec4899" /> },
-];
-
-const HOW_IT_WORKS = [
-  { step: 1, title: "Discover", desc: "Find matches and players near you.", icon: <MapPin size={28} color="#de3163" /> },
-  { step: 2, title: "Join", desc: "Join games with a single click.", icon: <Users size={28} color="#de3163" /> },
-  { step: 3, title: "Play", desc: "Play, compete and build lasting friendships.", icon: <Trophy size={28} color="#de3163" /> },
-  { step: 4, title: "Host", desc: "Create your own event and invite players.", icon: <PlusCircle size={28} color="#de3163" /> },
-];
-
-const MATCHES = [
-  {
-    sport: "FOOTBALL", sportColor: "#22c55e",
-    icon: <CircleDot size={52} color="rgba(255,255,255,0.9)" />,
-    title: "Kathmandu Football League",
-    date: "Sat, 25 May • 6:00 PM",
-    venue: "Dasharath Stadium",
-    players: 24,
-    bg: "linear-gradient(135deg,#1a2a1a,#0f1f0f)",
-  },
-  {
-    sport: "CRICKET", sportColor: "#f97316",
-    icon: <Target size={52} color="rgba(255,255,255,0.9)" />,
-    title: "Weekend Cricket Cup",
-    date: "Sun, 26 May • 9:00 AM",
-    venue: "TU Cricket Ground",
-    players: 18,
-    bg: "linear-gradient(135deg,#2a1a0f,#1f0f0a)",
-  },
-  {
-    sport: "BASKETBALL", sportColor: "#f59e0b",
-    icon: <Activity size={52} color="rgba(255,255,255,0.9)" />,
-    title: "Hoops Night",
-    date: "Fri, 24 May • 7:00 PM",
-    venue: "Golden Gate Court",
-    players: 12,
-    bg: "linear-gradient(135deg,#1a1a2a,#0f0f1f)",
-  },
+const NAV = [
+  { label:"Discover",   href:"/discover" },
+  { label:"Host event", href:"/create" },
+  { label:"League",     href:"/league" },
 ];
 
 const STATS = [
-  { icon: <Users size={26} color="#de3163" />, value: "1200+", label: "Active Players" },
-  { icon: <Trophy size={26} color="#de3163" />, value: "500+", label: "Games Hosted" },
-  { icon: <Shield size={26} color="#de3163" />, value: "25+", label: "Sports" },
-  { icon: <MapPin size={26} color="#de3163" />, value: "30+", label: "Cities" },
+  { value:"1,200+", label:"Players" },
+  { value:"500+",   label:"Games" },
+  { value:"30+",    label:"Venues" },
+  { value:"7",      label:"Sports" },
 ];
 
+const CSS = `
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  ::-webkit-scrollbar { width: 0; }
+
+  /* ── nav ── */
+  .p-nav { position:fixed; top:0; left:0; right:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:24px 56px; transition:background 0.4s, padding 0.4s; }
+  .p-nav.scrolled { background:rgba(0,0,0,0.85); backdrop-filter:blur(18px); padding:16px 56px; }
+  .p-nav-links { display:flex; gap:40px; }
+  .p-nav-links a { color:rgba(255,255,255,0.75); text-decoration:none; font-size:14px; font-weight:600; letter-spacing:0.04em; transition:color 0.2s; }
+  .p-nav-links a:hover { color:#fff; }
+  .p-hamburger { display:none; background:transparent; border:none; cursor:pointer; color:#fff; }
+
+  /* ── hero ── */
+  .p-hero { position:relative; height:100vh; min-height:600px; overflow:hidden; display:flex; align-items:flex-end; }
+  .p-hero video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; }
+  .p-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.15) 100%); }
+  .p-hero-content { position:relative; z-index:2; padding:0 56px 72px; width:100%; }
+  .p-hero-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:20px; }
+  .p-hero-h1 { font-size:clamp(52px,8vw,108px); font-weight:800; line-height:0.95; letter-spacing:-3px; color:#fff; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:32px; }
+  .p-hero-h1 em { font-style:normal; color:#FFC93C; }
+  .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
+  .p-scroll-hint { position:absolute; bottom:28px; right:56px; z-index:2; display:flex; align-items:center; gap:8px; color:rgba(255,255,255,0.5); font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; animation:scrollBounce 2s ease-in-out infinite; }
+  @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+
+  /* ── sport panels ── */
+  .p-panel { position:relative; height:100vh; overflow:hidden; display:flex; align-items:center; }
+  .p-panel-bg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:40vw; line-height:1; opacity:0.06; pointer-events:none; user-select:none; }
+  .p-panel-content { position:relative; z-index:2; padding:0 56px; max-width:700px; }
+  .p-panel-num { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:20px; opacity:0.5; }
+  .p-panel-title { font-size:clamp(48px,8vw,96px); font-weight:800; line-height:0.95; letter-spacing:-3px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:24px; }
+  .p-panel-desc { font-size:18px; line-height:1.6; color:rgba(255,255,255,0.6); max-width:480px; margin-bottom:36px; }
+  .p-panel-accent { position:absolute; right:0; top:0; bottom:0; width:40%; display:flex; align-items:center; justify-content:center; font-size:28vw; opacity:0.12; pointer-events:none; }
+
+  /* ── editorial grid ── */
+  .p-editorial { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
+  .p-editorial-left { display:flex; flex-direction:column; justify-content:center; padding:80px 64px; border-right:1px solid rgba(255,255,255,0.08); }
+  .p-editorial-right { display:flex; flex-direction:column; justify-content:center; padding:80px 64px; }
+  .p-editorial-label { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; opacity:0.4; margin-bottom:24px; }
+  .p-editorial-big { font-size:clamp(36px,5vw,64px); font-weight:800; line-height:1.0; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:24px; }
+  .p-editorial-body { font-size:17px; line-height:1.7; color:rgba(255,255,255,0.6); max-width:480px; }
+
+  /* ── stat strip ── */
+  .p-stats { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); }
+  .p-stat { padding:48px 40px; border-right:1px solid rgba(255,255,255,0.08); }
+  .p-stat:last-child { border-right:none; }
+  .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#FFC93C; line-height:1; margin-bottom:8px; }
+  .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+
+  /* ── featured ── */
+  .p-card { background:#111; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; }
+  .p-card-banner { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+  .p-card-body { padding:20px 22px 24px; }
+  .p-card-sport { font-size:10px; font-weight:800; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:8px; }
+  .p-card-title { font-size:17px; font-weight:700; margin-bottom:10px; font-family:'Bricolage Grotesque',sans-serif; line-height:1.25; color:#fff; }
+  .p-card-meta { font-size:12px; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
+  .p-card-footer { display:flex; align-items:center; justify-content:space-between; }
+  .p-fill-bar { height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; margin-bottom:14px; }
+
+  /* ── CTA section ── */
+  .p-cta-section { min-height:80vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:80px 40px; }
+  .p-cta-h2 { font-size:clamp(40px,7vw,88px); font-weight:800; line-height:0.95; letter-spacing:-3px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:32px; }
+  .p-cta-h2 em { font-style:normal; color:#DE3163; }
+
+  /* ── footer ── */
+  .p-footer { border-top:1px solid rgba(255,255,255,0.08); padding:40px 56px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+
+  /* ── buttons ── */
+  .btn-primary { background:#DE3163; color:#fff; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
+  .btn-ghost { background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15); padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; backdrop-filter:blur(8px); }
+  .btn-white { background:#fff; color:#000; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; }
+
+  /* ── mobile ── */
+  @media(max-width:900px){
+    .p-nav { padding:20px 24px; }
+    .p-nav.scrolled { padding:14px 24px; }
+    .p-nav-links { display:none; }
+    .p-nav-cta-d { display:none !important; }
+    .p-hamburger { display:block; }
+    .p-hero-content { padding:0 24px 56px; }
+    .p-hero-h1 { letter-spacing:-1.5px; }
+    .p-panel-content { padding:0 24px; }
+    .p-panel-accent { display:none; }
+    .p-editorial { grid-template-columns:1fr; }
+    .p-editorial-left { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:56px 24px; }
+    .p-editorial-right { padding:56px 24px; }
+    .p-stats { grid-template-columns:repeat(2,1fr); }
+    .p-stat { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .p-stat:nth-child(odd) { border-right:1px solid rgba(255,255,255,0.08); }
+    .p-stat:last-child { border-bottom:none; }
+    .p-cta-section { min-height:60vh; padding:60px 24px; }
+    .p-footer { padding:32px 24px; }
+    .p-mob-menu { display:none; flex-direction:column; position:fixed; inset:0; background:#000; z-index:300; padding:80px 32px 40px; }
+    .p-mob-menu.open { display:flex; }
+    .p-mob-menu a { font-size:32px; font-weight:800; color:#fff; text-decoration:none; font-family:'Bricolage Grotesque',sans-serif; padding:12px 0; border-bottom:1px solid rgba(255,255,255,0.08); }
+    .p-match-grid { grid-template-columns:1fr !important; }
+  }
+`;
+
 export default function Home() {
-  const [activeSport, setActiveSport] = useState(0);
+  const router = useRouter();
+  const supabase = createClient();
+  const { profile } = useProfile();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const heroRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll();
+  const heroTextY = useTransform(scrollY, [0, 500], [0, -80]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+
+  const { events: featured, loading: evLoading } = useEvents({ limit: 3, onlyUpcoming: true });
+  const [counts, setCounts] = useState({ players:"1,200+", games:"500+", sports:"7" });
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    (async () => {
+      const raw = sessionStorage.getItem("khelumna_pending_intent");
+      if (!raw) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      sessionStorage.removeItem("khelumna_pending_intent");
+      const intent = JSON.parse(raw) as { type:"join"|"host"; eventId?:string };
+      if (intent.type === "host") { router.push("/create"); return; }
+      if (intent.type === "join" && intent.eventId) {
+        await supabase.from("bookings").insert({ event_id: intent.eventId, user_id: user.id, status:"confirmed" });
+        router.push("/discover");
+      }
+    })();
+    (async () => {
+      const [{ count: p }, { count: g }, { data: sd }] = await Promise.all([
+        supabase.from("profiles").select("*", { count:"exact", head:true }),
+        supabase.from("events").select("*",   { count:"exact", head:true }),
+        supabase.from("events").select("sport").gte("event_date", new Date().toISOString()),
+      ]);
+      const sp = new Set((sd ?? []).map((e: { sport:string }) => e.sport)).size;
+      setCounts({
+        players: p ? `${p.toLocaleString()}+` : "1,200+",
+        games:   g ? `${g.toLocaleString()}+` : "500+",
+        sports:  sp ? String(sp) : "7",
+      });
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
-    <div style={{
-      background: "url('/back.avif') center/cover no-repeat fixed",
-      color: "#1e293b",
-      fontFamily: "'Inter','Segoe UI',system-ui,-apple-system,sans-serif",
-      minHeight: "100vh",
-      overflowX: "hidden",
-    }}>
-      <style>{globalStyles}</style>
+    <>
+      <style>{CSS}</style>
+      <AnimatedBackground accent1="#DE3163" accent2="#FFC93C" accent3="#2E7D5B" opacity={0.4} />
+
+      {/* ── MOBILE MENU ── */}
+      <AnimatePresence>
+        {menuOpen && (
+          <motion.div className="p-mob-menu open"
+            initial={{ opacity:0 }} animate={{ opacity:1 }} exit={{ opacity:0 }} transition={{ duration:0.2 }}
+          >
+            <button onClick={() => setMenuOpen(false)} style={{ position:"absolute", top:24, right:24, background:"none", border:"none", cursor:"pointer", color:"#fff" }}><X size={28} /></button>
+            {[...NAV, { label:"Sign in", href:"/login" }].map(l => (
+              <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}>{l.label}</a>
+            ))}
+            <a href="/discover" style={{ marginTop:"auto" }}>
+              <motion.button whileTap={{ scale:0.97 }} className="btn-primary" style={{ width:"100%", justifyContent:"center", padding:"18px", fontSize:"17px", marginTop:24 }}>
+                Find a game <ArrowRight size={18} />
+              </motion.button>
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ── NAVBAR ── */}
-      <nav style={{
-        background: "rgba(255,255,255,0.4)",
-        backdropFilter: "blur(32px) saturate(150%)",
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        borderBottom: "1px solid rgba(255,255,255,0.5)",
-      }}>
-        <div className="nav-inner">
-          {/* Logo */}
-          <a href="/" style={{ display: "flex", alignItems: "center", gap: "2px", textDecoration: "none", flexShrink: 0 }}>
-            <span style={{ fontSize: "24px", fontWeight: 800, color: "#1e293b", letterSpacing: "-0.5px" }}>Khelum</span>
-            <span style={{ fontSize: "24px", fontWeight: 800, color: "#de3163" }}> Na.</span>
+      <nav className={`p-nav${scrolled ? " scrolled" : ""}`}>
+        <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
+          <span style={{ fontSize:"20px", fontWeight:800, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelum</span>
+          <span style={{ fontSize:"20px", fontWeight:800, color:"#DE3163", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
+        </a>
+        <div className="p-nav-links">
+          {NAV.map(l => <a key={l.label} href={l.href}>{l.label}</a>)}
+        </div>
+        <div className="p-nav-cta-d" style={{ display:"flex", alignItems:"center", gap:"12px" }}>
+          <a href="/login" style={{ color:"rgba(255,255,255,0.65)", textDecoration:"none", fontSize:"14px", fontWeight:600 }}>Sign in</a>
+          <a href="/discover">
+            <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }} className="btn-primary" style={{ padding:"10px 20px", fontSize:"14px" }}>
+              <Search size={14} /> Find a game
+            </motion.button>
           </a>
-
-          {/* Desktop links */}
-          <div className="nav-links">
-            {NAV_LINKS.map(link => (
-              <a key={link.label} href={link.href} style={{
-                color: link.href === "/" ? "#de3163" : "#1e293b",
-                textDecoration: "none",
-                fontSize: "15px",
-                fontWeight: 600,
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-                onMouseEnter={e => (e.currentTarget.style.color = "#de3163")}
-                onMouseLeave={e => (e.currentTarget.style.color = link.href === "/" ? "#de3163" : "#1e293b")}
-              >
-                {link.icon}
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          {/* Desktop CTA */}
-          <div className="nav-cta">
-            <a href="/discover">
-              <button style={{ background: "#fff", border: "none", color: "#1e293b", padding: "8px 20px", borderRadius: "24px", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px", boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                <Search size={14} /> Find game
-              </button>
-            </a>
-            <a href="/create">
-              <button style={{ background: "transparent", border: "none", color: "#1e293b", padding: "8px 20px", borderRadius: "24px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
-                <PlusCircle size={14} /> Host event
-              </button>
-            </a>
-          </div>
-
-          {/* Hamburger */}
-          <button className="hamburger" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
-
-        {/* Mobile menu */}
-        <div className={`mobile-menu${menuOpen ? " mobile-menu-open" : ""}`}>
-          {NAV_LINKS.map(link => (
-            <a key={link.label} href={link.href}
-              style={{ color: link.href === "/" ? "#de3163" : "#1e293b", display: "flex", alignItems: "center", gap: "8px" }}
-              onClick={() => setMenuOpen(false)}
-            >
-              {link.icon} {link.label}
-            </a>
-          ))}
-          <div style={{ display: "flex", gap: "10px", padding: "14px 24px", borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-            <a href="/discover" style={{ flex: 1 }}>
-              <button style={{ width: "100%", background: "#de3163", border: "none", color: "#fff", padding: "10px", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                <Search size={14} /> Find game
-              </button>
-            </a>
-            <a href="/create" style={{ flex: 1 }}>
-              <button style={{ width: "100%", background: "rgba(30,41,59,0.08)", border: "none", color: "#1e293b", padding: "10px", borderRadius: "10px", fontSize: "14px", fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                <PlusCircle size={14} /> Host event
-              </button>
-            </a>
-          </div>
-        </div>
+        <button className="p-hamburger" onClick={() => setMenuOpen(true)} aria-label="Menu"><Menu size={24} /></button>
       </nav>
 
-      {/* ── HERO ── */}
-      <section style={{ position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.15)", zIndex: 0, pointerEvents: "none" }} />
-        <div className="hero-inner">
+      <div style={{ background:"#000", color:"#fff", fontFamily:"'Inter',sans-serif" }}>
 
-          {/* Left card */}
-          <div className="hero-card" style={{
-            padding: "32px 36px", zIndex: 2, maxWidth: "520px",
-            background: "rgba(255,255,255,0.25)",
-            backdropFilter: "blur(16px)",
-            borderRadius: "20px",
-            border: "1px solid rgba(255,255,255,0.35)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.12)",
-            flexShrink: 0,
-          }}>
-            {/* Badge */}
-            <div style={{
-              display: "inline-flex", alignItems: "center", gap: "6px",
-              background: "rgba(222,49,99,0.1)", border: "1px solid rgba(222,49,99,0.2)",
-              color: "#de3163", fontSize: "12px", fontWeight: 700,
-              padding: "6px 14px", borderRadius: "100px", marginBottom: "16px",
-              letterSpacing: "0.05em",
-            }}>
-              <Zap size={12} fill="#de3163" /> Now live in Kathmandu
-            </div>
+        {/* ══════════════════════════════════
+            HERO — full-viewport video
+        ══════════════════════════════════ */}
+        <div className="p-hero" ref={heroRef}>
+          <video autoPlay muted loop playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}>
+            <source src="/hero.mp4" type="video/mp4" />
+          </video>
+          <div className="p-hero-overlay" />
 
-            <h1 className="hero-h1" style={{
-              fontSize: "clamp(28px,4.5vw,52px)", fontWeight: 900,
-              lineHeight: 1.1, margin: "0 0 14px", letterSpacing: "-1.5px",
-            }}>
-              Find your game.<br />
-              <span style={{ color: "#de3163" }}>Show up and play.</span>
-            </h1>
-
-            <p style={{ fontSize: "15px", color: "rgba(30,41,59,0.85)", marginBottom: "24px", lineHeight: 1.6 }}>
-              Anyone can organize or join real sports events nearby — football, basketball, volleyball and more. Book your slot in 30 seconds.
-            </p>
-
-            <div style={{ display: "flex", gap: "12px", alignItems: "center", flexWrap: "wrap" }}>
+          <motion.div className="p-hero-content" style={{ y: heroTextY, opacity: heroOpacity }}>
+            <motion.p className="p-hero-eyebrow"
+              initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7, delay:0.2 }}>
+              Kathmandu&apos;s sports platform
+            </motion.p>
+            <motion.h1 className="p-hero-h1"
+              initial={{ opacity:0, y:32 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.9, delay:0.35, ease:[0.22,1,0.36,1] }}>
+              Find.<br />Book.<br /><em>Play.</em>
+            </motion.h1>
+            <motion.div className="p-hero-ctas"
+              initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7, delay:0.6 }}>
               <a href="/discover">
-                <button style={{
-                  background: "#de3163", color: "#fff", border: "none",
-                  padding: "12px 22px", borderRadius: "10px", fontSize: "15px",
-                  fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "7px",
-                  boxShadow: "0 4px 12px rgba(222,49,99,0.35)",
-                }}>
-                  <Search size={16} /> Find events
-                </button>
+                <motion.button className="btn-white" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                  Book now <ArrowRight size={17} />
+                </motion.button>
               </a>
-              <a href="/create">
-                <button style={{
-                  background: "rgba(30,41,59,0.08)", color: "#1e293b", border: "none",
-                  padding: "12px 22px", borderRadius: "10px", fontSize: "15px",
-                  fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: "7px",
-                }}>
-                  <PlusCircle size={16} /> Host an event
-                </button>
+              <a href="#sports">
+                <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                  Explore sports
+                </motion.button>
               </a>
-            </div>
+            </motion.div>
+          </motion.div>
 
-            {/* Mini stats */}
-            <div style={{
-              display: "flex", gap: "1.5rem", marginTop: "24px",
-              paddingTop: "20px", borderTop: "1px solid rgba(30,41,59,0.1)",
-            }}>
+          <div className="p-scroll-hint">
+            <ChevronDown size={16} /> Scroll to explore
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════
+            STAT STRIP
+        ══════════════════════════════════ */}
+        <div className="p-stats">
+          {[
+            { val: counts.players, label: "Players" },
+            { val: counts.games,   label: "Games hosted" },
+            { val: "30+",          label: "Venues" },
+            { val: counts.sports,  label: "Sports" },
+          ].map((s, i) => (
+            <motion.div key={i} className="p-stat"
+              initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+              transition={{ duration:0.5, delay:i*0.08 }}>
+              <div className="p-stat-val">{s.val}</div>
+              <div className="p-stat-label">{s.label}</div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* ══════════════════════════════════
+            EDITORIAL — what we do
+        ══════════════════════════════════ */}
+        <div className="p-editorial">
+          <motion.div className="p-editorial-left"
+            initial={{ opacity:0, x:-32 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, amount:0.4 }}
+            transition={{ duration:0.7, ease:[0.22,1,0.36,1] }}>
+            <p className="p-editorial-label">What is Khelumna</p>
+            <h2 className="p-editorial-big">
+              The court is open.<br />Someone&apos;s waiting<br />to play.
+            </h2>
+            <a href="/discover" style={{ display:"inline-flex", marginTop:8 }}>
+              <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                Find a game <ArrowRight size={16} />
+              </motion.button>
+            </a>
+          </motion.div>
+          <motion.div className="p-editorial-right"
+            initial={{ opacity:0, x:32 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, amount:0.4 }}
+            transition={{ duration:0.7, delay:0.15, ease:[0.22,1,0.36,1] }}>
+            <p className="p-editorial-label">How it works</p>
+            <div style={{ display:"flex", flexDirection:"column", gap:"32px" }}>
               {[
-                { icon: <Users size={14} />, val: "1200+", label: "Players" },
-                { icon: <Trophy size={14} />, val: "500+", label: "Events" },
-                { icon: <MapPin size={14} />, val: "30+", label: "Cities" },
-              ].map(s => (
-                <div key={s.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
-                  <span style={{ color: "#de3163" }}>{s.icon}</span>
-                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#1e293b" }}>{s.val}</span>
-                  <span style={{ fontSize: "12px", color: "rgba(30,41,59,0.5)" }}>{s.label}</span>
-                </div>
+                { n:"01", title:"Find your court",   desc:"Search by sport, time and neighbourhood. See who else is already in.",      icon:<Search size={20} color="#DE3163" /> },
+                { n:"02", title:"Lock your slot",    desc:"Join with one tap, or host your own event and set the headcount.",          icon:<PlusCircle size={20} color="#FFC93C" /> },
+                { n:"03", title:"Show up and play",  desc:"Cost splits automatically. Rate the game after. Build your record.",       icon:<Trophy size={20} color="#2E7D5B" /> },
+              ].map((item) => (
+                <motion.div key={item.n}
+                  initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                  transition={{ duration:0.5 }}
+                  style={{ display:"flex", gap:"20px", alignItems:"flex-start" }}>
+                  <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"6px" }}>
+                      <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.15em", color:"rgba(255,255,255,0.35)" }}>{item.n}</span>
+                      <span style={{ fontSize:"16px", fontWeight:700, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>{item.title}</span>
+                    </div>
+                    <p style={{ fontSize:"14px", lineHeight:1.6, color:"rgba(255,255,255,0.5)" }}>{item.desc}</p>
+                  </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
+        </div>
 
-          {/* Football animation */}
-          <div className="hero-ball">
-            <div style={{
-              position: "absolute", width: "220px", height: "220px", borderRadius: "50%",
-              background: "radial-gradient(circle,rgba(222,49,99,0.3) 0%,transparent 65%)",
-              filter: "blur(24px)", animation: "haloPulse 3s ease-in-out infinite", pointerEvents: "none",
-            }} />
-            <div style={{
-              position: "absolute", width: "90%", height: "90%", borderRadius: "50%",
-              border: "1.5px dashed rgba(222,49,99,0.35)", transform: "rotateX(72deg)",
-              pointerEvents: "none", zIndex: 1,
-            }} />
-            <div style={{ position: "relative", zIndex: 2, width: "clamp(160px,22vw,230px)", height: "clamp(160px,22vw,230px)", borderRadius: "50%", overflow: "hidden" }}>
-              <div style={{ position: "absolute", inset: 0, animation: "rotateBall 5s linear infinite", transformOrigin: "center center" }}>
-                <img src="/football.png" alt="Football" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        {/* ══════════════════════════════════
+            SPORTS PANELS
+        ══════════════════════════════════ */}
+        <div id="sports">
+          {SPORTS_PANELS.map((sp, i) => (
+            <div key={sp.sport} className="p-panel" style={{ background: i % 2 === 0 ? "#000" : "#0a0a0a", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+              <div className="p-panel-bg">{sp.emoji}</div>
+              <div className="p-panel-accent">{sp.emoji}</div>
+              <div className="p-panel-content">
+                <motion.p className="p-panel-num"
+                  initial={{ opacity:0, y:12 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
+                  transition={{ duration:0.5 }}
+                  style={{ color: sp.color }}>
+                  {String(i+1).padStart(2,"0")} — {sp.label}
+                </motion.p>
+                <motion.h2 className="p-panel-title"
+                  initial={{ opacity:0, y:32 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
+                  transition={{ duration:0.7, delay:0.1, ease:[0.22,1,0.36,1] }}
+                  style={{ color: sp.color }}>
+                  {sp.label}
+                </motion.h2>
+                <motion.p className="p-panel-desc"
+                  initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
+                  transition={{ duration:0.6, delay:0.2 }}>
+                  {sp.desc}
+                </motion.p>
+                <motion.div
+                  initial={{ opacity:0, y:12 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
+                  transition={{ duration:0.5, delay:0.35 }}
+                  style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
+                  <a href={`/discover?sport=${sp.sport}`}>
+                    <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+                      style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
+                      Find {sp.sport} games <ArrowRight size={16} />
+                    </motion.button>
+                  </a>
+                  <a href="/create">
+                    <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                      Host a game
+                    </motion.button>
+                  </a>
+                </motion.div>
               </div>
-            </div>
-            <div style={{ position: "absolute", inset: 0, perspective: "1200px", pointerEvents: "none", zIndex: 4 }}>
-              <div style={{
-                position: "absolute", width: "100%", height: "100%",
-                transformStyle: "preserve-3d",
-                transform: "rotateX(70deg) rotateY(-10deg)",
-                animation: "orbitPlane 6s linear infinite",
-              }}>
-                <div style={{
-                  position: "absolute", top: "-29px", left: "50%",
-                  transformStyle: "preserve-3d",
-                  animation: "ballDepth 6s linear infinite",
-                }}>
-                  <img src="/ball.png" alt="Cricket Ball" style={{
-                    width: "48px", height: "48px", display: "block", borderRadius: "50%",
-                    objectFit: "cover", animation: "cricketSpin 1.2s linear infinite",
-                  }} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CHOOSE SPORT ── */}
-      <section className="section-pad" style={{ background: "transparent" }}>
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <p style={{ color: "#de3163", fontSize: "13px", fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", marginBottom: "10px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-            <CircleDot size={14} /> CHOOSE YOUR SPORT
-          </p>
-          <h2 className="section-h2" style={{ fontSize: "clamp(24px,4vw,42px)", fontWeight: 800, letterSpacing: "-0.5px" }}>
-            What do you want to play?
-          </h2>
-        </div>
-
-        <div className="sports-grid">
-          {SPORTS.map((sport, i) => (
-            <button key={sport.name} onClick={() => setActiveSport(i)} style={{
-              background: activeSport === i ? "rgba(222,49,99,0.15)" : "rgba(0,0,0,0.45)",
-              border: activeSport === i ? "1.5px solid #de3163" : "1.5px solid rgba(0,0,0,0.25)",
-              borderRadius: "16px", padding: "22px 12px 16px", cursor: "pointer",
-              display: "flex", flexDirection: "column", alignItems: "center", gap: "10px",
-              transition: "all 0.2s", color: "#fff",
-            }}>
-              {sport.icon}
-              <span style={{ fontSize: "13px", fontWeight: 600 }}>{sport.name}</span>
-              <div style={{
-                width: "26px", height: "26px", borderRadius: "50%",
-                border: `1.5px solid ${activeSport === i ? "#de3163" : "rgba(255,255,255,0.2)"}`,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: activeSport === i ? "#de3163" : "rgba(255,255,255,0.5)",
-              }}>
-                <ChevronRight size={14} />
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ── */}
-      <section className="section-pad" style={{ background: "transparent" }}>
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: "6px",
-            background: "rgba(255,255,255,0.25)", backdropFilter: "blur(16px)",
-            color: "#de3163", fontSize: "14px", fontWeight: 700, letterSpacing: "1px",
-            padding: "10px 28px", borderRadius: "30px", border: "1px solid rgba(255,255,255,0.3)",
-          }}>
-            <Users size={14} /> Connect Through Sports
-          </span>
-        </div>
-
-        <div className="how-grid">
-          {HOW_IT_WORKS.map(item => (
-            <div key={item.step} style={{
-              background: "rgba(0,0,0,0.45)", border: "1px solid rgba(0,0,0,0.25)",
-              borderRadius: "20px", padding: "28px 22px", color: "#fff",
-            }}>
-              <div style={{
-                width: "30px", height: "30px", borderRadius: "50%", background: "#de3163",
-                color: "#fff", fontWeight: 800, fontSize: "14px",
-                display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "16px",
-              }}>{item.step}</div>
-              <div style={{ marginBottom: "12px" }}>{item.icon}</div>
-              <h3 style={{ fontSize: "17px", fontWeight: 700, margin: "0 0 6px" }}>{item.title}</h3>
-              <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6 }}>{item.desc}</p>
             </div>
           ))}
         </div>
-      </section>
 
-      {/* ── POPULAR MATCHES ── */}
-      <section className="section-pad" style={{ background: "transparent" }}>
-        <div className="matches-header" style={{
-          display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-          marginBottom: "28px", gap: "16px", flexWrap: "wrap",
-        }}>
-          <div>
-            <p style={{ color: "#de3163", fontSize: "12px", fontWeight: 700, letterSpacing: "3px", textTransform: "uppercase", marginBottom: "6px", display: "flex", alignItems: "center", gap: "5px" }}>
-              <Star size={12} fill="#de3163" /> FEATURED THIS WEEK
-            </p>
-            <h2 className="section-h2" style={{ fontSize: "clamp(22px,3.5vw,36px)", fontWeight: 800, letterSpacing: "-0.5px" }}>
-              Popular Matches Near You
-            </h2>
+        {/* ══════════════════════════════════
+            FEATURED MATCHES
+        ══════════════════════════════════ */}
+        <div style={{ padding:"100px 56px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+          <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+            style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
+            <div>
+              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.35)", marginBottom:"12px" }}>
+                Live on Khelumna
+              </p>
+              <h2 style={{ fontSize:"clamp(32px,4vw,52px)", fontWeight:800, letterSpacing:"-2px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:1 }}>
+                Matches near you
+              </h2>
+            </div>
+            <a href="/discover">
+              <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                See all matches <ArrowRight size={16} />
+              </motion.button>
+            </a>
+          </motion.div>
+
+          <div className="p-match-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"20px" }}>
+            {evLoading ? (
+              Array.from({ length:3 }).map((_,i) => (
+                <div key={i} style={{ background:"#111", borderRadius:"16px", height:"360px", opacity:0.4, animation:"pulse 1.5s ease-in-out infinite" }} />
+              ))
+            ) : featured.length === 0 ? (
+              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"rgba(255,255,255,0.35)" }}>
+                <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
+                <a href="/create" style={{ color:"#DE3163", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
+                  Host the first one →
+                </a>
+              </div>
+            ) : featured.map((ev, i) => {
+              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
+              const emo: Record<string,string> = { Futsal:"⚽", Football:"⚽", Basketball:"🏀", Cricket:"🏏", Volleyball:"🏐", Badminton:"🏸", Tennis:"🎾" };
+              const pct = ev.max_players > 0 ? Math.round((ev.confirmed_count / ev.max_players) * 100) : 0;
+              return (
+                <motion.div key={ev.id} className="p-card"
+                  initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                  transition={{ duration:0.5, delay:i*0.1 }}
+                  whileHover={{ y:-6, borderColor: color + "44" }}
+                >
+                  <div className="p-card-banner" style={{ background:`linear-gradient(135deg,${color}20,#000)` }}>
+                    {ev.flash && (
+                      <div style={{ position:"absolute", top:"12px", left:"12px", background:"#E85D24", color:"#fff", fontSize:"10px", fontWeight:800, padding:"4px 10px", borderRadius:"100px", display:"flex", alignItems:"center", gap:"4px", letterSpacing:"0.08em" }}>
+                        <Zap size={9} fill="#fff" /> FLASH
+                      </div>
+                    )}
+                    <span style={{ fontSize:"72px", lineHeight:1 }}>{emo[ev.sport] ?? "🏅"}</span>
+                  </div>
+                  <div className="p-card-body">
+                    <p className="p-card-sport" style={{ color }}>{ev.sport.toUpperCase()}</p>
+                    <h3 className="p-card-title">{ev.title}</h3>
+                    <div className="p-card-meta">
+                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><MapPin size={11} />{ev.venue}</span>
+                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><Calendar size={11} />{new Date(ev.event_date).toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})} · {new Date(ev.event_date).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+                    </div>
+                    <div className="p-fill-bar">
+                      <motion.div initial={{ width:0 }} whileInView={{ width:`${pct}%` }} viewport={{ once:true }}
+                        transition={{ duration:0.8 }}
+                        style={{ height:"100%", background: pct>=90?"#ef4444":color, borderRadius:"2px" }} />
+                    </div>
+                    <div className="p-card-footer">
+                      <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontFamily:"'JetBrains Mono',monospace" }}>
+                        {ev.confirmed_count}/{ev.max_players} joined · {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
+                        onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
+                        disabled={ev.slots_remaining === 0}
+                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#FFC93C"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        {ev.slots_remaining===0 ? "Full" : "Join"}
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            {["←", "→"].map(a => (
-              <button key={a} style={{
-                width: "38px", height: "38px", borderRadius: "50%",
-                border: "1px solid rgba(255,255,255,0.25)", background: "rgba(255,255,255,0.15)",
-                color: "#fff", cursor: "pointer", fontSize: "16px",
-                display: "flex", alignItems: "center", justifyContent: "center",
-              }}>{a}</button>
+        </div>
+
+        {/* ══════════════════════════════════
+            FULL-BLEED CTA
+        ══════════════════════════════════ */}
+        <div style={{ position:"relative", overflow:"hidden", background:"#DE3163", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+          {/* noise texture overlay */}
+          <div style={{ position:"absolute", inset:0, backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize:"200px", opacity:0.5, pointerEvents:"none" }} />
+          <div className="p-cta-section">
+            <div style={{ position:"relative", zIndex:1 }}>
+              <motion.p
+                initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.6)", marginBottom:"20px" }}>
+                Join Khelumna
+              </motion.p>
+              <motion.h2 className="p-cta-h2"
+                initial={{ opacity:0, y:32 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                transition={{ duration:0.8, delay:0.1, ease:[0.22,1,0.36,1] }}
+                style={{ color:"#fff" }}>
+                Your next game<br />starts here.
+              </motion.h2>
+              <motion.div
+                initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                transition={{ delay:0.3 }}
+                style={{ display:"flex", gap:"14px", justifyContent:"center", flexWrap:"wrap" as const }}>
+                <a href="/discover">
+                  <motion.button className="btn-white" whileHover={{ scale:1.05, boxShadow:"0 16px 40px rgba(0,0,0,0.35)" }} whileTap={{ scale:0.97 }}
+                    style={{ padding:"16px 36px", fontSize:"16px" }}>
+                    Find a game <ArrowRight size={18} />
+                  </motion.button>
+                </a>
+                <a href="/create">
+                  <motion.button className="btn-ghost" whileHover={{ scale:1.05 }} whileTap={{ scale:0.97 }}
+                    style={{ padding:"16px 36px", fontSize:"16px", borderColor:"rgba(255,255,255,0.3)" }}>
+                    Host an event
+                  </motion.button>
+                </a>
+              </motion.div>
+            </div>
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════
+            FOOTER
+        ══════════════════════════════════ */}
+        <footer className="p-footer">
+          <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelum</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#DE3163", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
+          </a>
+          <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
+            {[
+              { label:"Discover", href:"/discover" },
+              { label:"Host event", href:"/create" },
+              { label:"League", href:"/league" },
+              { label:"Sign in", href:"/login" },
+              { label:"Admin", href:"/admin" },
+            ].map(l => (
+              <a key={l.label} href={l.href} style={{ color:"rgba(255,255,255,0.4)", textDecoration:"none", fontSize:"13px", fontWeight:600, transition:"color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color="#fff")}
+                onMouseLeave={e => (e.currentTarget.style.color="rgba(255,255,255,0.4)")}>
+                {l.label}
+              </a>
             ))}
           </div>
-        </div>
+          <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)" }}>© Khelumna 2026</span>
+        </footer>
 
-        <div className="matches-grid">
-          {MATCHES.map(match => (
-            <div key={match.title} style={{
-              background: "rgba(0,0,0,0.5)", border: "1px solid rgba(0,0,0,0.25)",
-              borderRadius: "20px", overflow: "hidden", color: "#fff",
-            }}>
-              <div style={{
-                height: "140px",
-                background: `linear-gradient(rgba(0,0,0,0.45),rgba(0,0,0,0.45)),${match.bg}`,
-                position: "relative", display: "flex", alignItems: "center", justifyContent: "center",
-              }}>
-                {match.icon}
-                <span style={{
-                  position: "absolute", top: "10px", left: "10px",
-                  background: match.sportColor, color: "#1e293b",
-                  fontSize: "10px", fontWeight: 800, padding: "4px 10px",
-                  borderRadius: "6px", letterSpacing: "1px",
-                }}>{match.sport}</span>
-              </div>
-              <div style={{ padding: "18px" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 700, margin: "0 0 10px", lineHeight: 1.3 }}>{match.title}</h3>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: "0 0 4px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <Calendar size={12} /> {match.date}
-                </p>
-                <p style={{ fontSize: "13px", color: "rgba(255,255,255,0.5)", margin: "0 0 14px", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <MapPin size={12} /> {match.venue}
-                </p>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <div style={{ display: "flex" }}>
-                      {[0, 1].map(i => (
-                        <div key={i} style={{
-                          width: "22px", height: "22px", borderRadius: "50%",
-                          background: `hsl(${i * 80 + 200},60%,55%)`,
-                          border: "2px solid #0d0d0d", marginLeft: i > 0 ? "-6px" : "0",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
-                          <Users size={10} color="#fff" />
-                        </div>
-                      ))}
-                    </div>
-                    <span style={{ fontSize: "12px", color: "rgba(255,255,255,0.5)", display: "flex", alignItems: "center", gap: "4px" }}>
-                      <TrendingUp size={11} /> +{match.players}
-                    </span>
-                  </div>
-                  <button style={{
-                    background: "#de3163", border: "none", color: "#fff",
-                    padding: "8px 16px", borderRadius: "8px", fontSize: "13px",
-                    fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: "5px",
-                  }}>
-                    <Zap size={12} fill="#fff" /> Join Match
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── STATS ── */}
-      <section className="section-pad-sm" style={{
-        background: "transparent",
-        borderTop: "1px solid rgba(222,49,99,0.15)",
-        borderBottom: "1px solid rgba(222,49,99,0.15)",
-      }}>
-        <p style={{
-          textAlign: "center", color: "#de3163", fontSize: "12px", fontWeight: 700,
-          letterSpacing: "3px", textTransform: "uppercase", marginBottom: "36px",
-          display: "flex", alignItems: "center", justifyContent: "center", gap: "6px",
-        }}>
-          <TrendingUp size={14} /> OUR COMMUNITY IN NUMBERS
-        </p>
-        <div className="stats-grid">
-          {STATS.map(stat => (
-            <div key={stat.label} style={{ textAlign: "center" }}>
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "8px" }}>{stat.icon}</div>
-              <div style={{ fontSize: "clamp(26px,4vw,40px)", fontWeight: 900, color: "#1e293b", letterSpacing: "-1px", lineHeight: 1, marginBottom: "6px" }}>
-                {stat.value}
-              </div>
-              <div style={{ fontSize: "13px", color: "rgba(30,41,59,0.7)", fontWeight: 500 }}>{stat.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CTA FOOTER ── */}
-      <section className="section-pad" style={{ background: "transparent", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", opacity: 0.05, userSelect: "none", lineHeight: 1 }}>
-          <Activity size={160} />
-        </div>
-        <div className="cta-card" style={{
-          position: "relative", zIndex: 1, margin: "0 auto",
-          padding: "48px 40px", maxWidth: "560px",
-          background: "rgba(255,255,255,0.25)",
-          backdropFilter: "blur(16px)",
-          borderRadius: "24px",
-          border: "1px solid rgba(255,255,255,0.3)",
-          boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
-        }}>
-          <h2 className="cta-h2" style={{ fontSize: "clamp(28px,5vw,52px)", fontWeight: 900, margin: "0 0 14px", letterSpacing: "-1px" }}>
-            Ready to play?
-          </h2>
-          <p style={{ fontSize: "15px", color: "rgba(30,41,59,0.7)", marginBottom: "28px", lineHeight: 1.6 }}>
-            Join Nepal&apos;s fastest growing sports community today.
-          </p>
-          <a href="/discover">
-            <button style={{
-              background: "#de3163", border: "none", color: "#fff",
-              padding: "14px 32px", borderRadius: "12px", fontSize: "16px",
-              fontWeight: 700, cursor: "pointer",
-              display: "inline-flex", alignItems: "center", gap: "8px",
-              boxShadow: "0 4px 16px rgba(222,49,99,0.35)",
-            }}>
-              Create Account <ArrowRight size={18} />
-            </button>
-          </a>
-        </div>
-      </section>
-
-    </div>
+      </div>
+    </>
   );
 }
