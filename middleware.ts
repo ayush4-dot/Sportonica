@@ -23,6 +23,7 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+<<<<<<< HEAD
   // Browsing is open (venues, groups). Login is required only at the point
   // of committing — the booking action itself checks auth server-side.
   const protectedPaths = ['/profile']
@@ -39,6 +40,17 @@ export async function middleware(request: NextRequest) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
       return NextResponse.redirect(loginUrl)
+=======
+  const protectedPaths = ['/discover', '/create-event', '/profile', '/league']
+  if (!user && protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Admin gate — must be logged in AND have role = 'admin' in user_metadata
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!user) {
+      return NextResponse.redirect(new URL('/login', request.url))
+>>>>>>> f7ffbe7b879f70291023e1d0f4280bb6ad38dbf8
     }
     const role = user.user_metadata?.role
     if (role !== 'admin' && role !== 'venue_owner') {
