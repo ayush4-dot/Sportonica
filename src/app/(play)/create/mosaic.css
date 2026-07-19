@@ -1,0 +1,185 @@
+/* ================================================================
+   Khelum Na — Mosaic host page. Hover-reveal feature grid.
+   Two themes: Glass (dark frosted) and Paper (light editorial).
+   All reveals are staggered: badge → title → divider → desc → CTA.
+   ================================================================ */
+
+.mz {
+  --mz-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  min-height: 100vh;
+  font-family: 'Inter', system-ui, sans-serif;
+  transition: background 0.6s ease, color 0.6s ease;
+  padding: 110px 24px 80px;
+}
+.mz.glass { background: #0B0D11; color: #F2EDE6; }
+.mz.paper { background: #F2EDE6; color: #14171E; }
+
+.mz-wrap { max-width: 1180px; margin: 0 auto; }
+
+/* ── Header row ── */
+.mz-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 34px; flex-wrap: wrap; }
+.mz-eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 14px;
+  color: #FFC93C;
+}
+.mz.paper .mz-eyebrow { color: #DE3163; }
+.mz-head h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(34px, 5.5vw, 58px); font-weight: 800;
+  letter-spacing: -1.8px; line-height: 1.02; margin: 0;
+}
+.mz-head p { max-width: 460px; font-size: 15.5px; line-height: 1.55; margin: 14px 0 0; opacity: 0.65; }
+
+/* ── Theme toggle ── */
+.mz-toggle {
+  display: inline-flex; padding: 4px; border-radius: 999px; gap: 2px;
+  border: 1px solid; flex-shrink: 0;
+}
+.mz.glass .mz-toggle { border-color: rgba(242,237,230,0.15); background: rgba(242,237,230,0.05); }
+.mz.paper .mz-toggle { border-color: rgba(20,23,30,0.15); background: rgba(20,23,30,0.04); }
+.mz-toggle button {
+  font-family: inherit; font-size: 12.5px; font-weight: 700;
+  padding: 8px 18px; border-radius: 999px; border: none; cursor: pointer;
+  background: transparent; color: inherit; opacity: 0.55;
+  transition: all 0.4s var(--mz-ease);
+}
+.mz-toggle button.on { opacity: 1; }
+.mz.glass .mz-toggle button.on { background: #F2EDE6; color: #0B0D11; }
+.mz.paper .mz-toggle button.on { background: #14171E; color: #F2EDE6; }
+
+/* ── The mosaic ── */
+.mz-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 240px;
+  grid-auto-flow: dense;
+}
+@media (max-width: 980px) { .mz-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px)  { .mz-grid { grid-template-columns: 1fr; grid-auto-rows: 300px; } }
+
+.mz-cell {
+  position: relative; border-radius: 18px; overflow: hidden;
+  cursor: pointer; text-decoration: none; color: inherit;
+  border: 1px solid;
+  transition: transform 0.55s var(--mz-ease), box-shadow 0.55s ease;
+}
+.mz.glass .mz-cell { border-color: rgba(242,237,230,0.1); background: #13161C; }
+.mz.paper .mz-cell { border-color: rgba(20,23,30,0.1); background: #fff; }
+.mz-cell:hover { transform: translateY(-4px); }
+.mz.glass .mz-cell:hover { box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7); }
+.mz.paper .mz-cell:hover { box-shadow: 0 30px 60px -24px rgba(20,23,30,0.25); }
+
+/* spans (desktop) */
+.mz-cell.s-hero { grid-column: span 2; grid-row: span 2; }
+.mz-cell.s-tall { grid-row: span 2; }
+.mz-cell.s-wide { grid-column: span 2; }
+@media (max-width: 980px) {
+  .mz-cell.s-hero { grid-column: span 2; }
+  .mz-cell.s-wide { grid-column: span 2; }
+}
+@media (max-width: 560px) {
+  .mz-cell.s-hero, .mz-cell.s-wide { grid-column: span 1; grid-row: span 1; }
+  .mz-cell.s-tall { grid-row: span 1; }
+}
+
+/* ── Image + zoom ── */
+.mz-img { position: absolute; inset: 0; }
+.mz-img img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 0.9s var(--mz-ease);
+}
+.mz-cell:hover .mz-img img, .mz-cell.open .mz-img img { transform: scale(1.07); }
+.mz-img-empty {
+  position: absolute; inset: 0; display: grid; place-items: center; opacity: 0.35;
+  background: linear-gradient(135deg, rgba(255,201,60,0.12), rgba(46,125,91,0.12));
+}
+
+/* ── Gradient overlay: revealed on hover ── */
+.mz-shade {
+  position: absolute; inset: 0; z-index: 1;
+  background: linear-gradient(to top, rgba(8,9,12,0.92) 0%, rgba(8,9,12,0.45) 46%, transparent 78%);
+  opacity: 0; transition: opacity 0.55s ease;
+}
+.mz-cell:hover .mz-shade, .mz-cell.open .mz-shade { opacity: 1; }
+
+/* ── Tag badge: slides in from top ── */
+.mz-tag {
+  position: absolute; top: 16px; left: 16px; z-index: 3;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 6px 11px; border-radius: 8px;
+  background: rgba(255,201,60,0.92); color: #0B0D11;
+  transform: translateY(-160%); opacity: 0;
+  transition: transform 0.5s var(--mz-ease) 0.05s, opacity 0.4s ease 0.05s;
+}
+.mz-cell:hover .mz-tag, .mz-cell.open .mz-tag { transform: translateY(0); opacity: 1; }
+.mz-tag.verified { background: rgba(46,125,91,0.94); color: #fff; }
+
+/* ── Reveal content (staggered) ── */
+.mz-content {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 20px;
+}
+.mz-content .t, .mz-content .dv, .mz-content .d, .mz-content .cta {
+  opacity: 0; transform: translateY(16px);
+  transition: opacity 0.5s ease, transform 0.55s var(--mz-ease);
+}
+.mz-cell:hover .t,  .mz-cell.open .t  { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
+.mz-cell:hover .dv, .mz-cell.open .dv { opacity: 1; transform: translateY(0) scaleX(1); transition-delay: 0.18s; }
+.mz-cell:hover .d,  .mz-cell.open .d  { opacity: 1; transform: translateY(0); transition-delay: 0.26s; }
+.mz-cell:hover .cta,.mz-cell.open .cta{ opacity: 1; transform: translateY(0); transition-delay: 0.36s; }
+
+.mz-content .t {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px; font-weight: 800; letter-spacing: -0.5px;
+  color: #F5F2EC; margin: 0;
+}
+.s-hero .mz-content .t { font-size: 28px; }
+
+/* animated divider line */
+.mz-content .dv {
+  height: 2px; width: 44px; margin: 10px 0;
+  background: #FFC93C; border-radius: 2px;
+  transform: translateY(16px) scaleX(0); transform-origin: left;
+}
+
+.mz-content .d {
+  font-size: 13px; line-height: 1.5; color: rgba(245,242,236,0.78);
+  margin: 0 0 14px; max-width: 340px;
+}
+
+/* frosted glass CTA */
+.mz-content .cta {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700; color: #F5F2EC;
+  padding: 10px 17px; border-radius: 11px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(14px) saturate(150%);
+  -webkit-backdrop-filter: blur(14px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.22);
+}
+
+/* ── Text cards (no image) ── */
+.mz-cell.txt { display: flex; flex-direction: column; justify-content: space-between; padding: 22px; }
+.mz.glass .mz-cell.txt { background: linear-gradient(150deg, #171b23, #10131a); }
+.mz.paper .mz-cell.txt { background: linear-gradient(150deg, #ffffff, #f6f1e8); }
+.mz-cell.txt .big {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(22px, 2.4vw, 30px); font-weight: 800; letter-spacing: -0.8px; line-height: 1.1;
+}
+.mz-cell.txt .small { font-size: 13px; opacity: 0.6; line-height: 1.5; }
+.mz-cell.txt .num {
+  font-family: 'JetBrains Mono', monospace; font-size: 38px; font-weight: 700;
+  color: #FFC93C; letter-spacing: -2px;
+}
+.mz.paper .mz-cell.txt .num { color: #DE3163; }
+
+/* entrance stagger for the whole grid */
+.mz-cell { opacity: 0; animation: mzin 0.7s var(--mz-ease) forwards; }
+@keyframes mzin { from { opacity: 0; transform: translateY(22px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .mz *, .mz-cell { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
+  .mz-content .t, .mz-content .dv, .mz-content .d, .mz-content .cta, .mz-tag, .mz-shade { opacity: 1 !important; }
+}

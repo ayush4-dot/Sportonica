@@ -1,0 +1,171 @@
+/* ================================================================
+   Player card — editorial "Buildr" system.
+   Massive display type, hairline rules, numbered sections,
+   mono indexes. Glass + Paper aware.
+   ================================================================ */
+.pf {
+  --pf-bg:    #0B0D11;
+  --pf-text:  #F2EDE6;
+  --pf-dim:   rgba(242,237,230,0.62);
+  --pf-faint: rgba(242,237,230,0.38);
+  --pf-hair:  rgba(242,237,230,0.14);
+  --pf-accent:#FFC93C;
+  min-height: 100vh;
+  background: var(--pf-bg);
+  color: var(--pf-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 130px 24px 110px;
+}
+[data-theme="paper"] .pf {
+  --pf-bg:    #F2EDE6;
+  --pf-text:  #14171E;
+  --pf-dim:   rgba(20,23,30,0.62);
+  --pf-faint: rgba(20,23,30,0.4);
+  --pf-hair:  rgba(20,23,30,0.16);
+  --pf-accent:#B8860B;
+}
+
+.pf-wrap { max-width: 880px; margin: 0 auto; }
+
+/* ── Hero: portfolio-style masthead ── */
+.pf-eyebrow {
+  font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  letter-spacing: 0.24em; text-transform: uppercase; color: var(--pf-accent);
+  margin-bottom: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.pf-eyebrow .sep { width: 34px; height: 1px; background: var(--pf-hair); }
+
+.pf-hero { display: flex; gap: 32px; align-items: flex-start; justify-content: space-between; }
+.pf-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(52px, 11vw, 104px);
+  font-weight: 800; letter-spacing: -0.04em; line-height: 0.94;
+  margin: 0; text-transform: none;
+}
+.pf-avatar {
+  width: 128px; height: 128px; border-radius: 0; object-fit: cover;
+  flex-shrink: 0; margin-top: 8px;
+  display: grid; place-items: center;
+  font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800;
+  background: linear-gradient(150deg, #DE3163, #FFC93C); color: #0B0D11;
+}
+@media (max-width: 640px) { .pf-avatar { width: 84px; height: 84px; font-size: 34px; } }
+
+.pf-lede {
+  font-size: clamp(16px, 2.4vw, 20px); line-height: 1.55; color: var(--pf-dim);
+  max-width: 560px; margin: 26px 0 0;
+}
+.pf-meta {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--pf-faint); margin-top: 18px; display: flex; gap: 22px; flex-wrap: wrap;
+}
+
+/* ── Actions ── */
+.pf-actions { display: flex; gap: 12px; margin: 34px 0 0; flex-wrap: wrap; }
+.pf-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 13px 24px; border-radius: 0; font-size: 14px; font-weight: 700;
+  font-family: inherit; cursor: pointer; text-decoration: none;
+  background: var(--pf-text); color: var(--pf-bg); border: 1px solid var(--pf-text);
+  transition: transform 0.3s cubic-bezier(0.22,1,0.36,1), opacity 0.25s;
+}
+.pf-btn:hover { opacity: 0.88; }
+.pf-btn:active { transform: scale(0.98); }
+.pf-btn.ghost { background: transparent; color: var(--pf-text); border-color: var(--pf-hair); }
+.pf-btn.ghost:hover { border-color: var(--pf-text); opacity: 1; }
+
+/* ── Stat strip: editorial index ── */
+.pf-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+  margin-top: 64px; border-top: 1px solid var(--pf-hair);
+}
+@media (max-width: 640px) { .pf-stats { grid-template-columns: repeat(2, 1fr); } }
+.pf-stat {
+  padding: 26px 22px 30px 0; border-top: 1px solid transparent;
+  position: relative;
+}
+.pf-stat + .pf-stat::before {
+  content: ''; position: absolute; left: -1px; top: 26px; bottom: 30px;
+  width: 1px; background: var(--pf-hair);
+}
+@media (max-width: 640px) {
+  .pf-stat:nth-child(odd)::before { display: none; }
+  .pf-stat { padding-left: 0; padding-right: 14px; }
+  .pf-stat:nth-child(n+3) { border-top: 1px solid var(--pf-hair); }
+}
+.pf-stat + .pf-stat { padding-left: 22px; }
+.pf-stat-v {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: clamp(38px, 6vw, 56px); font-weight: 700;
+  letter-spacing: -0.05em; line-height: 1;
+}
+.pf-stat-l {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--pf-faint);
+  margin-top: 12px;
+}
+.pf-stat-bar { height: 2px; background: var(--pf-hair); margin-top: 14px; overflow: hidden; }
+.pf-stat-bar > div { height: 100%; }
+
+/* ── Numbered sections ── */
+.pf-sec { margin-top: 72px; }
+.pf-sec-head {
+  display: flex; align-items: baseline; gap: 18px;
+  border-top: 1px solid var(--pf-hair); padding-top: 22px; margin-bottom: 30px;
+}
+.pf-sec-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--pf-accent); letter-spacing: 0.1em;
+}
+.pf-sec-t {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(22px, 3.6vw, 32px); font-weight: 800;
+  letter-spacing: -0.03em; margin: 0;
+}
+.pf-sec-count {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; color: var(--pf-faint);
+}
+
+/* sports: work-index rows */
+.pf-sport { padding: 18px 0 20px; border-bottom: 1px solid var(--pf-hair); }
+.pf-sport:last-child { border-bottom: none; }
+.pf-sport-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+.pf-sport-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(18px, 2.6vw, 24px); font-weight: 700; letter-spacing: -0.02em;
+}
+.pf-sport-n { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--pf-dim); }
+.pf-bar { height: 2px; background: var(--pf-hair); overflow: hidden; }
+.pf-bar > div { height: 100%; }
+
+/* badges: minimal editorial chips */
+.pf-badges { display: flex; flex-wrap: wrap; gap: 10px; }
+.pf-badge {
+  display: inline-flex; align-items: baseline; gap: 8px;
+  padding: 10px 16px; font-size: 13px; font-weight: 700;
+  border: 1px solid; border-radius: 0;
+}
+.pf-badge small { font-weight: 400; opacity: 0.65; font-size: 11.5px; }
+
+/* recent games: CV-style index */
+.pf-game {
+  display: grid; grid-template-columns: 92px 1fr auto; gap: 18px; align-items: baseline;
+  padding: 16px 0; border-bottom: 1px solid var(--pf-hair);
+}
+.pf-game:last-child { border-bottom: none; }
+.pf-game-date { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--pf-faint); }
+.pf-game-t { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.pf-game-v { font-size: 12.5px; color: var(--pf-faint); margin-top: 2px; }
+.pf-dot { width: 9px; height: 9px; border-radius: 99px; }
+@media (max-width: 560px) { .pf-game { grid-template-columns: 74px 1fr auto; gap: 12px; } }
+
+/* trust footnote */
+.pf-trustline {
+  margin-top: 72px; border-top: 1px solid var(--pf-hair); padding-top: 22px;
+  display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap;
+  font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  letter-spacing: 0.12em; text-transform: uppercase; color: var(--pf-faint);
+}
+
+.pf-empty { padding: 30px 0; color: var(--pf-dim); font-size: 14px; }

@@ -1,0 +1,271 @@
+/* ================================================================
+   Khelumna Admin — "Floodlit Control Room"
+   Dark operations console. Sodium-vapor yellow = the floodlight.
+   Mono for every number (this is an instrument panel, not a brochure).
+   ================================================================ */
+
+.adm {
+  --a-bg:      #0B0D11;
+  --a-panel:   #13161C;
+  --a-panel-2: #1A1E27;
+  --a-line:    rgba(255,255,255,0.07);
+  --a-line-2:  rgba(255,255,255,0.12);
+  --a-text:    #ECEEF2;
+  --a-dim:     #8A95A3;
+  --a-faint:   #5A6472;
+  --a-sodium:  #FFC93C;   /* floodlight */
+  --a-turf:    #2E7D5B;
+  --a-pink:    #DE3163;
+  --a-lime:    #C8F35B;
+  --a-sky:     #3b82f6;
+
+  --a-radius:  14px;
+  --a-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --a-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+  --a-body: 'Inter', system-ui, sans-serif;
+
+  background: var(--a-bg);
+  color: var(--a-text);
+  font-family: var(--a-body);
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 244px 1fr;
+}
+
+.adm * { box-sizing: border-box; }
+
+/* ── Sidebar ── */
+.adm-side {
+  position: sticky; top: 0; align-self: start;
+  height: 100vh; overflow-y: auto;
+  background: var(--a-panel);
+  border-right: 1px solid var(--a-line);
+  padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.adm-brand {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px 20px;
+}
+.adm-brand-mark {
+  width: 30px; height: 30px; border-radius: 8px;
+  background: var(--a-sodium); color: #0B0D11;
+  display: grid; place-items: center;
+  font-family: var(--a-disp); font-weight: 800; font-size: 18px;
+  box-shadow: 0 0 0 1px rgba(255,201,60,0.3), 0 4px 20px -4px rgba(255,201,60,0.5);
+}
+.adm-brand-name {
+  font-family: var(--a-disp); font-weight: 800; font-size: 17px;
+  letter-spacing: -0.5px; line-height: 1;
+}
+.adm-brand-sub {
+  font-family: var(--a-mono); font-size: 9px; letter-spacing: 0.18em;
+  color: var(--a-faint); text-transform: uppercase; margin-top: 3px;
+}
+.adm-navlabel {
+  font-family: var(--a-mono); font-size: 9.5px; letter-spacing: 0.16em;
+  color: var(--a-faint); text-transform: uppercase;
+  padding: 16px 10px 6px;
+}
+.adm-navlink {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 10px; border-radius: 9px;
+  color: var(--a-dim); font-size: 13.5px; font-weight: 500;
+  text-decoration: none; transition: all 0.14s ease;
+  border: 1px solid transparent;
+}
+.adm-navlink:hover { background: var(--a-panel-2); color: var(--a-text); }
+.adm-navlink.active {
+  background: linear-gradient(90deg, rgba(255,201,60,0.14), rgba(255,201,60,0.04));
+  color: var(--a-sodium);
+  border-color: rgba(255,201,60,0.22);
+}
+.adm-navlink.active svg { color: var(--a-sodium); }
+
+/* ── Main ── */
+.adm-main { min-width: 0; display: flex; flex-direction: column; }
+.adm-topbar {
+  height: 60px; border-bottom: 1px solid var(--a-line);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 28px; background: rgba(11,13,17,0.7);
+  backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 20;
+}
+.adm-topbar h1 {
+  font-family: var(--a-disp); font-size: 18px; font-weight: 700;
+  letter-spacing: -0.4px;
+}
+.adm-topbar-crumb { font-family: var(--a-mono); font-size: 11px; color: var(--a-faint); }
+.adm-body { padding: 28px; max-width: 1240px; width: 100%; }
+
+/* ── Cards / panels ── */
+.adm-card {
+  background: var(--a-panel); border: 1px solid var(--a-line);
+  border-radius: var(--a-radius); padding: 20px;
+}
+.adm-card-t { font-family: var(--a-disp); font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+.adm-card-sub { font-size: 12px; color: var(--a-dim); margin-bottom: 16px; }
+
+/* ── Stat tiles ── */
+.adm-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+.adm-stat {
+  background: var(--a-panel); border: 1px solid var(--a-line);
+  border-radius: var(--a-radius); padding: 18px 18px 16px;
+  position: relative; overflow: hidden;
+}
+.adm-stat::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: var(--tile-accent, var(--a-sodium)); opacity: 0.7;
+}
+.adm-stat-label {
+  font-family: var(--a-mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--a-faint); margin-bottom: 10px;
+}
+.adm-stat-val {
+  font-family: var(--a-mono); font-size: 28px; font-weight: 700;
+  letter-spacing: -1px; line-height: 1;
+}
+.adm-stat-val small { font-size: 14px; color: var(--a-dim); font-weight: 500; }
+.adm-stat-delta { font-size: 11px; margin-top: 8px; font-family: var(--a-mono); }
+.adm-stat-delta.up { color: var(--a-lime); }
+.adm-stat-delta.down { color: var(--a-pink); }
+
+/* ── Tables ── */
+.adm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.adm-table th {
+  text-align: left; font-family: var(--a-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--a-faint);
+  padding: 10px 12px; border-bottom: 1px solid var(--a-line);
+}
+.adm-table td { padding: 13px 12px; border-bottom: 1px solid var(--a-line); }
+.adm-table tr:last-child td { border-bottom: none; }
+.adm-table tr:hover td { background: rgba(255,255,255,0.015); }
+.adm-num { font-family: var(--a-mono); }
+
+/* ── Badges ── */
+.adm-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--a-mono); font-size: 10px; font-weight: 600;
+  letter-spacing: 0.04em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 6px; border: 1px solid transparent;
+}
+.adm-badge.ok      { color: var(--a-lime);   background: rgba(200,243,91,0.1); border-color: rgba(200,243,91,0.25); }
+.adm-badge.warn    { color: var(--a-sodium); background: rgba(255,201,60,0.1); border-color: rgba(255,201,60,0.25); }
+.adm-badge.danger  { color: var(--a-pink);   background: rgba(222,49,99,0.1);  border-color: rgba(222,49,99,0.25); }
+.adm-badge.neutral { color: var(--a-dim);    background: rgba(255,255,255,0.05); border-color: var(--a-line-2); }
+
+/* ── Buttons ── */
+.adm-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--a-body); font-size: 13px; font-weight: 600;
+  padding: 9px 15px; border-radius: 9px; border: 1px solid var(--a-line-2);
+  background: var(--a-panel-2); color: var(--a-text);
+  cursor: pointer; transition: all 0.14s ease; text-decoration: none;
+}
+.adm-btn:hover { border-color: var(--a-dim); background: #20252f; }
+.adm-btn.primary {
+  background: var(--a-sodium); color: #0B0D11; border-color: var(--a-sodium);
+  box-shadow: 0 4px 20px -6px rgba(255,201,60,0.5);
+}
+.adm-btn.primary:hover { background: #ffd456; }
+.adm-btn.ghost { background: transparent; }
+.adm-btn.sm { padding: 6px 11px; font-size: 12px; }
+.adm-btn.danger { color: var(--a-pink); border-color: rgba(222,49,99,0.3); }
+.adm-btn.danger:hover { background: rgba(222,49,99,0.1); }
+
+/* ── Forms ── */
+.adm-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+.adm-label { font-size: 12px; font-weight: 600; color: var(--a-dim); }
+.adm-input, .adm-select, .adm-textarea {
+  background: var(--a-bg); border: 1px solid var(--a-line-2);
+  border-radius: 9px; padding: 10px 12px; color: var(--a-text);
+  font-family: var(--a-body); font-size: 13.5px; width: 100%;
+  transition: border-color 0.14s ease;
+}
+.adm-input:focus, .adm-select:focus, .adm-textarea:focus {
+  outline: none; border-color: var(--a-sodium);
+  box-shadow: 0 0 0 3px rgba(255,201,60,0.12);
+}
+.adm-input.mono { font-family: var(--a-mono); }
+.adm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+/* ── Chips (sport/amenity pickers) ── */
+.adm-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.adm-chip {
+  font-size: 12.5px; font-weight: 500; padding: 7px 13px;
+  border-radius: 999px; border: 1px solid var(--a-line-2);
+  background: var(--a-bg); color: var(--a-dim); cursor: pointer;
+  transition: all 0.14s ease; user-select: none;
+}
+.adm-chip.on {
+  background: rgba(255,201,60,0.12); color: var(--a-sodium);
+  border-color: rgba(255,201,60,0.35);
+}
+
+/* ── Empty states ── */
+.adm-empty {
+  border: 1px dashed var(--a-line-2); border-radius: var(--a-radius);
+  padding: 44px 24px; text-align: center;
+}
+.adm-empty-icon {
+  width: 46px; height: 46px; border-radius: 12px; margin: 0 auto 14px;
+  background: var(--a-panel-2); display: grid; place-items: center; color: var(--a-sodium);
+}
+.adm-empty h3 { font-family: var(--a-disp); font-size: 16px; margin-bottom: 6px; }
+.adm-empty p { font-size: 13px; color: var(--a-dim); max-width: 340px; margin: 0 auto 18px; }
+
+/* ── Calendar grid (availability) ── */
+.adm-cal { display: grid; grid-template-columns: 56px 1fr; gap: 0; font-size: 12px; }
+.adm-cal-hour {
+  font-family: var(--a-mono); font-size: 10px; color: var(--a-faint);
+  text-align: right; padding: 0 10px; height: 44px;
+  border-top: 1px solid var(--a-line); padding-top: 2px;
+}
+.adm-cal-track { position: relative; border-top: 1px solid var(--a-line); height: 44px; }
+.adm-cal-block {
+  position: absolute; left: 4px; right: 4px; border-radius: 7px;
+  padding: 5px 9px; font-size: 11px; overflow: hidden;
+  border: 1px solid; display: flex; flex-direction: column; gap: 1px;
+}
+.adm-cal-block.booking { background: rgba(46,125,91,0.16); border-color: rgba(46,125,91,0.4); }
+.adm-cal-block.block   { background: rgba(138,149,163,0.14); border-color: var(--a-line-2); color: var(--a-dim); }
+.adm-cal-block.walk_in { background: rgba(255,201,60,0.13); border-color: rgba(255,201,60,0.35); }
+.adm-cal-block b { font-family: var(--a-mono); font-size: 10px; font-weight: 700; }
+
+/* ── Misc ── */
+.adm-hr { height: 1px; background: var(--a-line); border: none; margin: 20px 0; }
+.adm-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.adm-grid-3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+.adm-mono { font-family: var(--a-mono); }
+.adm-dim { color: var(--a-dim); }
+.adm-flex { display: flex; align-items: center; gap: 12px; }
+.adm-between { display: flex; align-items: center; justify-content: space-between; }
+.adm-heat {
+  display: grid; grid-template-columns: 40px repeat(7, 1fr); gap: 3px;
+  font-family: var(--a-mono); font-size: 9px;
+}
+.adm-heat-cell { height: 22px; border-radius: 4px; background: var(--a-panel-2); }
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .adm { grid-template-columns: 1fr; }
+  .adm-side { display: none; }
+  .adm-stats { grid-template-columns: repeat(2,1fr); }
+  .adm-row, .adm-grid-2, .adm-grid-3 { grid-template-columns: 1fr; }
+}
+
+/* reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .adm * { transition: none !important; animation: none !important; }
+}
+
+/* ── Paper theme for the venue console ── */
+[data-theme="paper"] .adm {
+  --a-bg:      #F2EDE6;
+  --a-panel:   #FFFFFF;
+  --a-panel-2: #EDE6D8;
+  --a-line:    rgba(20,23,30,0.09);
+  --a-line-2:  rgba(20,23,30,0.16);
+  --a-text:    #14171E;
+  --a-dim:     #5A6472;
+  --a-faint:   #8A95A3;
+}
