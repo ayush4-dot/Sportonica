@@ -35,14 +35,22 @@ export default function MagnetDock() {
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
+  const [dbRole, setDbRole] = useState<string | null>(null);
+
   useEffect(() => {
-    sb.auth.getUser().then(({ data }) => setUser(data.user));
+    sb.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        sb.from("profiles").select("role").eq("id", data.user.id).maybeSingle()
+          .then(({ data: p }) => setDbRole(p?.role ?? null));
+      }
+    });
     const { data: sub } = sb.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
     return () => sub.subscription.unsubscribe();
   }, [sb]);
 
   // Hide dock on admin console, auth pages (they have their own chrome).
-  const hidden = pathname.startsWith("/admin") || pathname.startsWith("/login") || pathname.startsWith("/signup");
+  const hidden = pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/login") || pathname.startsWith("/signup");
   if (hidden) return null;
 
   const role = user?.user_metadata?.role;
@@ -212,6 +220,9 @@ export default function MagnetDock() {
 
           {menuOpen && user && (
             <div className="dock-menu" onMouseLeave={() => setMenuOpen(false)}>
+              {dbRole === "super_admin" && (
+                <a href="/platform"><LayoutDashboard size={15} /> Platform console</a>
+              )}
               <a href={isOwner ? "/admin" : "/profile"}>
                 {isOwner ? <LayoutDashboard size={15} /> : <User size={15} />}
                 {isOwner ? "Venue console" : "My profile"}

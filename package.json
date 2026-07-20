@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-<<<<<<< HEAD
     "@hookform/resolvers": "^5.4.0",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.1",
@@ -31,21 +30,6 @@
     "three": "^0.184.0",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
-=======
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.6.1",
-    "@supabase/ssr": "^0.12.0",
-    "@supabase/supabase-js": "^2.108.2",
-    "@types/leaflet": "^1.9.21",
-    "framer-motion": "^12.42.2",
-    "leaflet": "^1.9.4",
-    "lucide-react": "^1.21.0",
-    "next": "16.2.9",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-leaflet": "^5.0.0",
-    "three": "^0.184.0"
->>>>>>> f7ffbe7b879f70291023e1d0f4280bb6ad38dbf8
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
