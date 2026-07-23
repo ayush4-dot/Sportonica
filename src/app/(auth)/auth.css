@@ -181,3 +181,14 @@
   .auth *, .auth-stage::before, .auth-stage::after { animation: none !important; }
   .auth-card, .auth-brand, .auth-tagline h2, .auth-tagline p, .auth-foot { opacity: 1 !important; }
 }
+
+/* Divider between password and Google sign-in */
+.auth-or {
+  display: flex; align-items: center; gap: 12px;
+  margin: 18px 0; opacity: 0.4;
+  font-size: 11.5px; letter-spacing: 0.1em; text-transform: uppercase;
+  font-family: 'JetBrains Mono', monospace;
+}
+.auth-or::before, .auth-or::after {
+  content: ""; flex: 1; height: 1px; background: currentColor; opacity: 0.4;
+}

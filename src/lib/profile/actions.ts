@@ -10,6 +10,26 @@ async function requireUser() {
   return { sb, user };
 }
 
+// Set your own role once, from the welcome step after a Google sign-in.
+// Deliberately cannot grant super_admin — only the platform console does that.
+export async function setMyRole(role: "player" | "venue_owner") {
+  const { sb, user } = await requireUser();
+
+  const { error } = await sb.from("profiles").update({ role }).eq("id", user.id);
+  if (error) throw new Error(error.message);
+
+  // Middleware gates /admin on user_metadata, so keep the two in step.
+  // If this fails the role is still saved — don't block the user on it.
+  try {
+    await sb.auth.updateUser({ data: { role } });
+  } catch (e) {
+    console.error("[setMyRole] metadata sync failed:", e);
+  }
+
+  revalidatePath("/profile");
+  revalidatePath("/welcome");
+}
+
 export async function updateProfile(patch: {
   full_name?: string;
   bio?: string;

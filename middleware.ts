@@ -41,9 +41,16 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
     const role = user.user_metadata?.role
-    if (role !== 'admin' && role !== 'venue_owner') {
+    // super_admin oversees the whole platform, so it can open the venue
+    // console too. Without this it gets bounced to the homepage.
+    if (role !== 'admin' && role !== 'venue_owner' && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/', request.url))
     }
+  }
+
+  // The post-Google role step needs a session.
+  if (!user && request.nextUrl.pathname.startsWith('/welcome')) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response

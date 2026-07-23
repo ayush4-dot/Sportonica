@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import Link from "next/link";
+import GoogleButton from "@/components/GoogleButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -91,6 +92,9 @@ function SignupInner() {
           <button className="auth-btn" onClick={signup} disabled={loading}>
             {loading ? "Creating account…" : "Create account"}
           </button>
+
+          <div className="auth-or"><span>or</span></div>
+          <GoogleButton next={redirect ?? "/discover"} label="Sign up with Google" />
 
           <div className="auth-alt">
             Already have an account?{" "}
