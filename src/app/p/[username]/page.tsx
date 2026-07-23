@@ -20,19 +20,19 @@ const SPORT_COLOR: Record<string, string> = {
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
   const p = await getProfileByUsername(username);
-  if (!p || !p.is_public) return { title: "Player · Khelum Na" };
+  if (!p || !p.is_public) return { title: "Player · Khelam Na" };
 
   const stats = await getPlayerStats(p.id);
   const name = p.full_name ?? p.name ?? p.username;
   const desc = stats.games_played > 0
     ? `${stats.games_played} games played · Trust ${p.trust_score}/100 · ${p.city ?? "Kathmandu"}`
-    : `Just joined Khelum Na · ${p.city ?? "Kathmandu"}`;
+    : `Just joined Khelam Na · ${p.city ?? "Kathmandu"}`;
 
   return {
-    title: `${name} · Khelum Na`,
+    title: `${name} · Khelam Na`,
     description: desc,
-    openGraph: { title: `${name} · Khelum Na`, description: desc, type: "profile" },
-    twitter: { card: "summary_large_image", title: `${name} · Khelum Na`, description: desc },
+    openGraph: { title: `${name} · Khelam Na`, description: desc, type: "profile" },
+    twitter: { card: "summary_large_image", title: `${name} · Khelam Na`, description: desc },
   };
 }
 
@@ -196,7 +196,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
 
         {/* ── Footnote ── */}
         <div className="pf-trustline">
-          <span>Khelum Na · Kathmandu</span>
+          <span>Khelam Na · Kathmandu</span>
           <span>Trust is earned one game at a time</span>
         </div>
       </div>

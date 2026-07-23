@@ -32,6 +32,14 @@ export type EventRow = {
   flash: boolean;
   venue_id: string | null;
   sport_color: string | null;
+  event_type?: string | null;
+  organizer_name?: string | null;
+  skill_level?: string | null;
+  duration_mins?: number | null;
+  host_name?: string | null;
+  host_username?: string | null;
+  host_avatar?: string | null;
+  host_trust?: number | null;
   // from events_with_counts view
   confirmed_count: number;
   slots_remaining: number;
@@ -56,7 +64,7 @@ export function useEvents(opts: UseEventsOptions = {}) {
     setError(null);
 
     let query = sb()
-      .from("events_with_counts")
+      .from("events_full")
       .select("*")
       .order("event_date", { ascending: true })
       .limit(limit);
@@ -74,23 +82,40 @@ export function useEvents(opts: UseEventsOptions = {}) {
       query = query.gte("event_date", today.toISOString());
     }
 
-    const { data, error: err } = await query;
+    try {
+      const { data, error: err } = await query;
 
-    if (err) {
-      setError(err.message);
+      if (err) {
+        console.error("[useEvents]", err);
+        setError(err.message);
+        setEvents([]);
+      } else {
+        // Derive sport colour client-side if not stored
+        const rows = (data ?? []).map((e: EventRow) => ({
+          ...e,
+          sport_color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#DE3163",
+          event_type: e.event_type ?? "pickup",
+          organizer_name: e.organizer_name ?? null,
+          confirmed_count: Number(e.confirmed_count ?? 0),
+          slots_remaining: Number(e.slots_remaining ?? e.max_players),
+          flash: Boolean(e.flash),
+        skill_level: e.skill_level ?? "any",
+        duration_mins: e.duration_mins ?? 60,
+        host_name: e.host_name ?? null,
+        host_username: e.host_username ?? null,
+        host_avatar: e.host_avatar ?? null,
+        host_trust: e.host_trust ?? 50,
+        }));
+        setEvents(rows);
+      }
+    } catch (e) {
+      // Never leave the UI stuck on "Loading…" — show what went wrong.
+      console.error("[useEvents] threw", e);
+      setError(e instanceof Error ? e.message : "Could not load games.");
       setEvents([]);
-    } else {
-      // Derive sport colour client-side if not stored
-      const rows = (data ?? []).map((e: EventRow) => ({
-        ...e,
-        sport_color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#DE3163",
-        confirmed_count: Number(e.confirmed_count ?? 0),
-        slots_remaining: Number(e.slots_remaining ?? e.max_players),
-        flash: Boolean(e.flash),
-      }));
-      setEvents(rows);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, [sport, limit, onlyFlash, onlyUpcoming]);
 
   useEffect(() => { void load(); }, [load]);

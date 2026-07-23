@@ -1,0 +1,29 @@
+.ev-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(242,237,230,0.1);
+  border-radius: 16px; padding: 24px;
+}
+[data-theme="paper"] .ev-card { background: #fff; border-color: rgba(20,23,30,0.12); }
+.ev-field { margin-bottom: 16px; display: flex; flex-direction: column; }
+.ev-field label {
+  font-size: 12.5px; font-weight: 600; opacity: 0.7; margin-bottom: 7px;
+}
+.ev-field input, .ev-field select, .ev-field textarea {
+  background: transparent; border: 1px solid rgba(128,128,128,0.28);
+  border-radius: 10px; padding: 11px 13px; color: inherit;
+  font-family: inherit; font-size: 14px; width: 100%; box-sizing: border-box;
+}
+.ev-field input:focus, .ev-field select:focus, .ev-field textarea:focus {
+  outline: none; border-color: #FFC93C; box-shadow: 0 0 0 3px rgba(255,201,60,0.12);
+}
+.ev-field select option { background: #14171E; color: #F2EDE6; }
+[data-theme="paper"] .ev-field select option { background: #fff; color: #14171E; }
+.ev-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 520px) { .ev-row { grid-template-columns: 1fr; } }
+.ev-err { color: #DE3163; font-size: 13px; margin-bottom: 14px; }
+.ev-btn {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
+  background: #FFC93C; color: #0B0D11; border: none; border-radius: 11px;
+  padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer;
+  font-family: inherit;
+}
+.ev-btn:disabled { opacity: 0.6; }

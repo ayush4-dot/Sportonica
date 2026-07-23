@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Users, Wallet, Clock } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { hostGameFromBooking } from "@/lib/play/actions";
+import SlotPicker from "./SlotPicker";
 import type { Court, CourtHours } from "@/lib/admin/types";
 
 const KTM_TZ = "Asia/Kathmandu";
@@ -26,6 +27,15 @@ function fmtHM(hour: number) {
 }
 
 // Suggested squad sizes by sport — helps players fill their game.
+// What kind of players the host wants. Plain language beats jargon —
+// "anyone's welcome" tells a nervous beginner more than "Level 1".
+const SKILL_OPTS = [
+  { k: "any",          label: "Anyone",       hint: "All levels welcome — turn up and play." },
+  { k: "beginner",     label: "Beginners",    hint: "New players welcome. Relaxed, no pressure." },
+  { k: "intermediate", label: "Intermediate", hint: "You've played a fair bit. Competitive but friendly." },
+  { k: "advanced",     label: "Advanced",     hint: "Strong players only. Fast, serious games." },
+];
+
 const SQUAD: Record<string, { label: string; total: number; positions: string[] }> = {
   Futsal:     { label: "5-a-side", total: 5, positions: ["Goalkeeper", "Defender", "Winger", "Pivot"] },
   Football:   { label: "7-a-side", total: 7, positions: ["Goalkeeper", "Defender", "Midfielder", "Striker"] },
@@ -48,6 +58,9 @@ export default function BookingFlow({
   const [duration, setDuration] = useState(1); // hours; 1, 1.5, 2, 3
   const [needPlayers, setNeedPlayers] = useState(false);
   const [spots, setSpots] = useState(4);
+  const [skill, setSkill] = useState("any");
+  const [bringGear, setBringGear] = useState(false);
+  const [note, setNote] = useState("");
   const [pay, setPay] = useState<"khalti" | "esewa">("khalti");
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -56,17 +69,6 @@ export default function BookingFlow({
   const squad = court ? SQUAD[court.sport] : undefined;
 
   // Build the day's bookable hours from this court's opening hours.
-  const slots = useMemo(() => {
-    if (!court) return [];
-    const dow = new Date(ktmIso(dateStr, 12)).getDay();
-    const h = (hoursByCourt[court.id] ?? []).find((r) => r.dow === dow);
-    if (!h) return [];
-    const open = parseInt(h.open_time.slice(0, 2), 10);
-    const close = parseInt(h.close_time.slice(0, 2), 10);
-    const out: number[] = [];
-    for (let t = open; t < close; t++) out.push(t);
-    return out;
-  }, [court, dateStr, hoursByCourt]);
 
   const hourly = court ? Number(court.base_price) : 0;
   const price = Math.round(hourly * duration);
@@ -96,6 +98,9 @@ export default function BookingFlow({
             starts_at: ktmIso(dateStr, hour),
             total_price: price,
             spots_needed: spots,
+            skill_level: skill,
+            bring_own_gear: bringGear,
+            notes: note.trim() || undefined,
           });
         }
 
@@ -159,40 +164,41 @@ export default function BookingFlow({
         {/* Date + time */}
         <div className="bk-panel">
           <h3>Pick your slot</h3>
-          <p className="hint"><Clock size={13} style={{ verticalAlign: -2, marginRight: 4 }} />One-hour slots based on the venue&apos;s opening hours.</p>
+          <p className="hint">
+            <Clock size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+            Live availability from the venue&apos;s opening hours — taken slots are hidden.
+          </p>
+
           <input
             type="date" value={dateStr} min={todayKtm()}
             onChange={(e) => { setDateStr(e.target.value); setHour(null); }}
             style={{
               background: "var(--ink)", border: "1px solid var(--line)", color: "var(--paper)",
               borderRadius: 11, padding: "11px 14px", fontFamily: "'JetBrains Mono',monospace",
-              fontSize: 14, marginBottom: 18, width: 190,
+              fontSize: 14, marginBottom: 20, width: 190,
             }}
           />
-          {slots.length === 0 ? (
-            <p className="hint" style={{ margin: 0 }}>Closed on this day. Try another date.</p>
-          ) : (
-            <div className="bk-times">
-              {slots.map((t) => (
-                <button key={t} className={`bk-time ${hour === t ? "on" : ""}`} onClick={() => setHour(t)}>
-                  {String(t).padStart(2, "0")}:00
-                </button>
-              ))}
-            </div>
-          )}
 
-          {hour !== null && (
-            <div style={{ marginTop: 22 }}>
-              <p className="hint" style={{ marginBottom: 10 }}>How long are you playing?</p>
-              <div className="bk-chips">
-                {[1, 1.5, 2, 3].map((d) => (
-                  <button key={d} className={`bk-chip ${duration === d ? "on" : ""}`} onClick={() => setDuration(d)}>
-                    {d === 1 ? "1 hour" : `${d} hours`}
-                    <small>Rs {Math.round(hourly * d)}</small>
-                  </button>
-                ))}
-              </div>
-            </div>
+          {/* Duration first — it decides which start times can actually fit. */}
+          <p className="hint" style={{ marginBottom: 10 }}>How long are you playing?</p>
+          <div className="bk-chips" style={{ marginBottom: 22 }}>
+            {[1, 1.5, 2, 3].map((d) => (
+              <button key={d} className={`bk-chip ${duration === d ? "on" : ""}`}
+                onClick={() => { setDuration(d); setHour(null); }}>
+                {d === 1 ? "1 hour" : `${d} hours`}
+                <small>Rs {Math.round(hourly * d)}</small>
+              </button>
+            ))}
+          </div>
+
+          {court && (
+            <SlotPicker
+              courtId={court.id}
+              dateStr={dateStr}
+              durationMins={Math.round(duration * 60)}
+              value={hour === null ? null : Math.round(hour * 60)}
+              onPick={(mins) => setHour(mins === null ? null : mins / 60)}
+            />
           )}
         </div>
 
@@ -222,6 +228,44 @@ export default function BookingFlow({
               </div>
               <div className="bk-split" style={{ marginTop: 16 }}>
                 Split between you + {spots} others → <b>Rs {perHead}</b> each instead of Rs {price}.
+              </div>
+
+              {/* Who this game is for — set expectations so the right
+                  people turn up and nobody feels out of their depth. */}
+              <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
+                <p className="hint" style={{ marginBottom: 10 }}>Who are you looking for?</p>
+                <div className="bk-chips">
+                  {SKILL_OPTS.map((s) => (
+                    <button key={s.k} className={`bk-chip ${skill === s.k ? "on" : ""}`}
+                      onClick={() => setSkill(s.k)} title={s.hint}>
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="hint" style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
+                  {SKILL_OPTS.find((s) => s.k === skill)?.hint}
+                </p>
+
+                <div className="bk-toggle" style={{ marginTop: 18 }} onClick={() => setBringGear((v) => !v)}>
+                  <div className={`bk-switch ${bringGear ? "on" : ""}`} />
+                  <div>
+                    <b>Bring your own gear</b>
+                    <p className="hint" style={{ margin: "2px 0 0" }}>
+                      {bringGear ? "Players bring their own kit." : "Gear is provided or shared."}
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: 18 }}>
+                  <p className="hint" style={{ marginBottom: 8 }}>Anything they should know? (optional)</p>
+                  <textarea
+                    className="bk-note"
+                    rows={2}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Turf shoes only · we play 40-min halves · park on the side street"
+                  />
+                </div>
               </div>
             </div>
           )}

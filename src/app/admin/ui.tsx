@@ -49,7 +49,7 @@ export function VerifyBadge({ status }: { status: VerificationStatus }) {
     pending:    { cls: "warn", label: "pending" },
     unverified: { cls: "neutral", label: "unverified" },
   } as const;
-  const b = map[status] ?? map.unverified;
+  const b = map[status];
   return <span className={`adm-badge ${b.cls}`}>{b.label}</span>;
 }
 

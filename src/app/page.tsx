@@ -21,19 +21,20 @@ const SPORT_FACT: Record<string, { big: string; small: string }> = {
 };
 
 const SPORTS_PANELS = [
-  { sport:"Football",   label:"FOOTBALL",   color:"#22c55e", emoji:"⚽", desc:"Join pickup matches and leagues across Kathmandu's best grounds." },
+  { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
   { sport:"Cricket",    label:"CRICKET",    color:"#f97316", emoji:"🏏", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
   { sport:"Basketball", label:"BASKETBALL", color:"#FFC93C", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
-  { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit futsal courts by the hour, any time." },
   { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
-  { sport:"Badminton",  label:"BADMINTON",  color:"#DE3163", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
+  { sport:"Badminton",  label:"BADMINTON",  color:"#a855f7", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
+  { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🥒", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
+  { sport:"Swimming",   label:"SWIMMING",   color:"#06b6d4", emoji:"🏊", desc:"Lane bookings, early-morning laps, and coached sessions." },
 ];
 
 const STATS = [
   { value:"1,200+", label:"Players" },
   { value:"500+",   label:"Games" },
   { value:"30+",    label:"Venues" },
-  { value:"7",      label:"Sports" },
+  { value:"9",      label:"Sports" },
 ];
 
 const CSS = `
@@ -178,11 +179,11 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      const raw = sessionStorage.getItem("khelumna_pending_intent");
+      const raw = sessionStorage.getItem("khelamna_pending_intent");
       if (!raw) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      sessionStorage.removeItem("khelumna_pending_intent");
+      sessionStorage.removeItem("khelamna_pending_intent");
       const intent = JSON.parse(raw) as { type:"join"|"host"; eventId?:string };
       if (intent.type === "host") { router.push("/create"); return; }
       if (intent.type === "join" && intent.eventId) {
@@ -277,7 +278,7 @@ export default function Home() {
           <motion.div className="p-editorial-left"
             initial={{ opacity:0, x:-32 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, amount:0.4 }}
             transition={{ duration:0.7, ease:[0.22,1,0.36,1] }}>
-            <p className="p-editorial-label">What is Khelumna</p>
+            <p className="p-editorial-label">What is Khelamna</p>
             <h2 className="p-editorial-big">
               The court is open.<br />Someone&apos;s waiting<br />to play.
             </h2>
@@ -416,7 +417,7 @@ export default function Home() {
             style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
             <div>
               <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.35)", marginBottom:"12px" }}>
-                Live on Khelumna
+                Live on Khelamna
               </p>
               <h2 style={{ fontSize:"clamp(32px,4vw,52px)", fontWeight:800, letterSpacing:"-2px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:1 }}>
                 Matches near you
@@ -501,7 +502,7 @@ export default function Home() {
               <motion.p
                 initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
                 style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.6)", marginBottom:"20px" }}>
-                Join Khelumna
+                Join Khelamna
               </motion.p>
               <motion.h2 className="p-cta-h2"
                 initial={{ opacity:0, y:32 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
@@ -535,7 +536,7 @@ export default function Home() {
         ══════════════════════════════════ */}
         <footer className="p-footer">
           <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelum</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelam</span>
             <span style={{ fontSize:"18px", fontWeight:800, color:"#F2EDE6", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
           </a>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
@@ -553,7 +554,7 @@ export default function Home() {
               </a>
             ))}
           </div>
-          <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)" }}>© Khelumna 2026</span>
+          <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)" }}>© Khelamna 2026</span>
         </footer>
 
       </div>

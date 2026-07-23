@@ -9,7 +9,7 @@ export async function browseVenues(): Promise<(Venue & { courts: Court[] })[]> {
     .from("venues")
     .select("*")
     .eq("status", "open")
-    .order("verification_status", { ascending: false }) // verified first
+    .eq("verification_status", "verified") // approval gate: only approved venues reach players
     .order("created_at", { ascending: false });
 
   if (!venues?.length) return [];
@@ -31,6 +31,8 @@ export async function getVenueForBooking(id: string): Promise<{
   const sb = await createClient();
   const { data: venue } = await sb.from("venues").select("*").eq("id", id).single();
   if (!venue) return { venue: null, courts: [], hoursByCourt: {} };
+  // Approval gate: an unverified venue can't be booked even via direct link.
+  if (venue.verification_status !== "verified") return { venue: null, courts: [], hoursByCourt: {} };
 
   const { data: courts } = await sb.from("courts").select("*").eq("venue_id", id).eq("status", "active");
   const courtIds = (courts ?? []).map((c) => c.id);

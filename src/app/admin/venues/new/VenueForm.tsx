@@ -1,12 +1,14 @@
 "use client";
 
+import { SPORT_NAMES as SPORTS, SPORT_COLORS as SPORT_COLOR } from "@/lib/sports";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { createVenue } from "@/lib/admin/actions";
 
-const SPORTS = ["Futsal", "Football", "Basketball", "Cricket", "Volleyball", "Badminton", "Tennis"];
+
 const AMENITIES = ["Floodlights", "Parking", "Changing room", "Water", "Showers", "Seating", "Equipment rental"];
 const TYPES = ["Futsal court", "Cricket ground", "Basketball court", "Multi-sport", "Badminton hall", "Tennis court"];
 

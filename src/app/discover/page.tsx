@@ -1,37 +1,44 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   MapPin, Clock, Zap, CircleDot,
-  Trophy, Activity, Wind, Target,
+  Trophy, Activity, Wind, Target, Waves, ShieldCheck,
   ChevronRight, X,
   Loader2, AlertCircle,
 } from "lucide-react";
-import KhelumnaMap from "@/components/KhelumnaMap";
+import KhelamnaMap from "@/components/KhelamnaMap";
 import { useEvents, SPORT_COLOR, type EventRow } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
 import JoinModal from "./JoinModal";
 import SportCoverflow from "@/components/SportCoverflow";
+import DiscoverFilters, { DEFAULT_FILTERS, kmBetween, type Filters } from "./DiscoverFilters";
 
 const SPORT_TABS = [
   { label: "All sports", icon: <Activity size={15} /> },
-  { label: "Football", icon: <CircleDot size={15} /> },
+  { label: "Futsal", icon: <CircleDot size={15} /> },
   { label: "Basketball", icon: <Target size={15} /> },
-  { label: "Volleyball", icon: <Wind size={15} /> },
-  { label: "Tennis", icon: <Activity size={15} /> },
   { label: "Cricket", icon: <Trophy size={15} /> },
+  { label: "Volleyball", icon: <Wind size={15} /> },
+  { label: "Badminton", icon: <Wind size={15} /> },
+  { label: "Pickleball", icon: <Target size={15} /> },
+  { label: "Tennis", icon: <Activity size={15} /> },
+  { label: "Swimming", icon: <Waves size={15} /> },
   { label: "Running", icon: <Zap size={15} /> },
 ];
 
 function getSportIcon(sport: string, size = 14) {
   switch (sport) {
     case "Basketball": return <Target size={size} />;
-    case "Football": return <CircleDot size={size} />;
+    case "Futsal": return <CircleDot size={size} />;
     case "Volleyball": return <Wind size={size} />;
+    case "Badminton": return <Wind size={size} />;
+    case "Pickleball": return <Target size={size} />;
     case "Tennis": return <Activity size={size} />;
     case "Cricket": return <Trophy size={size} />;
+    case "Swimming": return <Waves size={size} />;
     case "Running": return <Zap size={size} />;
     default: return <CircleDot size={size} />;
   }
@@ -44,25 +51,69 @@ function fmtTime(iso: string) {
     const mins = Math.round(diff / 60000);
     return `in ${mins} min`;
   }
+  // Human labels: people think in "tonight" / "tomorrow", not dates.
+  const KTM_TZ = "Asia/Kathmandu";
+  const key = (x: Date) => x.toLocaleDateString("en-CA", { timeZone: KTM_TZ });
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", timeZone: KTM_TZ });
+  if (key(d) === key(new Date())) return `Tonight · ${time}`;
+  if (key(d) === key(new Date(Date.now() + 86400000))) return `Tomorrow · ${time}`;
   return (
-    d.toLocaleDateString([], { weekday: "short" }) +
-    " · " +
-    d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    d.toLocaleDateString([], { weekday: "short", timeZone: KTM_TZ }) + " · " + time
   );
 }
 
-export default function Discover() {
+function DiscoverInner() {
   const router = useRouter();
   const { profile } = useProfile();
 
-  const [activeSport, setActiveSport] = useState("All sports");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const sportParam = searchParams.get("sport");
+  const [activeSport, setActiveSport] = useState(sportParam ?? "All sports");
   const [showFlash, setShowFlash] = useState(false);
   const [flashEvent, setFlashEvent] = useState<EventRow | null>(null);
   const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
+  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   const sportFilter = activeSport === "All sports" ? undefined : activeSport;
   const { events, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
+
+  // ── Apply the filter bar to the fetched events ──────────────────
+  const KTM = "Asia/Kathmandu";
+  const dayKey = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: KTM });
+  const todayKey = dayKey(new Date());
+  const tomorrowKey = dayKey(new Date(Date.now() + 86400000));
+  const weekAhead = Date.now() + 7 * 86400000;
+
+  const visible = events.filter((ev) => {
+    const when = new Date(ev.event_date);
+
+    // time
+    if (filters.time === "today" && dayKey(when) !== todayKey) return false;
+    if (filters.time === "tomorrow" && dayKey(when) !== tomorrowKey) return false;
+    if (filters.time === "week" && when.getTime() > weekAhead) return false;
+
+    // price
+    const fee = Number(ev.fee) || 0;
+    if (filters.price === "free" && fee > 0) return false;
+    if (filters.price === "under300" && fee >= 300) return false;
+    if (filters.price === "under600" && fee >= 600) return false;
+
+    // spots
+    if (filters.spots === "open" && ev.slots_remaining <= 0) return false;
+    if (filters.spots === "almost" && !(ev.slots_remaining > 0 && ev.slots_remaining <= 2)) return false;
+
+    // skill level
+    if (filters.skill !== "any" && (ev.skill_level ?? "any") !== filters.skill) return false;
+
+    // distance
+    if (filters.dist !== "any") {
+      if (!myCoords || ev.venue_lat == null || ev.venue_lng == null) return false;
+      const km = kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]);
+      if (km > Number(filters.dist)) return false;
+    }
+    return true;
+  });
 
   useEffect(() => {
     const f = events.find((e) => e.flash);
@@ -74,15 +125,12 @@ export default function Discover() {
 
   const handleBook = (ev: EventRow, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (!profile) {
-      sessionStorage.setItem("khelumna_pending_intent", JSON.stringify({ type: "join", eventId: ev.id }));
-      router.push("/login");
-      return;
-    }
-    setModalEvent(ev);
+    // Open the full game page — who's playing, skill level, directions,
+    // then join from there. Login is handled on that page.
+    router.push(`/game/${ev.id}`);
   };
 
-  const mapPins = events
+  const mapPins = visible
     .filter((e) => e.venue_lat && e.venue_lng)
     .map((e) => ({
       id: e.id,
@@ -129,7 +177,14 @@ export default function Discover() {
 
       {/* ── 3D sport showcase ── */}
       <div style={{ padding: "8px 0 8px" }}>
-        <SportCoverflow />
+        <SportCoverflow
+          selected={activeSport === "All sports" ? undefined : activeSport}
+          onPick={(sport) => {
+            setActiveSport(sport);
+            // Bring the games into view so the filter feels connected.
+            document.querySelector(".disc-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
       </div>
 
       {/* ── Sport filter — glass chips ── */}
@@ -163,13 +218,13 @@ export default function Discover() {
 
       {/* ── Main stage ── */}
       <section className="disc-section">
-        <p className="disc-count">
-          {loading
-            ? "Loading events…"
-            : error
-              ? "Could not load events"
-              : `${events.length} upcoming event${events.length !== 1 ? "s" : ""}`}
-        </p>
+        <DiscoverFilters
+          filters={filters}
+          setFilters={setFilters}
+          onLocation={setMyCoords}
+          hasLocation={!!myCoords}
+          resultCount={visible.length}
+        />
 
         <div className="disc-stage">
           <div className="disc-list">
@@ -185,18 +240,31 @@ export default function Discover() {
                 {error}
               </div>
             )}
-            {!loading && !error && events.length === 0 && (
+            {!loading && !error && visible.length === 0 && (
               <div className="disc-empty">
-                <p>No events match that filter yet.</p>
-                <a href="/host">Host one →</a>
+                {events.length > 0 ? (
+                  <>
+                    <p>No games match these filters.</p>
+                    <button
+                      onClick={() => { setFilters(DEFAULT_FILTERS); setMyCoords(null); }}
+                      style={{ background: "none", border: "none", color: "#FFC93C", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      Clear filters →
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p>No games hosted yet. Be the first.</p>
+                    <a href="/create">Book a court and host →</a>
+                  </>
+                )}
               </div>
             )}
             <div className="disc-cards">
-              {events.map((ev, i) => {
+              {visible.map((ev, i) => {
                 const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
                 const isFull = ev.slots_remaining === 0;
                 const pct = Math.round((ev.confirmed_count / ev.max_players) * 100);
-                const selected = selectedId === ev.id;
+                const selected = false;
                 return (
                   <motion.article
                     key={ev.id}
@@ -205,14 +273,23 @@ export default function Discover() {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i, 8) * 0.05, duration: 0.45 }}
-                    onClick={() => setSelectedId(ev.id === selectedId ? null : ev.id)}
+                    onClick={() => router.push(`/game/${ev.id}`)}
+                    style={{ cursor: "pointer" }}
                   >
                     <div className="disc-card-top">
                       <span className="disc-sport-badge" style={{ color }}>
                         {getSportIcon(ev.sport)}
                         {ev.sport}
                       </span>
-                      {ev.flash ? (
+                      {ev.event_type === "platform_event" ? (
+                        <span className="disc-official-badge" style={{ color: "#FFC93C", borderColor: "rgba(255,201,60,0.4)", background: "rgba(255,201,60,0.12)" }}>
+                          ★ Khelam Na
+                        </span>
+                      ) : ev.event_type === "venue_event" ? (
+                        <span className="disc-official-badge" style={{ color: "#2E7D5B", borderColor: "rgba(46,125,91,0.4)", background: "rgba(46,125,91,0.12)" }}>
+                          ✓ Official
+                        </span>
+                      ) : ev.flash ? (
                         <span className="disc-flash-badge">
                           <Zap size={10} fill="currentColor" /> Flash
                         </span>
@@ -225,16 +302,56 @@ export default function Discover() {
                     </div>
 
                     <h3 className="disc-card-title">{ev.title}</h3>
+                    {ev.organizer_name && ev.event_type !== "pickup" && (
+                      <div style={{ fontSize: 11.5, color: "var(--faint, rgba(242,237,230,0.5))", marginTop: -4, marginBottom: 4 }}>
+                        by {ev.organizer_name}
+                      </div>
+                    )}
+
+                    {/* Host + reputation + how many are in — the things that
+                        tell you whether this game is worth joining. */}
+                    <div className="disc-host">
+                      <span className="disc-host-av" aria-hidden>
+                        {ev.host_avatar && /\.(jpe?g|png|gif|webp)$/i.test(ev.host_avatar)
+                          // eslint-disable-next-line @next/next/no-img-element
+                          ? <img src={ev.host_avatar} alt="" />
+                          : (ev.host_name ?? "H").charAt(0).toUpperCase()}
+                      </span>
+                      <span className="disc-host-n">{ev.host_name ?? "Host"}</span>
+                      <span className="disc-host-t" title="Trust score — earned by showing up">
+                        <ShieldCheck size={10} /> {ev.host_trust ?? 50}
+                      </span>
+                      <span className="disc-host-g">
+                        {ev.confirmed_count}/{ev.max_players} going
+                      </span>
+                    </div>
+
+                    {ev.skill_level && ev.skill_level !== "any" && (
+                      <span className="disc-skill">
+                        {ev.skill_level === "beginner" ? "Beginner friendly"
+                          : ev.skill_level === "intermediate" ? "Intermediate"
+                          : "Advanced"}
+                      </span>
+                    )}
 
                     <div className="disc-card-meta">
                       <span>
                         <Clock size={11} />
                         {fmtTime(ev.event_date)}
+                        {" – "}
+                        {new Date(new Date(ev.event_date).getTime() + (ev.duration_mins ?? 60) * 60000)
+                          .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" })}
                       </span>
                       <span>
                         <CircleDot size={11} />
                         {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
                       </span>
+                      {myCoords && ev.venue_lat != null && ev.venue_lng != null && (
+                        <span style={{ color: "#FFC93C" }}>
+                          <MapPin size={11} />
+                          {kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]).toFixed(1)} km
+                        </span>
+                      )}
                     </div>
 
                     <div className="disc-card-foot">
@@ -259,13 +376,12 @@ export default function Discover() {
                       <button
                         className="disc-book-btn"
                         onClick={(e) => handleBook(ev, e)}
-                        disabled={isFull}
                         style={{
                           background: ev.flash ? "#E85D24" : "var(--pink)",
-                          opacity: isFull ? 0.45 : 1,
+                          opacity: isFull ? 0.6 : 1,
                         }}
                       >
-                        {isFull ? "Full" : ev.flash ? (
+                        {isFull ? "View" : ev.flash ? (
                           <>
                             <Zap size={11} /> Join
                           </>
@@ -281,14 +397,14 @@ export default function Discover() {
           </div>
 
           <div className="disc-map">
-            <KhelumnaMap
+            <KhelamnaMap
               center={[27.7172, 85.324]}
               zoom={14}
               height="100%"
               pins={
                 mapPins.length > 0
                   ? mapPins
-                  : events.map((ev, i) => ({
+                  : visible.map((ev, i) => ({
                       id: ev.id,
                       lat: 27.7172 + (i * 0.003 - 0.006),
                       lng: 85.324 + (i * 0.004 - 0.008),
@@ -516,6 +632,36 @@ const CSS = `
   padding: 4px 10px;
   border-radius: 999px;
 }
+.disc-host {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  margin: 8px 0 10px; font-size: 12px;
+}
+.disc-host-av {
+  width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+  background: linear-gradient(150deg,#DE3163,#FFC93C); color: #0B0D11;
+  display: grid; place-items: center; font-size: 10px; font-weight: 800;
+}
+.disc-host-av img { width: 100%; height: 100%; object-fit: cover; }
+.disc-host-n { font-weight: 600; }
+.disc-host-t {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; opacity: 0.75;
+}
+.disc-host-g {
+  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; opacity: 0.55;
+}
+.disc-skill {
+  display: inline-block; font-size: 11px; font-weight: 600;
+  border: 1px solid var(--line); border-radius: 7px;
+  padding: 3px 9px; opacity: 0.75; margin-bottom: 8px;
+}
+.disc-official-badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 4px 10px; border-radius: 999px; border: 1px solid;
+}
 .disc-venue {
   display: flex;
   align-items: center;
@@ -695,3 +841,12 @@ const CSS = `
   .disc-cta-inner { padding: 32px 22px; }
 }
 `;
+
+// useSearchParams needs a Suspense boundary in the App Router.
+export default function Discover() {
+  return (
+    <Suspense fallback={null}>
+      <DiscoverInner />
+    </Suspense>
+  );
+}

@@ -13,7 +13,7 @@ export default async function SettingsPage() {
       <div className="adm-body" style={{ maxWidth: 640 }}>
         <div className="adm-card">
           <div className="adm-card-t">Account</div>
-          <div className="adm-card-sub">Your Khelum Na console login</div>
+          <div className="adm-card-sub">Your Khelam Na console login</div>
           <div className="adm-field">
             <label className="adm-label">Email</label>
             <input className="adm-input" defaultValue={user?.email ?? ""} readOnly />

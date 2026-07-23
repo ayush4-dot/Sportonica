@@ -17,12 +17,17 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         <div className="plt-brand">
           <span className="plt-k">K</span>
           <div>
-            <div className="plt-name">Khelum Na</div>
+            <div className="plt-name">Khelam Na</div>
             <div className="plt-sub">Platform console</div>
           </div>
         </div>
         <nav className="plt-nav">
           <Link href="/platform">Overview</Link>
+          <Link href="/platform/events">+ Event</Link>
+          <Link href="/platform/revenue">Revenue</Link>
+          <Link href="/platform/bookings">Bookings</Link>
+          <Link href="/platform/users">Users</Link>
+          <Link href="/platform/reports">Reports</Link>
           <Link href="/discover">↗ App</Link>
         </nav>
       </header>

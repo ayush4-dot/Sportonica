@@ -28,7 +28,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
             background: "#0B0D11", color: "#F2EDE6", fontSize: 60, fontWeight: 700,
           }}
         >
-          Khelum Na
+          Khelam Na
         </div>
       ),
       size
@@ -107,7 +107,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
             >
               K
             </div>
-            <div style={{ fontSize: 30, fontWeight: 700, display: "flex" }}>Khelum Na</div>
+            <div style={{ fontSize: 30, fontWeight: 700, display: "flex" }}>Khelam Na</div>
           </div>
           <div style={{ fontSize: 24, color: "#5A6472", display: "flex" }}>{trust.label}</div>
         </div>

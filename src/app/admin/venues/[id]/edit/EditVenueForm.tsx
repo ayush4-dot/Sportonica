@@ -1,5 +1,7 @@
 "use client";
 
+import { SPORT_NAMES as SPORTS, SPORT_COLORS as SPORT_COLOR } from "@/lib/sports";
+
 import { useState, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Link2, X, Check, Trash2, Star, MapPin, ExternalLink } from "lucide-react";
@@ -7,7 +9,7 @@ import { updateVenue, uploadVenuePhoto, addVenuePhotoUrl, removeVenuePhoto } fro
 import { saveVenueLocation } from "@/lib/admin/location";
 import type { Venue } from "@/lib/admin/types";
 
-const SPORTS = ["Futsal", "Football", "Basketball", "Cricket", "Volleyball", "Badminton", "Tennis"];
+
 const AMENITIES = ["Floodlights", "Parking", "Changing room", "Water", "Showers", "Seating", "Equipment rental"];
 const TYPES = ["Futsal court", "Cricket ground", "Basketball court", "Multi-sport", "Badminton hall", "Tennis court"];
 

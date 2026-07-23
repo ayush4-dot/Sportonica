@@ -13,6 +13,7 @@ const NAV: { label: string; items: { href: string; label: string; icon: React.Re
     items: [
       { href: "/admin", label: "Overview", icon: <LayoutDashboard size={16} /> },
       { href: "/admin/calendar", label: "Calendar", icon: <CalendarClock size={16} /> },
+      { href: "/admin/events", label: "Events", icon: <Ticket size={16} /> },
       { href: "/admin/bookings", label: "Bookings", icon: <Ticket size={16} /> },
     ],
   },
@@ -43,7 +44,7 @@ export default function AdminNav() {
       <Link href="/admin" className="adm-brand" style={{ textDecoration: "none", color: "inherit" }}>
         <div className="adm-brand-mark">K</div>
         <div>
-          <div className="adm-brand-name">Khelum Na</div>
+          <div className="adm-brand-name">Khelam Na</div>
           <div className="adm-brand-sub">Venue Console</div>
         </div>
       </Link>

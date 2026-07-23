@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyGameHosted, notifyGameJoined } from "@/lib/mail/notify";
 
 const SPORT_COLOR: Record<string, string> = {
   Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#FFC93C",
@@ -30,6 +31,9 @@ export async function hostGameFromBooking(input: {
   venue_lat?: number | null;
   venue_lng?: number | null;
   title?: string;
+  skill_level?: string;
+  bring_own_gear?: boolean;
+  notes?: string;
 }) {
   const { sb, user } = await requireUser();
 
@@ -61,11 +65,14 @@ export async function hostGameFromBooking(input: {
       venue_id: input.venue_id,
       venue_lat: lat,
       venue_lng: lng,
+      skill_level: input.skill_level ?? "any",
+      bring_own_gear: input.bring_own_gear ?? false,
+      notes: input.notes ?? null,
       event_date: input.starts_at,
       max_players: maxPlayers,
       min_players: 2,
       fee: perHead,
-      description: `${input.court_name} · Rs ${perHead}/head. Booked on Khelum Na.`,
+      description: `${input.court_name} · Rs ${perHead}/head. Booked on Khelam Na.`,
       status: "open",
       flash: false,
       sport_color: SPORT_COLOR[input.sport] ?? "#2E7D5B",
@@ -90,6 +97,18 @@ export async function hostGameFromBooking(input: {
   if (bkErr) throw new Error(bkErr.message);
 
   revalidatePath("/discover");
+
+  // Tell the host their game is live and shareable.
+  await notifyGameHosted({
+    hostId: user.id,
+    sport: input.sport,
+    venue: input.venue_name,
+    startsAt: input.starts_at,
+    spots: input.spots_needed,
+    perHead: perHead,
+    origin: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  });
+
   return event;
 }
 
@@ -142,4 +161,7 @@ export async function joinGame(input: {
   if (error) throw new Error(error.message);
 
   revalidatePath("/discover");
+
+  // Confirm to the joiner, and let the host know someone's in.
+  await notifyGameJoined({ joinerId: user.id, eventId: input.event_id });
 }

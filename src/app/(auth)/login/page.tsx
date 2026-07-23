@@ -38,7 +38,7 @@ function LoginInner() {
       <div className="auth-stage">
         <div className="auth-brand">
           <div className="auth-brand-mark">K</div>
-          <div className="auth-brand-name">Khelum Na</div>
+          <div className="auth-brand-name">Khelam Na</div>
         </div>
         <div className="auth-tagline">
           <h2>The game&apos;s already on. Come find it.</h2>

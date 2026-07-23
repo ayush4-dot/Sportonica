@@ -2,7 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ImageIcon, MapPin } from "lucide-react";
+import { ArrowRight, ImageIcon, MapPin, Clock, ShieldCheck } from "lucide-react";
+import VenueFilters, { type VenueDist } from "./VenueFilters";
+import { normalizeSport } from "@/lib/sports";
 import SportCoverflow from "@/components/SportCoverflow";
 import { useTheme } from "@/lib/useTheme";
 import type { Venue, Court } from "@/lib/admin/types";
@@ -22,12 +24,38 @@ const SPANS = ["s-hero", "", "", "s-tall", "", "s-wide", "", ""];
 export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
   const router = useRouter();
   const [theme] = useTheme();
-  const [openId, setOpenId] = useState<string | null>(null); // touch: tap to open
+  const [sport, setSport] = useState<string | null>(null);
+  const [dist, setDist] = useState<VenueDist>("any");
+  const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
+
+  // ── Filter the venues before laying out the mosaic ──────────────
+  const R = 6371;
+  const toRad = (v: number) => (v * Math.PI) / 180;
+  const kmTo = (lat: number, lng: number) => {
+    if (!myCoords) return null;
+    const dLat = toRad(lat - myCoords[0]), dLng = toRad(lng - myCoords[1]);
+    const a = Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(myCoords[0])) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(a));
+  };
+
+  const shown = venues.filter((v) => {
+    if (sport) {
+      const list = (v.sports ?? []).map(normalizeSport);
+      if (!list.includes(sport)) return false;
+    }
+    if (dist !== "any") {
+      if (!myCoords || v.lat == null || v.lng == null) return false;
+      const km = kmTo(v.lat, v.lng);
+      if (km == null || km > Number(dist)) return false;
+    }
+    return true;
+  });
 
   // Interleave text cards the way the Framer mosaic mixes card types.
-  const totalCourts = venues.reduce((s, v) => s + v.courts.length, 0);
+  const totalCourts = shown.reduce((s, v) => s + v.courts.length, 0);
   const cells: ({ kind: "venue"; v: VenueWithCourts } | { kind: "text"; id: string; el: React.ReactNode })[] =
-    venues.map((v) => ({ kind: "venue" as const, v }));
+    shown.map((v) => ({ kind: "venue" as const, v }));
 
   const textCards = [
     {
@@ -59,13 +87,8 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
   if (cells.length >= 4) cells.splice(Math.min(5, cells.length), 0, { kind: "text", ...textCards[1] });
 
   function cellTap(e: React.MouseEvent, id: string, href: string) {
-    // Touch devices: first tap reveals, second tap navigates.
-    const isTouch = window.matchMedia("(hover: none)").matches;
-    if (isTouch && openId !== id) {
-      e.preventDefault();
-      setOpenId(id);
-      return;
-    }
+    // Details are always visible now, so a tap goes straight to the venue.
+    e.preventDefault();
     router.push(href);
   }
 
@@ -76,19 +99,44 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
           <div>
             <div className="mz-eyebrow">Book a ground</div>
             <h1>Pick a pitch.<br />Round up your side.</h1>
-            <p>Hover a venue to see it come alive. Lock a slot, split the cost, and if you&apos;re short — open your game to the city.</p>
+            <p>Every ground, every open slot. Lock a court, split the cost, and if you&apos;re short — open your game to the city.</p>
           </div>
         </div>
 
-        {/* 3D sport showcase — drag / swipe / scroll */}
-        <div style={{ margin: "8px 0 40px" }}>
-          <SportCoverflow />
+        {/* 3D sport showcase — tapping the centre card filters the grounds */}
+        <div style={{ margin: "8px 0 28px" }}>
+          <SportCoverflow
+            selected={sport ?? undefined}
+            onPick={(s) => {
+              setSport(s);
+              document.querySelector(".mz-grid")?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
         </div>
 
-        {venues.length === 0 ? (
+        <VenueFilters
+          sport={sport} setSport={setSport}
+          dist={dist} setDist={setDist}
+          onLocation={setMyCoords} hasLocation={!!myCoords}
+          count={shown.length}
+        />
+
+        {shown.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", opacity: 0.65 }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22 }}>No venues listed yet</h3>
-            <p style={{ fontSize: 14 }}>Once owners list their grounds, they&apos;ll appear here ready to book.</p>
+            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22 }}>
+              {venues.length > 0 ? "No grounds match that" : "No venues listed yet"}
+            </h3>
+            <p style={{ fontSize: 14 }}>
+              {venues.length > 0
+                ? "Try another sport, or widen the distance."
+                : "Once owners list their grounds, they'll appear here ready to book."}
+            </p>
+            {venues.length > 0 && (
+              <button onClick={() => { setSport(null); setDist("any"); setMyCoords(null); }}
+                style={{ marginTop: 14, background: "none", border: "none", color: "#FFC93C", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                Clear filters →
+              </button>
+            )}
           </div>
         ) : (
           <div className="mz-grid">
@@ -111,13 +159,12 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
                 : null;
               const sports = v.sports.length ? v.sports.join(" · ") : v.venue_type;
               const href = `/create/${v.id}`;
-              const isOpen = openId === v.id;
 
               return (
                 <a
                   key={v.id}
                   href={href}
-                  className={`mz-cell ${span} ${isOpen ? "open" : ""}`}
+                  className={`mz-cell ${span} `}
                   style={{ animationDelay: delay }}
                   onClick={(e) => cellTap(e, v.id, href)}
                 >
@@ -141,6 +188,10 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
                     <div className="dv" />
                     <p className="d">
                       {sports}{from ? ` · from Rs ${from}/hr` : ""}
+                      {myCoords && v.lat != null && v.lng != null && (() => {
+                        const km = kmTo(v.lat, v.lng);
+                        return km == null ? null : <span style={{ color: "#FFC93C" }}> · {km.toFixed(1)} km</span>;
+                      })()}
                     </p>
                     <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                       <span className="cta">Book this ground <ArrowRight size={14} /></span>

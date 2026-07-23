@@ -4,11 +4,11 @@ import NavWrapper from '@/components/NavWrapper'
 
 export const metadata: Metadata = {
   // Social bots need absolute URLs for og:image. In production set
-  // NEXT_PUBLIC_SITE_URL to your real domain (e.g. https://khelumna.com).
+  // NEXT_PUBLIC_SITE_URL to your real domain (e.g. https://khelamna.com).
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   ),
-  title: 'Khelum Na — Find your game',
+  title: 'Khelam Na — Find your game',
   description: 'Find and join sports events near you in Kathmandu',
 }
 

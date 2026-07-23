@@ -192,7 +192,7 @@ export default function SiteNav() {
 
       <nav className={`snav${scrolled ? " scrolled" : ""}`}>
         <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "2px" }}>
-          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Bricolage Grotesque',sans-serif" }}>Khelum</span>
+          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Bricolage Grotesque',sans-serif" }}>Khelam</span>
           <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Bricolage Grotesque',sans-serif" }}>{" "}Na.</span>
         </a>
 

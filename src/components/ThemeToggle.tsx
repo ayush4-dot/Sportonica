@@ -20,6 +20,8 @@ export default function ThemeToggle() {
           border: 1px solid; backdrop-filter: blur(14px) saturate(140%);
           -webkit-backdrop-filter: blur(14px) saturate(140%);
         }
+        /* Platform console has its own top nav here — drop the pill below it. */
+        body:has(.plt) .theme-pill { top: 76px; right: 20px; }
         [data-theme="glass"] .theme-pill, html:not([data-theme]) .theme-pill {
           border-color: rgba(242,237,230,0.15); background: rgba(11,13,17,0.5);
         }

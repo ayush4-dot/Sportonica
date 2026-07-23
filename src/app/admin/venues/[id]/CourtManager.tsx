@@ -1,5 +1,7 @@
 "use client";
 
+import { SPORT_NAMES as SPORTS, SPORT_COLORS as SPORT_COLOR } from "@/lib/sports";
+
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Clock, X } from "lucide-react";
@@ -7,7 +9,7 @@ import { createCourt, setCourtHours } from "@/lib/admin/actions";
 import type { Court, CourtHours } from "@/lib/admin/types";
 import { DOW_LABELS } from "@/lib/admin/types";
 
-const SPORTS = ["Futsal", "Football", "Basketball", "Cricket", "Volleyball", "Badminton", "Tennis"];
+
 
 export default function CourtManager({
   venueId, venueSports, courts, hoursByCourt,

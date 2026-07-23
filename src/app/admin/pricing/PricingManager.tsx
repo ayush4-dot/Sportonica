@@ -54,7 +54,7 @@ export default function PricingManager({
           <div>
             <div className="adm-card-t" style={{ marginBottom: 2 }}>Smart off-peak discounts</div>
             <div className="adm-card-sub" style={{ marginBottom: 0 }}>
-              Once you have a few weeks of bookings, Khelum Na spots chronically empty slots and suggests a discount to fill them — found revenue, no guesswork.
+              Once you have a few weeks of bookings, Khelam Na spots chronically empty slots and suggests a discount to fill them — found revenue, no guesswork.
             </div>
           </div>
         </div>

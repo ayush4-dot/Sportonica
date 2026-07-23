@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 
 export type Theme = "glass" | "paper";
 
-const KEY = "khelumna-theme";
-const EVT = "khelumna-theme-change";
+const KEY = "khelamna-theme";
+const EVT = "khelamna-theme-change";
 
 function applyTheme(t: Theme) {
   document.documentElement.dataset.theme = t;

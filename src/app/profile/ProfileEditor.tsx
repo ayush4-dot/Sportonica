@@ -1,5 +1,7 @@
 "use client";
 
+import { SPORT_NAMES as SPORTS, SPORT_COLORS as SPORT_COLOR } from "@/lib/sports";
+
 import { useState, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -7,7 +9,7 @@ import { Upload, Check, ExternalLink, Globe, Lock } from "lucide-react";
 import { updateProfile, claimUsername, uploadAvatar } from "@/lib/profile/actions";
 import type { PlayerProfile } from "@/lib/profile/queries";
 
-const SPORTS = ["Futsal", "Football", "Basketball", "Cricket", "Volleyball", "Badminton", "Tennis", "Running"];
+
 
 export default function ProfileEditor({ profile, origin }: { profile: PlayerProfile; origin: string }) {
   const router = useRouter();

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useSpring, animate } from "framer-motion";
-import { CircleDot, Target, Wind, Activity, Trophy, Zap } from "lucide-react";
+import { CircleDot, Target, Wind, Activity, Trophy, Zap, Waves } from "lucide-react";
 
 // Sport showcase items. Drop a real action photo URL into `img` later and it
 // replaces the gradient placeholder automatically.
@@ -21,6 +22,9 @@ const CARDS: SportCard[] = [
   { sport: "Basketball", color: "#FFC93C", tint: "#4a3a0c", icon: <Trophy size={40} />,    tagline: "Three on three, all week",         img: "/sports/basketball.jpg" },
   { sport: "Volleyball", color: "#3b82f6", tint: "#132a52", icon: <Activity size={40} />,  tagline: "Sand, net, sunset",                img: "/sports/volleyball.jpg" },
   { sport: "Badminton",  color: "#a855f7", tint: "#2e1450", icon: <Wind size={40} />,      tagline: "Dawn doubles, indoor courts",      img: "/sports/badminton.jpg" },
+  { sport: "Tennis",     color: "#ec4899", tint: "#43102b", icon: <Activity size={40} />,  tagline: "Baseline rallies",                 img: "/sports/tennis.jpg" },
+  { sport: "Pickleball", color: "#84cc16", tint: "#28380c", icon: <Target size={40} />,    tagline: "Easy to learn, hard to stop" },
+  { sport: "Swimming",   color: "#06b6d4", tint: "#0c3640", icon: <Waves size={40} />,     tagline: "Lanes, laps, early mornings" },
   { sport: "Running",    color: "#60a5fa", tint: "#16304f", icon: <Zap size={40} />,       tagline: "Ring road crews, every morning",   img: "/sports/running.jpg" },
 ];
 
@@ -28,13 +32,30 @@ const CARD_W = 300;
 const GAP = 40;
 const STEP = CARD_W + GAP;
 
-export default function SportCoverflow() {
+export default function SportCoverflow({
+  onPick, selected,
+}: {
+  /** If given, tapping the centred card calls this instead of navigating —
+   *  lets a page filter in place rather than changing route. */
+  onPick?: (sport: string) => void;
+  /** Keeps the coverflow in sync when the sport is changed elsewhere. */
+  selected?: string;
+} = {}) {
+  const router = useRouter();
   const [active, setActive] = useState(Math.floor(CARDS.length / 2));
   const x = useMotionValue(0);
   const springX = useSpring(x, { stiffness: 260, damping: 34, mass: 0.9 });
   const dragging = useRef(false);
+  const didDrag = useRef(false);
   const startX = useRef(0);
   const startPos = useRef(0);
+
+  // Follow an externally chosen sport (e.g. the filter chips).
+  useEffect(() => {
+    if (!selected) return;
+    const i = CARDS.findIndex((c) => c.sport === selected);
+    if (i >= 0) setActive(i);
+  }, [selected]);
 
   // Move to a given index (spring animates there).
   useEffect(() => {
@@ -61,6 +82,7 @@ export default function SportCoverflow() {
   // Pointer drag / swipe.
   function onPointerDown(e: React.PointerEvent) {
     dragging.current = true;
+    didDrag.current = false;
     startX.current = e.clientX;
     startPos.current = x.get();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
@@ -68,6 +90,7 @@ export default function SportCoverflow() {
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging.current) return;
     const dx = e.clientX - startX.current;
+    if (Math.abs(dx) > 6) didDrag.current = true;   // a real drag, not a tap
     x.set(startPos.current + dx);
   }
   function onPointerUp() {
@@ -90,7 +113,23 @@ export default function SportCoverflow() {
       {/* stage */}
       <motion.div style={{ position: "absolute", top: 0, bottom: 0, left: "50%", x: springX, marginLeft: -CARD_W / 2, display: "flex", gap: GAP, alignItems: "center" }}>
         {CARDS.map((c, i) => (
-          <Card key={c.sport} card={c} index={i} activeIndex={active} springX={springX} onClick={() => setActive(i)} />
+          <Card
+            key={c.sport}
+            card={c}
+            index={i}
+            activeIndex={active}
+            springX={springX}
+            filtersInPlace={!!onPick}
+            onClick={() => {
+              if (didDrag.current) return;          // ignore clicks after a drag
+              // Side card → bring it to the centre.
+              if (i !== active) { setActive(i); return; }
+              // Centre card → filter in place if the page handles it,
+              // otherwise go to discover filtered by this sport.
+              if (onPick) onPick(c.sport);
+              else router.push(`/discover?sport=${encodeURIComponent(c.sport)}`);
+            }}
+          />
         ))}
       </motion.div>
 
@@ -111,10 +150,11 @@ export default function SportCoverflow() {
 }
 
 function Card({
-  card, index, activeIndex, springX, onClick,
+  card, index, activeIndex, springX, onClick, filtersInPlace,
 }: {
   card: SportCard; index: number; activeIndex: number;
   springX: ReturnType<typeof useSpring>; onClick: () => void;
+  filtersInPlace?: boolean;
 }) {
   // distance from center in card-steps, derived live from the spring position
   const [style, setStyle] = useState({ scale: 1, rotateY: 0, z: 0, blur: 0, opacity: 1 });
@@ -162,9 +202,20 @@ function Card({
 
       {/* label overlay */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 22, zIndex: 2,
-        background: "linear-gradient(to top, rgba(8,9,12,0.9), transparent)" }}>
+        background: "linear-gradient(to top, rgba(8,9,12,0.92), transparent)" }}>
         <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: "-0.8px", color: "#fff" }}>{card.sport}</div>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 3 }}>{card.tagline}</div>
+        {/* Only the centred card is tappable — show that it is. */}
+        {index === activeIndex && (
+          <div style={{
+            marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6,
+            fontSize: 12.5, fontWeight: 700, color: card.color,
+            border: `1px solid ${card.color}66`, background: `${card.color}1f`,
+            padding: "7px 13px", borderRadius: 999,
+          }}>
+            {filtersInPlace ? `Show ${card.sport} games` : `See ${card.sport} games →`}
+          </div>
+        )}
       </div>
     </motion.div>
   );

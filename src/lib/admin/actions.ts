@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { notifyCourtBooked } from "@/lib/mail/notify";
 
 // Every server action re-checks auth. Server Functions are reachable by
 // direct POST, so we never trust the client (per Next.js data-security guide).
@@ -181,6 +182,20 @@ export async function bookCourt(input: {
     throw new Error(error.message);
   }
   revalidatePath(`/admin/venues/${input.venue_id}/calendar`);
+
+  // Notify after the booking is safely written. Never let email failure
+  // undo a successful booking — notify() swallows its own errors.
+  const { data: court } = await sb.from("courts").select("name").eq("id", input.court_id).maybeSingle();
+  await notifyCourtBooked({
+    playerId: input.source === "platform" ? user.id : null,
+    venueId: input.venue_id,
+    courtName: court?.name ?? "Court",
+    startsAt: input.starts_at,
+    endsAt: input.ends_at,
+    price: Number(data?.price) || 0,
+    customerName: input.customer_name ?? null,
+  });
+
   return data;
 }
 

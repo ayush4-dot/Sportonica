@@ -47,7 +47,7 @@ function SignupInner() {
       <div className="auth-stage">
         <div className="auth-brand">
           <div className="auth-brand-mark">K</div>
-          <div className="auth-brand-name">Khelum Na</div>
+          <div className="auth-brand-name">Khelam Na</div>
         </div>
         <div className="auth-tagline">
           <h2>Two ways to play.</h2>

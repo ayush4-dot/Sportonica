@@ -17,14 +17,14 @@ export default function DownloadButton({ username, name }: { username: string; n
     try {
       const res = await fetch(`/p/${username}/story?theme=${theme}`);
       const blob = await res.blob();
-      const file = new File([blob], `${username}-khelumna.png`, { type: "image/png" });
+      const file = new File([blob], `${username}-khelamna.png`, { type: "image/png" });
 
       // Phone: hand the real file to the native share sheet (Instagram
       // stories, WhatsApp, etc). If the user cancels, we stop — we must NOT
       // also download, or they end up with two copies of the same image.
       if (navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({ files: [file], title: `${name} · Khelum Na` });
+          await navigator.share({ files: [file], title: `${name} · Khelam Na` });
         } catch {
           /* user dismissed the sheet — nothing more to do */
         }
@@ -36,7 +36,7 @@ export default function DownloadButton({ username, name }: { username: string; n
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${username}-khelumna.png`;
+      a.download = `${username}-khelamna.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();

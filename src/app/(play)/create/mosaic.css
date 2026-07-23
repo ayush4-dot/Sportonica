@@ -1,5 +1,5 @@
 /* ================================================================
-   Khelum Na — Mosaic host page. Hover-reveal feature grid.
+   Khelam Na — Mosaic host page. Hover-reveal feature grid.
    Two themes: Glass (dark frosted) and Paper (light editorial).
    All reveals are staggered: badge → title → divider → desc → CTA.
    ================================================================ */
@@ -66,7 +66,11 @@
 }
 .mz.glass .mz-cell { border-color: rgba(242,237,230,0.1); background: #13161C; }
 .mz.paper .mz-cell { border-color: rgba(20,23,30,0.1); background: #fff; }
-.mz-cell:hover { transform: translateY(-4px); }
+.mz-cell:hover { transform: translateY(-6px); }
+.mz-cell:hover .mz-img img { transform: scale(1.06); }
+.mz-cell .mz-img img { transition: transform 0.9s var(--mz-ease); }
+.mz-cell:hover .cta { gap: 10px; }
+.mz-cell .cta { transition: gap 0.35s var(--mz-ease); }
 .mz.glass .mz-cell:hover { box-shadow: 0 30px 60px -20px rgba(0,0,0,0.7); }
 .mz.paper .mz-cell:hover { box-shadow: 0 30px 60px -24px rgba(20,23,30,0.25); }
 
@@ -99,9 +103,10 @@
 .mz-shade {
   position: absolute; inset: 0; z-index: 1;
   background: linear-gradient(to top, rgba(8,9,12,0.92) 0%, rgba(8,9,12,0.45) 46%, transparent 78%);
-  opacity: 0; transition: opacity 0.55s ease;
+  opacity: 1; transition: opacity 0.55s ease;
 }
 .mz-cell:hover .mz-shade, .mz-cell.open .mz-shade { opacity: 1; }
+/* Shade sits on every card now so details stay readable without hovering. */
 
 /* ── Tag badge: slides in from top ── */
 .mz-tag {
@@ -110,7 +115,7 @@
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 6px 11px; border-radius: 8px;
   background: rgba(255,201,60,0.92); color: #0B0D11;
-  transform: translateY(-160%); opacity: 0;
+  transform: translateY(0); opacity: 1;
   transition: transform 0.5s var(--mz-ease) 0.05s, opacity 0.4s ease 0.05s;
 }
 .mz-cell:hover .mz-tag, .mz-cell.open .mz-tag { transform: translateY(0); opacity: 1; }
@@ -121,10 +126,18 @@
   position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
   padding: 20px;
 }
+/* Details are always on screen — no hunting, no hover required.
+   The animation is now an entrance (staggered rise as the card appears)
+   plus a lift on hover, rather than hiding the information. */
 .mz-content .t, .mz-content .dv, .mz-content .d, .mz-content .cta {
-  opacity: 0; transform: translateY(16px);
+  opacity: 1; transform: translateY(0);
   transition: opacity 0.5s ease, transform 0.55s var(--mz-ease);
 }
+.mz-cell .mz-content .t   { animation: mzRise 0.6s var(--mz-ease) both 0.10s; }
+.mz-cell .mz-content .dv  { animation: mzRise 0.6s var(--mz-ease) both 0.18s; }
+.mz-cell .mz-content .d   { animation: mzRise 0.6s var(--mz-ease) both 0.24s; }
+.mz-cell .mz-content .cta { animation: mzRise 0.6s var(--mz-ease) both 0.32s; }
+@keyframes mzRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
 .mz-cell:hover .t,  .mz-cell.open .t  { opacity: 1; transform: translateY(0); transition-delay: 0.1s; }
 .mz-cell:hover .dv, .mz-cell.open .dv { opacity: 1; transform: translateY(0) scaleX(1); transition-delay: 0.18s; }
 .mz-cell:hover .d,  .mz-cell.open .d  { opacity: 1; transform: translateY(0); transition-delay: 0.26s; }

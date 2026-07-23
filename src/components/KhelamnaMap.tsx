@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * KhelumnaMap — shared Leaflet map used across:
+ * KhelamnaMap — shared Leaflet map used across:
  *   - /discover  (read-only, shows event pins)
  *   - /create    (read-only, shows venue pin from address)
  *   - /admin/venue (pick-a-point, updates lat/lng)
@@ -47,7 +47,7 @@ const SPORT_COLORS: Record<string, string> = {
   Tennis:     "#ec4899",
 };
 
-export default function KhelumnaMap({
+export default function KhelamnaMap({
   center = KTM,
   zoom = 14,
   pins = [],
@@ -63,6 +63,12 @@ export default function KhelumnaMap({
   useEffect(() => {
     if (!containerRef.current) return;
     if (mapRef.current) return; // already initialised
+    // Synchronous lock: the async import below resolves too late to stop a
+    // second effect run (React strict-mode double-invoke), so mark the
+    // container itself as claimed the instant this effect starts.
+    const el = containerRef.current;
+    if ((el as HTMLElement & { _leafletClaimed?: boolean })._leafletClaimed) return;
+    (el as HTMLElement & { _leafletClaimed?: boolean })._leafletClaimed = true;
 
     // Leaflet must be imported client-side only
     import("leaflet").then(L => {
@@ -74,8 +80,6 @@ export default function KhelumnaMap({
         iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
         shadowUrl:     "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
-
-if (containerRef.current && (containerRef.current as any)._leaflet_id) return;
 
       const map = L.map(containerRef.current!, {
         center,
@@ -157,6 +161,9 @@ if (containerRef.current && (containerRef.current as any)._leaflet_id) return;
     return () => {
       mapRef.current?.remove();
       mapRef.current = null;
+      if (containerRef.current) {
+        (containerRef.current as HTMLElement & { _leafletClaimed?: boolean })._leafletClaimed = false;
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
