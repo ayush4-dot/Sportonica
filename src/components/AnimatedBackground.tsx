@@ -65,10 +65,14 @@ export default function AnimatedBackground({
     };
 
     const resize = () => {
-      W = canvas.offsetWidth;
-      H = canvas.offsetHeight;
+      // offsetWidth/Height are 0 until the element is laid out. Falling back
+      // to the viewport keeps the maths finite — a 0 height makes the scan
+      // line NaN and crashes createLinearGradient.
+      W = canvas.offsetWidth || window.innerWidth || 1;
+      H = canvas.offsetHeight || window.innerHeight || 1;
       canvas.width  = W * devicePixelRatio;
       canvas.height = H * devicePixelRatio;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);   // reset before scaling again
       ctx.scale(devicePixelRatio, devicePixelRatio);
       buildDots();
     };
@@ -137,6 +141,8 @@ export default function AnimatedBackground({
       });
 
       /* ── 4. scan line ── */
+      // Skip if the canvas has no size yet — the modulo below would be NaN.
+      if (!Number.isFinite(H) || H <= 0) return;
       const scanY = ((ts * 0.035) % (H * 2)) - H * 0.5;
       const scan = ctx.createLinearGradient(0, scanY - 60, 0, scanY + 60);
       scan.addColorStop(0,   "rgba(255,255,255,0)");
