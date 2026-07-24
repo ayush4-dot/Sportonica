@@ -127,3 +127,12 @@ body {
 @media (max-width: 780px) {
   body { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 }
+
+/* Nothing should scroll sideways — a stray wide element was showing a
+   horizontal scrollbar and pushing fixed elements off the right edge. */
+html, body { max-width: 100%; overflow-x: hidden; }
+
+/* Installed as an app: no browser bar, so leave room for the status bar. */
+@media (display-mode: standalone) {
+  body { padding-top: env(safe-area-inset-top, 0px); }
+}

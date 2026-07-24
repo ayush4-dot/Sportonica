@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     title: 'Khelam Na',
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
   },
 }
 

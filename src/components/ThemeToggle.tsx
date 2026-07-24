@@ -40,8 +40,20 @@ export default function ThemeToggle() {
         [data-theme="glass"] .theme-pill button.on, html:not([data-theme]) .theme-pill button.on { background: #F2EDE6; color: #0B0D11; }
         [data-theme="paper"] .theme-pill button.on { background: #14171E; color: #F2EDE6; }
         @media (max-width: 780px) {
-          .theme-pill { top: 12px; right: 12px; padding: 3px; }
-          .theme-pill button { padding: 5px 11px; font-size: 11px; }
+          .theme-pill {
+            top: calc(12px + env(safe-area-inset-top, 0px));
+            right: calc(12px + env(safe-area-inset-right, 0px));
+            padding: 3px;
+          }
+          .theme-pill button { padding: 6px 12px; font-size: 11.5px; }
+        }
+        /* Installed to the home screen: no browser bar, so the status bar
+           (clock, signal, battery) sits right at the top. Push well clear. */
+        @media (display-mode: standalone) and (max-width: 780px) {
+          .theme-pill { top: calc(56px + env(safe-area-inset-top, 0px)); }
+        }
+        @media (max-width: 380px) {
+          .theme-pill button { padding: 5px 10px; font-size: 11px; }
         }
       `}</style>
       <div className="theme-pill" role="tablist" aria-label="Theme">
