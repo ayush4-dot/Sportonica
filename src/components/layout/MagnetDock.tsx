@@ -158,11 +158,17 @@ export default function MagnetDock() {
         @media (max-width: 780px) {
           .dock {
             right: 12px; left: 12px; top: auto;
-            bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+            /* Safari's own toolbar sits at the bottom on iPhone. Sit well
+               clear of it so we never swallow taps meant for Share/tabs. */
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
             transform: none;
             flex-direction: row; justify-content: space-between;
             gap: 2px; border-radius: 20px; padding: 7px 8px;
             max-height: none; max-width: none;
+          }
+          /* When the app is installed there's no browser chrome — sit lower. */
+          @media (display-mode: standalone) {
+            .dock { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
           }
           .dock > div { width: auto !important; flex: 1; }
           .dock-item {

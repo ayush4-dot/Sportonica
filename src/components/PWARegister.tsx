@@ -115,7 +115,7 @@ export default function PWARegister() {
         }
         .pwa-x { background: none; border: none; color: inherit; opacity: .5; cursor: pointer; flex-shrink: 0; }
         .pwa-x:hover { opacity: 1; }
-        @media (max-width: 780px) { .pwa-bar { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); } }
+        @media (max-width: 780px) { .pwa-bar { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); } }
       `}</style>
     </div>
   );

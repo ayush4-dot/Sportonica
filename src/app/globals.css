@@ -125,5 +125,5 @@ body {
 
 /* Floating mobile dock clearance — keep page content above the bottom bar. */
 @media (max-width: 780px) {
-  body { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  body { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 }

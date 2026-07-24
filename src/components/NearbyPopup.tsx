@@ -127,7 +127,12 @@ export default function NearbyPopup() {
           box-shadow: 0 14px 40px -12px rgba(20,23,30,0.25);
         }
         .nb-fab:hover { border-color: #FFC93C; color: #FFC93C; }
-        @media (max-width: 780px) { .nb-fab { bottom: 92px; left: 14px; padding: 9px 14px; font-size: 12px; } }
+        @media (max-width: 780px) {
+          .nb-fab { bottom: calc(104px + env(safe-area-inset-bottom, 0px)); left: 14px; padding: 9px 14px; font-size: 12px; }
+        }
+        @media (display-mode: standalone) and (max-width: 780px) {
+          .nb-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
+        }
 
         .nb-scrim {
           position: fixed; inset: 0; z-index: 420; background: rgba(6,7,10,0.6);
