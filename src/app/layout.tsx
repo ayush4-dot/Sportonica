@@ -1,6 +1,7 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import NavWrapper from '@/components/NavWrapper'
+import PWARegister from '@/components/PWARegister'
 
 export const metadata: Metadata = {
   // Social bots need absolute URLs for og:image. In production set
@@ -9,7 +10,30 @@ export const metadata: Metadata = {
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   ),
   title: 'Khelam Na — Find your game',
-  description: 'Find and join sports events near you in Kathmandu',
+  description: 'Book courts, join pickup games, and find your regular crew across Kathmandu.',
+  applicationName: 'Khelam Na',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: [
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: '/icons/apple-touch-icon.png',
+  },
+  // iOS ignores the manifest — these tell Safari it's an installable app.
+  appleWebApp: {
+    capable: true,
+    title: 'Khelam Na',
+    statusBarStyle: 'black-translucent',
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0B0D11',
+  width: 'device-width',
+  initialScale: 1,
+  // Let the app fill the notch area on phones.
+  viewportFit: 'cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,9 +47,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>
+      {/* Extensions inject attributes into body before React hydrates. */}
+      <body suppressHydrationWarning>
         <NavWrapper />
         {children}
+        <PWARegister />
       </body>
     </html>
   )
