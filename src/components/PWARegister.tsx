@@ -10,6 +10,16 @@ interface InstallPromptEvent extends Event {
 }
 
 const DISMISS_KEY = "khelamna-install-dismissed";
+const SNOOZE_DAYS = 7;
+
+function isSnoozed() {
+  const raw = localStorage.getItem(DISMISS_KEY);
+  if (!raw) return false;
+  const at = Number(raw);
+  // Older versions stored "1" — treat anything unparseable as expired.
+  if (!Number.isFinite(at)) return false;
+  return Date.now() - at < SNOOZE_DAYS * 864e5;
+}
 
 export default function PWARegister() {
   const [deferred, setDeferred] = useState<InstallPromptEvent | null>(null);
@@ -28,7 +38,7 @@ export default function PWARegister() {
     const standalone =
       window.matchMedia("(display-mode: standalone)").matches ||
       (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
-    if (standalone || localStorage.getItem(DISMISS_KEY)) return;
+    if (standalone || isSnoozed()) return;
 
     // 2. Android/desktop: capture the install prompt.
     const onPrompt = (e: Event) => {
@@ -52,8 +62,9 @@ export default function PWARegister() {
   }, []);
 
   function dismiss() {
+    // Snooze rather than silence forever — people often want this later.
     setHidden(true);
-    localStorage.setItem(DISMISS_KEY, "1");
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
   }
 
   async function install() {
