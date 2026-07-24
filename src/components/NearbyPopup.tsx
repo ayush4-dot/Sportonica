@@ -39,7 +39,7 @@ export default function NearbyPopup() {
   return (
     <>
       <button className="nb-fab" onClick={() => setOpen(true)} aria-label="What's near me">
-        <Navigation size={16} /> Near me
+        <Navigation size={16} /> <span className="nb-fab-label">Near me</span>
       </button>
 
       {open && (
@@ -128,7 +128,13 @@ export default function NearbyPopup() {
         }
         .nb-fab:hover { border-color: #FFC93C; color: #FFC93C; }
         @media (max-width: 780px) {
-          .nb-fab { bottom: calc(104px + env(safe-area-inset-bottom, 0px)); left: 14px; padding: 9px 14px; font-size: 12px; }
+          /* Icon-only on phones — the wide pill collided with hero text. */
+          .nb-fab {
+            bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+            left: 12px; padding: 0; width: 42px; height: 42px;
+            justify-content: center; gap: 0;
+          }
+          .nb-fab span.nb-fab-label { display: none; }
         }
         @media (display-mode: standalone) and (max-width: 780px) {
           .nb-fab { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }

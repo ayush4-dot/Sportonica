@@ -47,7 +47,7 @@ const CSS = `
   ::-webkit-scrollbar { width: 0; }
 
   /* ── hero ── */
-  .p-hero { position:relative; height:100vh; min-height:600px; overflow:hidden; display:flex; align-items:flex-end; }
+  .p-hero { position:relative; height:100dvh; min-height:560px; overflow:hidden; display:flex; align-items:flex-end; }
   .p-hero video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; }
   .p-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.15) 100%); }
   .p-hero-content { position:relative; z-index:2; padding:0 56px 72px; width:100%; }
@@ -138,7 +138,7 @@ const CSS = `
 
   /* ── mobile ── */
   @media(max-width:900px){
-    .p-hero-content { padding:0 24px 56px; }
+    .p-hero-content { padding:0 24px calc(130px + env(safe-area-inset-bottom, 0px)); }
     .p-hero-h1 { letter-spacing:-1.5px; }
     .p-panel-content { padding:0 24px; }
     .p-panel-accent { display:none; }
