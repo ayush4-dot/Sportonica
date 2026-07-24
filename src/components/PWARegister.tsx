@@ -83,7 +83,10 @@ export default function PWARegister() {
       <div className="pwa-copy">
         <b>Add Khelam Na to your home screen</b>
         {showIOS ? (
-          <small>Tap <Share size={11} style={{ verticalAlign: -1 }} /> then &ldquo;Add to Home Screen&rdquo;.</small>
+          <small>
+            Tap <Share size={12} style={{ verticalAlign: -2, color: "#FFC93C" }} /> below,
+            then <b style={{ opacity: .9 }}>Add to Home Screen</b>
+          </small>
         ) : (
           <small>Faster access to games, courts and your squads.</small>
         )}
@@ -92,6 +95,7 @@ export default function PWARegister() {
         <button className="pwa-go" onClick={install}><Download size={14} /> Install</button>
       )}
       <button className="pwa-x" onClick={dismiss} aria-label="Dismiss"><X size={16} /></button>
+      {showIOS && <span className="pwa-point" aria-hidden>▾</span>}
 
       <style>{`
         .pwa-bar {
@@ -125,6 +129,13 @@ export default function PWARegister() {
           font-family: inherit;
         }
         .pwa-x { background: none; border: none; color: inherit; opacity: .5; cursor: pointer; flex-shrink: 0; }
+        /* points down at Safari's own share button */
+        .pwa-point {
+          position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%);
+          color: #FFC93C; font-size: 18px; line-height: 1;
+          animation: pwaNudge 1.4s ease-in-out infinite;
+        }
+        @keyframes pwaNudge { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 5px); } }
         .pwa-x:hover { opacity: 1; }
         @media (max-width: 780px) { .pwa-bar { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); } }
       `}</style>
