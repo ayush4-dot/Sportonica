@@ -79,9 +79,9 @@ const CSS = `
   /* ── sport slider (Playo-style clickable rail) ── */
   .p-sportbar { padding:56px 56px 8px; }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
-  .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:12px; }
-  .p-sportbar-title { font-size:clamp(30px,4vw,52px); font-weight:800; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; line-height:1; color:#fff; }
-  .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.3); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
+  .p-sportbar-title { font-size:clamp(30px,4vw,52px); font-weight:800; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; line-height:1; color:var(--chalk); }
+  .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.5); display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .p-sportrail { display:flex; gap:14px; overflow-x:auto; padding:4px 0 20px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
   .p-sportrail::-webkit-scrollbar { height:0; }
   .p-sportchip {
@@ -94,13 +94,13 @@ const CSS = `
   .p-sportchip:hover { transform:translateY(-6px); border-color:rgba(255,255,255,0.3); }
   .p-sportchip-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .p-sportchip-tint { position:absolute; inset:0; }
-  .p-sportchip-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.82) 8%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.35) 100%); }
+  .p-sportchip-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0.4) 100%); }
   .p-sportchip-emoji { position:absolute; top:14px; left:14px; font-size:26px; line-height:1; z-index:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
   .p-sportchip-label { position:absolute; left:14px; bottom:34px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
   .p-sportchip-cta { position:absolute; left:14px; bottom:13px; z-index:1; font-size:11px; font-weight:700; display:flex; align-items:center; gap:5px; }
   [data-theme="paper"] .p-sportbar-title { color:#14171E; }
-  [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.4); }
-  [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.35); }
+  [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.6); }
+  [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.55); }
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
   [data-theme="paper"] .p-sportchip:hover { border-color:rgba(20,23,30,0.3); }
   @media (max-width:900px){
@@ -135,7 +135,7 @@ const CSS = `
   .p-editorial { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
   .p-editorial-left { display:flex; flex-direction:column; justify-content:center; padding:80px 64px; border-right:1px solid rgba(255,255,255,0.08); }
   .p-editorial-right { display:flex; flex-direction:column; justify-content:center; padding:80px 64px; }
-  .p-editorial-label { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; opacity:0.4; margin-bottom:24px; }
+  .p-editorial-label { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; opacity:0.55; margin-bottom:24px; }
   .p-editorial-big { font-size:clamp(36px,5vw,64px); font-weight:800; line-height:1.0; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:24px; }
   .p-editorial-body { font-size:17px; line-height:1.7; color:rgba(255,255,255,0.6); max-width:480px; }
 
@@ -144,7 +144,7 @@ const CSS = `
   .p-stat { padding:48px 40px; border-right:1px solid rgba(255,255,255,0.08); }
   .p-stat:last-child { border-right:none; }
   .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#FFC93C; line-height:1; margin-bottom:8px; }
-  .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.4); }
+  .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
 
   /* ── featured ── */
   .p-card { background:#111; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; }
@@ -162,7 +162,7 @@ const CSS = `
   .p-cta-h2 em { font-style:normal; color:#DE3163; }
 
   /* ── footer ── */
-  .p-footer { border-top:1px solid rgba(255,255,255,0.08); padding:40px 56px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  .p-footer { border-top:1px solid var(--border-line, rgba(255,255,255,0.08)); padding:40px 56px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
 
   /* ── buttons ── */
   .btn-primary { background:#DE3163; color:#fff; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
@@ -377,10 +377,10 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                   </div>
                   <div>
                     <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"6px" }}>
-                      <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.15em", color:"rgba(255,255,255,0.35)" }}>{item.n}</span>
-                      <span style={{ fontSize:"16px", fontWeight:700, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>{item.title}</span>
+                      <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.15em", color:"var(--faint)" }}>{item.n}</span>
+                      <span style={{ fontSize:"16px", fontWeight:700, color:"var(--chalk)", fontFamily:"'Bricolage Grotesque',sans-serif" }}>{item.title}</span>
                     </div>
-                    <p style={{ fontSize:"14px", lineHeight:1.6, color:"rgba(255,255,255,0.5)" }}>{item.desc}</p>
+                    <p style={{ fontSize:"14px", lineHeight:1.6, color:"var(--muted)" }}>{item.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -417,8 +417,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                     <span className="p-sportchip-shade" />
                     <span className="p-sportchip-emoji">{sp.emoji}</span>
                     <span className="p-sportchip-label">{sp.sport}</span>
-                    <span className="p-sportchip-cta" style={{ color: sp.color }}>
-                      {isOpen ? "Showing" : "View"} <ArrowRight size={12} />
+                    <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
+                      {isOpen ? "Showing" : "View"} <ArrowRight size={12} color={sp.color} strokeWidth={3} />
                     </span>
                   </button>
                 );
@@ -488,7 +488,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                         <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
                         <div className="small">{SPORT_FACT[sp.sport].small}</div>
                       </div>
-                      <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
+                      <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"var(--faint)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
                         {sp.label} · Kathmandu
                       </div>
                     </div>
@@ -517,7 +517,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
           <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
             style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
             <div>
-              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.35)", marginBottom:"12px" }}>
+              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"var(--faint)", marginBottom:"12px" }}>
                 Live on Khelamna
               </p>
               <h2 style={{ fontSize:"clamp(32px,4vw,52px)", fontWeight:800, letterSpacing:"-2px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:1 }}>
@@ -537,7 +537,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                 <div key={i} style={{ background:"#111", borderRadius:"16px", height:"360px", opacity:0.4, animation:"pulse 1.5s ease-in-out infinite" }} />
               ))
             ) : featured.length === 0 ? (
-              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"rgba(255,255,255,0.35)" }}>
+              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"var(--muted)" }}>
                 <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
                 <a href="/create" style={{ color:"#DE3163", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
                   Host the first one →
@@ -574,7 +574,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                         style={{ height:"100%", background: pct>=90?"#ef4444":color, borderRadius:"2px" }} />
                     </div>
                     <div className="p-card-footer">
-                      <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.4)", fontFamily:"'JetBrains Mono',monospace" }}>
+                      <span style={{ fontSize:"12px", color:"var(--faint)", fontFamily:"'JetBrains Mono',monospace" }}>
                         {ev.confirmed_count}/{ev.max_players} joined · {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
                       </span>
                       <motion.button
@@ -637,8 +637,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         ══════════════════════════════════ */}
         <footer className="p-footer">
           <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"#fff", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelam</span>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"#F2EDE6", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"var(--chalk)", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelam</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#DE3163", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
           </a>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
             {[
@@ -648,14 +648,14 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               { label:"Sign in", href:"/login" },
               { label:"Admin", href:"/admin" },
             ].map(l => (
-              <a key={l.label} href={l.href} style={{ color:"rgba(255,255,255,0.4)", textDecoration:"none", fontSize:"13px", fontWeight:600, transition:"color 0.2s" }}
-                onMouseEnter={e => (e.currentTarget.style.color="#fff")}
-                onMouseLeave={e => (e.currentTarget.style.color="rgba(255,255,255,0.4)")}>
+              <a key={l.label} href={l.href} style={{ color:"var(--muted)", textDecoration:"none", fontSize:"13px", fontWeight:600, transition:"color 0.2s" }}
+                onMouseEnter={e => (e.currentTarget.style.color="var(--chalk)")}
+                onMouseLeave={e => (e.currentTarget.style.color="var(--muted)")}>
                 {l.label}
               </a>
             ))}
           </div>
-          <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.25)" }}>© Khelamna 2026</span>
+          <span style={{ fontSize:"12px", color:"var(--faint)" }}>© Khelamna 2026</span>
         </footer>
 
       </div>

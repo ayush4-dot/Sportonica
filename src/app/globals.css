@@ -16,6 +16,9 @@
   --turf:     #2E7D5B;
   --slate:    #8A95A3;
   --bg: var(--ink);
+  --muted:    rgba(255,255,255,0.62);
+  --faint:    rgba(255,255,255,0.42);
+  --border-line: rgba(255,255,255,0.08);
 }
 
 html { scroll-behavior: smooth; }
@@ -117,6 +120,9 @@ body {
   --paper:    #14171E;
   --chalk:    #14171E;
   --bg:       #F2EDE6;
+  --muted:    rgba(20,23,30,0.68);
+  --faint:    rgba(20,23,30,0.5);
+  --border-line: rgba(20,23,30,0.12);
 }
 [data-theme="paper"] body {
   background: #F2EDE6;
