@@ -76,6 +76,39 @@ const CSS = `
   .p-panel-desc { font-size:15px; line-height:1.55; color:rgba(255,255,255,0.6); max-width:440px; margin-bottom:20px; }
   .p-panel-accent { position:absolute; right:0; top:0; bottom:0; width:40%; display:flex; align-items:center; justify-content:center; font-size:28vw; opacity:0.1; pointer-events:none; }
 
+  /* ── sport slider (Playo-style clickable rail) ── */
+  .p-sportbar { padding:56px 56px 8px; }
+  .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
+  .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.35); margin-bottom:12px; }
+  .p-sportbar-title { font-size:clamp(30px,4vw,52px); font-weight:800; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; line-height:1; color:#fff; }
+  .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.3); display:flex; align-items:center; gap:6px; white-space:nowrap; }
+  .p-sportrail { display:flex; gap:14px; overflow-x:auto; padding:4px 0 20px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
+  .p-sportrail::-webkit-scrollbar { height:0; }
+  .p-sportchip {
+    flex:0 0 auto; width:150px; height:190px; position:relative;
+    border-radius:18px; overflow:hidden; cursor:pointer; padding:0;
+    border:1px solid rgba(255,255,255,0.1); background:#111;
+    scroll-snap-align:start; text-decoration:none; display:block;
+    transition:transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s;
+  }
+  .p-sportchip:hover { transform:translateY(-6px); border-color:rgba(255,255,255,0.3); }
+  .p-sportchip-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .p-sportchip-tint { position:absolute; inset:0; }
+  .p-sportchip-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.82) 8%, rgba(0,0,0,0.15) 55%, rgba(0,0,0,0.35) 100%); }
+  .p-sportchip-emoji { position:absolute; top:14px; left:14px; font-size:26px; line-height:1; z-index:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
+  .p-sportchip-label { position:absolute; left:14px; bottom:34px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
+  .p-sportchip-cta { position:absolute; left:14px; bottom:13px; z-index:1; font-size:11px; font-weight:700; display:flex; align-items:center; gap:5px; }
+  [data-theme="paper"] .p-sportbar-title { color:#14171E; }
+  [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.4); }
+  [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.35); }
+  [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
+  [data-theme="paper"] .p-sportchip:hover { border-color:rgba(20,23,30,0.3); }
+  @media (max-width:900px){
+    .p-sportbar { padding:44px 24px 4px; }
+    .p-sportchip { width:130px; height:166px; }
+    .p-sportchip-label { font-size:16px; }
+  }
+
   /* game cards inside each sport panel */
   .p-games { position:relative; z-index:2; padding:24px 56px 0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
   .p-gcard { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:18px; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s, background 0.4s; }
@@ -173,6 +206,16 @@ const CSS = `
   [data-theme="paper"] .p-fill-bar { background: rgba(20,23,30,0.1); }
 `;
 
+const SPORT_IMG: Record<string, string> = {
+  Futsal:     "/sports/futsal.jpg",
+  Cricket:    "/sports/cricket.jpg",
+  Basketball: "/sports/basketball.jpg",
+  Volleyball: "/sports/volleyball.jpg",
+  Badminton:  "/sports/badminton.jpg",
+  Pickleball: "/sports/running.jpg",
+  Swimming:   "/sports/running.jpg",
+};
+
 export default function HomeClient({ rails }: { rails?: HomeRails }) {
   const router = useRouter();
   const supabase = createClient();
@@ -190,6 +233,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
     return acc;
   }, {} as Record<string, typeof allGames>);
   const [counts, setCounts] = useState({ players:"1,200+", games:"500+", sports:"7" });
+  // Which sport panel is expanded below the slider. Null = none open.
+  const [openSport, setOpenSport] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -344,94 +389,125 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         </div>
 
         {/* ══════════════════════════════════
-            SPORTS PANELS
+            SPORTS — clickable slider + expandable panel
         ══════════════════════════════════ */}
         <div id="sports">
-          {SPORTS_PANELS.map((sp, i) => (
-            <div key={sp.sport} className="p-panel" style={{ background: i % 2 === 0 ? "var(--ink)" : "var(--inkSoft)", borderTop:"1px solid var(--line, rgba(255,255,255,0.06))" }}>
-              <div className="p-panel-bg">{sp.emoji}</div>
-              <div className="p-panel-accent">{sp.emoji}</div>
-              <div className="p-panel-content">
-                <motion.p className="p-panel-num"
-                  initial={{ opacity:0, y:12 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
-                  transition={{ duration:0.5 }}
-                  style={{ color: sp.color }}>
-                  {String(i+1).padStart(2,"0")} — {sp.label}
-                </motion.p>
-                <motion.h2 className="p-panel-title"
-                  initial={{ opacity:0, y:32 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
-                  transition={{ duration:0.7, delay:0.1, ease:[0.22,1,0.36,1] }}
-                  style={{ color: sp.color }}>
-                  {sp.label}
-                </motion.h2>
-                <motion.p className="p-panel-desc"
-                  initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
-                  transition={{ duration:0.6, delay:0.2 }}>
-                  {sp.desc}
-                </motion.p>
-                <motion.div
-                  initial={{ opacity:0, y:12 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true, amount:0.4 }}
-                  transition={{ duration:0.5, delay:0.35 }}
-                  style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
-                  <a href={`/discover?sport=${sp.sport}`}>
-                    <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                      style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
-                      Find {sp.sport} games <ArrowRight size={16} />
-                    </motion.button>
-                  </a>
-                  <a href="/create">
-                    <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                      Host a game
-                    </motion.button>
-                  </a>
-                </motion.div>
+          <div className="p-sportbar">
+            <div className="p-sportbar-head">
+              <div>
+                <p className="p-sportbar-eyebrow">Browse by sport</p>
+                <h2 className="p-sportbar-title">Pick your game</h2>
               </div>
-
-              {/* Game cards for this sport (real games + fact, or host prompt) */}
-              <div className="p-games">
-                {(gamesBySport[sp.sport] ?? []).slice(0, 3).map((g) => {
-                  const pct = Math.round(((g.max_players - g.slots_remaining) / g.max_players) * 100);
-                  const when = new Date(g.event_date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" });
-                  return (
-                    <a key={g.id} href="/discover" className="p-gcard link">
-                      <div className="p-gcard-title">{g.title}</div>
-                      <div className="p-gcard-venue"><MapPin size={12} /> {g.venue}</div>
-                      <div className="p-gcard-row">
-                        <span className="p-gcard-when">{when}</span>
-                        <span className="p-gcard-fee" style={{ color: sp.color }}>Rs {g.fee}</span>
-                      </div>
-                      <div className="p-gcard-bar"><div style={{ height:"100%", width:`${pct}%`, background: sp.color, borderRadius:2 }} /></div>
-                      <div className="p-gcard-slots">{g.slots_remaining} of {g.max_players} spots left</div>
-                    </a>
-                  );
-                })}
-
-                {/* Fact card — untouchable */}
-                {SPORT_FACT[sp.sport] && (
-                  <div className="p-gcard fact">
-                    <div>
-                      <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
-                      <div className="small">{SPORT_FACT[sp.sport].small}</div>
-                    </div>
-                    <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
-                      {sp.label} · Kathmandu
-                    </div>
-                  </div>
-                )}
-
-                {/* Empty state — aesthetic host prompt */}
-                {(gamesBySport[sp.sport] ?? []).length === 0 && (
-                  <a href="/create" className="p-gcard host link" style={{ borderColor: `${sp.color}55` }}>
-                    <div className="big" style={{ color: sp.color }}>No {sp.sport} games yet</div>
-                    <div className="small">Be the first to host one. Book a court, set your spots, and let players come to you.</div>
-                    <span style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:700, color: sp.color }}>
-                      Host a {sp.sport} game <ArrowRight size={14} />
-                    </span>
-                  </a>
-                )}
-              </div>
+              <span className="p-sportbar-hint"><ArrowRight size={13} /> Swipe</span>
             </div>
-          ))}
+
+            <div className="p-sportrail">
+              {SPORTS_PANELS.map((sp) => {
+                const isOpen = openSport === sp.sport;
+                return (
+                  <button
+                    key={sp.sport}
+                    className="p-sportchip"
+                    onClick={() => setOpenSport(isOpen ? null : sp.sport)}
+                    aria-label={`Show ${sp.sport}`}
+                    style={{ borderColor: isOpen ? sp.color : undefined }}
+                  >
+                    <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
+                    <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
+                    <span className="p-sportchip-shade" />
+                    <span className="p-sportchip-emoji">{sp.emoji}</span>
+                    <span className="p-sportchip-label">{sp.sport}</span>
+                    <span className="p-sportchip-cta" style={{ color: sp.color }}>
+                      {isOpen ? "Showing" : "View"} <ArrowRight size={12} />
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Expanded panel — only the selected sport, opens on tap */}
+          {(() => {
+            const sp = SPORTS_PANELS.find((x) => x.sport === openSport);
+            if (!sp) return null;
+            const i = SPORTS_PANELS.findIndex((x) => x.sport === sp.sport);
+            return (
+              <motion.div
+                key={sp.sport}
+                className="p-panel"
+                initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }}
+                transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
+                style={{ background:"var(--inkSoft)", borderTop:`1px solid ${sp.color}44` }}
+              >
+                <div className="p-panel-bg">{sp.emoji}</div>
+                <div className="p-panel-accent">{sp.emoji}</div>
+                <div className="p-panel-content">
+                  <p className="p-panel-num" style={{ color: sp.color }}>
+                    {String(i+1).padStart(2,"0")} — {sp.label}
+                  </p>
+                  <h2 className="p-panel-title" style={{ color: sp.color }}>{sp.label}</h2>
+                  <p className="p-panel-desc">{sp.desc}</p>
+                  <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
+                    <a href={`/discover?sport=${sp.sport}`}>
+                      <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+                        style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
+                        Find {sp.sport} games <ArrowRight size={16} />
+                      </motion.button>
+                    </a>
+                    <a href="/create">
+                      <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                        Host a game
+                      </motion.button>
+                    </a>
+                  </div>
+                </div>
+
+                {/* Game cards for this sport (real games + fact, or host prompt) */}
+                <div className="p-games">
+                  {(gamesBySport[sp.sport] ?? []).slice(0, 3).map((g) => {
+                    const pct = Math.round(((g.max_players - g.slots_remaining) / g.max_players) * 100);
+                    const when = new Date(g.event_date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" });
+                    return (
+                      <a key={g.id} href="/discover" className="p-gcard link">
+                        <div className="p-gcard-title">{g.title}</div>
+                        <div className="p-gcard-venue"><MapPin size={12} /> {g.venue}</div>
+                        <div className="p-gcard-row">
+                          <span className="p-gcard-when">{when}</span>
+                          <span className="p-gcard-fee" style={{ color: sp.color }}>Rs {g.fee}</span>
+                        </div>
+                        <div className="p-gcard-bar"><div style={{ height:"100%", width:`${pct}%`, background: sp.color, borderRadius:2 }} /></div>
+                        <div className="p-gcard-slots">{g.slots_remaining} of {g.max_players} spots left</div>
+                      </a>
+                    );
+                  })}
+
+                  {/* Fact card — untouchable */}
+                  {SPORT_FACT[sp.sport] && (
+                    <div className="p-gcard fact">
+                      <div>
+                        <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
+                        <div className="small">{SPORT_FACT[sp.sport].small}</div>
+                      </div>
+                      <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"rgba(255,255,255,0.35)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
+                        {sp.label} · Kathmandu
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Empty state — aesthetic host prompt */}
+                  {(gamesBySport[sp.sport] ?? []).length === 0 && (
+                    <a href="/create" className="p-gcard host link" style={{ borderColor: `${sp.color}55` }}>
+                      <div className="big" style={{ color: sp.color }}>No {sp.sport} games yet</div>
+                      <div className="small">Be the first to host one. Book a court, set your spots, and let players come to you.</div>
+                      <span style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:700, color: sp.color }}>
+                        Host a {sp.sport} game <ArrowRight size={14} />
+                      </span>
+                    </a>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })()}
         </div>
 
         {/* ══════════════════════════════════
