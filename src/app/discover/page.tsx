@@ -9,6 +9,7 @@ import {
   ChevronRight, X,
   Loader2, AlertCircle,
 } from "lucide-react";
+import NepalMap from "@/components/NepalMap";
 import KhelamnaMap from "@/components/KhelamnaMap";
 import { useEvents, SPORT_COLOR, type EventRow } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
@@ -74,6 +75,9 @@ function DiscoverInner() {
   const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
   const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
+  const [sortBy, setSortBy] = useState<"soonest" | "nearest" | "cheapest" | "filling">("soonest");
+  const [pageSize, setPageSize] = useState(12);
+  const [drill, setDrill] = useState<{ name: string; center: [number, number] } | null>(null);
 
   const sportFilter = activeSport === "All sports" ? undefined : activeSport;
   const { events, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
@@ -85,7 +89,7 @@ function DiscoverInner() {
   const tomorrowKey = dayKey(new Date(Date.now() + 86400000));
   const weekAhead = Date.now() + 7 * 86400000;
 
-  const visible = events.filter((ev) => {
+  const filtered = events.filter((ev) => {
     const when = new Date(ev.event_date);
 
     // time
@@ -115,6 +119,25 @@ function DiscoverInner() {
     return true;
   });
 
+  // ── Sort the filtered games ─────────────────────────────────────
+  const distOf = (ev: EventRow) =>
+    myCoords && ev.venue_lat != null && ev.venue_lng != null
+      ? kmBetween(myCoords, [ev.venue_lat, ev.venue_lng])
+      : Infinity;
+  const sortedAll = [...filtered].sort((a, b) => {
+    if (sortBy === "nearest") return distOf(a) - distOf(b);
+    if (sortBy === "cheapest") return (Number(a.fee) || 0) - (Number(b.fee) || 0);
+    if (sortBy === "filling") return a.slots_remaining - b.slots_remaining;
+    // soonest (default)
+    return new Date(a.event_date).getTime() - new Date(b.event_date).getTime();
+  });
+
+  // ── Page it (LOAD MORE) ─────────────────────────────────────────
+  const visible = sortedAll.slice(0, pageSize);
+  const hasMore = sortedAll.length > visible.length;
+  // Reset paging whenever the filter/sort/sport changes.
+  useEffect(() => { setPageSize(12); }, [filters, sortBy, activeSport]);
+
   useEffect(() => {
     const f = events.find((e) => e.flash);
     if (f) {
@@ -129,18 +152,6 @@ function DiscoverInner() {
     // then join from there. Login is handled on that page.
     router.push(`/game/${ev.id}`);
   };
-
-  const mapPins = visible
-    .filter((e) => e.venue_lat && e.venue_lng)
-    .map((e) => ({
-      id: e.id,
-      lat: e.venue_lat!,
-      lng: e.venue_lng!,
-      label: e.title,
-      sport: e.sport,
-      flash: e.flash,
-      color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#DE3163",
-    }));
 
   return (
     <main className="disc-root">
@@ -223,8 +234,35 @@ function DiscoverInner() {
           setFilters={setFilters}
           onLocation={setMyCoords}
           hasLocation={!!myCoords}
-          resultCount={visible.length}
+          resultCount={sortedAll.length}
         />
+
+        {/* ── Sort bar ── */}
+        <div className="disc-sortbar">
+          <span className="disc-sortbar-count">
+            {sortedAll.length} game{sortedAll.length === 1 ? "" : "s"}
+          </span>
+          <div className="disc-sortbar-opts">
+            <span className="disc-sortbar-label">Sort</span>
+            {([
+              { k: "soonest", label: "Soonest" },
+              { k: "nearest", label: "Nearest" },
+              { k: "cheapest", label: "Cheapest" },
+              { k: "filling", label: "Filling up" },
+            ] as const).map((o) => (
+              <button
+                key={o.k}
+                className="disc-sort-chip"
+                data-on={sortBy === o.k}
+                onClick={() => setSortBy(o.k)}
+                disabled={o.k === "nearest" && !myCoords}
+                title={o.k === "nearest" && !myCoords ? "Enable location first" : undefined}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="disc-stage">
           <div className="disc-list">
@@ -394,27 +432,62 @@ function DiscoverInner() {
                 );
               })}
             </div>
+            {hasMore && (
+              <div className="disc-loadmore-wrap">
+                <button className="disc-loadmore" onClick={() => setPageSize((n) => n + 12)}>
+                  Load more games
+                </button>
+              </div>
+            )}
           </div>
+        </div>
 
-          <div className="disc-map">
-            <KhelamnaMap
-              center={[27.7172, 85.324]}
-              zoom={14}
-              height="100%"
-              pins={
-                mapPins.length > 0
-                  ? mapPins
-                  : visible.map((ev, i) => ({
+        {/* ── Map — full-width landscape strip below the games ── */}
+        <div className="disc-mapsection">
+          <h2 className="disc-mapsection-h">
+            {drill ? `Venues in ${drill.name}` : "Games on the map"}
+          </h2>
+          {!drill && (
+            <p style={{ fontSize: 13, color: "var(--muted, rgba(242,237,230,0.6))", margin: "-8px 0 16px" }}>
+              Tap a province to see its venues on the map.
+            </p>
+          )}
+          <div className="disc-map disc-map-wide">
+            {!drill ? (
+              <NepalMap
+                accent="#DE3163"
+                points={visible
+                  .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
+                  .map((ev) => [ev.venue_lng as number, ev.venue_lat as number])}
+                onProvinceClick={(name, center) => setDrill({ name, center })}
+              />
+            ) : (
+              <div style={{ position: "relative", height: 420 }}>
+                <button
+                  className="disc-map-back"
+                  onClick={() => setDrill(null)}
+                >
+                  <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Back to Nepal
+                </button>
+                <KhelamnaMap
+                  center={drill.center}
+                  zoom={11}
+                  height="100%"
+                  onPinClick={(id) => router.push(`/game/${id}`)}
+                  pins={visible
+                    .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
+                    .map((ev) => ({
                       id: ev.id,
-                      lat: 27.7172 + (i * 0.003 - 0.006),
-                      lng: 85.324 + (i * 0.004 - 0.008),
+                      lat: ev.venue_lat as number,
+                      lng: ev.venue_lng as number,
                       label: ev.title,
                       sport: ev.sport,
                       flash: ev.flash,
-                      color: ev.sport_color ?? "#DE3163",
-                    }))
-              }
-            />
+                      color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163",
+                    }))}
+                />
+              </div>
+            )}
 
             {showFlash && flashEvent && (
               <motion.div
@@ -445,6 +518,29 @@ function DiscoverInner() {
               </motion.div>
             )}
           </div>
+        </div>
+      </section>
+
+
+      {/* ── Collections — browse when you don't have a specific game in mind ── */}
+      <section className="disc-collections">
+        <h2 className="disc-collections-h">Explore Khelam Na</h2>
+        <div className="disc-collections-grid">
+          <a href="/create" className="disc-coll-card" style={{ ["--c" as string]: "#2E7D5B" }}>
+            <span className="disc-coll-emoji">🏟️</span>
+            <span className="disc-coll-title">Book a ground</span>
+            <span className="disc-coll-sub">Verified courts across Kathmandu</span>
+          </a>
+          <a href="/league" className="disc-coll-card" style={{ ["--c" as string]: "#a855f7" }}>
+            <span className="disc-coll-emoji">👥</span>
+            <span className="disc-coll-title">Find a squad</span>
+            <span className="disc-coll-sub">Join a team, play every week</span>
+          </a>
+          <a href="/create" className="disc-coll-card" style={{ ["--c" as string]: "#FFC93C" }}>
+            <span className="disc-coll-emoji">⚡</span>
+            <span className="disc-coll-title">Host an event</span>
+            <span className="disc-coll-sub">Set your sport, time and spots</span>
+          </a>
         </div>
       </section>
 
@@ -572,25 +668,43 @@ const CSS = `
   text-align: right;
 }
 .disc-stage {
-  display: grid;
-  grid-template-columns: minmax(300px, 390px) 1fr;
-  height: min(72vh, 720px);
-  min-height: 460px;
+  display: block;
   border-radius: 22px;
-  overflow: hidden;
-  border: 1px solid var(--line);
-  background: linear-gradient(170deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.65);
+  overflow: visible;
+  background: transparent;
 }
 .disc-list {
-  overflow-y: auto;
-  padding: 16px 14px;
-  background: color-mix(in srgb, var(--inkSoft) 90%, transparent);
-  border-right: 1px solid var(--line);
+  padding: 4px 0;
 }
 .disc-list::-webkit-scrollbar { width: 4px; }
 .disc-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-.disc-cards { display: flex; flex-direction: column; gap: 12px; }
+.disc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+
+.disc-sortbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 0 6px; }
+.disc-sortbar-count { font-size:13px; font-weight:700; color:var(--chalk); }
+.disc-sortbar-opts { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.disc-sortbar-label { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint, rgba(242,237,230,0.5)); }
+.disc-sort-chip { font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.04); color:var(--chalk); cursor:pointer; transition:all .18s; }
+.disc-sort-chip:hover:not(:disabled) { border-color:rgba(255,255,255,0.3); }
+.disc-sort-chip[data-on="true"] { background:var(--pink); border-color:var(--pink); color:#fff; }
+.disc-sort-chip:disabled { opacity:0.4; cursor:not-allowed; }
+[data-theme="paper"] .disc-sort-chip { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.03); }
+
+.disc-loadmore-wrap { display:flex; justify-content:center; padding:22px 0 4px; }
+.disc-loadmore { font-size:14px; font-weight:700; padding:12px 30px; border-radius:12px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:var(--chalk); cursor:pointer; transition:all .18s; }
+.disc-loadmore:hover { background:rgba(255,255,255,0.1); transform:translateY(-2px); }
+[data-theme="paper"] .disc-loadmore { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.04); }
+
+.disc-collections { max-width:1200px; margin:0 auto; padding:48px 24px 8px; }
+.disc-collections-h { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:var(--chalk); font-family:'Bricolage Grotesque',sans-serif; margin:0 0 20px; }
+.disc-collections-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.disc-coll-card { display:flex; flex-direction:column; gap:6px; padding:22px; border-radius:18px; text-decoration:none; border:1px solid rgba(255,255,255,0.1); background:linear-gradient(150deg, color-mix(in srgb, var(--c) 14%, transparent), rgba(255,255,255,0.02)); transition:transform .3s cubic-bezier(0.22,1,0.36,1), border-color .3s; }
+.disc-coll-card:hover { transform:translateY(-5px); border-color:var(--c); }
+.disc-coll-emoji { font-size:30px; line-height:1; margin-bottom:6px; }
+.disc-coll-title { font-size:17px; font-weight:800; color:var(--chalk); font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.3px; }
+.disc-coll-sub { font-size:13px; color:var(--muted, rgba(242,237,230,0.6)); }
+[data-theme="paper"] .disc-coll-card { border-color:rgba(20,23,30,0.12); }
+@media (max-width:760px){ .disc-collections-grid { grid-template-columns:1fr; } }
 .disc-card {
   border: 1px solid var(--line);
   border-radius: 18px;
@@ -718,6 +832,12 @@ const CSS = `
   font-family: 'Inter', sans-serif;
 }
 .disc-map { position: relative; min-height: 280px; }
+.disc-mapsection { margin-top: 40px; }
+.disc-mapsection-h { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--chalk); font-family: 'Bricolage Grotesque', sans-serif; margin: 0 0 16px; }
+.disc-map-wide { height: auto; border-radius: 18px; overflow: hidden; }
+.disc-map-back { position: absolute; top: 14px; left: 14px; z-index: 500; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: none; cursor: pointer; background: rgba(17,19,23,0.9); color: #fff; backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
+.disc-map-back:hover { background: #DE3163; }
+@media (max-width: 760px){ .disc-map-wide { height: auto; } }
 .disc-flash-popup {
   position: absolute;
   bottom: 20px;
@@ -834,10 +954,8 @@ const CSS = `
   }
   .disc-list {
     border-right: none;
-    border-bottom: 1px solid var(--line);
     max-height: none;
   }
-  .disc-map { height: 38vh; }
   .disc-cta-inner { padding: 32px 22px; }
 }
 `;

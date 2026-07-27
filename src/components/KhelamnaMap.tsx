@@ -30,6 +30,8 @@ interface Props {
   /** If true, clicking the map fires onPick with the lat/lng */
   pickMode?: boolean;
   onPick?: (lat: number, lng: number) => void;
+  /** Called with the pin id when a pin is clicked. */
+  onPinClick?: (id: string) => void;
   height?: string;
   borderRadius?: string;
 }
@@ -53,6 +55,7 @@ export default function KhelamnaMap({
   pins = [],
   pickMode = false,
   onPick,
+  onPinClick,
   height = "100%",
   borderRadius = "0",
 }: Props) {
@@ -88,9 +91,9 @@ export default function KhelamnaMap({
         attributionControl: true,
       });
 
-      // Dark-styled OSM tile layer (CartoDB Dark Matter — free, no key)
+      // Light, clean basemap (CartoDB Positron — free, no key)
       L.tileLayer(
-        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
         {
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/">CARTO</a>',
           subdomains: "abcd",
@@ -124,13 +127,14 @@ export default function KhelamnaMap({
           popupAnchor: [0, -28],
         });
 
-        L.marker([pin.lat, pin.lng], { icon: svgIcon })
+        const marker = L.marker([pin.lat, pin.lng], { icon: svgIcon })
           .addTo(map)
           .bindPopup(`
             <div style="font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:#1e293b;">
               ${pin.label}${pin.sport ? `<br><span style="color:${color};font-weight:700">${pin.sport}</span>` : ""}
             </div>
           `);
+        if (onPinClick) marker.on("click", () => onPinClick(pin.id));
       });
 
       // Pick mode
@@ -180,14 +184,14 @@ export default function KhelamnaMap({
       {/* Leaflet CSS */}
       <style>{`
         @import url("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css");
-        .leaflet-container { background: #0B0D11 !important; }
-        .leaflet-tile-pane { filter: brightness(0.9) saturate(0.85); }
-        .leaflet-control-attribution { background: rgba(11,13,17,0.7) !important; color: #8A95A3 !important; font-size: 10px !important; }
-        .leaflet-control-attribution a { color: #8A95A3 !important; }
-        .leaflet-control-zoom a { background: #13161C !important; color: #F2EDE6 !important; border-color: rgba(255,255,255,0.1) !important; }
-        .leaflet-control-zoom a:hover { background: #1C2029 !important; }
-        .leaflet-popup-content-wrapper { background: #F2EDE6 !important; border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important; }
-        .leaflet-popup-tip { background: #F2EDE6 !important; }
+        .leaflet-container { background: #e8eef3 !important; }
+        .leaflet-tile-pane { filter: saturate(1.05); }
+        .leaflet-control-attribution { background: rgba(255,255,255,0.75) !important; color: #64748b !important; font-size: 10px !important; }
+        .leaflet-control-attribution a { color: #64748b !important; }
+        .leaflet-control-zoom a { background: #ffffff !important; color: #14171E !important; border-color: rgba(20,23,30,0.12) !important; }
+        .leaflet-control-zoom a:hover { background: #f1f5f9 !important; }
+        .leaflet-popup-content-wrapper { background: #ffffff !important; border-radius: 12px !important; box-shadow: 0 8px 28px rgba(0,0,0,0.18) !important; }
+        .leaflet-popup-tip { background: #ffffff !important; }
       `}</style>
 
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
