@@ -28,7 +28,7 @@ const CARDS: SportCard[] = [
   { sport: "Running",    color: "#60a5fa", tint: "#16304f", icon: <Zap size={40} />,       tagline: "Ring road crews, every morning",   img: "/sports/running.jpg" },
 ];
 
-const CARD_W = 300;
+const CARD_W = 220;
 const GAP = 40;
 const STEP = CARD_W + GAP;
 
@@ -103,7 +103,7 @@ export default function SportCoverflow({
 
   return (
     <div
-      style={{ position: "relative", width: "100%", height: 440, overflow: "hidden", touchAction: "pan-y", cursor: "grab" }}
+      style={{ position: "relative", width: "100%", height: 330, overflow: "hidden", touchAction: "pan-y", cursor: "grab" }}
       onWheel={onWheel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -179,7 +179,7 @@ function Card({
     <motion.div
       onClick={onClick}
       style={{
-        width: CARD_W, height: 380, flexShrink: 0, borderRadius: 24, overflow: "hidden",
+        width: CARD_W, height: 285, flexShrink: 0, borderRadius: 22, overflow: "hidden",
         position: "relative", cursor: "pointer", transformStyle: "preserve-3d",
         transform: `perspective(1200px) translateZ(${style.z}px) rotateY(${style.rotateY}deg) scale(${style.scale})`,
         filter: `blur(${style.blur}px)`, opacity: style.opacity,
@@ -201,17 +201,17 @@ function Card({
       )}
 
       {/* label overlay */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 22, zIndex: 2,
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 16, zIndex: 2,
         background: "linear-gradient(to top, rgba(8,9,12,0.92), transparent)" }}>
-        <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 26, fontWeight: 800, letterSpacing: "-0.8px", color: "#fff" }}>{card.sport}</div>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.65)", marginTop: 3 }}>{card.tagline}</div>
+        <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-0.6px", color: "#fff" }}>{card.sport}</div>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>{card.tagline}</div>
         {/* Only the centred card is tappable — show that it is. */}
         {index === activeIndex && (
           <div style={{
-            marginTop: 12, display: "inline-flex", alignItems: "center", gap: 6,
-            fontSize: 12.5, fontWeight: 700, color: card.color,
+            marginTop: 10, display: "inline-flex", alignItems: "center", gap: 5,
+            fontSize: 11.5, fontWeight: 700, color: card.color,
             border: `1px solid ${card.color}66`, background: `${card.color}1f`,
-            padding: "7px 13px", borderRadius: 999,
+            padding: "6px 11px", borderRadius: 999,
           }}>
             {filtersInPlace ? `Show ${card.sport} games` : `See ${card.sport} games →`}
           </div>

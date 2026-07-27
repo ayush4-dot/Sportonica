@@ -278,7 +278,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         ══════════════════════════════════ */}
         <div className="p-hero" ref={heroRef}>
           <video autoPlay muted loop playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}>
-            <source src="/hero.mp4" type="video/mp4" />
+            <source src="/hero-small.mp4" type="video/mp4" />
           </video>
           <div className="p-hero-overlay" />
 
