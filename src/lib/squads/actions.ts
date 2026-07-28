@@ -163,3 +163,45 @@ export async function fileReport(input: {
   });
   if (error) throw new Error(error.message);
 }
+
+// ================================================================
+// Join requests — for groups that need the owner's approval
+// ================================================================
+
+/** Ask to join. The owner gets a notification. */
+export async function requestToJoin(squadId: string) {
+  const { sb, user } = await requireUser();
+  const { error } = await sb.from("squad_requests").insert({
+    squad_id: squadId,
+    user_id: user.id,
+  });
+  if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+  revalidatePath(`/league/${squadId}`);
+}
+
+/** Owner approves or declines. Triggers add the member and notify them. */
+export async function decideRequest(
+  requestId: string,
+  squadId: string,
+  decision: "approved" | "denied"
+) {
+  const { sb } = await requireUser();
+  const { error } = await sb
+    .from("squad_requests")
+    .update({ status: decision })
+    .eq("id", requestId);
+  if (error) throw new Error(error.message);
+  revalidatePath(`/league/${squadId}`);
+}
+
+/** Pending requests for a group the caller owns. */
+export async function pendingRequests(squadId: string) {
+  const { sb } = await requireUser();
+  const { data } = await sb
+    .from("squad_requests")
+    .select("id, user_id, created_at, profiles:user_id(full_name, avatar_url)")
+    .eq("squad_id", squadId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+  return data ?? [];
+}

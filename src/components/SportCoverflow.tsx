@@ -22,13 +22,13 @@ const CARDS: SportCard[] = [
   { sport: "Basketball", color: "#FFC93C", tint: "#4a3a0c", icon: <Trophy size={40} />,    tagline: "Three on three, all week",         img: "/sports/basketball.jpg" },
   { sport: "Volleyball", color: "#3b82f6", tint: "#132a52", icon: <Activity size={40} />,  tagline: "Sand, net, sunset",                img: "/sports/volleyball.jpg" },
   { sport: "Badminton",  color: "#a855f7", tint: "#2e1450", icon: <Wind size={40} />,      tagline: "Dawn doubles, indoor courts",      img: "/sports/badminton.jpg" },
-  { sport: "Tennis",     color: "#ec4899", tint: "#43102b", icon: <Activity size={40} />,  tagline: "Baseline rallies",                 img: "/sports/tennis.jpg" },
+  { sport: "Tennis",     color: "#ec4899", tint: "#43102b", icon: <Activity size={40} />,  tagline: "Baseline rallies" },
   { sport: "Pickleball", color: "#84cc16", tint: "#28380c", icon: <Target size={40} />,    tagline: "Easy to learn, hard to stop" },
   { sport: "Swimming",   color: "#06b6d4", tint: "#0c3640", icon: <Waves size={40} />,     tagline: "Lanes, laps, early mornings" },
   { sport: "Running",    color: "#60a5fa", tint: "#16304f", icon: <Zap size={40} />,       tagline: "Ring road crews, every morning",   img: "/sports/running.jpg" },
 ];
 
-const CARD_W = 220;
+const CARD_W = 175;
 const GAP = 40;
 const STEP = CARD_W + GAP;
 
@@ -103,7 +103,7 @@ export default function SportCoverflow({
 
   return (
     <div
-      style={{ position: "relative", width: "100%", height: 330, overflow: "hidden", touchAction: "pan-y", cursor: "grab" }}
+      style={{ position: "relative", width: "100%", height: 250, overflow: "hidden", touchAction: "pan-y", cursor: "grab" }}
       onWheel={onWheel}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -179,7 +179,7 @@ function Card({
     <motion.div
       onClick={onClick}
       style={{
-        width: CARD_W, height: 285, flexShrink: 0, borderRadius: 22, overflow: "hidden",
+        width: CARD_W, height: 220, flexShrink: 0, borderRadius: 18, overflow: "hidden",
         position: "relative", cursor: "pointer", transformStyle: "preserve-3d",
         transform: `perspective(1200px) translateZ(${style.z}px) rotateY(${style.rotateY}deg) scale(${style.scale})`,
         filter: `blur(${style.blur}px)`, opacity: style.opacity,
@@ -201,9 +201,9 @@ function Card({
       )}
 
       {/* label overlay */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 16, zIndex: 2,
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: 13, zIndex: 2,
         background: "linear-gradient(to top, rgba(8,9,12,0.92), transparent)" }}>
-        <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 20, fontWeight: 800, letterSpacing: "-0.6px", color: "#fff" }}>{card.sport}</div>
+        <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 17, fontWeight: 800, letterSpacing: "-0.5px", color: "#fff" }}>{card.sport}</div>
         <div style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>{card.tagline}</div>
         {/* Only the centred card is tappable — show that it is. */}
         {index === activeIndex && (

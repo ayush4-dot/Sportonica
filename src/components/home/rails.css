@@ -2,15 +2,15 @@
    Homepage rails — scannable, high-contrast previews.
    Cards must read as solid objects against the dark page.
    ================================================================ */
-.rail { padding: 54px clamp(20px, 5vw, 56px) 0; max-width: 1240px; margin: 0 auto; }
+.rail { padding: 54px clamp(24px, 5vw, 56px) 0; max-width: none; margin: 0; }
 .rail-head {
   display: flex; align-items: flex-end; justify-content: space-between;
   gap: 18px; margin-bottom: 22px; flex-wrap: wrap;
 }
 .rail-t {
   font-family: 'Bricolage Grotesque', sans-serif;
-  font-size: clamp(24px, 3.6vw, 34px); font-weight: 800;
-  letter-spacing: -0.03em; margin: 0; color: var(--chalk, #F2EDE6);
+  font-size: clamp(34px, 5vw, 60px); font-weight: 800;
+  letter-spacing: -2px; line-height: 0.95; margin: 0; color: #ffffff;
 }
 [data-theme="paper"] .rail-t { color: #14171E; }
 .rail-s { font-size: 14px; opacity: 0.75; margin: 7px 0 0; max-width: 460px; }

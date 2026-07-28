@@ -43,14 +43,14 @@ export default function SquadsClient({
       <div className="play-sec-head">
         <h2>Groups near you</h2>
         <button className="play-btn" onClick={() => setShowCreate(true)}>
-          <Plus size={15} /> Start a squad
+          <Plus size={15} /> Make a group
         </button>
       </div>
 
       {initialSquads.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 20px", opacity: 0.6 }}>
           <Users size={30} style={{ marginBottom: 12, opacity: 0.5 }} />
-          <p style={{ fontSize: 15 }}>No squads yet. Be the first to start one.</p>
+          <p style={{ fontSize: 15 }}>No groups yet. Be the first to make one.</p>
         </div>
       ) : (
         <div className="play-grid">
@@ -103,7 +103,7 @@ export default function SquadsClient({
                     onClick={() => toggle(g)}
                     disabled={pending}
                   >
-                    {isIn ? <><Check size={15} /> Joined — tap to leave</> : <>Join squad <ArrowRight size={15} /></>}
+                    {isIn ? <><Check size={15} /> Joined — tap to leave</> : <>Join group <ArrowRight size={15} /></>}
                   </button>
                 </div>
               </div>
@@ -128,7 +128,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
   const [err, setErr] = useState<string | null>(null);
 
   function submit() {
-    if (!name.trim()) { setErr("Give your squad a name."); return; }
+    if (!name.trim()) { setErr("Give your group a name."); return; }
     setErr(null);
     startTransition(async () => {
       try {
@@ -139,7 +139,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           router.push("/login?redirect=/league");
           return;
         }
-        setErr(e instanceof Error ? e.message : "Couldn't create the squad.");
+        setErr(e instanceof Error ? e.message : "Couldn't create the group.");
       }
     });
   }
@@ -148,7 +148,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(6,7,10,0.72)", backdropFilter: "blur(6px)", zIndex: 400, display: "grid", placeItems: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: "var(--ink-2, #14171E)", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 18, padding: 26, color: "var(--paper, #F2EDE6)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22, fontWeight: 800 }}>Start a squad</h3>
+          <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22, fontWeight: 800 }}>Make a group</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6 }}><X size={20} /></button>
         </div>
 
@@ -175,7 +175,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         {err && <div style={{ color: "#DE3163", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <button className="play-btn" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={pending}>
-          {pending ? "Creating…" : "Create squad"}
+          {pending ? "Creating…" : "Create group"}
         </button>
 
         <style>{`

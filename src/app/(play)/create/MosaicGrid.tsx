@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, ImageIcon, MapPin, Clock, ShieldCheck } from "lucide-react";
-import VenueFilters, { type VenueDist } from "./VenueFilters";
+import VenueFilters, { type VenueDist, type VenuePrice } from "./VenueFilters";
 import { normalizeSport } from "@/lib/sports";
 import SportCoverflow from "@/components/SportCoverflow";
 import { useTheme } from "@/lib/useTheme";
@@ -26,6 +26,7 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
   const [theme] = useTheme();
   const [sport, setSport] = useState<string | null>(null);
   const [dist, setDist] = useState<VenueDist>("any");
+  const [price, setPrice] = useState<VenuePrice>("any");
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   // ── Filter the venues before laying out the mosaic ──────────────
@@ -48,6 +49,11 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
       if (!myCoords || v.lat == null || v.lng == null) return false;
       const km = kmTo(v.lat, v.lng);
       if (km == null || km > Number(dist)) return false;
+    }
+    if (price !== "any") {
+      const rates = v.courts.map((c) => Number(c.base_price)).filter((n) => n > 0);
+      const from = rates.length ? Math.min(...rates) : Infinity;
+      if (from > Number(price)) return false;
     }
     return true;
   });
@@ -115,10 +121,11 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
         </div>
 
         <VenueFilters
-          sport={sport} setSport={setSport}
           dist={dist} setDist={setDist}
+          price={price} setPrice={setPrice}
           onLocation={setMyCoords} hasLocation={!!myCoords}
           count={shown.length}
+          onClear={() => { setDist("any"); setPrice("any"); setMyCoords(null); }}
         />
 
         {shown.length === 0 ? (

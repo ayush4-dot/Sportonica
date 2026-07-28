@@ -18,16 +18,15 @@ const FROM = "Khelam Na <noreply@khelamna.com>";
 
 // ── The only function that touches a delivery mechanism ─────────
 async function deliver(mail: Mail): Promise<void> {
-  const brevoKey = process.env.BREVO_API_KEY;
+  const key = process.env.BREVO_API_KEY;
 
   // No provider configured → log it. The whole flow stays testable.
-  if (!brevoKey) {
+  if (!key) {
     console.log(
       [
         "",
         "┌─ EMAIL (not sent — no BREVO_API_KEY set) ──────────────",
         `│ To:      ${mail.to}`,
-        `│ From:    ${FROM}`,
         `│ Subject: ${mail.subject}`,
         "├────────────────────────────────────────────────────────",
         mail.body.split("\n").map((l) => `│ ${l}`).join("\n"),
@@ -38,22 +37,29 @@ async function deliver(mail: Mail): Promise<void> {
     return;
   }
 
-  // ── Real sending, once BREVO_API_KEY exists ───────────────────
+  // The key must be an API key (xkeysib-…), not SMTP (xsmtpsib-…).
+  // MAIL_FROM must be a verified sender or a verified domain.
   try {
-    await fetch("https://api.brevo.com/v3/smtp/email", {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
       headers: {
-        "api-key": brevoKey,
+        "api-key": key,
         "Content-Type": "application/json",
         accept: "application/json",
       },
       body: JSON.stringify({
-        sender: { name: "Khelam Na", email: process.env.MAIL_FROM ?? "noreply@khelamna.com" },
+        sender: {
+          name: "Khelam Na",
+          email: process.env.MAIL_FROM ?? "noreply@khelamna.com",
+        },
         to: [{ email: mail.to }],
         subject: mail.subject,
         textContent: mail.body,
       }),
     });
+    if (!res.ok) {
+      console.error("[mail] brevo rejected:", res.status, await res.text());
+    }
   } catch (err) {
     // Never let a failed email break a booking. Log and move on.
     console.error("[mail] delivery failed:", err);

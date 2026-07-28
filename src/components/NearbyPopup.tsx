@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
-import { MapPin, X, Navigation, Clock, Users, Loader2 } from "lucide-react";
+import { MapPin, X, Clock, Users, Loader2 } from "lucide-react";
 import { nearbyVenuesAndGames, type NearbyResult } from "@/lib/play/nearby";
 import { sportColor } from "@/lib/sports";
 
@@ -36,12 +36,15 @@ export default function NearbyPopup() {
     );
   }, [open, data, pending]);
 
+  // Open when anything dispatches the "open-nearby" event (e.g. the hero "Book now").
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("open-nearby", handler);
+    return () => window.removeEventListener("open-nearby", handler);
+  }, []);
+
   return (
     <>
-      <button className="nb-fab" onClick={() => setOpen(true)} aria-label="What's near me">
-        <Navigation size={16} /> <span className="nb-fab-label">Near me</span>
-      </button>
-
       {open && (
         <div className="nb-scrim" onClick={() => setOpen(false)}>
           <div className="nb-sheet" onClick={(e) => e.stopPropagation()}>

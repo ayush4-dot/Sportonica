@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { Search, PlusCircle, MapPin, Calendar, ArrowRight, ChevronDown, Zap, Users, Trophy, CircleDot, Target, Wind, Activity } from "lucide-react";
+import { MapPin, Calendar, ArrowRight, ChevronDown, Zap } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
@@ -80,7 +80,7 @@ const CSS = `
   .p-sportbar { padding:56px 56px 8px; }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
   .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
-  .p-sportbar-title { font-size:clamp(30px,4vw,52px); font-weight:800; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; line-height:1; color:var(--chalk); }
+  .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Bricolage Grotesque',sans-serif; line-height:0.95; color:#ffffff; }
   .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.5); display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .p-sportrail { display:flex; gap:14px; overflow-x:auto; padding:4px 0 20px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
   .p-sportrail::-webkit-scrollbar { height:0; }
@@ -99,6 +99,7 @@ const CSS = `
   .p-sportchip-label { position:absolute; left:14px; bottom:34px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
   .p-sportchip-cta { position:absolute; left:14px; bottom:13px; z-index:1; font-size:11px; font-weight:700; display:flex; align-items:center; gap:5px; }
   [data-theme="paper"] .p-sportbar-title { color:#14171E; }
+  [data-theme="paper"] .p-matches-title { color:#14171E !important; }
   [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.55); }
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
@@ -232,7 +233,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
     (acc[g.sport] ??= []).push(g);
     return acc;
   }, {} as Record<string, typeof allGames>);
-  const [counts, setCounts] = useState({ players:"1,200+", games:"500+", sports:"7" });
   // Which sport panel is expanded below the slider. Null = none open.
   const [openSport, setOpenSport] = useState<string | null>(null);
 
@@ -250,19 +250,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         router.push("/discover");
       }
     })();
-    (async () => {
-      const [{ count: p }, { count: g }, { data: sd }] = await Promise.all([
-        supabase.from("profiles").select("*", { count:"exact", head:true }),
-        supabase.from("events").select("*",   { count:"exact", head:true }),
-        supabase.from("events").select("sport").gte("event_date", new Date().toISOString()),
-      ]);
-      const sp = new Set((sd ?? []).map((e: { sport:string }) => e.sport)).size;
-      setCounts({
-        players: p ? `${p.toLocaleString()}+` : "1,200+",
-        games:   g ? `${g.toLocaleString()}+` : "500+",
-        sports:  sp ? String(sp) : "7",
-      });
-    })();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -277,8 +264,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             HERO — full-viewport video
         ══════════════════════════════════ */}
         <div className="p-hero" ref={heroRef}>
-          <video autoPlay muted loop playsInline style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}>
-            <source src="/hero-small.mp4" type="video/mp4" />
+          <video autoPlay muted loop playsInline preload="none" poster="/sports/futsal.jpg" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}>
+            <source src="/hero.mp4" type="video/mp4" />
           </video>
           <div className="p-hero-overlay" />
 
@@ -293,11 +280,10 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             </motion.h1>
             <motion.div className="p-hero-ctas"
               initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7, delay:0.6 }}>
-              <a href="/discover">
-                <motion.button className="btn-white" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                  Book now <ArrowRight size={17} />
-                </motion.button>
-              </a>
+              <motion.button className="btn-white" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+                onClick={() => window.dispatchEvent(new Event("open-nearby"))}>
+                Book now <ArrowRight size={17} />
+              </motion.button>
               <a href="#sports">
                 <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
                   Explore sports
@@ -312,25 +298,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         </div>
 
         {/* ══════════════════════════════════
-            STAT STRIP
-        ══════════════════════════════════ */}
-        <div className="p-stats">
-          {[
-            { val: counts.players, label: "Players" },
-            { val: counts.games,   label: "Games hosted" },
-            { val: "30+",          label: "Venues" },
-            { val: counts.sports,  label: "Sports" },
-          ].map((s, i) => (
-            <motion.div key={i} className="p-stat"
-              initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-              transition={{ duration:0.5, delay:i*0.08 }}>
-              <div className="p-stat-val">{s.val}</div>
-              <div className="p-stat-label">{s.label}</div>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* ══════════════════════════════════
             RAILS — the actionable stuff, up top
         ══════════════════════════════════ */}
         {rails && (
@@ -340,53 +307,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             <GamesRail games={rails.games} />
           </div>
         )}
-
-        {/* ══════════════════════════════════
-            EDITORIAL — what we do
-        ══════════════════════════════════ */}
-        <div className="p-editorial">
-          <motion.div className="p-editorial-left"
-            initial={{ opacity:0, x:-32 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, amount:0.4 }}
-            transition={{ duration:0.7, ease:[0.22,1,0.36,1] }}>
-            <p className="p-editorial-label">What is Khelamna</p>
-            <h2 className="p-editorial-big">
-              The court is open.<br />Someone&apos;s waiting<br />to play.
-            </h2>
-            <a href="/discover" style={{ display:"inline-flex", marginTop:8 }}>
-              <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                Find a game <ArrowRight size={16} />
-              </motion.button>
-            </a>
-          </motion.div>
-          <motion.div className="p-editorial-right"
-            initial={{ opacity:0, x:32 }} whileInView={{ opacity:1, x:0 }} viewport={{ once:true, amount:0.4 }}
-            transition={{ duration:0.7, delay:0.15, ease:[0.22,1,0.36,1] }}>
-            <p className="p-editorial-label">How it works</p>
-            <div style={{ display:"flex", flexDirection:"column", gap:"32px" }}>
-              {[
-                { n:"01", title:"Find your court",   desc:"Search by sport, time and neighbourhood. See who else is already in.",      icon:<Search size={20} color="#DE3163" /> },
-                { n:"02", title:"Lock your slot",    desc:"Join with one tap, or host your own event and set the headcount.",          icon:<PlusCircle size={20} color="#FFC93C" /> },
-                { n:"03", title:"Show up and play",  desc:"Cost splits automatically. Rate the game after. Build your record.",       icon:<Trophy size={20} color="#2E7D5B" /> },
-              ].map((item) => (
-                <motion.div key={item.n}
-                  initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                  transition={{ duration:0.5 }}
-                  style={{ display:"flex", gap:"20px", alignItems:"flex-start" }}>
-                  <div style={{ width:"40px", height:"40px", borderRadius:"10px", background:"rgba(255,255,255,0.06)", border:"1px solid rgba(255,255,255,0.1)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                    {item.icon}
-                  </div>
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"6px" }}>
-                      <span style={{ fontSize:"10px", fontWeight:700, letterSpacing:"0.15em", color:"var(--faint)" }}>{item.n}</span>
-                      <span style={{ fontSize:"16px", fontWeight:700, color:"var(--chalk)", fontFamily:"'Bricolage Grotesque',sans-serif" }}>{item.title}</span>
-                    </div>
-                    <p style={{ fontSize:"14px", lineHeight:1.6, color:"var(--muted)" }}>{item.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        </div>
 
         {/* ══════════════════════════════════
             SPORTS — clickable slider + expandable panel
@@ -520,7 +440,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"var(--faint)", marginBottom:"12px" }}>
                 Live on Khelamna
               </p>
-              <h2 style={{ fontSize:"clamp(32px,4vw,52px)", fontWeight:800, letterSpacing:"-2px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:1 }}>
+              <h2 className="p-matches-title" style={{ fontSize:"clamp(38px,5.5vw,68px)", fontWeight:800, letterSpacing:"-2.5px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:0.95, color:"#ffffff" }}>
                 Matches near you
               </h2>
             </div>
@@ -642,9 +562,9 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
           </a>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
             {[
-              { label:"Discover", href:"/discover" },
+              { label:"Play", href:"/discover" },
               { label:"Host event", href:"/create" },
-              { label:"League", href:"/league" },
+              { label:"Chat", href:"/league" },
               { label:"Sign in", href:"/login" },
               { label:"Admin", href:"/admin" },
             ].map(l => (

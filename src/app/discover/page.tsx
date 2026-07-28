@@ -17,18 +17,6 @@ import JoinModal from "./JoinModal";
 import SportCoverflow from "@/components/SportCoverflow";
 import DiscoverFilters, { DEFAULT_FILTERS, kmBetween, type Filters } from "./DiscoverFilters";
 
-const SPORT_TABS = [
-  { label: "All sports", icon: <Activity size={15} /> },
-  { label: "Futsal", icon: <CircleDot size={15} /> },
-  { label: "Basketball", icon: <Target size={15} /> },
-  { label: "Cricket", icon: <Trophy size={15} /> },
-  { label: "Volleyball", icon: <Wind size={15} /> },
-  { label: "Badminton", icon: <Wind size={15} /> },
-  { label: "Pickleball", icon: <Target size={15} /> },
-  { label: "Tennis", icon: <Activity size={15} /> },
-  { label: "Swimming", icon: <Waves size={15} /> },
-  { label: "Running", icon: <Zap size={15} /> },
-];
 
 function getSportIcon(sport: string, size = 14) {
   switch (sport) {
@@ -191,40 +179,12 @@ function DiscoverInner() {
         <SportCoverflow
           selected={activeSport === "All sports" ? undefined : activeSport}
           onPick={(sport) => {
-            setActiveSport(sport);
+            // Tapping the already-selected sport resets to all games.
+            setActiveSport((cur) => (cur === sport ? "All sports" : sport));
             // Bring the games into view so the filter feels connected.
             document.querySelector(".disc-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
           }}
         />
-      </div>
-
-      {/* ── Sport filter — glass chips ── */}
-      <div className="disc-filter-wrap">
-        <div className="disc-filter-float">
-          {SPORT_TABS.map((s) => {
-            const on = activeSport === s.label;
-            return (
-              <button
-                key={s.label}
-                className="disc-chip"
-                data-on={on}
-                onClick={() => setActiveSport(s.label)}
-              >
-                {on && (
-                  <motion.span
-                    layoutId="disc-sport-puck"
-                    className="disc-chip-puck"
-                    transition={{ type: "spring", stiffness: 420, damping: 32 }}
-                  />
-                )}
-                <span className="disc-chip-inner">
-                  {s.icon}
-                  {s.label}
-                </span>
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* ── Main stage ── */}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Compass, CalendarPlus, Users, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
@@ -10,9 +10,9 @@ type Item = { label: string; href: string; icon: React.ReactNode };
 
 const LINKS: Item[] = [
   { label: "Home", href: "/", icon: <Home size={20} /> },
-  { label: "Discover", href: "/discover", icon: <Compass size={20} /> },
+  { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
-  { label: "Squads", href: "/league", icon: <Users size={20} /> },
+  { label: "Chat", href: "/league", icon: <MessagesSquare size={20} /> },
   { label: "Profile", href: "/profile", icon: <User size={20} /> },
 ];
 

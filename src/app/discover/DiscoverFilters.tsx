@@ -85,6 +85,17 @@ export default function DiscoverFilters({
 
   const active = (Object.keys(filters) as (keyof Filters)[]).filter((k) => filters[k] !== "any").length;
 
+  // Human-readable summary of what's currently applied, each removable.
+  const labelFor = (k: keyof Filters): string => {
+    const find = (opts: { k: string; label: string }[], v: string) => opts.find((o) => o.k === v)?.label ?? v;
+    if (k === "time") return find(TIME_OPTS, filters.time);
+    if (k === "dist") return find(DIST_OPTS, filters.dist);
+    if (k === "price") return find(PRICE_OPTS, filters.price);
+    if (k === "spots") return find(SPOTS_OPTS, filters.spots);
+    return find(SKILL_OPTS, filters.skill);
+  };
+  const activeKeys = (Object.keys(filters) as (keyof Filters)[]).filter((k) => filters[k] !== "any");
+
   return (
     <div className="df">
       <div className="df-bar">
@@ -110,10 +121,26 @@ export default function DiscoverFilters({
 
         {active > 0 && (
           <button className="df-clear" onClick={() => { setFilters(DEFAULT_FILTERS); onLocation(null); }}>
-            <X size={12} /> Clear
+            <X size={12} /> Clear all
           </button>
         )}
       </div>
+
+      {/* Active filters — visible and individually removable */}
+      {activeKeys.length > 0 && (
+        <div className="df-active">
+          {activeKeys.map((k) => (
+            <button key={k} className="df-pill"
+              onClick={() => {
+                setFilters({ ...filters, [k]: "any" });
+                if (k === "dist") onLocation(null);
+              }}
+              aria-label={`Remove ${labelFor(k)} filter`}>
+              {labelFor(k)} <X size={11} />
+            </button>
+          ))}
+        </div>
+      )}
 
       {open && (
         <div className="df-panel">
@@ -150,6 +177,16 @@ export default function DiscoverFilters({
           font-size: 11.5px; opacity: 0.55;
         }
         .df-clear { border: none; opacity: 0.6; padding: 8px 8px; }
+
+        .df-active { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
+        .df-pill {
+          display: inline-flex; align-items: center; gap: 6px;
+          border: 1px solid rgba(222,49,99,0.45); background: rgba(222,49,99,0.14);
+          color: #DE3163; border-radius: 999px; padding: 6px 12px;
+          font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
+          transition: background .18s, border-color .18s;
+        }
+        .df-pill:hover { background: rgba(222,49,99,0.24); border-color: rgba(222,49,99,0.7); }
         .df-clear:hover { opacity: 1; }
         .df-panel {
           margin-top: 12px; padding: 16px; border-radius: 14px;

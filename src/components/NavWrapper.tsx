@@ -1,10 +1,11 @@
 "use client";
 import { usePathname } from "next/navigation";
 import MagnetDock from "./layout/MagnetDock";
-import ThemeToggle from "./ThemeToggle";
+import NotificationBell from "./NotificationBell";
+import MyGamesButton from "./MyGamesButton";
 import NearbyPopup from "./NearbyPopup";
 
-// Global chrome: the magnet dock, the theme pill, and the "Near me" popup.
+// Global chrome: the magnet dock, the top-right actions, and the "Near me" popup.
 export default function NavWrapper() {
   const pathname = usePathname();
   // The nearby popup is for players — not the consoles or auth pages.
@@ -17,7 +18,8 @@ export default function NavWrapper() {
   return (
     <>
       <MagnetDock />
-      <ThemeToggle />
+      <MyGamesButton />
+      <NotificationBell />
       {!hideNearby && <NearbyPopup />}
     </>
   );

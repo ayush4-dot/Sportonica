@@ -1,0 +1,378 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2,
+} from "lucide-react";
+import { updateHostedGame, invitePlayers, cancelInvite } from "@/lib/play/hostActions";
+
+type Game = {
+  id: string; title: string; venue: string; sport: string;
+  event_date: string; fee: number; max_players: number;
+  confirmed_count: number; slots_remaining: number;
+  skill_level?: string | null; notes?: string | null;
+};
+type Invite = {
+  id: string; event_id: string; email: string;
+  paid_by_host: boolean; status: string;
+};
+
+const KTM = "Asia/Kathmandu";
+const when = (iso: string) =>
+  new Date(iso).toLocaleString("en-GB", {
+    weekday: "short", day: "numeric", month: "short",
+    hour: "2-digit", minute: "2-digit", timeZone: KTM,
+  });
+// datetime-local wants "YYYY-MM-DDTHH:mm"
+const toLocalInput = (iso: string) => {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+};
+
+export default function MyGamesClient({
+  hosted, joined, invites,
+}: { hosted: Game[]; joined: Game[]; invites: Invite[] }) {
+  const router = useRouter();
+  const [tab, setTab] = useState<"hosting" | "playing">("hosting");
+  const [editing, setEditing] = useState<Game | null>(null);
+  const [inviting, setInviting] = useState<Game | null>(null);
+
+  return (
+    <main className="mg">
+      <header className="mg-head">
+        <p className="mg-eyebrow">Your games</p>
+        <h1 className="mg-h1">My games</h1>
+        <p className="mg-sub">
+          Everything you&apos;re hosting or playing. Edit details, invite players,
+          and keep your squad in the loop.
+        </p>
+      </header>
+
+      <div className="mg-tabs">
+        <button className={tab === "hosting" ? "on" : ""} onClick={() => setTab("hosting")}>
+          Hosting <span>{hosted.length}</span>
+        </button>
+        <button className={tab === "playing" ? "on" : ""} onClick={() => setTab("playing")}>
+          Playing <span>{joined.length}</span>
+        </button>
+      </div>
+
+      {tab === "hosting" ? (
+        hosted.length === 0 ? (
+          <Empty
+            title="You haven't hosted a game yet"
+            body="Book a court, set your spots, and let players come to you."
+            cta="Host a game" href="/create"
+          />
+        ) : (
+          <div className="mg-grid">
+            {hosted.map((g) => {
+              const mine = invites.filter((i) => i.event_id === g.id);
+              return (
+                <article key={g.id} className="mg-card">
+                  <div className="mg-card-top">
+                    <span className="mg-sport">{g.sport}</span>
+                    <span className="mg-going">
+                      <Users size={12} /> {g.confirmed_count}/{g.max_players}
+                    </span>
+                  </div>
+                  <h3 className="mg-title">{g.title}</h3>
+                  <p className="mg-meta"><MapPin size={12} /> {g.venue}</p>
+                  <p className="mg-meta"><Calendar size={12} /> {when(g.event_date)}</p>
+                  <p className="mg-meta">
+                    <Wallet size={12} /> {g.fee === 0 ? "Free" : `Rs ${g.fee}`}
+                  </p>
+
+                  {mine.length > 0 && (
+                    <div className="mg-invites">
+                      <p className="mg-invites-t">Invited</p>
+                      {mine.map((i) => (
+                        <span key={i.id} className="mg-inv">
+                          {i.email}
+                          {i.paid_by_host && <b title="You're covering this spot"> · paid</b>}
+                          <button
+                            onClick={async () => { await cancelInvite(i.id, g.id); router.refresh(); }}
+                            aria-label={`Remove ${i.email}`}
+                          ><X size={10} /></button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="mg-actions">
+                    <button className="mg-btn" onClick={() => setEditing(g)}>
+                      <Pencil size={13} /> Edit
+                    </button>
+                    <button className="mg-btn" onClick={() => setInviting(g)}>
+                      <Plus size={13} /> Invite
+                    </button>
+                    <Link className="mg-btn ghost" href={`/game/${g.id}`}>View</Link>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )
+      ) : joined.length === 0 ? (
+        <Empty
+          title="You haven't joined a game yet"
+          body="Find a game near you and grab a spot."
+          cta="Find a game" href="/discover"
+        />
+      ) : (
+        <div className="mg-grid">
+          {joined.map((g) => (
+            <article key={g.id} className="mg-card">
+              <div className="mg-card-top">
+                <span className="mg-sport">{g.sport}</span>
+                <span className="mg-going"><Users size={12} /> {g.confirmed_count}/{g.max_players}</span>
+              </div>
+              <h3 className="mg-title">{g.title}</h3>
+              <p className="mg-meta"><MapPin size={12} /> {g.venue}</p>
+              <p className="mg-meta"><Calendar size={12} /> {when(g.event_date)}</p>
+              <div className="mg-actions">
+                <Link className="mg-btn ghost" href={`/game/${g.id}`}>View game</Link>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+
+      {editing && <EditSheet game={editing} onClose={() => { setEditing(null); router.refresh(); }} />}
+      {inviting && <InviteSheet game={inviting} onClose={() => { setInviting(null); router.refresh(); }} />}
+
+      <style>{`
+        .mg { max-width: 1100px; margin: 0 auto; padding: 104px 24px 80px; }
+        .mg-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .2em;
+          text-transform: uppercase; opacity: .5; margin: 0 0 10px; }
+        .mg-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(34px,5vw,60px);
+          font-weight: 800; letter-spacing: -2px; line-height: .95; margin: 0; color: #fff; }
+        [data-theme="paper"] .mg-h1 { color: #14171E; }
+        .mg-sub { font-size: 14.5px; opacity: .6; margin: 12px 0 0; max-width: 520px; line-height: 1.55; }
+
+        .mg-tabs { display: flex; gap: 8px; margin: 28px 0 20px; }
+        .mg-tabs button {
+          display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+          border: 1px solid var(--line, rgba(242,237,230,.14)); background: transparent;
+          color: inherit; border-radius: 999px; padding: 9px 16px;
+          font-size: 13px; font-weight: 700; font-family: inherit; transition: all .2s;
+        }
+        .mg-tabs button span { opacity: .55; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+        .mg-tabs button.on { background: rgba(222,49,99,.15); border-color: rgba(222,49,99,.5); color: #DE3163; }
+
+        .mg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 14px; }
+        .mg-card {
+          border: 1px solid var(--line, rgba(242,237,230,.12)); border-radius: 18px; padding: 16px 17px;
+          background: linear-gradient(170deg, rgba(255,255,255,.035), rgba(255,255,255,0));
+        }
+        [data-theme="paper"] .mg-card { background: #fff; }
+        .mg-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
+        .mg-sport { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .65; }
+        .mg-going { display: inline-flex; align-items: center; gap: 4px;
+          font-family: 'JetBrains Mono', monospace; font-size: 11.5px; opacity: .7; }
+        .mg-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px;
+          font-weight: 700; margin: 0 0 8px; letter-spacing: -.3px; }
+        .mg-meta { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
+          opacity: .62; margin: 0 0 5px; }
+
+        .mg-invites { margin: 12px 0 0; padding-top: 11px; border-top: 1px solid var(--line, rgba(242,237,230,.1)); }
+        .mg-invites-t { font-size: 10px; font-weight: 700; letter-spacing: .12em;
+          text-transform: uppercase; opacity: .45; margin: 0 0 7px; }
+        .mg-inv { display: inline-flex; align-items: center; gap: 5px; margin: 0 5px 5px 0;
+          font-size: 11.5px; padding: 4px 9px; border-radius: 999px;
+          background: rgba(255,201,60,.12); border: 1px solid rgba(255,201,60,.3); color: #FFC93C; }
+        .mg-inv b { font-weight: 700; opacity: .8; }
+        .mg-inv button { background: none; border: none; color: inherit; cursor: pointer;
+          display: inline-flex; padding: 0; opacity: .7; }
+        .mg-inv button:hover { opacity: 1; }
+
+        .mg-actions { display: flex; gap: 7px; margin-top: 14px; flex-wrap: wrap; }
+        .mg-btn {
+          display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+          border: none; border-radius: 10px; padding: 8px 14px;
+          font-size: 12.5px; font-weight: 700; font-family: inherit;
+          background: #DE3163; color: #fff; text-decoration: none; transition: transform .15s;
+        }
+        .mg-btn:hover { transform: translateY(-1px); }
+        .mg-btn.ghost { background: transparent; border: 1px solid var(--line, rgba(242,237,230,.16)); color: inherit; }
+
+        .mg-empty { text-align: center; padding: 70px 20px; border-radius: 18px;
+          border: 1px dashed var(--line, rgba(242,237,230,.16)); }
+        .mg-empty h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px;
+          font-weight: 800; margin: 0 0 8px; }
+        .mg-empty p { font-size: 13.5px; opacity: .6; margin: 0 0 18px; }
+
+        .mg-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.6);
+          backdrop-filter: blur(4px); z-index: 400; display: flex;
+          align-items: center; justify-content: center; padding: 20px; }
+        .mg-sheet { width: 100%; max-width: 440px; max-height: 88vh; overflow-y: auto;
+          border-radius: 20px; padding: 22px; background: #12151b;
+          border: 1px solid rgba(242,237,230,.12); }
+        [data-theme="paper"] .mg-sheet { background: #F8F5F0; }
+        .mg-sheet h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px;
+          font-weight: 800; margin: 0 0 4px; }
+        .mg-sheet .hint { font-size: 12.5px; opacity: .58; margin: 0 0 18px; line-height: 1.5; }
+        .mg-field { margin-bottom: 14px; }
+        .mg-field label { display: block; font-size: 11px; font-weight: 700;
+          letter-spacing: .1em; text-transform: uppercase; opacity: .55; margin-bottom: 6px; }
+        .mg-field input, .mg-field select, .mg-field textarea {
+          width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px;
+          font-family: inherit; color: inherit;
+          border: 1px solid var(--line, rgba(242,237,230,.16)); background: rgba(255,255,255,.04);
+        }
+        [data-theme="paper"] .mg-field input, [data-theme="paper"] .mg-field select,
+        [data-theme="paper"] .mg-field textarea { background: #fff; }
+        .mg-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .mg-err { font-size: 12.5px; color: #ef4444; margin: 0 0 12px; }
+        .mg-sheet-actions { display: flex; gap: 8px; margin-top: 6px; }
+        .mg-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px;
+          line-height: 1.45; cursor: pointer; margin-bottom: 16px; }
+        .mg-check input { margin-top: 2px; }
+      `}</style>
+    </main>
+  );
+}
+
+function Empty({ title, body, cta, href }: { title: string; body: string; cta: string; href: string }) {
+  return (
+    <div className="mg-empty">
+      <h3>{title}</h3>
+      <p>{body}</p>
+      <Link className="mg-btn" href={href}>{cta}</Link>
+    </div>
+  );
+}
+
+// ── Edit ─────────────────────────────────────────────────────────
+function EditSheet({ game, onClose }: { game: Game; onClose: () => void }) {
+  const [title, setTitle] = useState(game.title);
+  const [date, setDate] = useState(toLocalInput(game.event_date));
+  const [fee, setFee] = useState(String(game.fee));
+  const [max, setMax] = useState(String(game.max_players));
+  const [notes, setNotes] = useState(game.notes ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    setBusy(true); setErr(null);
+    try {
+      await updateHostedGame({
+        eventId: game.id,
+        title,
+        event_date: new Date(date).toISOString(),
+        fee: Number(fee) || 0,
+        max_players: Number(max) || game.max_players,
+        notes: notes || null,
+      });
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save changes.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mg-scrim" onClick={onClose}>
+      <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
+        <h3>Edit game</h3>
+        <p className="hint">
+          Players who joined are told automatically if you change the time.
+        </p>
+
+        {err && <p className="mg-err">{err}</p>}
+
+        <div className="mg-field">
+          <label>Title</label>
+          <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        </div>
+        <div className="mg-field">
+          <label>Date &amp; time</label>
+          <input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div className="mg-row2">
+          <div className="mg-field">
+            <label>Fee (Rs)</label>
+            <input type="number" min="0" value={fee} onChange={(e) => setFee(e.target.value)} />
+          </div>
+          <div className="mg-field">
+            <label>Max players</label>
+            <input type="number" min="1" value={max} onChange={(e) => setMax(e.target.value)} />
+          </div>
+        </div>
+        <div className="mg-field">
+          <label>Note for players</label>
+          <textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)}
+            placeholder="Bring a dark shirt, parking is behind the gate…" />
+        </div>
+
+        <div className="mg-sheet-actions">
+          <button className="mg-btn" onClick={save} disabled={busy}>
+            {busy ? <Loader2 size={13} className="spin" /> : <Check size={13} />} Save changes
+          </button>
+          <button className="mg-btn ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Invite ───────────────────────────────────────────────────────
+function InviteSheet({ game, onClose }: { game: Game; onClose: () => void }) {
+  const [raw, setRaw] = useState("");
+  const [hostPays, setHostPays] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function send() {
+    setBusy(true); setErr(null);
+    try {
+      const emails = raw.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
+      await invitePlayers({ eventId: game.id, emails, hostPays });
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't send invites.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mg-scrim" onClick={onClose}>
+      <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
+        <h3>Invite players</h3>
+        <p className="hint">
+          {game.slots_remaining} spot{game.slots_remaining === 1 ? "" : "s"} left in {game.title}.
+          They&apos;ll get an email with the details.
+        </p>
+
+        {err && <p className="mg-err">{err}</p>}
+
+        <div className="mg-field">
+          <label>Email addresses</label>
+          <textarea rows={3} value={raw} onChange={(e) => setRaw(e.target.value)}
+            placeholder="ram@example.com, sita@example.com" />
+        </div>
+
+        <label className="mg-check">
+          <input type="checkbox" checked={hostPays} onChange={(e) => setHostPays(e.target.checked)} />
+          <span>
+            I&apos;m covering their spots.
+            <br />
+            <span style={{ opacity: .6, fontSize: 12 }}>
+              The usual setup — you book and settle up with them later.
+            </span>
+          </span>
+        </label>
+
+        <div className="mg-sheet-actions">
+          <button className="mg-btn" onClick={send} disabled={busy}>
+            {busy ? <Loader2 size={13} /> : <Mail size={13} />} Send invites
+          </button>
+          <button className="mg-btn ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}

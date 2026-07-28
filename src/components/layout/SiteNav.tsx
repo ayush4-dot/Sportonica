@@ -7,9 +7,9 @@ import { createClient } from "@/lib/supabase/client";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
 const NAV = [
-  { label: "Discover", href: "/discover" },
+  { label: "Play", href: "/discover" },
   { label: "Host event", href: "/create" },
-  { label: "League", href: "/league" },
+  { label: "Chat", href: "/league" },
 ];
 
 export default function SiteNav() {
