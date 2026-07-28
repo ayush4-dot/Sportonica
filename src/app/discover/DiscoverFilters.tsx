@@ -189,18 +189,17 @@ export default function DiscoverFilters({
         .df-pill:hover { background: rgba(222,49,99,0.24); border-color: rgba(222,49,99,0.7); }
         .df-clear:hover { opacity: 1; }
         .df-panel {
-          margin-top: 12px; padding: 16px; border-radius: 14px;
-          border: 1px solid var(--line, rgba(242,237,230,0.12));
-          background: rgba(255,255,255,0.02);
-          display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px;
+          margin-top: 12px; padding: 16px; border-radius: 16px;
+          background: rgba(255,255,255,0.035); border: 1px solid var(--line, rgba(242,237,230,0.12));
+          display: flex; flex-direction: column; gap: 16px;
         }
         [data-theme="paper"] .df-panel { background: rgba(20,23,30,0.03); }
         .df-group-t {
-          display: flex; align-items: center; gap: 6px;
-          font-family: 'JetBrains Mono', monospace; font-size: 10px;
-          letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.5; margin-bottom: 9px;
+          display: flex; align-items: center; gap: 6px; margin: 0 0 9px;
+          font-size: 11px; font-weight: 700; letter-spacing: .1em;
+          text-transform: uppercase; opacity: .55;
         }
-        .df-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+        .df-opts { display: flex; gap: 7px; flex-wrap: wrap; }
         @media (max-width: 640px) {
           .df-count { width: 100%; margin-left: 0; order: 99; }
         }

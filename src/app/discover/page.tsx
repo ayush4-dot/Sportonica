@@ -203,9 +203,8 @@ function DiscoverInner() {
             {sortedAll.length} game{sortedAll.length === 1 ? "" : "s"}
           </span>
           <div className="disc-sortbar-opts">
-            <span className="disc-sortbar-label">Sort</span>
+            <span className="disc-sortbar-label">Soonest first · sort by</span>
             {([
-              { k: "soonest", label: "Soonest" },
               { k: "nearest", label: "Nearest" },
               { k: "cheapest", label: "Cheapest" },
               { k: "filling", label: "Filling up" },
@@ -214,7 +213,7 @@ function DiscoverInner() {
                 key={o.k}
                 className="disc-sort-chip"
                 data-on={sortBy === o.k}
-                onClick={() => setSortBy(o.k)}
+                onClick={() => setSortBy(sortBy === o.k ? "soonest" : o.k)}
                 disabled={o.k === "nearest" && !myCoords}
                 title={o.k === "nearest" && !myCoords ? "Enable location first" : undefined}
               >

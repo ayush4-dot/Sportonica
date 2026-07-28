@@ -309,6 +309,88 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         )}
 
         {/* ══════════════════════════════════
+            FEATURED MATCHES
+        ══════════════════════════════════ */}
+        <div style={{ padding:"100px 56px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+          <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+            style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
+            <div>
+              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"var(--faint)", marginBottom:"12px" }}>
+                Live on Khelamna
+              </p>
+              <h2 className="p-matches-title" style={{ fontSize:"clamp(38px,5.5vw,68px)", fontWeight:800, letterSpacing:"-2.5px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:0.95, color:"#ffffff" }}>
+                Matches near you
+              </h2>
+            </div>
+            <a href="/discover">
+              <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                See all matches <ArrowRight size={16} />
+              </motion.button>
+            </a>
+          </motion.div>
+
+          <div className="p-match-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"20px" }}>
+            {evLoading ? (
+              Array.from({ length:3 }).map((_,i) => (
+                <div key={i} style={{ background:"#111", borderRadius:"16px", height:"360px", opacity:0.4, animation:"pulse 1.5s ease-in-out infinite" }} />
+              ))
+            ) : featured.length === 0 ? (
+              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"var(--muted)" }}>
+                <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
+                <a href="/create" style={{ color:"#DE3163", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
+                  Host the first one →
+                </a>
+              </div>
+            ) : featured.map((ev, i) => {
+              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
+              const emo: Record<string,string> = { Futsal:"⚽", Football:"⚽", Basketball:"🏀", Cricket:"🏏", Volleyball:"🏐", Badminton:"🏸", Tennis:"🎾" };
+              const pct = ev.max_players > 0 ? Math.round((ev.confirmed_count / ev.max_players) * 100) : 0;
+              return (
+                <motion.div key={ev.id} className="p-card"
+                  initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
+                  transition={{ duration:0.5, delay:i*0.1 }}
+                  whileHover={{ y:-6, borderColor: color + "44" }}
+                >
+                  <div className="p-card-banner" style={{ background:`linear-gradient(135deg,${color}20,#000)` }}>
+                    {ev.flash && (
+                      <div style={{ position:"absolute", top:"12px", left:"12px", background:"#E85D24", color:"#fff", fontSize:"10px", fontWeight:800, padding:"4px 10px", borderRadius:"100px", display:"flex", alignItems:"center", gap:"4px", letterSpacing:"0.08em" }}>
+                        <Zap size={9} fill="#fff" /> FLASH
+                      </div>
+                    )}
+                    <span style={{ fontSize:"72px", lineHeight:1 }}>{emo[ev.sport] ?? "🏅"}</span>
+                  </div>
+                  <div className="p-card-body">
+                    <p className="p-card-sport" style={{ color }}>{ev.sport.toUpperCase()}</p>
+                    <h3 className="p-card-title">{ev.title}</h3>
+                    <div className="p-card-meta">
+                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><MapPin size={11} />{ev.venue}</span>
+                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><Calendar size={11} />{new Date(ev.event_date).toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})} · {new Date(ev.event_date).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
+                    </div>
+                    <div className="p-fill-bar">
+                      <motion.div initial={{ width:0 }} whileInView={{ width:`${pct}%` }} viewport={{ once:true }}
+                        transition={{ duration:0.8 }}
+                        style={{ height:"100%", background: pct>=90?"#ef4444":color, borderRadius:"2px" }} />
+                    </div>
+                    <div className="p-card-footer">
+                      <span style={{ fontSize:"12px", color:"var(--faint)", fontFamily:"'JetBrains Mono',monospace" }}>
+                        {ev.confirmed_count}/{ev.max_players} joined · {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
+                      </span>
+                      <motion.button
+                        whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
+                        onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
+                        disabled={ev.slots_remaining === 0}
+                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#FFC93C"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        {ev.slots_remaining===0 ? "Full" : "Join"}
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* ══════════════════════════════════
             SPORTS — clickable slider + expandable panel
         ══════════════════════════════════ */}
         <div id="sports">
@@ -428,88 +510,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               </motion.div>
             );
           })()}
-        </div>
-
-        {/* ══════════════════════════════════
-            FEATURED MATCHES
-        ══════════════════════════════════ */}
-        <div style={{ padding:"100px 56px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-          <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-            style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
-            <div>
-              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"var(--faint)", marginBottom:"12px" }}>
-                Live on Khelamna
-              </p>
-              <h2 className="p-matches-title" style={{ fontSize:"clamp(38px,5.5vw,68px)", fontWeight:800, letterSpacing:"-2.5px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:0.95, color:"#ffffff" }}>
-                Matches near you
-              </h2>
-            </div>
-            <a href="/discover">
-              <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                See all matches <ArrowRight size={16} />
-              </motion.button>
-            </a>
-          </motion.div>
-
-          <div className="p-match-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"20px" }}>
-            {evLoading ? (
-              Array.from({ length:3 }).map((_,i) => (
-                <div key={i} style={{ background:"#111", borderRadius:"16px", height:"360px", opacity:0.4, animation:"pulse 1.5s ease-in-out infinite" }} />
-              ))
-            ) : featured.length === 0 ? (
-              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"var(--muted)" }}>
-                <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
-                <a href="/create" style={{ color:"#DE3163", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
-                  Host the first one →
-                </a>
-              </div>
-            ) : featured.map((ev, i) => {
-              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
-              const emo: Record<string,string> = { Futsal:"⚽", Football:"⚽", Basketball:"🏀", Cricket:"🏏", Volleyball:"🏐", Badminton:"🏸", Tennis:"🎾" };
-              const pct = ev.max_players > 0 ? Math.round((ev.confirmed_count / ev.max_players) * 100) : 0;
-              return (
-                <motion.div key={ev.id} className="p-card"
-                  initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                  transition={{ duration:0.5, delay:i*0.1 }}
-                  whileHover={{ y:-6, borderColor: color + "44" }}
-                >
-                  <div className="p-card-banner" style={{ background:`linear-gradient(135deg,${color}20,#000)` }}>
-                    {ev.flash && (
-                      <div style={{ position:"absolute", top:"12px", left:"12px", background:"#E85D24", color:"#fff", fontSize:"10px", fontWeight:800, padding:"4px 10px", borderRadius:"100px", display:"flex", alignItems:"center", gap:"4px", letterSpacing:"0.08em" }}>
-                        <Zap size={9} fill="#fff" /> FLASH
-                      </div>
-                    )}
-                    <span style={{ fontSize:"72px", lineHeight:1 }}>{emo[ev.sport] ?? "🏅"}</span>
-                  </div>
-                  <div className="p-card-body">
-                    <p className="p-card-sport" style={{ color }}>{ev.sport.toUpperCase()}</p>
-                    <h3 className="p-card-title">{ev.title}</h3>
-                    <div className="p-card-meta">
-                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><MapPin size={11} />{ev.venue}</span>
-                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><Calendar size={11} />{new Date(ev.event_date).toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})} · {new Date(ev.event_date).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
-                    </div>
-                    <div className="p-fill-bar">
-                      <motion.div initial={{ width:0 }} whileInView={{ width:`${pct}%` }} viewport={{ once:true }}
-                        transition={{ duration:0.8 }}
-                        style={{ height:"100%", background: pct>=90?"#ef4444":color, borderRadius:"2px" }} />
-                    </div>
-                    <div className="p-card-footer">
-                      <span style={{ fontSize:"12px", color:"var(--faint)", fontFamily:"'JetBrains Mono',monospace" }}>
-                        {ev.confirmed_count}/{ev.max_players} joined · {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
-                      </span>
-                      <motion.button
-                        whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
-                        onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
-                        disabled={ev.slots_remaining === 0}
-                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#FFC93C"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
-                        {ev.slots_remaining===0 ? "Full" : "Join"}
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
         </div>
 
         {/* ══════════════════════════════════
