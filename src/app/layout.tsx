@@ -40,6 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        {/* Set the theme before first paint so the page never flashes
+            the wrong one while React hydrates. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("khelamna-theme")||"glass";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="glass";}})();`,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link

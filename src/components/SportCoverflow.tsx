@@ -44,8 +44,11 @@ export default function SportCoverflow({
   const router = useRouter();
   const [active, setActive] = useState(Math.floor(CARDS.length / 2));
   const x = useMotionValue(0);
-  const springX = useSpring(x, { stiffness: 260, damping: 34, mass: 0.9 });
+  const springX = useSpring(x, { stiffness: 170, damping: 26, mass: 0.85 });
   const dragging = useRef(false);
+  const velocity = useRef(0);
+  const lastX = useRef(0);
+  const lastT = useRef(0);
   const didDrag = useRef(false);
   const startX = useRef(0);
   const startPos = useRef(0);
@@ -60,24 +63,36 @@ export default function SportCoverflow({
   // Move to a given index (spring animates there).
   useEffect(() => {
     const target = -active * STEP;
-    animate(x, target, { type: "spring", stiffness: 260, damping: 34, mass: 0.9 });
+    animate(x, target, { type: "spring", stiffness: 170, damping: 26, mass: 0.85 });
   }, [active, x]);
 
   function clampIndex(i: number) {
     return Math.max(0, Math.min(CARDS.length - 1, i));
   }
 
-  // Wheel / trackpad horizontal or vertical → step through.
+  // Wheel / trackpad: accumulate movement so a flick glides across cards
+  // instead of stepping one notch at a time.
+  const wheelAcc = useRef(0);
+  const wheelTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   function onWheel(e: React.WheelEvent) {
     const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    if (Math.abs(delta) < 8) return;
-    // debounce with a simple lock
-    if (wheelLock.current) return;
-    wheelLock.current = true;
-    setActive((a) => clampIndex(a + (delta > 0 ? 1 : -1)));
-    setTimeout(() => (wheelLock.current = false), 260);
+    if (Math.abs(delta) < 2) return;
+
+    wheelAcc.current += delta;
+
+    // Move a card once enough travel has built up.
+    const threshold = STEP * 0.45;
+    if (Math.abs(wheelAcc.current) >= threshold) {
+      const steps = Math.trunc(wheelAcc.current / threshold);
+      wheelAcc.current -= steps * threshold;
+      setActive((a) => clampIndex(a + steps));
+    }
+
+    // Reset the accumulator once the gesture stops.
+    if (wheelTimer.current) clearTimeout(wheelTimer.current);
+    wheelTimer.current = setTimeout(() => { wheelAcc.current = 0; }, 140);
   }
-  const wheelLock = useRef(false);
 
   // Pointer drag / swipe.
   function onPointerDown(e: React.PointerEvent) {
@@ -85,19 +100,41 @@ export default function SportCoverflow({
     didDrag.current = false;
     startX.current = e.clientX;
     startPos.current = x.get();
+    lastX.current = e.clientX;
+    lastT.current = performance.now();
+    velocity.current = 0;
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
   }
   function onPointerMove(e: React.PointerEvent) {
     if (!dragging.current) return;
     const dx = e.clientX - startX.current;
     if (Math.abs(dx) > 6) didDrag.current = true;   // a real drag, not a tap
-    x.set(startPos.current + dx);
+
+    // Track velocity for a momentum-aware release.
+    const now = performance.now();
+    const dt = now - lastT.current;
+    if (dt > 0) velocity.current = (e.clientX - lastX.current) / dt; // px per ms
+    lastX.current = e.clientX;
+    lastT.current = now;
+
+    // Rubber-band at the ends so it never feels stuck.
+    let next = startPos.current + dx;
+    const min = -(CARDS.length - 1) * STEP;
+    if (next > 0) next = next * 0.35;
+    if (next < min) next = min + (next - min) * 0.35;
+    x.set(next);
   }
+
   function onPointerUp() {
     if (!dragging.current) return;
     dragging.current = false;
-    // snap to nearest index based on where we let go
-    const nearest = clampIndex(Math.round(-x.get() / STEP));
+
+    // A quick flick carries you onward; a slow drag just snaps to nearest.
+    const v = velocity.current;                 // px/ms, positive = dragging right
+    const projected = -(x.get() + v * 140) / STEP;
+    const nearest = clampIndex(Math.round(projected));
+
+    velocity.current = 0;
     setActive(nearest);
   }
 
