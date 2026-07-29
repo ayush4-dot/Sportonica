@@ -43,6 +43,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Set the theme before first paint so the page never flashes
             the wrong one while React hydrates. */}
         <script
+          suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("khelamna-theme")||"glass";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="glass";}})();`,
           }}

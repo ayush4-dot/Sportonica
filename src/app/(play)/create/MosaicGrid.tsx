@@ -2,8 +2,21 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ImageIcon, MapPin, Clock, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus } from "lucide-react";
+
+// Eight accent pairs, cycled so a wall of grounds never looks flat.
+const HUES = [
+  { a: "#FFC93C", b: "#F0872A" },  // amber
+  { a: "#4ADE80", b: "#16A34A" },  // green
+  { a: "#60A5FA", b: "#2563EB" },  // blue
+  { a: "#F472B6", b: "#DB2777" },  // pink
+  { a: "#C084FC", b: "#7C3AED" },  // violet
+  { a: "#2DD4BF", b: "#0D9488" },  // teal
+  { a: "#FB923C", b: "#EA580C" },  // orange
+  { a: "#F87171", b: "#DC2626" },  // red
+];
 import VenueFilters, { type VenueDist, type VenuePrice } from "./VenueFilters";
+import DateStrip from "./DateStrip";
 import { normalizeSport } from "@/lib/sports";
 import SportCoverflow from "@/components/SportCoverflow";
 import { useTheme } from "@/lib/useTheme";
@@ -12,12 +25,6 @@ import type { Venue, Court } from "@/lib/admin/types";
 type VenueWithCourts = Venue & { courts: Court[] };
 
 // Build the best Google Maps link we have for a venue.
-function mapsLink(v: Venue): string | null {
-  if (v.maps_url) return v.maps_url;
-  if (v.lat != null && v.lng != null) return `https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}`;
-  return null;
-}
-
 // Mosaic span pattern — hero first, then rhythm. Repeats past 8 cells.
 const SPANS = ["s-hero", "", "", "s-tall", "", "s-wide", "", ""];
 
@@ -27,6 +34,7 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
   const [sport, setSport] = useState<string | null>(null);
   const [dist, setDist] = useState<VenueDist>("any");
   const [price, setPrice] = useState<VenuePrice>("any");
+  const [pickDate, setPickDate] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" }));
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
   // ── Filter the venues before laying out the mosaic ──────────────
@@ -120,6 +128,8 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
           />
         </div>
 
+        <DateStrip value={pickDate} onPick={setPickDate} />
+
         <VenueFilters
           dist={dist} setDist={setDist}
           price={price} setPrice={setPrice}
@@ -164,51 +174,71 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
               const from = v.courts.length
                 ? Math.min(...v.courts.map((c) => Number(c.base_price)).filter((n) => n > 0))
                 : null;
-              const sports = v.sports.length ? v.sports.join(" · ") : v.venue_type;
-              const href = `/create/${v.id}`;
+              const sports = v.sports.length ? v.sports : [v.venue_type];
+              const shown = sports.slice(0, 3);
+              const extra = sports.length - shown.length;
+              const km = myCoords && v.lat != null && v.lng != null ? kmTo(v.lat, v.lng) : null;
+              const href = `/create/${v.id}?date=${pickDate}`;
+              // Cards cycle through three skins so a row never looks flat.
+              const skin = ["indigo", "chalk", "ink"][i % 3];
+              const maps = v.lat != null && v.lng != null
+                ? `https://www.google.com/maps/search/?api=1&query=${v.lat},${v.lng}`
+                : null;
 
               return (
                 <a
                   key={v.id}
                   href={href}
-                  className={`mz-cell ${span} `}
+                  className="fcard"
+                  data-skin={skin}
                   style={{ animationDelay: delay }}
                   onClick={(e) => cellTap(e, v.id, href)}
                 >
-                  <div className="mz-img">
+                  <div className="fcard-media">
                     {photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={photo} alt={v.name} loading="lazy" />
+                      <>
+                        {/* Blurred copy fills the frame so the real photo
+                            can be shown whole, never cropped. */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className="fcard-blur" src={photo} alt="" aria-hidden="true" loading="lazy" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className="fcard-photo" src={photo} alt="" loading="lazy" />
+                      </>
                     ) : (
-                      <div className="mz-img-empty"><ImageIcon size={34} /></div>
+                      <div className="fcard-noimg"><ImageIcon size={26} /></div>
                     )}
                   </div>
 
-                  <div className="mz-shade" />
+                  {v.verification_status === "verified" && (
+                    <span className="fcard-verified"><Check size={11} /> Verified</span>
+                  )}
 
-                  <span className={`mz-tag ${v.verification_status === "verified" ? "verified" : ""}`}>
-                    {v.verification_status === "verified" ? "Verified" : sports.split(" · ")[0]}
-                  </span>
+                  {/* tab — price steps up over the photo */}
+                  <div className="fcard-tab">
+                    <span className="fcard-price">
+                      {from ? <>Rs {from}<small>/hr</small></> : <>Ask</>}
+                    </span>
+                    <span className="fcard-arrow"><ArrowUpRight size={18} /></span>
+                  </div>
 
-                  <div className="mz-content">
-                    <h3 className="t">{v.name}</h3>
-                    <div className="dv" />
-                    <p className="d">
-                      {sports}{from ? ` · from Rs ${from}/hr` : ""}
-                      {myCoords && v.lat != null && v.lng != null && (() => {
-                        const km = kmTo(v.lat, v.lng);
-                        return km == null ? null : <span style={{ color: "#FFC93C" }}> · {km.toFixed(1)} km</span>;
-                      })()}
-                    </p>
-                    <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                      <span className="cta">Book this ground <ArrowRight size={14} /></span>
-                      {mapsLink(v) && (
+                  <div className="fcard-panel">
+                    <div className="fcard-top">
+                      <h3 className="fcard-name">{v.name}</h3>
+                      <div className="fcard-sports">
+                        {shown.map((sp) => <span key={sp}>{sp}</span>)}
+                        {extra > 0 && <span className="more">+{extra}</span>}
+                      </div>
+                    </div>
+
+                    <div className="fcard-actions">
+                      <span className="fcard-book"><CalendarPlus size={14} /> Book</span>
+                      {maps && (
                         <span
                           role="link"
-                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(mapsLink(v)!, "_blank"); }}
-                          style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 600, color: "#FFC93C", cursor: "pointer" }}
+                          className="fcard-map"
+                          onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(maps, "_blank"); }}
                         >
-                          <MapPin size={12} /> View location
+                          <MapPin size={14} /> {km != null ? `${km.toFixed(1)} km` : "Map"}
                         </span>
                       )}
                     </div>

@@ -6,8 +6,14 @@ import BookingFlow from "./BookingFlow";
 
 export const dynamic = "force-dynamic";
 
-export default async function VenueBookingPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function VenueBookingPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ date?: string }>;
+}) {
   const { id } = await params;
+  const { date } = await searchParams;
   const { venue, courts, hoursByCourt } = await getVenueForBooking(id);
   if (!venue) notFound();
 
@@ -49,6 +55,7 @@ export default async function VenueBookingPage({ params }: { params: Promise<{ i
           venueName={venue.name}
           courts={courts}
           hoursByCourt={hoursByCourt}
+          initialDate={date}
         />
       </div>
     </div>

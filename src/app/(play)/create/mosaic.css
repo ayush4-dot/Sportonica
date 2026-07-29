@@ -196,3 +196,302 @@
   .mz *, .mz-cell { animation: none !important; transition: none !important; opacity: 1 !important; transform: none !important; }
   .mz-content .t, .mz-content .dv, .mz-content .d, .mz-content .cta, .mz-tag, .mz-shade { opacity: 1 !important; }
 }
+
+
+
+
+
+
+/* ═══════════════════════════════════════════════════════════
+   Venue cards — photo, then the facts. One accent each.
+   ═══════════════════════════════════════════════════════════ */
+.mz-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr));
+  gap: 20px;
+}
+
+.vc {
+  display: flex; flex-direction: column; overflow: hidden;
+  border-radius: 22px; text-decoration: none; color: inherit;
+  background: #12151b;
+  border: 1px solid rgba(255,255,255,.09);
+  box-shadow: 0 16px 36px -22px rgba(0,0,0,.8);
+  transition: transform .3s cubic-bezier(.22,1,.36,1), box-shadow .3s, border-color .24s;
+  animation: mzIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+[data-theme="paper"] .vc { background: #fff; border-color: rgba(20,23,30,.1); }
+.vc:hover {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 26px 52px -22px rgba(0,0,0,.85),
+              0 0 30px -14px color-mix(in srgb, var(--accent) 50%, transparent);
+}
+
+.vc-media { position: relative; aspect-ratio: 16 / 11; overflow: hidden; }
+.vc-media img {
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transition: transform .55s cubic-bezier(.22,1,.36,1);
+}
+.vc:hover .vc-media img { transform: scale(1.06); }
+.vc-wash {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--accent) 15%, transparent) 0%,
+    transparent 45%,
+    rgba(0,0,0,.6) 100%);
+}
+.vc-noimg {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  color: rgba(255,255,255,.4);
+  background: linear-gradient(150deg, var(--accent), var(--accent2));
+}
+
+.vc-verified, .vc-km {
+  position: absolute; top: 11px; z-index: 2;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.vc-verified { left: 11px; background: rgba(46,125,91,.92); color: #fff; }
+.vc-km {
+  right: 11px; background: rgba(11,13,17,.7);
+  color: var(--accent); font-family: 'JetBrains Mono', monospace;
+}
+
+.vc-price {
+  position: absolute; left: 12px; bottom: 11px; z-index: 2;
+  display: inline-flex; align-items: baseline; gap: 3px;
+  padding: 6px 12px; border-radius: 11px;
+  background: rgba(11,13,17,.72);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent);
+}
+.vc-price .cur  { font-size: 11px; color: rgba(242,237,230,.6); }
+.vc-price b {
+  font-family: 'JetBrains Mono', monospace; font-size: 19px; font-weight: 800;
+  letter-spacing: -.8px; color: var(--accent);
+}
+.vc-price .unit { font-size: 10.5px; color: rgba(242,237,230,.55); }
+.vc-price .ask  { font-size: 13px; letter-spacing: -.2px; }
+
+.vc-body { padding: 14px 15px 15px; display: flex; flex-direction: column; gap: 9px; }
+.vc-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.vc-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 18px; font-weight: 800; letter-spacing: -.5px; line-height: 1.2;
+  margin: 0; color: var(--chalk, #F2EDE6);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+[data-theme="paper"] .vc-name { color: #14171E; }
+
+/* just the arrow — the whole card is the link */
+.vc-go {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; border-radius: 999px; color: #14171E;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45),
+              0 6px 16px -7px color-mix(in srgb, var(--accent) 75%, transparent);
+  transition: transform .22s cubic-bezier(.22,1,.36,1), box-shadow .24s;
+}
+.vc-go svg { transition: transform .24s cubic-bezier(.22,1,.36,1); }
+.vc:hover .vc-go {
+  transform: translateY(-1px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55),
+              0 10px 22px -7px color-mix(in srgb, var(--accent) 90%, transparent);
+}
+.vc:hover .vc-go svg { transform: translateX(3px); }
+
+.vc-loc { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: rgba(242,237,230,.6); cursor: pointer; }
+[data-theme="paper"] .vc-loc { color: rgba(20,23,30,.6); }
+.vc-loc .txt { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 60%; }
+.vc-loc .go {
+  flex-shrink: 0; padding: 2px 7px; border-radius: 6px;
+  font-size: 9.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.vc-loc:hover .go { background: var(--accent); color: #14171E; }
+
+.vc-sports { display: flex; gap: 5px; flex-wrap: wrap; }
+.vc-sports span {
+  padding: 4px 9px; border-radius: 7px; font-size: 10.5px; font-weight: 700;
+  background: rgba(255,255,255,.07); color: rgba(242,237,230,.75);
+}
+[data-theme="paper"] .vc-sports span { background: rgba(20,23,30,.06); color: rgba(20,23,30,.7); }
+.vc-sports .more {
+  background: transparent; color: var(--accent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent);
+}
+
+@media (max-width: 520px) {
+  .mz-grid { grid-template-columns: 1fr; gap: 14px; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════
+   Folder-tab venue cards, in three rotating skins.
+   Photo is a strip at the top; the panel carries everything
+   else, with a tab stepping up over the photo for the price.
+   ═══════════════════════════════════════════════════════════ */
+.mz-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr));
+  gap: 20px;
+}
+
+.fcard {
+  position: relative; display: block; overflow: hidden;
+  aspect-ratio: 4 / 5; border-radius: 26px;
+  text-decoration: none;
+  transition: transform .32s cubic-bezier(.22,1,.36,1), box-shadow .32s;
+  animation: mzIn .5s cubic-bezier(.22,1,.36,1) both;
+}
+.fcard:hover { transform: translateY(-8px); }
+
+/* The drawer: on hover the panel slides down, uncovering the photo. */
+.fcard:hover .fcard-panel { height: 40%; }
+.fcard:hover .fcard-tab   { bottom: 40%; width: 70%; }
+
+/* Sports chips step aside as the drawer closes, so nothing clips. */
+.fcard-sports {
+  transition: opacity .28s ease, max-height .42s cubic-bezier(.22,1,.36,1);
+  max-height: 60px; overflow: hidden;
+}
+.fcard:hover .fcard-sports { opacity: 0; max-height: 0; }
+
+/* ── skins ── */
+.fcard[data-skin="indigo"] {
+  --panel: #1B1B5C; --fg: #FFFFFF; --dim: rgba(255,255,255,.62);
+  --chip: rgba(255,255,255,.13); --accent: #A9B0FF;
+  background: var(--panel);
+  box-shadow: 0 20px 44px -20px rgba(27,27,92,.85);
+}
+.fcard[data-skin="chalk"] {
+  --panel: #E9EBEF; --fg: #14171E; --dim: rgba(20,23,30,.6);
+  --chip: rgba(20,23,30,.07); --accent: #B4442F;
+  background: var(--panel);
+  box-shadow: 0 20px 44px -22px rgba(0,0,0,.45);
+}
+.fcard[data-skin="ink"] {
+  --panel: #0F1216; --fg: #FFFFFF; --dim: rgba(255,255,255,.6);
+  --chip: rgba(255,255,255,.1); --accent: #FFC93C;
+  background: var(--panel);
+  box-shadow: 0 20px 44px -20px rgba(0,0,0,.85);
+}
+.fcard:hover { box-shadow: 0 32px 60px -22px rgba(0,0,0,.7); }
+
+/* photo strip */
+.fcard-media {
+  position: absolute; top: 0; left: 0; right: 0; height: 46%;
+  overflow: hidden;
+  transition: height .42s cubic-bezier(.22,1,.36,1);
+}
+.fcard:hover .fcard-media { height: 60%; }
+
+/* Blurred, over-scaled copy fills the frame — no empty letterbox bars. */
+.fcard-blur {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover; display: block;
+  transform: scale(1.25); filter: blur(22px) saturate(130%) brightness(.7);
+}
+
+/* The real photo, shown whole. */
+.fcard-photo {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: contain; display: block;
+  transition: transform .6s cubic-bezier(.22,1,.36,1);
+}
+.fcard:hover .fcard-photo { transform: scale(1.04); }
+.fcard-noimg {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  color: var(--dim); opacity: .45;
+  background: repeating-linear-gradient(45deg, rgba(128,128,128,.12) 0 10px, transparent 10px 20px);
+}
+
+.fcard-verified {
+  position: absolute; top: 12px; right: 12px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800;
+  background: rgba(46,125,91,.94); color: #fff;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+
+/* ── tab: steps up over the photo, holds the price ── */
+.fcard-tab {
+  position: absolute; left: 0; bottom: 54%; z-index: 3;
+  width: 58%; height: 58px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 17px;
+  background: var(--panel);
+  border-radius: 26px 20px 0 0;
+  transition: width .42s cubic-bezier(.22,1,.36,1), bottom .42s cubic-bezier(.22,1,.36,1);
+}
+/* the concave joint that makes it read as a folder */
+.fcard-tab::after {
+  content: ""; position: absolute; right: -20px; bottom: 0;
+  width: 20px; height: 20px;
+  border-bottom-left-radius: 20px;
+  box-shadow: -7px 7px 0 7px var(--panel);
+}
+
+
+.fcard-price {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 21px; font-weight: 800; letter-spacing: -.8px; color: var(--fg);
+  white-space: nowrap;
+}
+.fcard-price small { font-size: 11px; font-weight: 600; opacity: .5; margin-left: 2px; }
+.fcard-arrow {
+  display: inline-flex; color: var(--fg); opacity: .55;
+  transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s, color .3s;
+}
+.fcard:hover .fcard-arrow { transform: translate(3px, -3px); opacity: 1; color: var(--accent); }
+
+/* ── panel ── */
+.fcard-panel {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  height: 54%; padding: 16px 17px 17px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  background: var(--panel);
+  border-radius: 0 20px 26px 26px;
+  transition: height .42s cubic-bezier(.22,1,.36,1);
+}
+.fcard-top { display: flex; flex-direction: column; gap: 9px; }
+.fcard-name {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: 20px; font-weight: 800; letter-spacing: -.5px; line-height: 1.15;
+  margin: 0; color: var(--fg);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.fcard-sports { display: flex; gap: 5px; flex-wrap: wrap; }
+.fcard-sports span {
+  padding: 4px 9px; border-radius: 7px; font-size: 10.5px; font-weight: 600;
+  background: var(--chip); color: var(--dim);
+}
+.fcard-sports .more { background: transparent; color: var(--accent); border: 1px solid currentColor; }
+
+/* actions — book + map */
+.fcard-actions { display: flex; align-items: center; gap: 8px; }
+.fcard-book, .fcard-map {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 9px 14px; border-radius: 11px;
+  font-size: 12.5px; font-weight: 800; cursor: pointer;
+  transition: background .22s, color .22s, transform .16s;
+}
+.fcard-book { background: var(--accent); color: var(--panel); }
+.fcard:hover .fcard-book { transform: translateY(-1px); }
+.fcard-map { background: var(--chip); color: var(--dim); }
+.fcard-map:hover { color: var(--fg); transform: translateY(-1px); }
+
+@media (max-width: 520px) {
+  .mz-grid { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 13px; }
+  .fcard { border-radius: 20px; }
+  .fcard-tab { height: 48px; padding: 0 13px; border-radius: 20px 16px 0 0; }
+  .fcard-price { font-size: 17px; }
+  .fcard-panel { padding: 13px; border-radius: 0 16px 20px 20px; }
+  .fcard-name { font-size: 16px; }
+  .fcard-book, .fcard-map { padding: 7px 10px; font-size: 11.5px; }
+}
