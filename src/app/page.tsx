@@ -3,9 +3,45 @@ import HomeClient from "./HomeClient";
 
 export const dynamic = "force-dynamic";
 
+// Tells Google what kind of site this actually is, rather than leaving it
+// to infer from unstructured page text — a WebSite/Organization pairing
+// is the standard baseline for a local service platform like this.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "name": "Khelam Na",
+      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
+      "logo": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com"}/icons/icon-512.png`,
+      "areaServed": { "@type": "City", "name": "Kathmandu" },
+    },
+    {
+      "@type": "WebSite",
+      "name": "Khelam Na",
+      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
+      "description": "Book courts, join pickup games, and find your regular crew across Kathmandu.",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com"}/discover?q={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    },
+  ],
+};
+
 // Server wrapper: fetches the rail data, then hands it to the (client)
 // homepage so the animations and theme hooks keep working.
 export default async function Page() {
   const rails = await getHomeRails().catch(() => null);
-  return <HomeClient rails={rails ?? undefined} />;
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
+      <HomeClient rails={rails ?? undefined} />
+    </>
+  );
 }
