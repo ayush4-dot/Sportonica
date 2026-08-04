@@ -4,6 +4,7 @@ import MagnetDock from "./layout/MagnetDock";
 import AppHeader from "./AppHeader";
 import NearbyPopup from "./NearbyPopup";
 import AnimatedBackground from "./AnimatedBackground";
+import EnsureE2EKey from "./EnsureE2EKey";
 
 // Global chrome: the animated backdrop, the magnet dock, the top-right
 // actions, and the "Near me" popup.
@@ -24,6 +25,7 @@ export default function NavWrapper() {
       )}
       <AppHeader />
       <MagnetDock />
+      <EnsureE2EKey />
       {!hideChrome && <NearbyPopup />}
     </>
   );

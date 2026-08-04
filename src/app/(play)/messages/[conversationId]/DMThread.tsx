@@ -34,28 +34,31 @@ export default function DMThread({
   // Derive the shared key once (my private key never leaves this device,
   // their public key is fetched fresh), then decrypt whatever history we
   // already have. The server has only ever seen ciphertext.
+  async function setupKey(cancelledRef: { current: boolean }) {
+    const { data } = await sb.from("user_keys").select("public_key").eq("user_id", peer.id).maybeSingle();
+    if (!data?.public_key) { if (!cancelledRef.current) setKeyMissing(true); return; }
+    setKeyMissing(false);
+
+    const { privateKey } = await getOrCreateKeyPair();
+    const aesKey = await deriveConversationKey(privateKey, data.public_key);
+    if (cancelledRef.current) return;
+    aesKeyRef.current = aesKey;
+
+    const decrypted = await Promise.all(initialMessages.map(async (m) => {
+      try {
+        const body = await decryptText(aesKey, m.ciphertext, m.iv);
+        return { id: m.id, sender_id: m.sender_id, body, created_at: m.created_at };
+      } catch {
+        return { id: m.id, sender_id: m.sender_id, body: "Couldn't decrypt this message.", created_at: m.created_at, failed: true };
+      }
+    }));
+    if (!cancelledRef.current) { setMessages(decrypted); setReady(true); }
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await sb.from("user_keys").select("public_key").eq("user_id", peer.id).maybeSingle();
-      if (!data?.public_key) { if (!cancelled) setKeyMissing(true); return; }
-
-      const { privateKey } = await getOrCreateKeyPair();
-      const aesKey = await deriveConversationKey(privateKey, data.public_key);
-      if (cancelled) return;
-      aesKeyRef.current = aesKey;
-
-      const decrypted = await Promise.all(initialMessages.map(async (m) => {
-        try {
-          const body = await decryptText(aesKey, m.ciphertext, m.iv);
-          return { id: m.id, sender_id: m.sender_id, body, created_at: m.created_at };
-        } catch {
-          return { id: m.id, sender_id: m.sender_id, body: "Couldn't decrypt this message.", created_at: m.created_at, failed: true };
-        }
-      }));
-      if (!cancelled) { setMessages(decrypted); setReady(true); }
-    })();
-    return () => { cancelled = true; };
+    const cancelledRef = { current: false };
+    setupKey(cancelledRef);
+    return () => { cancelledRef.current = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [peer.id]);
 
@@ -126,7 +129,13 @@ export default function DMThread({
           <div style={{ margin: "auto", textAlign: "center", color: "var(--faint, rgba(255,255,255,.5))", fontSize: 13.5, padding: "0 20px" }}>
             <ShieldAlert size={20} style={{ opacity: 0.6, marginBottom: 8 }} />
             <div>{name} hasn&apos;t opened chat yet, so there&apos;s no encryption key for them.</div>
-            <div style={{ marginTop: 4, opacity: 0.7 }}>Once they open Messages for the first time, you&apos;ll be able to write here.</div>
+            <div style={{ marginTop: 4, opacity: 0.7 }}>Once they open the app, you&apos;ll be able to write here.</div>
+            <button
+              onClick={() => setupKey({ current: false })}
+              style={{ marginTop: 12, background: "transparent", color: "#A78BFA", border: "1px solid rgba(167,139,250,.4)", borderRadius: 9, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              Check again
+            </button>
           </div>
         ) : !ready ? (
           <div style={{ margin: "auto", color: "var(--faint, rgba(255,255,255,.5))", fontSize: 13.5 }}>Setting up encryption…</div>
