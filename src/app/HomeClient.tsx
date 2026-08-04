@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { MapPin, Calendar, ArrowRight, Zap } from "lucide-react";
-import AnimatedBackground from "@/components/AnimatedBackground";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
@@ -336,7 +335,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
   return (
     <>
       <style>{CSS}</style>
-      <AnimatedBackground accent1="#DE3163" accent2="#A78BFA" accent3="#2E7D5B" opacity={0.4} />
 
       <div style={{ background:"var(--ink)", color:"var(--chalk)", fontFamily:"'Inter',sans-serif" }}>
 

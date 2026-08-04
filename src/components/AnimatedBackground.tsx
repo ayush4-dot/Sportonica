@@ -68,18 +68,35 @@ export default function AnimatedBackground({
       // offsetWidth/Height are 0 until the element is laid out. Falling back
       // to the viewport keeps the maths finite — a 0 height makes the scan
       // line NaN and crashes createLinearGradient.
-      W = canvas.offsetWidth || window.innerWidth || 1;
-      H = canvas.offsetHeight || window.innerHeight || 1;
-      canvas.width  = W * devicePixelRatio;
-      canvas.height = H * devicePixelRatio;
+      const nextW = canvas.offsetWidth || window.innerWidth || 1;
+      const nextH = canvas.offsetHeight || window.innerHeight || 1;
+      const nextPxW = Math.round(nextW * devicePixelRatio);
+      const nextPxH = Math.round(nextH * devicePixelRatio);
+      // Reassigning canvas.width/height clears the bitmap even when the
+      // value is unchanged. Mobile browsers fire ResizeObserver repeatedly
+      // while their address bar collapses/expands during scroll — without
+      // this guard every one of those was a real (if brief) blank flash,
+      // most visible through the blurred header/dock glass above it.
+      if (canvas.width === nextPxW && canvas.height === nextPxH) return;
+      W = nextW;
+      H = nextH;
+      canvas.width  = nextPxW;
+      canvas.height = nextPxH;
       ctx.setTransform(1, 0, 0, 1, 0, 0);   // reset before scaling again
       ctx.scale(devicePixelRatio, devicePixelRatio);
       buildDots();
+      last = 0; // force the next already-scheduled frame to repaint immediately
     };
 
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
-    resize();
+    W = canvas.offsetWidth || window.innerWidth || 1;
+    H = canvas.offsetHeight || window.innerHeight || 1;
+    canvas.width  = W * devicePixelRatio;
+    canvas.height = H * devicePixelRatio;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+    buildDots();
 
     /* ── mouse parallax ── */
     const mouse = { x: 0.5, y: 0.5 };

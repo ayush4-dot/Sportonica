@@ -3,12 +3,15 @@ import { usePathname } from "next/navigation";
 import MagnetDock from "./layout/MagnetDock";
 import AppHeader from "./AppHeader";
 import NearbyPopup from "./NearbyPopup";
+import AnimatedBackground from "./AnimatedBackground";
 
-// Global chrome: the magnet dock, the top-right actions, and the "Near me" popup.
+// Global chrome: the animated backdrop, the magnet dock, the top-right
+// actions, and the "Near me" popup.
 export default function NavWrapper() {
   const pathname = usePathname();
-  // The nearby popup is for players — not the consoles or auth pages.
-  const hideNearby =
+  // The consoles and auth pages have their own chrome — same set AppHeader
+  // and MagnetDock already hide themselves on.
+  const hideChrome =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/platform") ||
     pathname.startsWith("/login") ||
@@ -16,9 +19,12 @@ export default function NavWrapper() {
 
   return (
     <>
+      {!hideChrome && (
+        <AnimatedBackground accent1="#DE3163" accent2="#A78BFA" accent3="#2E7D5B" opacity={0.4} />
+      )}
       <AppHeader />
       <MagnetDock />
-      {!hideNearby && <NearbyPopup />}
+      {!hideChrome && <NearbyPopup />}
     </>
   );
 }
