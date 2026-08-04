@@ -41,16 +41,9 @@ function idbSet(db: IDBDatabase, key: string, value: CryptoKeyPair): Promise<voi
   });
 }
 
-let cached: CryptoKeyPair | null = null;
+let inFlight: Promise<CryptoKeyPair> | null = null;
 
-/**
- * This device's ECDH keypair — generated once, persisted locally.
- * On first generation, publishes the public half to `user_keys` so other
- * players can encrypt messages for this user.
- */
-export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
-  if (cached) return cached;
-
+async function loadOrGenerate(): Promise<CryptoKeyPair> {
   const db = await openDb();
   let pair = await idbGet(db, KEY);
   let isNew = false;
@@ -61,16 +54,38 @@ export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
     isNew = true;
   }
 
-  cached = pair;
-
-  if (isNew) {
-    const jwk = await exportPublicKeyJwk(pair.publicKey);
-    const sb = createClient();
-    const { data: { user } } = await sb.auth.getUser();
-    if (user) {
+  const jwk = await exportPublicKeyJwk(pair.publicKey);
+  const sb = createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (user) {
+    if (isNew) {
       await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
+    } else {
+      // Reconcile: if an earlier race ever generated two different
+      // keypairs concurrently (EnsureE2EKey + DMThread both mounting at
+      // once, before either finished its IndexedDB write), the server
+      // could be holding a public key that doesn't match this device's
+      // actual local private key — every message encrypted "to us" would
+      // then use the wrong key and permanently fail to decrypt. The local
+      // IndexedDB key is authoritative (it's the one we can actually
+      // decrypt with), so make sure the server agrees with it.
+      const { data: existing } = await sb.from("user_keys").select("public_key").eq("user_id", user.id).maybeSingle();
+      if (existing?.public_key !== jwk) {
+        await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
+      }
     }
   }
 
   return pair;
+}
+
+/**
+ * This device's ECDH keypair — generated once, persisted locally.
+ * Concurrent callers (e.g. a global "ensure key" mount racing a DM thread
+ * mounting on the same page load) share one in-flight setup instead of
+ * each independently generating/uploading a keypair.
+ */
+export async function getOrCreateKeyPair(): Promise<CryptoKeyPair> {
+  if (!inFlight) inFlight = loadOrGenerate();
+  return inFlight;
 }
