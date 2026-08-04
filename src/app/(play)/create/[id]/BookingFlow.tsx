@@ -2,11 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { hostGameFromBooking } from "@/lib/play/actions";
 import SlotPicker from "./SlotPicker";
 import WeekStrip from "./WeekStrip";
+import type { PricingRule } from "@/lib/play/pricing";
+import { priceFor, offerLabel, whenLabel } from "@/lib/play/priceCalc";
 import type { Court, CourtHours } from "@/lib/admin/types";
 
 const KTM_TZ = "Asia/Kathmandu";
@@ -48,12 +50,13 @@ const SQUAD: Record<string, { label: string; total: number; positions: string[] 
 };
 
 export default function BookingFlow({
-  venueName, courts, hoursByCourt, initialDate,
+  venueName, courts, hoursByCourt, initialDate, rules = [],
 }: {
   venueName: string;
   courts: Court[];
   hoursByCourt: Record<string, CourtHours[]>;
   initialDate?: string;
+  rules?: PricingRule[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -78,7 +81,11 @@ export default function BookingFlow({
   // Build the day's bookable hours from this court's opening hours.
 
   const hourly = court ? Number(court.base_price) : 0;
-  const price = Math.round(hourly * duration);
+  const priced = priceFor(
+    hourly, duration, rules, court?.id ?? "", dateStr,
+    hour === null ? 0 : Math.round(hour * 60)
+  );
+  const price = priced.price;
   const perHead = needPlayers && spots > 0 ? Math.round(price / (spots + 1)) : price;
 
   function confirm() {
@@ -167,8 +174,28 @@ export default function BookingFlow({
   }
   function back() { setErr(null); setStep((v) => Math.max(0, v - 1)); }
 
+  // Discounts a player can actually use, newest-best first.
+  const offers = rules.filter(
+    (r) => r.active && (r.kind === "discount_pct" || (r.kind === "multiplier" && Number(r.amount) < 1))
+  );
+
   return (
     <div className="bkw">
+      {offers.length > 0 && (
+        <div className="bkw-offers">
+          <p className="bkw-offers-t"><Tag size={13} /> Offers at {venueName}</p>
+          <div className="bkw-offers-rail">
+            {offers.map((o) => (
+              <div key={o.id} className="bkw-offer">
+                <span className="amt">{offerLabel(o)}</span>
+                <span className="lbl">{o.label}</span>
+                <span className="when">{whenLabel(o)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Progress */}
       <ol className="bkw-steps">
         {STEPS.map((label, i) => (
@@ -332,9 +359,22 @@ export default function BookingFlow({
             {needPlayers && (
               <div className="bk-sum-row"><span className="lbl">Open spots</span><span className="val">{spots}</span></div>
             )}
+            {priced.rule && (
+              <div className="bk-sum-row">
+                <span className="lbl">{priced.saved > 0 ? "Offer applied" : "Peak rate"}</span>
+                <span className="val" style={{ color: priced.saved > 0 ? "#2E7D5B" : "#A78BFA" }}>
+                  {priced.rule.label} · {offerLabel(priced.rule)}
+                </span>
+              </div>
+            )}
             <div className="bk-sum-row bk-sum-total">
               <span className="lbl">{needPlayers ? "Your share" : "Total"}</span>
-              <span className="val">Rs {needPlayers ? perHead : price}</span>
+              <span className="val">
+                {priced.saved > 0 && (
+                  <s style={{ opacity: .45, marginRight: 8, fontWeight: 500 }}>Rs {priced.base}</s>
+                )}
+                Rs {needPlayers ? perHead : price}
+              </span>
             </div>
 
             {needPlayers && (
@@ -365,7 +405,10 @@ export default function BookingFlow({
       <div className="bkw-bar">
         <div className="bkw-price">
           <span className="lbl">{needPlayers ? "Your share" : "Total"}</span>
-          <span className="val">Rs {needPlayers ? perHead : price}</span>
+          <span className="val">
+            {priced.saved > 0 && <s>Rs {priced.base}</s>}
+            Rs {needPlayers ? perHead : price}
+          </span>
           {hour !== null && (
             <span className="sub">{fmtHM(hour)}–{fmtHM(hour + duration)} · {court?.name}</span>
           )}
@@ -391,6 +434,29 @@ export default function BookingFlow({
       <style>{`
         .bkw { max-width: 760px; margin: 0 auto; padding-bottom: 110px; }
 
+        .bkw-offers { margin-bottom: 22px; }
+        .bkw-offers-t {
+          display: flex; align-items: center; gap: 6px; margin: 0 0 10px;
+          font-size: 11px; font-weight: 800; letter-spacing: .14em;
+          text-transform: uppercase; color: #2E7D5B;
+        }
+        .bkw-offers-rail { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+        .bkw-offers-rail::-webkit-scrollbar { height: 0; }
+        .bkw-offer {
+          flex: 0 0 auto; min-width: 168px;
+          display: flex; flex-direction: column; gap: 2px;
+          padding: 13px 15px; border-radius: 14px;
+          border: 1px dashed rgba(46,125,91,.5);
+          background: linear-gradient(150deg, rgba(46,125,91,.16), rgba(46,125,91,.04));
+        }
+        .bkw-offer .amt {
+          font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800;
+          letter-spacing: -.5px; color: #4ADE80;
+        }
+        .bkw-offer .lbl { font-size: 12.5px; font-weight: 700; }
+        .bkw-offer .when { font-size: 11px; opacity: .6; }
+        .bkw-price .val s { opacity: .45; font-weight: 500; margin-right: 7px; font-size: 15px; }
+
         .bkw-steps {
           display: flex; align-items: center; gap: 6px;
           list-style: none; margin: 0 0 22px; padding: 0;
@@ -409,7 +475,7 @@ export default function BookingFlow({
           font-size: 12px; font-weight: 800;
           border: 1px solid var(--line); background: transparent;
         }
-        .bkw-steps li.on .dot { background: #FFC93C; border-color: #FFC93C; color: #14171E; }
+        .bkw-steps li.on .dot { background: #A78BFA; border-color: #A78BFA; color: #14171E; }
         .bkw-steps li.done .dot { background: #2E7D5B; border-color: #2E7D5B; color: #fff; }
         .bkw-steps .lbl { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
         @media (max-width: 560px) { .bkw-steps .lbl { display: none; } }
@@ -417,8 +483,12 @@ export default function BookingFlow({
         .bkw-body { min-height: 260px; }
         .bkw-err { color: var(--pink); font-size: 13px; margin-top: 12px; }
 
+        /* The dock lives at the bottom too — stand it down while a
+           booking is in progress so the two never collide. */
+        body:has(.bkw-bar) .dock { display: none !important; }
+
         .bkw-bar {
-          position: fixed; left: 0; right: 0; bottom: 0; z-index: 300;
+          position: fixed; left: 0; right: 0; bottom: 0; z-index: 340;
           display: flex; align-items: center; justify-content: space-between; gap: 14px;
           padding: 14px clamp(16px, 5vw, 40px) calc(14px + env(safe-area-inset-bottom, 0px));
           background: rgba(11,13,17,0.92); backdrop-filter: blur(16px);

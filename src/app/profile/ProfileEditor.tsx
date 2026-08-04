@@ -139,9 +139,9 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
                 style={{
                   padding: "7px 13px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
                   fontFamily: "inherit",
-                  background: sports.includes(s) ? "rgba(255,201,60,0.14)" : "transparent",
-                  color: sports.includes(s) ? "#FFC93C" : "var(--pf-dim)",
-                  border: `1px solid ${sports.includes(s) ? "rgba(255,201,60,0.4)" : "var(--pf-line)"}`,
+                  background: sports.includes(s) ? "rgba(167,139,250,0.14)" : "transparent",
+                  color: sports.includes(s) ? "#A78BFA" : "var(--pf-dim)",
+                  border: `1px solid ${sports.includes(s) ? "rgba(167,139,250,0.4)" : "var(--pf-line)"}`,
                 }}>
                 {s}
               </button>
@@ -185,7 +185,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
           border-radius: 10px; padding: 10px 12px; color: inherit;
           font-family: inherit; font-size: 14px;
         }
-        .pf-in:focus { outline: none; border-color: #FFC93C; box-shadow: 0 0 0 3px rgba(255,201,60,0.12); }
+        .pf-in:focus { outline: none; border-color: #A78BFA; box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
       `}</style>
     </div>
   );

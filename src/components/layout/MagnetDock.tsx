@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { User as SupaUser } from "@supabase/supabase-js";
+import { useProfile } from "@/lib/hooks/useProfile";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
 
@@ -27,40 +27,28 @@ function magnify(distance: number) {
 }
 
 export default function MagnetDock() {
-  const sb = createClient();
   const pathname = usePathname();
   const router = useRouter();
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [user, setUser] = useState<SupaUser | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  const [dbRole, setDbRole] = useState<string | null>(null);
-
-  useEffect(() => {
-    sb.auth.getUser().then(({ data }) => {
-      setUser(data.user);
-      if (data.user) {
-        sb.from("profiles").select("role").eq("id", data.user.id).maybeSingle()
-          .then(({ data: p }) => setDbRole(p?.role ?? null));
-      }
-    });
-    const { data: sub } = sb.auth.onAuthStateChange((_e, s) => setUser(s?.user ?? null));
-    return () => sub.subscription.unsubscribe();
-  }, [sb]);
+  // Shared with the header/nav instead of each firing its own auth +
+  // profile round-trip on mount — noticeable savings on mobile.
+  const { user, profile } = useProfile();
+  const dbRole = profile?.role ?? null;
 
   // Hide dock on admin console, auth pages (they have their own chrome).
   const hidden = pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/login") || pathname.startsWith("/signup");
   if (hidden) return null;
 
-  const role = user?.user_metadata?.role;
-  const isOwner = role === "venue_owner" || role === "admin";
+  const isOwner = dbRole === "venue_owner" || dbRole === "admin";
   const firstName =
-    (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ??
+    profile?.full_name?.trim().split(" ")[0] ??
     user?.email?.split("@")[0] ?? "Account";
 
   async function logout() {
-    await sb.auth.signOut();
+    await createClient().auth.signOut();
     setMenuOpen(false);
     window.location.href = "/";
   }
@@ -74,7 +62,9 @@ export default function MagnetDock() {
     <>
       <style>{`
         .dock {
-          position: fixed; right: 16px; top: 50%; transform: translateY(-50%);
+          position: fixed; right: 16px; top: 50%;
+          transform: translateY(-50%) translateZ(0);
+          -webkit-transform: translateY(-50%) translateZ(0);
           z-index: 300; display: flex; flex-direction: column; gap: 10px;
           padding: 12px 10px; border-radius: 26px;
           background: color-mix(in srgb, var(--ink, #0B0D11) 55%, transparent);
@@ -83,6 +73,7 @@ export default function MagnetDock() {
           border: 1px solid rgba(255,255,255,0.1);
           box-shadow: 0 20px 60px -18px rgba(0,0,0,0.6);
           max-height: calc(100vh - 32px);
+          isolation: isolate;
         }
         .dock-item {
           position: relative; width: 46px; height: 46px; border-radius: 15px;
@@ -96,8 +87,8 @@ export default function MagnetDock() {
         }
         .dock-item:hover { color: var(--chalk, #F2EDE6); background: rgba(255,255,255,0.09); }
         .dock-item.active {
-          color: #FFC93C; background: rgba(255,201,60,0.14);
-          border-color: rgba(255,201,60,0.3);
+          color: #A78BFA; background: rgba(167,139,250,0.14);
+          border-color: rgba(167,139,250,0.3);
         }
         .dock-item.account { background: rgba(222,49,99,0.16); border-color: rgba(222,49,99,0.3); color: #F2EDE6; }
         /* label that slides in from the right-hand side */
@@ -146,7 +137,7 @@ export default function MagnetDock() {
         }
         [data-theme="paper"] .dock-item { background: rgba(20,23,30,0.05); color: rgba(20,23,30,0.7); }
         [data-theme="paper"] .dock-item:hover { background: rgba(20,23,30,0.1); color: #14171E; }
-        [data-theme="paper"] .dock-item.active { color: #8a6500; background: rgba(255,201,60,0.25); border-color: rgba(255,201,60,0.5); }
+        [data-theme="paper"] .dock-item.active { color: #8a6500; background: rgba(167,139,250,0.25); border-color: rgba(167,139,250,0.5); }
         [data-theme="paper"] .dock-label { background: #14171E; color: #F2EDE6; border-color: rgba(20,23,30,0.2); }
         [data-theme="paper"] .dock-label::after { border-left-color: #14171E; }
         [data-theme="paper"] .dock-menu { background: #FFFFFF; border-color: rgba(20,23,30,0.12); box-shadow: 0 20px 50px -12px rgba(20,23,30,0.25); }

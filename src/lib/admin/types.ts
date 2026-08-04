@@ -117,7 +117,7 @@ export const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 export const SPORT_COLOR: Record<string, string> = {
   Futsal: "#2E7D5B",
   Football: "#22c55e",
-  Basketball: "#FFC93C",
+  Basketball: "#A78BFA",
   Cricket: "#f97316",
   Volleyball: "#3b82f6",
   Badminton: "#a855f7",

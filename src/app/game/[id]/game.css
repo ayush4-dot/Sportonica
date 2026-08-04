@@ -59,7 +59,7 @@
 }
 .gm-fact { padding: 18px 20px 20px 0; text-decoration: none; color: inherit; }
 .gm-fact + .gm-fact { padding-left: 20px; border-left: 1px solid var(--gm-line); }
-.gm-fact-link:hover .gm-fact-v { color: #FFC93C; }
+.gm-fact-link:hover .gm-fact-v { color: #A78BFA; }
 .gm-fact-l {
   display: flex; align-items: center; gap: 6px;
   font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
@@ -76,7 +76,7 @@
   letter-spacing: -0.02em; border-top: 1px solid var(--gm-line);
   padding-top: 18px; margin: 0 0 16px;
 }
-.gm-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #FFC93C; letter-spacing: 0.1em; }
+.gm-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #A78BFA; letter-spacing: 0.1em; }
 .gm-sec-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: var(--gm-faint); font-weight: 400; }
 
 .gm-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
@@ -94,7 +94,7 @@
   border: 1px solid var(--gm-line); border-radius: 12px;
   text-decoration: none; color: inherit; transition: border-color 0.2s;
 }
-.gm-player:hover { border-color: rgba(255,201,60,0.4); }
+.gm-player:hover { border-color: rgba(167,139,250,0.4); }
 .gm-player-n { font-size: 13.5px; font-weight: 600; }
 .gm-player-s { font-size: 11.5px; color: var(--gm-faint); font-family: 'JetBrains Mono', monospace; }
 
@@ -104,7 +104,7 @@
   min-width: 190px; border: 1px solid var(--gm-line); border-radius: 13px;
   padding: 14px; text-decoration: none; color: inherit; transition: border-color 0.2s;
 }
-.gm-mini:hover { border-color: rgba(255,201,60,0.4); }
+.gm-mini:hover { border-color: rgba(167,139,250,0.4); }
 .gm-mini-t { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
 .gm-mini-m { font-size: 11.5px; color: var(--gm-faint); font-family: 'JetBrains Mono', monospace; margin-bottom: 10px; }
 .gm-mini-f { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; }
@@ -123,8 +123,8 @@
 .gm-pay-l { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--gm-faint); margin-bottom: 7px; }
 .gm-demo {
   font-family: 'JetBrains Mono', monospace; font-size: 9px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #FFC93C; border: 1px solid rgba(255,201,60,0.35);
-  background: rgba(255,201,60,0.1); padding: 2px 6px; border-radius: 5px; margin-left: 3px;
+  text-transform: uppercase; color: #A78BFA; border: 1px solid rgba(167,139,250,0.35);
+  background: rgba(167,139,250,0.1); padding: 2px 6px; border-radius: 5px; margin-left: 3px;
 }
 .gm-pay { display: flex; gap: 8px; margin-bottom: 14px; }
 .gm-pay-b {
@@ -132,10 +132,10 @@
   text-transform: capitalize; cursor: pointer; font-family: inherit;
   border: 1px solid var(--gm-line); background: transparent; color: inherit;
 }
-.gm-pay-b.on { border-color: rgba(255,201,60,0.55); background: rgba(255,201,60,0.12); color: #FFC93C; }
+.gm-pay-b.on { border-color: rgba(167,139,250,0.55); background: rgba(167,139,250,0.12); color: #A78BFA; }
 .gm-btn {
   width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  background: #FFC93C; color: #0B0D11; border: none; border-radius: 11px;
+  background: #A78BFA; color: #0B0D11; border: none; border-radius: 11px;
   padding: 13px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit; text-decoration: none;
 }

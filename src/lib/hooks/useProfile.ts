@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getCachedUser } from "@/lib/supabase/authCache";
 
 const sb = () => createClient();
 
@@ -9,7 +10,7 @@ export type Profile = {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
-  role: "player" | "venue_owner" | "admin";
+  role: "player" | "venue_owner" | "admin" | "super_admin";
   phone: string | null;
   trust_score: number;
   games_played: number;
@@ -25,7 +26,7 @@ export function useProfile() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const { data: { user: u } } = await sb().auth.getUser();
+    const u = await getCachedUser();
     if (!u) { setLoading(false); return; }
 
     setUser({ id: u.id, email: u.email });
@@ -54,7 +55,13 @@ export function useProfile() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    void load();
+    // Re-fetch on sign-in/sign-out so consumers (header, dock, nav) that
+    // now share this hook instead of polling auth themselves stay live.
+    const { data: sub } = sb().auth.onAuthStateChange(() => { void load(); });
+    return () => sub.subscription.unsubscribe();
+  }, [load]);
 
   const update = async (patch: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {
     if (!user) return { error: "Not authenticated" };

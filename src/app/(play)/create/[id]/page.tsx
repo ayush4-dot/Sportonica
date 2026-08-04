@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, MapPin, ImageIcon, ShieldCheck } from "lucide-react";
 import { getVenueForBooking } from "@/lib/play/queries";
 import BookingFlow from "./BookingFlow";
+import { getVenuePricingRules } from "@/lib/play/pricing";
 
 export const dynamic = "force-dynamic";
 
@@ -18,6 +19,7 @@ export default async function VenueBookingPage({
   if (!venue) notFound();
 
   const photo = venue.photos?.[0];
+  const pricingRules = await getVenuePricingRules(id);
 
   return (
     <div className="play">
@@ -32,22 +34,23 @@ export default async function VenueBookingPage({
             <div className="bk-hero-empty"><ImageIcon size={40} /></div>
           )}
           <div className="bk-hero-grad" />
-          <div className="bk-hero-info">
-            <h1>{venue.name}</h1>
-            <div className="sub">
+        </div>
+
+        <div className="bk-hero-info">
+          <h1>{venue.name}</h1>
+          <div className="sub">
               {(venue.maps_url || (venue.lat != null && venue.lng != null)) && (
                 <a
                   href={venue.maps_url ?? `https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
                   target="_blank" rel="noopener noreferrer"
-                  style={{ color: "#FFC93C", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}
+                  style={{ color: "#A78BFA", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}
                 >
                   <MapPin size={14} /> View location
                 </a>
               )}
               {venue.verification_status === "verified" && (
                 <span style={{ color: "var(--turf)" }}><ShieldCheck size={14} style={{ verticalAlign: -2, marginRight: 5 }} />Verified venue</span>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -56,6 +59,7 @@ export default async function VenueBookingPage({
           courts={courts}
           hoursByCourt={hoursByCourt}
           initialDate={date}
+          rules={pricingRules}
         />
       </div>
     </div>

@@ -13,7 +13,7 @@
   font-family: inherit; font-size: 14px; width: 100%; box-sizing: border-box;
 }
 .ev-field input:focus, .ev-field select:focus, .ev-field textarea:focus {
-  outline: none; border-color: #FFC93C; box-shadow: 0 0 0 3px rgba(255,201,60,0.12);
+  outline: none; border-color: #A78BFA; box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
 }
 .ev-field select option { background: #14171E; color: #F2EDE6; }
 [data-theme="paper"] .ev-field select option { background: #fff; color: #14171E; }
@@ -22,7 +22,7 @@
 .ev-err { color: #DE3163; font-size: 13px; margin-bottom: 14px; }
 .ev-btn {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
-  background: #FFC93C; color: #0B0D11; border: none; border-radius: 11px;
+  background: #A78BFA; color: #0B0D11; border: none; border-radius: 11px;
   padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit;
 }

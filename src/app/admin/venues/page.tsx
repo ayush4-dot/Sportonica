@@ -34,7 +34,7 @@ export default async function VenuesPage() {
                     <div className="adm-flex">
                       <div style={{
                         width: 46, height: 46, borderRadius: 11, background: "var(--a-panel-2)",
-                        display: "grid", placeItems: "center", color: "var(--a-sodium)",
+                        display: "grid", placeItems: "center", color: "var(--a-accent)",
                       }}>
                         <Building2 size={20} />
                       </div>

@@ -145,7 +145,7 @@ export default function MyGamesClient({
       {inviting && <InviteSheet game={inviting} onClose={() => { setInviting(null); router.refresh(); }} />}
 
       <style>{`
-        .mg { max-width: 1100px; margin: 0 auto; padding: 104px 24px 80px; }
+        .mg { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
         .mg-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .2em;
           text-transform: uppercase; opacity: .5; margin: 0 0 10px; }
         .mg-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(34px,5vw,60px);
@@ -183,7 +183,7 @@ export default function MyGamesClient({
           text-transform: uppercase; opacity: .45; margin: 0 0 7px; }
         .mg-inv { display: inline-flex; align-items: center; gap: 5px; margin: 0 5px 5px 0;
           font-size: 11.5px; padding: 4px 9px; border-radius: 999px;
-          background: rgba(255,201,60,.12); border: 1px solid rgba(255,201,60,.3); color: #FFC93C; }
+          background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #A78BFA; }
         .mg-inv b { font-weight: 700; opacity: .8; }
         .mg-inv button { background: none; border: none; color: inherit; cursor: pointer;
           display: inline-flex; padding: 0; opacity: .7; }

@@ -11,7 +11,7 @@
   --text:    #F2F4F7;
   --dim:     #8A95A3;
   --faint:   #5A6472;
-  --sodium:  #FFC93C;
+  --sodium:  #A78BFA;
   --turf:    #2E7D5B;
   --pink:    #DE3163;
 
@@ -40,7 +40,7 @@
   position: absolute;
   width: 620px; height: 620px;
   top: -180px; left: -120px;
-  background: radial-gradient(circle, rgba(255,201,60,0.16), transparent 62%);
+  background: radial-gradient(circle, rgba(167,139,250,0.16), transparent 62%);
   filter: blur(20px);
   animation: drift 18s ease-in-out infinite alternate;
 }
@@ -72,7 +72,7 @@
   background: var(--sodium); color: #0B0D11;
   display: grid; place-items: center;
   font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 22px;
-  box-shadow: 0 6px 30px -6px rgba(255,201,60,0.6);
+  box-shadow: 0 6px 30px -6px rgba(167,139,250,0.6);
 }
 .auth-brand-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }
 
@@ -124,7 +124,7 @@
   outline: none;
   border-color: var(--sodium);
   background: #171b23;
-  box-shadow: 0 0 0 4px rgba(255,201,60,0.12);
+  box-shadow: 0 0 0 4px rgba(167,139,250,0.12);
 }
 
 .auth-btn {
@@ -135,9 +135,9 @@
   font-size: 15px; font-weight: 700; font-family: inherit;
   cursor: pointer;
   transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), box-shadow 0.4s ease, filter 0.3s ease;
-  box-shadow: 0 8px 30px -8px rgba(255,201,60,0.5);
+  box-shadow: 0 8px 30px -8px rgba(167,139,250,0.5);
 }
-.auth-btn:hover { filter: brightness(1.05); box-shadow: 0 12px 40px -8px rgba(255,201,60,0.65); }
+.auth-btn:hover { filter: brightness(1.05); box-shadow: 0 12px 40px -8px rgba(167,139,250,0.65); }
 .auth-btn:active { transform: scale(0.985); }
 .auth-btn:disabled { opacity: 0.6; cursor: default; }
 /* soft sheen sweep on hover */

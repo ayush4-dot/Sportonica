@@ -42,7 +42,7 @@ export default async function AdminOverview() {
       />
       <div className="adm-body">
         <div className="adm-stats">
-          <Stat label="Venues" value={venues.length} accent="var(--a-sodium)" />
+          <Stat label="Venues" value={venues.length} accent="var(--a-accent)" />
           <Stat label="Courts" value={courts.length} accent="var(--a-turf)" />
           <Stat label="Today's games" value={todays.length} accent="var(--a-sky)" />
           <Stat label="Today's revenue" value={money(todayRevenue)} accent="var(--a-lime)" />

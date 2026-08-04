@@ -10,7 +10,7 @@ import "./game.css";
 export const dynamic = "force-dynamic";
 
 const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#FFC93C", Cricket: "#f97316",
+  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
   Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
 };
 const KTM = "Asia/Kathmandu";
@@ -218,7 +218,7 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-      background: "linear-gradient(150deg,#DE3163,#FFC93C)", display: "grid", placeItems: "center",
+      background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center",
       fontWeight: 800, color: "#0B0D11", fontSize: size * 0.4,
     }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}

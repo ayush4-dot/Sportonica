@@ -12,7 +12,7 @@
   --faint:   rgba(242,237,230,0.4);
   --line:    rgba(242,237,230,0.1);
   --pink:    #DE3163;
-  --sodium:  #FFC93C;
+  --sodium:  #A78BFA;
   --turf:    #2E7D5B;
 
   min-height: 100vh;
@@ -180,9 +180,9 @@
   background: var(--ink); color: var(--dim); cursor: pointer; font-size: 14px; font-weight: 600;
   transition: all 0.3s cubic-bezier(0.22,1,0.36,1); font-family: inherit;
 }
-.bk-chip.on { background: rgba(255,201,60,0.14); color: var(--sodium); border-color: rgba(255,201,60,0.4); }
+.bk-chip.on { background: rgba(167,139,250,0.14); color: var(--sodium); border-color: rgba(167,139,250,0.4); }
 .bk-chip small { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 2px; }
-.bk-chip.on small { color: rgba(255,201,60,0.7); }
+.bk-chip.on small { color: rgba(167,139,250,0.7); }
 
 .bk-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px,1fr)); gap: 9px; }
 .bk-time {
@@ -227,12 +227,12 @@
   background: var(--ink); cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
   color: var(--paper); transition: all 0.25s ease;
 }
-.bk-pay.on { border-color: var(--sodium); background: rgba(255,201,60,0.1); }
+.bk-pay.on { border-color: var(--sodium); background: rgba(167,139,250,0.1); }
 
 .bk-mock-tag {
   display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--sodium);
-  background: rgba(255,201,60,0.1); border: 1px solid rgba(255,201,60,0.3);
+  background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
   padding: 3px 8px; border-radius: 6px; margin-left: 8px;
 }
 
@@ -264,5 +264,30 @@
   border-radius: 10px; padding: 10px 12px; color: inherit;
   font-family: inherit; font-size: 13.5px; line-height: 1.5; resize: vertical;
 }
-.bk-note:focus { outline: none; border-color: #FFC93C; }
+.bk-note:focus { outline: none; border-color: #A78BFA; }
 .bk-note::placeholder { color: var(--faint); }
+
+/* ── Venue hero: words sit under the photo, never on top of it ── */
+.bk-hero-info {
+  position: static !important;
+  padding: 16px 0 22px;
+}
+.bk-hero-info h1 {
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-size: clamp(24px, 4.5vw, 38px); font-weight: 800;
+  letter-spacing: -1px; line-height: 1.05; margin: 0 0 9px;
+  color: var(--chalk, #F2EDE6);
+}
+[data-theme="paper"] .bk-hero-info h1 { color: #14171E; }
+.bk-hero-info .sub {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  font-size: 13px;
+}
+/* the gradient was only there to protect overlaid text */
+.bk-hero-grad { display: none; }
+
+@media (max-width: 620px) {
+  .bk-hero { aspect-ratio: 16 / 10; border-radius: 18px; overflow: hidden; }
+  .bk-hero-info { padding: 14px 0 18px; }
+  .bk-hero-info .sub { gap: 12px; font-size: 12.5px; }
+}

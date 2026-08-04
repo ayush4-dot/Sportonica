@@ -10,12 +10,16 @@ import {
   Loader2, AlertCircle,
 } from "lucide-react";
 import NepalMap from "@/components/NepalMap";
+import { useCity, inCity } from "@/lib/city";
 import KhelamnaMap from "@/components/KhelamnaMap";
 import { useEvents, SPORT_COLOR, type EventRow } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
 import JoinModal from "./JoinModal";
-import SportCoverflow from "@/components/SportCoverflow";
-import DiscoverFilters, { DEFAULT_FILTERS, kmBetween, type Filters } from "./DiscoverFilters";
+import { kmBetween } from "./DiscoverFilters";
+import PlayFilters from "./PlayFilters";
+import { SPORT_NAMES } from "@/lib/sports";
+import DateStrip from "@/components/shared/DateStrip";
+import { NO_FILTERS, type PlayQuery, formatOf, inTimeBand, inFeeBand, DISTANCES } from "@/lib/playFilters";
 
 
 function getSportIcon(sport: string, size = 14) {
@@ -61,11 +65,16 @@ function DiscoverInner() {
   const [showFlash, setShowFlash] = useState(false);
   const [flashEvent, setFlashEvent] = useState<EventRow | null>(null);
   const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
-  const [filters, setFilters] = useState<Filters>(DEFAULT_FILTERS);
+  const [pq, setPq] = useState<PlayQuery>(NO_FILTERS);
+  const [day, setDay] = useState(() =>
+    new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" })
+  );
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
+  const { city, area } = useCity();
   const [sortBy, setSortBy] = useState<"soonest" | "nearest" | "cheapest" | "filling">("soonest");
   const [pageSize, setPageSize] = useState(12);
   const [drill, setDrill] = useState<{ name: string; center: [number, number] } | null>(null);
+  const [showMap, setShowMap] = useState(false);
 
   const sportFilter = activeSport === "All sports" ? undefined : activeSport;
   const { events, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
@@ -78,31 +87,25 @@ function DiscoverInner() {
   const weekAhead = Date.now() + 7 * 86400000;
 
   const filtered = events.filter((ev) => {
-    const when = new Date(ev.event_date);
+    // The day slider is the only date control on this page.
+    const evDay = new Date(ev.event_date).toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+    if (evDay !== day) return false;
 
-    // time
-    if (filters.time === "today" && dayKey(when) !== todayKey) return false;
-    if (filters.time === "tomorrow" && dayKey(when) !== tomorrowKey) return false;
-    if (filters.time === "week" && when.getTime() > weekAhead) return false;
+    // Follow the city chosen in the header — no second question.
+    if (!inCity(ev.venue_lat, ev.venue_lng, city, area)) return false;
 
-    // price
-    const fee = Number(ev.fee) || 0;
-    if (filters.price === "free" && fee > 0) return false;
-    if (filters.price === "under300" && fee >= 300) return false;
-    if (filters.price === "under600" && fee >= 600) return false;
+    // Format is read off the headcount, so no schema change was needed.
+    if (pq.format && formatOf(ev.sport, ev.max_players) !== pq.format) return false;
 
-    // spots
-    if (filters.spots === "open" && ev.slots_remaining <= 0) return false;
-    if (filters.spots === "almost" && !(ev.slots_remaining > 0 && ev.slots_remaining <= 2)) return false;
+    if (pq.skill && (ev.skill_level ?? "").toLowerCase() !== pq.skill) return false;
+    if (pq.time && !inTimeBand(ev.event_date, pq.time)) return false;
+    if (pq.fee && !inFeeBand(Number(ev.fee) || 0, pq.fee)) return false;
+    if (pq.openOnly && ev.slots_remaining <= 0) return false;
 
-    // skill level
-    if (filters.skill !== "any" && (ev.skill_level ?? "any") !== filters.skill) return false;
-
-    // distance
-    if (filters.dist !== "any") {
+    if (pq.dist) {
+      const km = DISTANCES.find((d) => d.key === pq.dist)?.km ?? Infinity;
       if (!myCoords || ev.venue_lat == null || ev.venue_lng == null) return false;
-      const km = kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]);
-      if (km > Number(filters.dist)) return false;
+      if (kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]) > km) return false;
     }
     return true;
   });
@@ -124,7 +127,7 @@ function DiscoverInner() {
   const visible = sortedAll.slice(0, pageSize);
   const hasMore = sortedAll.length > visible.length;
   // Reset paging whenever the filter/sort/sport changes.
-  useEffect(() => { setPageSize(12); }, [filters, sortBy, activeSport]);
+  useEffect(() => { setPageSize(12); }, [pq, sortBy, activeSport, day]);
 
   useEffect(() => {
     const f = events.find((e) => e.flash);
@@ -169,58 +172,39 @@ function DiscoverInner() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          Pick a sport, scan the map, and join tonight — or{" "}
+          Pick a sport, scan the map, and join the game — or{" "}
           <a href="/create">host your own</a>.
         </motion.p>
       </header>
 
-      {/* ── 3D sport showcase ── */}
-      <div style={{ padding: "8px 0 8px" }}>
-        <SportCoverflow
-          selected={activeSport === "All sports" ? undefined : activeSport}
-          onPick={(sport) => {
-            // Tapping the already-selected sport resets to all games.
-            setActiveSport((cur) => (cur === sport ? "All sports" : sport));
-            // Bring the games into view so the filter feels connected.
-            document.querySelector(".disc-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        />
-      </div>
-
-      {/* ── Main stage ── */}
       <section className="disc-section">
-        <DiscoverFilters
-          filters={filters}
-          setFilters={setFilters}
-          onLocation={setMyCoords}
-          hasLocation={!!myCoords}
-          resultCount={sortedAll.length}
+        <DateStrip value={day} onPick={setDay} />
+
+        <PlayFilters
+          sport={activeSport === "All sports" ? null : activeSport}
+          setSport={(sp) => setActiveSport(sp ?? "All sports")}
+          sports={SPORT_NAMES}
+          value={pq}
+          onChange={setPq}
+          count={sortedAll.length}
+          city={area?.name ?? city?.name ?? null}
+          onNeedLocation={() => {
+            if (myCoords || !navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+              (p) => setMyCoords([p.coords.latitude, p.coords.longitude]),
+              () => setPq((c) => ({ ...c, dist: null })),
+              { timeout: 8000 }
+            );
+          }}
         />
 
         {/* ── Sort bar ── */}
         <div className="disc-sortbar">
           <span className="disc-sortbar-count">
             {sortedAll.length} game{sortedAll.length === 1 ? "" : "s"}
+            {(area || city) && <em className="disc-incity"> in {area?.name ?? city!.name}</em>}
           </span>
-          <div className="disc-sortbar-opts">
-            <span className="disc-sortbar-label">Soonest first · sort by</span>
-            {([
-              { k: "nearest", label: "Nearest" },
-              { k: "cheapest", label: "Cheapest" },
-              { k: "filling", label: "Filling up" },
-            ] as const).map((o) => (
-              <button
-                key={o.k}
-                className="disc-sort-chip"
-                data-on={sortBy === o.k}
-                onClick={() => setSortBy(sortBy === o.k ? "soonest" : o.k)}
-                disabled={o.k === "nearest" && !myCoords}
-                title={o.k === "nearest" && !myCoords ? "Enable location first" : undefined}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
+
         </div>
 
         <div className="disc-stage">
@@ -243,14 +227,14 @@ function DiscoverInner() {
                   <>
                     <p>No games match these filters.</p>
                     <button
-                      onClick={() => { setFilters(DEFAULT_FILTERS); setMyCoords(null); }}
-                      style={{ background: "none", border: "none", color: "#FFC93C", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      onClick={() => { setPq(NO_FILTERS); setMyCoords(null); }}
+                      style={{ background: "none", border: "none", color: "#A78BFA", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
                       Clear filters →
                     </button>
                   </>
                 ) : (
                   <>
-                    <p>No games hosted yet. Be the first.</p>
+                    <p>No games on this day. Try another date.</p>
                     <a href="/create">Book a court and host →</a>
                   </>
                 )}
@@ -279,7 +263,7 @@ function DiscoverInner() {
                         {ev.sport}
                       </span>
                       {ev.event_type === "platform_event" ? (
-                        <span className="disc-official-badge" style={{ color: "#FFC93C", borderColor: "rgba(255,201,60,0.4)", background: "rgba(255,201,60,0.12)" }}>
+                        <span className="disc-official-badge" style={{ color: "#A78BFA", borderColor: "rgba(167,139,250,0.4)", background: "rgba(167,139,250,0.12)" }}>
                           ★ Khelam Na
                         </span>
                       ) : ev.event_type === "venue_event" ? (
@@ -327,7 +311,7 @@ function DiscoverInner() {
                       <span className="disc-skill">
                         {ev.skill_level === "beginner" ? "Beginner friendly"
                           : ev.skill_level === "intermediate" ? "Intermediate"
-                          : "Advanced"}
+                            : "Advanced"}
                       </span>
                     )}
 
@@ -344,7 +328,7 @@ function DiscoverInner() {
                         {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
                       </span>
                       {myCoords && ev.venue_lat != null && ev.venue_lng != null && (
-                        <span style={{ color: "#FFC93C" }}>
+                        <span style={{ color: "#A78BFA" }}>
                           <MapPin size={11} />
                           {kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]).toFixed(1)} km
                         </span>
@@ -402,119 +386,113 @@ function DiscoverInner() {
         </div>
 
         {/* ── Map — full-width landscape strip below the games ── */}
-        <div className="disc-mapsection">
-          <h2 className="disc-mapsection-h">
-            {drill ? `Venues in ${drill.name}` : "Games on the map"}
-          </h2>
-          {!drill && (
-            <p style={{ fontSize: 13, color: "var(--muted, rgba(242,237,230,0.6))", margin: "-8px 0 16px" }}>
-              Tap a province to see its venues on the map.
-            </p>
-          )}
-          <div className="disc-map disc-map-wide">
-            {!drill ? (
-              <NepalMap
-                accent="#DE3163"
-                points={visible
-                  .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
-                  .map((ev) => [ev.venue_lng as number, ev.venue_lat as number])}
-                onProvinceClick={(name, center) => setDrill({ name, center })}
-              />
-            ) : (
-              <div style={{ position: "relative", height: 420 }}>
-                <button
-                  className="disc-map-back"
-                  onClick={() => setDrill(null)}
-                >
-                  <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Back to Nepal
-                </button>
-                <KhelamnaMap
-                  center={drill.center}
-                  zoom={11}
-                  height="100%"
-                  onPinClick={(id) => router.push(`/game/${id}`)}
-                  pins={visible
-                    .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
-                    .map((ev) => ({
-                      id: ev.id,
-                      lat: ev.venue_lat as number,
-                      lng: ev.venue_lng as number,
-                      label: ev.title,
-                      sport: ev.sport,
-                      flash: ev.flash,
-                      color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163",
-                    }))}
-                />
-              </div>
-            )}
+      <div className="disc-mapsection">
+  <div className="disc-mapsection-head">
+    <h2 className="disc-mapsection-h">
+      {drill ? `Venues in ${drill.name}` : "Games on the map"}
+    </h2>
+    <button
+      className="disc-map-toggle"
+      onClick={() => setShowMap((v) => !v)}
+    >
+      {showMap ? "Hide map" : "See map"}
+    </button>
+  </div>
 
-            {showFlash && flashEvent && (
-              <motion.div
-                className="disc-flash-popup"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-              >
-                <button className="disc-flash-close" onClick={() => setShowFlash(false)} aria-label="Close">
-                  <X size={16} />
-                </button>
-                <div className="disc-flash-head">
-                  <Zap size={16} color="#E85D24" fill="#E85D24" />
-                  <span>Flash match</span>
-                </div>
-                <p className="disc-flash-title">{flashEvent.title}</p>
-                <p className="disc-flash-meta">
-                  {flashEvent.venue} · {flashEvent.slots_remaining} slots ·{" "}
-                  {flashEvent.fee === 0 ? "Free" : `Rs. ${flashEvent.fee}`}
-                </p>
-                <div className="disc-flash-actions">
-                  <button onClick={(e) => handleBook(flashEvent, e)} className="disc-flash-join">
-                    <Zap size={13} fill="currentColor" /> I&apos;m in
-                  </button>
-                  <button onClick={() => setShowFlash(false)} className="disc-flash-skip">
-                    Skip
-                  </button>
-                </div>
-              </motion.div>
-            )}
+  {showMap && (
+    <>
+      {!drill && (
+        <p style={{ fontSize: 13, color: "var(--muted, rgba(242,237,230,0.6))", margin: "-8px 0 16px" }}>
+          Tap a province to see its venues on the map.
+        </p>
+      )}
+      <div className="disc-map disc-map-wide">
+        {!drill ? (
+          <NepalMap
+            accent="#DE3163"
+            points={visible
+              .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
+              .map((ev) => [ev.venue_lng as number, ev.venue_lat as number])}
+            onProvinceClick={(name, center) => setDrill({ name, center })}
+          />
+        ) : (
+          <div style={{ position: "relative", height: 420 }}>
+            <button
+              className="disc-map-back"
+              onClick={() => setDrill(null)}
+            >
+              <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Back to Nepal
+            </button>
+            <KhelamnaMap
+              center={drill.center}
+              zoom={11}
+              height="100%"
+              onPinClick={(id) => router.push(`/game/${id}`)}
+              pins={visible
+                .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
+                .map((ev) => ({
+                  id: ev.id,
+                  lat: ev.venue_lat as number,
+                  lng: ev.venue_lng as number,
+                  label: ev.title,
+                  sport: ev.sport,
+                  flash: ev.flash,
+                  color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163",
+                }))}
+            />
           </div>
-        </div>
+        )}
+
+        {showFlash && flashEvent && (
+          <motion.div
+            className="disc-flash-popup"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <button className="disc-flash-close" onClick={() => setShowFlash(false)} aria-label="Close">
+              <X size={16} />
+            </button>
+            <div className="disc-flash-head">
+              <Zap size={16} color="#E85D24" fill="#E85D24" />
+              <span>Flash match</span>
+            </div>
+            <p className="disc-flash-title">{flashEvent.title}</p>
+            <p className="disc-flash-meta">
+              {flashEvent.venue} · {flashEvent.slots_remaining} slots ·{" "}
+              {flashEvent.fee === 0 ? "Free" : `Rs. ${flashEvent.fee}`}
+            </p>
+            <div className="disc-flash-actions">
+              <button onClick={(e) => handleBook(flashEvent, e)} className="disc-flash-join">
+                <Zap size={13} fill="currentColor" /> I&apos;m in
+              </button>
+              <button onClick={() => setShowFlash(false)} className="disc-flash-skip">
+                Skip
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </>
+  )}
+</div>
       </section>
 
 
-      {/* ── Collections — browse when you don't have a specific game in mind ── */}
-      <section className="disc-collections">
-        <h2 className="disc-collections-h">Explore Khelam Na</h2>
-        <div className="disc-collections-grid">
-          <a href="/create" className="disc-coll-card" style={{ ["--c" as string]: "#2E7D5B" }}>
-            <span className="disc-coll-emoji">🏟️</span>
-            <span className="disc-coll-title">Book a ground</span>
-            <span className="disc-coll-sub">Verified courts across Kathmandu</span>
-          </a>
-          <a href="/league" className="disc-coll-card" style={{ ["--c" as string]: "#a855f7" }}>
-            <span className="disc-coll-emoji">👥</span>
-            <span className="disc-coll-title">Find a squad</span>
-            <span className="disc-coll-sub">Join a team, play every week</span>
-          </a>
-          <a href="/create" className="disc-coll-card" style={{ ["--c" as string]: "#FFC93C" }}>
-            <span className="disc-coll-emoji">⚡</span>
-            <span className="disc-coll-title">Host an event</span>
-            <span className="disc-coll-sub">Set your sport, time and spots</span>
-          </a>
-        </div>
-      </section>
+
+
 
       <section className="disc-cta">
         <div className="disc-cta-inner">
           <h2>Don&apos;t see your game?</h2>
           <p>Host your own event and let Kathmandu&apos;s players come to you.</p>
-          <a href="/create" style={{ background:"#DE3163", color:"#fff", border:"none", padding:"14px 28px", borderRadius:"12px", fontSize:"15px", fontWeight:700, cursor:"pointer", fontFamily:"'Inter',sans-serif", display:"inline-flex", alignItems:"center", gap:"8px", textDecoration:"none" }}>
+          <a href="/create" style={{ background: "#DE3163", color: "#fff", border: "none", padding: "14px 28px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
             Host an event →
           </a>
         </div>
       </section>
 
-      {modalEvent && <JoinModal event={modalEvent} onClose={() => setModalEvent(null)} />}
-    </main>
+      { modalEvent && <JoinModal event={modalEvent} onClose={() => setModalEvent(null)} /> }
+    </main >
   );
 }
 
@@ -641,6 +619,7 @@ const CSS = `
 
 .disc-sortbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 0 6px; }
 .disc-sortbar-count { font-size:13px; font-weight:700; color:var(--chalk); }
+.disc-incity { font-style:normal; font-weight:600; opacity:.5; }
 .disc-sortbar-opts { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .disc-sortbar-label { font-size:11px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--faint, rgba(242,237,230,0.5)); }
 .disc-sort-chip { font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background:rgba(255,255,255,0.04); color:var(--chalk); cursor:pointer; transition:all .18s; }
@@ -711,7 +690,7 @@ const CSS = `
 }
 .disc-host-av {
   width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
-  background: linear-gradient(150deg,#DE3163,#FFC93C); color: #0B0D11;
+  background: linear-gradient(150deg,#DE3163,#A78BFA); color: #0B0D11;
   display: grid; place-items: center; font-size: 10px; font-weight: 800;
 }
 .disc-host-av img { width: 100%; height: 100%; object-fit: cover; }
@@ -792,7 +771,11 @@ const CSS = `
 }
 .disc-map { position: relative; min-height: 280px; }
 .disc-mapsection { margin-top: 40px; }
-.disc-mapsection-h { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--chalk); font-family: 'Bricolage Grotesque', sans-serif; margin: 0 0 16px; }
+.disc-mapsection-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+.disc-mapsection-h { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--chalk); font-family: 'Bricolage Grotesque', sans-serif; margin: 0; }
+.disc-map-toggle { font-size:13px; font-weight:700; padding:9px 18px; border-radius:999px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:var(--chalk); cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; }
+.disc-map-toggle:hover { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.3); transform:translateY(-1px); }
+[data-theme="paper"] .disc-map-toggle { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.04); }
 .disc-map-wide { height: auto; border-radius: 18px; overflow: hidden; }
 .disc-map-back { position: absolute; top: 14px; left: 14px; z-index: 500; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: none; cursor: pointer; background: rgba(17,19,23,0.9); color: #fff; backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
 .disc-map-back:hover { background: #DE3163; }
@@ -904,7 +887,7 @@ const CSS = `
 }
 
 @media (max-width: 900px) {
-  .disc-root { padding-top: 92px; }
+  .disc-root { padding-top: 28px; }
   .disc-stage {
     grid-template-columns: 1fr;
     height: auto;

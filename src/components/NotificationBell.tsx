@@ -23,7 +23,7 @@ function iconFor(kind: Notification["kind"]) {
   }
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ inline = false }: { inline?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -38,8 +38,13 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
-  // Auth pages have their own tight layout; skip the bell there.
-  if (pathname.startsWith("/login") || pathname.startsWith("/signup")) return null;
+  // These consoles have their own top bar — this chrome would sit on top of it.
+  if (
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/platform")
+  ) return null;
 
   function toggle() {
     const next = !open;
@@ -51,6 +56,17 @@ export default function NotificationBell() {
     <>
       <style>{`
         .notif-wrap { position: fixed; top: 18px; right: 84px; z-index: 350; }
+        .notif-wrap.inline { position: static; }
+        .notif-wrap.inline .notif-btn {
+          width: 42px; height: 42px; background: transparent;
+          border-color: rgba(242,237,230,.14); backdrop-filter: none;
+        }
+        [data-theme="paper"] .notif-wrap.inline .notif-btn { border-color: rgba(20,23,30,.14); }
+        .notif-wrap.inline .notif-btn:hover { border-color: rgba(167,139,250,.55); }
+        .notif-wrap.inline .notif-panel { top: 52px; }
+        @media (max-width: 560px) {
+          .notif-wrap.inline .notif-btn { width: 38px; height: 38px; }
+        }
         body:has(.plt) .notif-wrap { top: 76px; right: 20px; }
         .notif-btn {
           position: relative; width: 42px; height: 42px; border-radius: 999px;
@@ -113,7 +129,7 @@ export default function NotificationBell() {
         }
       `}</style>
 
-      <div className="notif-wrap" ref={ref}>
+      <div className={`notif-wrap ${inline ? "inline" : ""}`} ref={ref}>
         <button className="notif-btn" onClick={toggle} aria-label="Notifications">
           <Bell size={19} />
           {unread > 0 && <span className="notif-badge">{unread > 9 ? "9+" : unread}</span>}

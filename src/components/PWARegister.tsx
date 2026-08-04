@@ -84,7 +84,7 @@ export default function PWARegister() {
         <b>Add Khelam Na to your home screen</b>
         {showIOS ? (
           <small>
-            Tap <Share size={12} style={{ verticalAlign: -2, color: "#FFC93C" }} /> below,
+            Tap <Share size={12} style={{ verticalAlign: -2, color: "#A78BFA" }} /> below,
             then <b style={{ opacity: .9 }}>Add to Home Screen</b>
           </small>
         ) : (
@@ -116,7 +116,7 @@ export default function PWARegister() {
         @keyframes pwaUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .pwa-mark {
           width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
-          background: #FFC93C; color: #0B0D11; display: grid; place-items: center;
+          background: #A78BFA; color: #0B0D11; display: grid; place-items: center;
           font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; font-weight: 800;
         }
         .pwa-copy { flex: 1; min-width: 0; }
@@ -124,7 +124,7 @@ export default function PWARegister() {
         .pwa-copy small { display: block; font-size: 11.5px; opacity: 0.65; margin-top: 2px; }
         .pwa-go {
           display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-          background: #FFC93C; color: #0B0D11; border: none; border-radius: 10px;
+          background: #A78BFA; color: #0B0D11; border: none; border-radius: 10px;
           padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
           font-family: inherit;
         }
@@ -132,7 +132,7 @@ export default function PWARegister() {
         /* points down at Safari's own share button */
         .pwa-point {
           position: absolute; left: 50%; bottom: -13px; transform: translateX(-50%);
-          color: #FFC93C; font-size: 18px; line-height: 1;
+          color: #A78BFA; font-size: 18px; line-height: 1;
           animation: pwaNudge 1.4s ease-in-out infinite;
         }
         @keyframes pwaNudge { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 5px); } }

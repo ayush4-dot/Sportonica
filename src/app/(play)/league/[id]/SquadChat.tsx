@@ -98,7 +98,7 @@ export default function SquadChat({
           return (
             <div key={m.id} style={{ display: "flex", gap: 9, flexDirection: mine ? "row-reverse" : "row" }}>
               <Link href={m.username ? `/p/${m.username}` : "#"} style={{ flexShrink: 0 }}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#DE3163,#FFC93C)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "#0B0D11" }}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "#0B0D11" }}>
                   {m.avatar_url && /\.(jpe?g|png|gif|webp)$/i.test(m.avatar_url)
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={m.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -110,7 +110,7 @@ export default function SquadChat({
                 <div className="msg-row" style={{ display: "inline-flex", alignItems: "center", gap: 6, flexDirection: mine ? "row-reverse" : "row" }}>
                   <div style={{
                     display: "inline-block", padding: "8px 12px", borderRadius: 13, fontSize: 13.5, lineHeight: 1.4,
-                    background: mine ? "#FFC93C" : "var(--ink-3, rgba(255,255,255,0.06))",
+                    background: mine ? "#A78BFA" : "var(--ink-3, rgba(255,255,255,0.06))",
                     color: mine ? "#0B0D11" : "inherit",
                     borderTopRightRadius: mine ? 3 : 13, borderTopLeftRadius: mine ? 13 : 3,
                   }}>
@@ -144,7 +144,7 @@ export default function SquadChat({
           placeholder="Message your squad…"
           style={{ flex: 1, background: "transparent", border: "1px solid rgba(128,128,128,0.28)", borderRadius: 10, padding: "10px 13px", color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none" }}
         />
-        <button onClick={send} style={{ background: "#FFC93C", color: "#0B0D11", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center" }}>
+        <button onClick={send} style={{ background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center" }}>
           <Send size={16} />
         </button>
       </div>

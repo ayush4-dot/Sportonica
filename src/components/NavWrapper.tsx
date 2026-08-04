@@ -1,8 +1,7 @@
 "use client";
 import { usePathname } from "next/navigation";
 import MagnetDock from "./layout/MagnetDock";
-import NotificationBell from "./NotificationBell";
-import MyGamesButton from "./MyGamesButton";
+import AppHeader from "./AppHeader";
 import NearbyPopup from "./NearbyPopup";
 
 // Global chrome: the magnet dock, the top-right actions, and the "Near me" popup.
@@ -17,9 +16,8 @@ export default function NavWrapper() {
 
   return (
     <>
+      <AppHeader />
       <MagnetDock />
-      <MyGamesButton />
-      <NotificationBell />
       {!hideNearby && <NearbyPopup />}
     </>
   );

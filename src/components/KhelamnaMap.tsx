@@ -42,7 +42,7 @@ const KTM: [number, number] = [27.7172, 85.324];
 const SPORT_COLORS: Record<string, string> = {
   Futsal:     "#2E7D5B",
   Football:   "#22c55e",
-  Basketball: "#FFC93C",
+  Basketball: "#A78BFA",
   Cricket:    "#f97316",
   Volleyball: "#3b82f6",
   Badminton:  "#a855f7",

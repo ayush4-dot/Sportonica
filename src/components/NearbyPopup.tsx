@@ -129,7 +129,7 @@ export default function NearbyPopup() {
           background: #fff; color: #14171E; border-color: rgba(20,23,30,0.14);
           box-shadow: 0 14px 40px -12px rgba(20,23,30,0.25);
         }
-        .nb-fab:hover { border-color: #FFC93C; color: #FFC93C; }
+        .nb-fab:hover { border-color: #A78BFA; color: #A78BFA; }
         @media (max-width: 780px) {
           /* Icon-only on phones — the wide pill collided with hero text. */
           .nb-fab {
@@ -159,7 +159,7 @@ export default function NearbyPopup() {
         .nb-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 18px 12px; }
         .nb-eyebrow {
           font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.18em;
-          text-transform: uppercase; color: #FFC93C; margin-bottom: 5px;
+          text-transform: uppercase; color: #A78BFA; margin-bottom: 5px;
         }
         .nb-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; font-weight: 800; margin: 0; letter-spacing: -0.5px; }
         .nb-x { background: none; border: none; color: inherit; opacity: 0.55; cursor: pointer; }
@@ -170,7 +170,7 @@ export default function NearbyPopup() {
           background: transparent; color: inherit; cursor: pointer; font-family: inherit;
           border: 1px solid rgba(128,128,128,0.25); opacity: 0.7;
         }
-        .nb-tabs button.on { opacity: 1; border-color: rgba(255,201,60,0.5); background: rgba(255,201,60,0.12); color: #FFC93C; }
+        .nb-tabs button.on { opacity: 1; border-color: rgba(167,139,250,0.5); background: rgba(167,139,250,0.12); color: #A78BFA; }
 
         .nb-body { overflow-y: auto; padding: 0 8px; flex: 1; }
         .nb-row {
@@ -182,13 +182,13 @@ export default function NearbyPopup() {
         .nb-row-main { flex: 1; min-width: 0; }
         .nb-row-t { font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .nb-row-s { font-size: 11.5px; opacity: 0.55; margin-top: 2px; display: flex; align-items: center; gap: 3px; }
-        .nb-km { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #FFC93C; flex-shrink: 0; }
+        .nb-km { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #A78BFA; flex-shrink: 0; }
         .nb-msg { padding: 30px 18px; text-align: center; font-size: 13.5px; opacity: 0.6; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .nb-spin { animation: nbspin 1s linear infinite; }
         @keyframes nbspin { to { transform: rotate(360deg); } }
         .nb-all {
           display: block; text-align: center; padding: 14px; font-size: 13px; font-weight: 700;
-          color: #FFC93C; text-decoration: none; border-top: 1px solid rgba(128,128,128,0.18);
+          color: #A78BFA; text-decoration: none; border-top: 1px solid rgba(128,128,128,0.18);
         }
       `}</style>
     </>

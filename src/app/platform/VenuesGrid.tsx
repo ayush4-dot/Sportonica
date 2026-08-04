@@ -23,7 +23,7 @@ const COLS: Column<VenueRow>[] = [
   { key: "address", label: "Address" },
   {
     key: "verification_status", label: "Status", type: "badge",
-    badgeColors: { verified: "#2E7D5B", pending: "#FFC93C", rejected: "#DE3163" },
+    badgeColors: { verified: "#2E7D5B", pending: "#A78BFA", rejected: "#DE3163" },
   },
   { key: "created_at", label: "Listed", type: "date" },
 ];

@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus } from "lucide-react";
+import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus, Tag } from "lucide-react";
 
 // Eight accent pairs, cycled so a wall of grounds never looks flat.
 const HUES = [
-  { a: "#FFC93C", b: "#F0872A" },  // amber
+  { a: "#A78BFA", b: "#F0872A" },  // amber
   { a: "#4ADE80", b: "#16A34A" },  // green
   { a: "#60A5FA", b: "#2563EB" },  // blue
   { a: "#F472B6", b: "#DB2777" },  // pink
@@ -15,10 +15,10 @@ const HUES = [
   { a: "#FB923C", b: "#EA580C" },  // orange
   { a: "#F87171", b: "#DC2626" },  // red
 ];
-import VenueFilters, { type VenueDist, type VenuePrice } from "./VenueFilters";
-import DateStrip from "./DateStrip";
+import SmartSearch, { EMPTY, type Query } from "./SmartSearch";
+import DateStrip from "@/components/shared/DateStrip";
+import { useCity, inCity } from "@/lib/city";
 import { normalizeSport } from "@/lib/sports";
-import SportCoverflow from "@/components/SportCoverflow";
 import { useTheme } from "@/lib/useTheme";
 import type { Venue, Court } from "@/lib/admin/types";
 
@@ -28,12 +28,11 @@ type VenueWithCourts = Venue & { courts: Court[] };
 // Mosaic span pattern — hero first, then rhythm. Repeats past 8 cells.
 const SPANS = ["s-hero", "", "", "s-tall", "", "s-wide", "", ""];
 
-export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
+export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWithCourts[] ; offers?: Record<string, { label: string; amount: number }> }) {
   const router = useRouter();
   const [theme] = useTheme();
-  const [sport, setSport] = useState<string | null>(null);
-  const [dist, setDist] = useState<VenueDist>("any");
-  const [price, setPrice] = useState<VenuePrice>("any");
+  const { city, area } = useCity();
+  const [q, setQ] = useState<Query>(EMPTY);
   const [pickDate, setPickDate] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" }));
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
 
@@ -48,54 +47,37 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
     return 2 * R * Math.asin(Math.sqrt(a));
   };
 
+  const needle = q.text.trim().toLowerCase();
   const shown = venues.filter((v) => {
-    if (sport) {
-      const list = (v.sports ?? []).map(normalizeSport);
-      if (!list.includes(sport)) return false;
+    // The header already asked which city — don't make them say it twice.
+    if (!inCity(v.lat, v.lng, city, area)) return false;
+    if (needle) {
+      const hay = [v.name, v.venue_type, ...v.sports].join(" ").toLowerCase();
+      if (!hay.includes(needle)) return false;
     }
-    if (dist !== "any") {
+    if (q.sport) {
+      const list = (v.sports ?? []).map(normalizeSport);
+      if (!list.includes(q.sport)) return false;
+    }
+    if (q.maxKm != null) {
       if (!myCoords || v.lat == null || v.lng == null) return false;
       const km = kmTo(v.lat, v.lng);
-      if (km == null || km > Number(dist)) return false;
+      if (km == null || km > q.maxKm) return false;
     }
-    if (price !== "any") {
+    if (q.minPrice != null || q.maxPrice != null) {
       const rates = v.courts.map((c) => Number(c.base_price)).filter((n) => n > 0);
       const from = rates.length ? Math.min(...rates) : Infinity;
-      if (from > Number(price)) return false;
+      if (q.maxPrice != null && from > q.maxPrice) return false;
+      if (q.minPrice != null && from < q.minPrice) return false;
     }
     return true;
   });
 
   // Interleave text cards the way the Framer mosaic mixes card types.
-  const totalCourts = shown.reduce((s, v) => s + v.courts.length, 0);
   const cells: ({ kind: "venue"; v: VenueWithCourts } | { kind: "text"; id: string; el: React.ReactNode })[] =
     shown.map((v) => ({ kind: "venue" as const, v }));
 
-  const textCards = [
-    {
-      id: "txt-stat",
-      el: (
-        <>
-          <div className="num">{totalCourts || "—"}</div>
-          <div>
-            <div className="big">Courts ready to book</div>
-            <div className="small" style={{ marginTop: 6 }}>Real grounds, real slots — pay your share and play.</div>
-          </div>
-        </>
-      ),
-    },
-    {
-      id: "txt-host",
-      el: (
-        <>
-          <div className="big">Short of players? Open your game.</div>
-          <div className="small" style={{ marginTop: 8 }}>
-            Book a slot, say how many you need, and let the city fill your side. The cost splits as they join.
-          </div>
-        </>
-      ),
-    },
-  ];
+  const textCards: { id: string; el: React.ReactNode }[] = [];
   // slot text cards into positions 2 and 5 for rhythm
   if (cells.length >= 1) cells.splice(Math.min(2, cells.length), 0, { kind: "text", ...textCards[0] });
   if (cells.length >= 4) cells.splice(Math.min(5, cells.length), 0, { kind: "text", ...textCards[1] });
@@ -105,6 +87,43 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
     e.preventDefault();
     router.push(href);
   }
+
+  // Touch devices have no hover, so the drawer opens for whichever card
+  // is nearest the middle of the screen as you scroll.
+  const gridRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (window.matchMedia("(hover: hover)").matches) return;   // desktop keeps :hover
+    const root = gridRef.current;
+    if (!root) return;
+
+    const cards = Array.from(root.querySelectorAll<HTMLElement>(".fcard"));
+    if (!cards.length) return;
+
+    let raf = 0;
+    const score = () => {
+      raf = 0;
+      const mid = window.innerHeight * 0.45;
+      let best: HTMLElement | null = null;
+      let bestDist = Infinity;
+      for (const c of cards) {
+        const r = c.getBoundingClientRect();
+        if (r.bottom < 0 || r.top > window.innerHeight) { c.classList.remove("is-open"); continue; }
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < bestDist) { bestDist = d; best = c; }
+      }
+      for (const c of cards) c.classList.toggle("is-open", c === best);
+    };
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(score); };
+
+    score();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [shown.length]);
 
   return (
     <div className={`mz ${theme}`}>
@@ -117,25 +136,25 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
           </div>
         </div>
 
-        {/* 3D sport showcase — tapping the centre card filters the grounds */}
-        <div style={{ margin: "8px 0 28px" }}>
-          <SportCoverflow
-            selected={sport ?? undefined}
-            onPick={(s) => {
-              setSport(s);
-              document.querySelector(".mz-grid")?.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-          />
-        </div>
-
         <DateStrip value={pickDate} onPick={setPickDate} />
 
-        <VenueFilters
-          dist={dist} setDist={setDist}
-          price={price} setPrice={setPrice}
-          onLocation={setMyCoords} hasLocation={!!myCoords}
+        {/* One field for everything: sport, budget, distance, ground name. */}
+        <SmartSearch
+          value={q}
+          onChange={(next) => {
+            // Asking for a distance needs a location — get it once, quietly.
+            if (next.maxKm != null && !myCoords && navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (p) => setMyCoords([p.coords.latitude, p.coords.longitude]),
+                () => setQ((cur) => ({ ...cur, maxKm: null })),
+                { timeout: 8000 }
+              );
+            }
+            setQ(next);
+          }}
+          venueNames={venues.map((v) => v.name)}
           count={shown.length}
-          onClear={() => { setDist("any"); setPrice("any"); setMyCoords(null); }}
+          city={area?.name ?? city?.name ?? null}
         />
 
         {shown.length === 0 ? (
@@ -149,14 +168,14 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
                 : "Once owners list their grounds, they'll appear here ready to book."}
             </p>
             {venues.length > 0 && (
-              <button onClick={() => { setSport(null); setDist("any"); setMyCoords(null); }}
-                style={{ marginTop: 14, background: "none", border: "none", color: "#FFC93C", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+              <button onClick={() => { setQ(EMPTY); setMyCoords(null); }}
+                style={{ marginTop: 14, background: "none", border: "none", color: "#A78BFA", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
                 Clear filters →
               </button>
             )}
           </div>
         ) : (
-          <div className="mz-grid">
+          <div className="mz-grid" ref={gridRef}>
             {cells.map((cell, i) => {
               const span = SPANS[i % SPANS.length];
               const delay = `${0.08 + i * 0.07}s`;
@@ -212,6 +231,11 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
                   {v.verification_status === "verified" && (
                     <span className="fcard-verified"><Check size={11} /> Verified</span>
                   )}
+                  {offers[v.id] && (
+                    <span className="fcard-offer" title={offers[v.id].label}>
+                      <Tag size={11} /> {offers[v.id].amount}% OFF
+                    </span>
+                  )}
 
                   {/* tab — price steps up over the photo */}
                   <div className="fcard-tab">
@@ -224,6 +248,17 @@ export default function MosaicGrid({ venues }: { venues: VenueWithCourts[] }) {
                   <div className="fcard-panel">
                     <div className="fcard-top">
                       <h3 className="fcard-name">{v.name}</h3>
+                      {(v.address || km != null) && (
+                        <p className="fcard-where">
+                          <MapPin size={11} />
+                          {v.address ? v.address.split(",")[0] : "Kathmandu"}
+                          {km != null && <> · <b>{km.toFixed(1)} km</b></>}
+                        </p>
+                      )}
+                      <div className="fcard-meta">
+                        <span>{v.courts.length} court{v.courts.length === 1 ? "" : "s"}</span>
+                        {v.amenities?.length > 0 && <span>· {v.amenities.length} amenities</span>}
+                      </div>
                       <div className="fcard-sports">
                         {shown.map((sp) => <span key={sp}>{sp}</span>)}
                         {extra > 0 && <span className="more">+{extra}</span>}

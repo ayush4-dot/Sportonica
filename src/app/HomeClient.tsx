@@ -2,14 +2,16 @@
 export const dynamic = "force-dynamic";
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { MapPin, Calendar, ArrowRight, ChevronDown, Zap } from "lucide-react";
+import { MapPin, Calendar, ArrowRight, Zap } from "lucide-react";
 import AnimatedBackground from "@/components/AnimatedBackground";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
 import SiteNav from "@/components/layout/SiteNav";
+import FeatureFan from "@/components/home/FeatureFan";
+import { useCity, inCity } from "@/lib/city";
 
 import { useEvents, bookEvent, SPORT_COLOR } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
@@ -28,7 +30,7 @@ const SPORT_FACT: Record<string, { big: string; small: string }> = {
 const SPORTS_PANELS = [
   { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
   { sport:"Cricket",    label:"CRICKET",    color:"#f97316", emoji:"🏏", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
-  { sport:"Basketball", label:"BASKETBALL", color:"#FFC93C", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
+  { sport:"Basketball", label:"BASKETBALL", color:"#A78BFA", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
   { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
   { sport:"Badminton",  label:"BADMINTON",  color:"#a855f7", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
   { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🥒", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
@@ -47,15 +49,94 @@ const CSS = `
   ::-webkit-scrollbar { width: 0; }
 
   /* ── hero ── */
-  .p-hero { position:relative; height:100dvh; min-height:560px; overflow:hidden; display:flex; align-items:flex-end; }
-  .p-hero video { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; }
-  .p-hero-overlay { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.15) 100%); }
-  .p-hero-content { position:relative; z-index:2; padding:0 56px 72px; width:100%; }
-  .p-hero-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:20px; }
-  .p-hero-h1 { font-size:clamp(52px,8vw,108px); font-weight:800; line-height:0.95; letter-spacing:-3px; color:#fff; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:32px; }
-  .p-hero-h1 em { font-style:normal; color:#FFC93C; }
+  .p-hero { position:relative; min-height:auto; overflow:visible; display:flex; align-items:center; padding:52px 0 40px; }
+  .p-hero-content { position:relative; z-index:2; padding:0 clamp(24px,5vw,56px); width:100%; }
+  /* The dock is fixed to the right rail — keep content clear of it. */
+  @media (min-width:781px) {
+    .p-hero-content,
+    .p-sportbar,
+    .p-matches,
+    .p-footer { padding-right:clamp(104px,9vw,132px); }
+  }
+
+  /* Editorial split: the headline holds the left, the read-in and
+     figures sit to the right, both sharing a baseline. */
+  .p-hero-top {
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:clamp(24px,5vw,64px); margin-bottom:clamp(28px,4vw,44px);
+    padding-bottom:22px; border-bottom:1px solid rgba(255,255,255,0.1);
+  }
+  .p-hero-lead { flex:0 1 auto; }
+  .p-hero-aside { flex:0 0 auto; display:flex; align-items:center; padding-bottom:6px; }
+
+  /* A single, deliberate call to action. */
+  .p-book {
+    position:relative; overflow:hidden; cursor:pointer;
+    border:none; border-radius:999px; padding:0;
+    background:linear-gradient(140deg,#DDD6FE 0%,#A78BFA 46%,#7C3AED 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.75),
+      0 14px 34px -12px rgba(167,139,250,.75);
+    transition:transform .28s cubic-bezier(.22,1,.36,1), box-shadow .28s;
+    font-family:'Inter',sans-serif;
+  }
+  .p-book:hover {
+    transform:translateY(-3px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.85),
+      0 22px 46px -14px rgba(167,139,250,.95);
+  }
+  .p-book:active { transform:translateY(-1px); }
+
+  .p-book-in {
+    position:relative; z-index:2;
+    display:flex; align-items:center; gap:13px;
+    padding:13px 15px 13px 20px; color:#14171E;
+  }
+  .p-book-txt { display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; }
+  .p-book-txt b { font-size:15.5px; font-weight:800; letter-spacing:-.2px; }
+  .p-book-txt small { font-size:11.5px; font-weight:600; opacity:.62; }
+
+  .p-book-go {
+    width:34px; height:34px; border-radius:999px; flex-shrink:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#14171E; color:#A78BFA;
+    transition:transform .3s cubic-bezier(.22,1,.36,1);
+  }
+  .p-book:hover .p-book-go { transform:translateX(3px); }
+
+  /* light travelling across the face */
+  .p-book-sheen {
+    position:absolute; top:0; bottom:0; width:38%; z-index:1;
+    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
+    animation:pSheen 3.6s ease-in-out infinite;
+  }
+  @keyframes pSheen {
+    0%   { left:-45%; }
+    58%  { left:112%; }
+    100% { left:112%; }
+  }
+  @media (prefers-reduced-motion: reduce) { .p-book-sheen { display:none; } }
+
+
+  .p-live {
+    width:7px; height:7px; border-radius:999px; background:#4ADE80;
+    display:inline-block; margin-right:8px; vertical-align:1px;
+    box-shadow:0 0 0 0 rgba(74,222,128,.7); animation:pLive 2s infinite;
+  }
+  @keyframes pLive {
+    70%  { box-shadow:0 0 0 7px rgba(74,222,128,0); }
+    100% { box-shadow:0 0 0 0 rgba(74,222,128,0); }
+  }
+
+  @media (max-width:900px) {
+    .p-hero-top { flex-direction:column; align-items:flex-start; gap:22px; padding-bottom:18px; }
+    .p-hero-aside { flex:1 1 auto; gap:16px; }
+    }
+  .p-hero-eyebrow { display:flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:18px; }
+  .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Bricolage Grotesque',sans-serif; margin:0; }
+  .p-hero-h1 em { font-style:normal; color:#A78BFA; }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
-  .p-scroll-hint { position:absolute; bottom:28px; right:56px; z-index:2; display:flex; align-items:center; gap:8px; color:rgba(255,255,255,0.5); font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; animation:scrollBounce 2s ease-in-out infinite; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
   /* ── sport panels ── */
@@ -77,7 +158,8 @@ const CSS = `
   .p-panel-accent { position:absolute; right:0; top:0; bottom:0; width:40%; display:flex; align-items:center; justify-content:center; font-size:28vw; opacity:0.1; pointer-events:none; }
 
   /* ── sport slider (Playo-style clickable rail) ── */
-  .p-sportbar { padding:56px 56px 8px; }
+  .p-sportbar { padding:56px clamp(24px,5vw,56px) 8px; }
+  .p-matches { padding:100px clamp(24px,5vw,56px); }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
   .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Bricolage Grotesque',sans-serif; line-height:0.95; color:#ffffff; }
@@ -105,7 +187,7 @@ const CSS = `
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
   [data-theme="paper"] .p-sportchip:hover { border-color:rgba(20,23,30,0.3); }
   @media (max-width:900px){
-    .p-sportbar { padding:44px 24px 4px; }
+    .p-sportbar { padding:44px clamp(24px,5vw,56px) 4px; }
     .p-sportchip { width:130px; height:166px; }
     .p-sportchip-label { font-size:16px; }
   }
@@ -144,7 +226,7 @@ const CSS = `
   .p-stats { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); }
   .p-stat { padding:48px 40px; border-right:1px solid rgba(255,255,255,0.08); }
   .p-stat:last-child { border-right:none; }
-  .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#FFC93C; line-height:1; margin-bottom:8px; }
+  .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#A78BFA; line-height:1; margin-bottom:8px; }
   .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
 
   /* ── featured ── */
@@ -163,7 +245,7 @@ const CSS = `
   .p-cta-h2 em { font-style:normal; color:#DE3163; }
 
   /* ── footer ── */
-  .p-footer { border-top:1px solid var(--border-line, rgba(255,255,255,0.08)); padding:40px 56px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  .p-footer { border-top:1px solid var(--border-line, rgba(255,255,255,0.08)); padding:40px clamp(24px,5vw,56px); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
 
   /* ── buttons ── */
   .btn-primary { background:#DE3163; color:#fff; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
@@ -172,7 +254,7 @@ const CSS = `
 
   /* ── mobile ── */
   @media(max-width:900px){
-    .p-hero-content { padding:0 24px calc(130px + env(safe-area-inset-bottom, 0px)); }
+    .p-hero-content { padding:0 24px; }
     .p-hero-h1 { letter-spacing:-1.5px; }
     .p-panel-content { padding:0 24px; }
     .p-panel-accent { display:none; }
@@ -184,7 +266,7 @@ const CSS = `
     .p-stat:nth-child(odd) { border-right:1px solid rgba(255,255,255,0.08); }
     .p-stat:last-child { border-bottom:none; }
     .p-cta-section { min-height:60vh; padding:60px 24px; }
-    .p-footer { padding:32px 24px; }
+    .p-footer { padding:32px clamp(24px,5vw,56px); }
     .p-match-grid { grid-template-columns:1fr !important; }
   }
 
@@ -221,10 +303,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
   const router = useRouter();
   const supabase = createClient();
   const { profile } = useProfile();
+  const { city, area } = useCity();
   const heroRef = useRef<HTMLDivElement>(null);
-  const { scrollY } = useScroll();
-  const heroTextY = useTransform(scrollY, [0, 500], [0, -80]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
   const { events: featured, loading: evLoading } = useEvents({ limit: 3, onlyUpcoming: true });
   // All upcoming games, grouped by sport, to fill each sport panel.
@@ -256,7 +336,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
   return (
     <>
       <style>{CSS}</style>
-      <AnimatedBackground accent1="#DE3163" accent2="#FFC93C" accent3="#2E7D5B" opacity={0.4} />
+      <AnimatedBackground accent1="#DE3163" accent2="#A78BFA" accent3="#2E7D5B" opacity={0.4} />
 
       <div style={{ background:"var(--ink)", color:"var(--chalk)", fontFamily:"'Inter',sans-serif" }}>
 
@@ -264,36 +344,35 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             HERO — full-viewport video
         ══════════════════════════════════ */}
         <div className="p-hero" ref={heroRef}>
-          <video autoPlay muted loop playsInline preload="none" poster="/sports/futsal.jpg" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }}>
-            <source src="/hero.mp4" type="video/mp4" />
-          </video>
-          <div className="p-hero-overlay" />
+          <div className="p-hero-content">
+            <div className="p-hero-top">
+              <div className="p-hero-lead">
+                <p className="p-hero-eyebrow">
+                  <i className="p-live" /> Kathmandu&apos;s sports platform
+                </p>
+                <h1 className="p-hero-h1">
+                  Find.<br />Book.<br /><em>Play.</em>
+                </h1>
+              </div>
 
-          <motion.div className="p-hero-content" style={{ y: heroTextY, opacity: heroOpacity }}>
-            <motion.p className="p-hero-eyebrow"
-              initial={{ opacity:0, y:16 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7, delay:0.2 }}>
-              Kathmandu&apos;s sports platform
-            </motion.p>
-            <motion.h1 className="p-hero-h1"
-              initial={{ opacity:0, y:32 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.9, delay:0.35, ease:[0.22,1,0.36,1] }}>
-              Find.<br />Book.<br /><em>Play.</em>
-            </motion.h1>
-            <motion.div className="p-hero-ctas"
-              initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.7, delay:0.6 }}>
-              <motion.button className="btn-white" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                onClick={() => window.dispatchEvent(new Event("open-nearby"))}>
-                Book now <ArrowRight size={17} />
-              </motion.button>
-              <a href="#sports">
-                <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                  Explore sports
-                </motion.button>
-              </a>
-            </motion.div>
-          </motion.div>
+              <div className="p-hero-aside">
+                <button className="p-book"
+                  onClick={() => window.dispatchEvent(new Event("open-nearby"))}>
+                  <span className="p-book-sheen" />
+                  <span className="p-book-in">
+                    <MapPin size={16} />
+                    <span className="p-book-txt">
+                      <b>Book now</b>
+                      <small>Grounds near you</small>
+                    </span>
+                    <span className="p-book-go"><ArrowRight size={16} /></span>
+                  </span>
+                </button>
+              </div>
+            </div>
 
-          <div className="p-scroll-hint">
-            <ChevronDown size={16} /> Scroll to explore
+            {/* The gallery is the hero — it shows what the app does. */}
+            <FeatureFan />
           </div>
         </div>
 
@@ -303,7 +382,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         {rails && (
           <div className="p-rails">
             <EventsRail events={rails.official} />
-            <VenuesRail venues={rails.venues} />
+            <VenuesRail venues={rails.venues.filter((v) => inCity(v.lat, v.lng, city, area))} />
             <GamesRail games={rails.games} />
           </div>
         )}
@@ -311,7 +390,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         {/* ══════════════════════════════════
             FEATURED MATCHES
         ══════════════════════════════════ */}
-        <div style={{ padding:"100px 56px", borderTop:"1px solid rgba(255,255,255,0.06)" }}>
+        <div className="p-matches" style={{ borderTop:"1px solid rgba(255,255,255,0.06)" }}>
           <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
             style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
             <div>
@@ -379,7 +458,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                         whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
                         onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
                         disabled={ev.slots_remaining === 0}
-                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#FFC93C"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#A78BFA"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
                         {ev.slots_remaining===0 ? "Full" : "Join"}
                       </motion.button>
                     </div>

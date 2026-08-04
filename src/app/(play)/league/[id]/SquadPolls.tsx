@@ -75,18 +75,18 @@ export default function SquadPolls({
                       disabled={pending || p.closed}
                       style={{
                         position: "relative", overflow: "hidden", textAlign: "left",
-                        border: `1px solid ${mine ? "rgba(255,201,60,0.5)" : "var(--line)"}`,
+                        border: `1px solid ${mine ? "rgba(167,139,250,0.5)" : "var(--line)"}`,
                         background: "transparent", borderRadius: 10, padding: "11px 13px",
                         cursor: p.closed ? "default" : "pointer", color: "inherit",
                         fontFamily: "inherit", width: "100%",
                       }}>
                       {/* fill bar */}
                       <span style={{ position: "absolute", inset: 0, width: `${pct}%`,
-                        background: mine ? "rgba(255,201,60,0.16)" : "rgba(128,128,128,0.12)",
+                        background: mine ? "rgba(167,139,250,0.16)" : "rgba(128,128,128,0.12)",
                         transition: "width 0.5s cubic-bezier(0.22,1,0.36,1)" }} />
                       <span style={{ position: "relative", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
                         <span style={{ fontSize: 13.5, fontWeight: mine ? 700 : 500, display: "inline-flex", alignItems: "center", gap: 7 }}>
-                          {mine && <Check size={13} style={{ color: "#FFC93C" }} />}
+                          {mine && <Check size={13} style={{ color: "#A78BFA" }} />}
                           {o.label}
                         </span>
                         <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono',monospace", color: "var(--dim)", flexShrink: 0 }}>
@@ -173,7 +173,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
         {err && <div style={{ color: "#DE3163", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <button onClick={submit} disabled={pending}
-          style={{ width: "100%", background: "#FFC93C", color: "#0B0D11", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+          style={{ width: "100%", background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           {pending ? "Creating…" : "Post poll"}
         </button>
 
@@ -181,7 +181,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
           .pl-in { width: 100%; box-sizing: border-box; background: transparent;
             border: 1px solid rgba(128,128,128,0.28); border-radius: 10px;
             padding: 10px 12px; color: inherit; font-family: inherit; font-size: 14px; }
-          .pl-in:focus { outline: none; border-color: #FFC93C; }
+          .pl-in:focus { outline: none; border-color: #A78BFA; }
         `}</style>
       </div>
     </div>

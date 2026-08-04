@@ -133,8 +133,8 @@ export default function SlotPicker({
           border: 1px solid var(--line); background: transparent; color: inherit;
           font-family: inherit; transition: border-color .18s, background .18s, color .18s;
         }
-        .sp-tab:hover { border-color: rgba(255,201,60,.45); }
-        .sp-tab.on { background: rgba(255,201,60,.14); border-color: rgba(255,201,60,.55); color: #FFC93C; }
+        .sp-tab:hover { border-color: rgba(167,139,250,.45); }
+        .sp-tab.on { background: rgba(167,139,250,.14); border-color: rgba(167,139,250,.55); color: #A78BFA; }
         .sp-tab .t { font-size: 13px; font-weight: 700; }
         .sp-tab .n { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; opacity: .6; }
 
@@ -148,7 +148,7 @@ export default function SlotPicker({
           transition: border-color .18s, background .18s, color .18s, transform .18s, box-shadow .18s;
         }
         .sp-slot.free { cursor: pointer; }
-        .sp-slot.free:hover { border-color: rgba(255,201,60,.6); transform: translateY(-2px); }
+        .sp-slot.free:hover { border-color: rgba(167,139,250,.6); transform: translateY(-2px); }
 
         .sp-slot.taken {
           cursor: not-allowed;
@@ -163,10 +163,10 @@ export default function SlotPicker({
 
         /* Your pick — solid, lifted and ringed so it can't be missed. */
         .sp-slot.picked {
-          background: #FFC93C; border-color: #FFC93C; color: #14171E;
+          background: #A78BFA; border-color: #A78BFA; color: #14171E;
           font-weight: 800; cursor: pointer;
           transform: translateY(-2px);
-          box-shadow: 0 0 0 4px rgba(255,201,60,.22), 0 8px 20px -6px rgba(255,201,60,.55);
+          box-shadow: 0 0 0 4px rgba(167,139,250,.22), 0 8px 20px -6px rgba(167,139,250,.55);
         }
 
         .sp-legend {
@@ -177,7 +177,7 @@ export default function SlotPicker({
         .sp-legend .sw { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
         .sp-legend .sw.free   { border: 1px solid var(--line); }
         .sp-legend .sw.taken  { background: rgba(222,49,99,.22); border: 1px solid rgba(222,49,99,.5); }
-        .sp-legend .sw.picked { background: #FFC93C; }
+        .sp-legend .sw.picked { background: #A78BFA; }
         .sp-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: .55; }
 
         .sp-msg { display: flex; align-items: center; gap: 9px; font-size: 13.5px; opacity: .65; padding: 18px 0; }

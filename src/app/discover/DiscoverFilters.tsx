@@ -168,9 +168,9 @@ export default function DiscoverFilters({
           font-family: inherit; cursor: pointer;
           transition: border-color 0.2s, background 0.2s, color 0.2s;
         }
-        .df-toggle:hover, .df-chip:hover { border-color: rgba(255,201,60,0.5); }
+        .df-toggle:hover, .df-chip:hover { border-color: rgba(167,139,250,0.5); }
         .df-toggle.on, .df-chip.on {
-          background: rgba(255,201,60,0.14); border-color: rgba(255,201,60,0.45); color: #FFC93C;
+          background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.45); color: #A78BFA;
         }
         .df-count {
           margin-left: auto; font-family: 'JetBrains Mono', monospace;

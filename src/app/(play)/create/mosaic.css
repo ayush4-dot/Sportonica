@@ -21,7 +21,7 @@
 .mz-eyebrow {
   font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
   letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 14px;
-  color: #FFC93C;
+  color: #A78BFA;
 }
 .mz.paper .mz-eyebrow { color: #DE3163; }
 .mz-head h1 {
@@ -96,7 +96,7 @@
 .mz-cell:hover .mz-img img, .mz-cell.open .mz-img img { transform: scale(1.07); }
 .mz-img-empty {
   position: absolute; inset: 0; display: grid; place-items: center; opacity: 0.35;
-  background: linear-gradient(135deg, rgba(255,201,60,0.12), rgba(46,125,91,0.12));
+  background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(46,125,91,0.12));
 }
 
 /* ── Gradient overlay: revealed on hover ── */
@@ -114,7 +114,7 @@
   font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 6px 11px; border-radius: 8px;
-  background: rgba(255,201,60,0.92); color: #0B0D11;
+  background: rgba(167,139,250,0.92); color: #0B0D11;
   transform: translateY(0); opacity: 1;
   transition: transform 0.5s var(--mz-ease) 0.05s, opacity 0.4s ease 0.05s;
 }
@@ -153,7 +153,7 @@
 /* animated divider line */
 .mz-content .dv {
   height: 2px; width: 44px; margin: 10px 0;
-  background: #FFC93C; border-radius: 2px;
+  background: #A78BFA; border-radius: 2px;
   transform: translateY(16px) scaleX(0); transform-origin: left;
 }
 
@@ -184,7 +184,7 @@
 .mz-cell.txt .small { font-size: 13px; opacity: 0.6; line-height: 1.5; }
 .mz-cell.txt .num {
   font-family: 'JetBrains Mono', monospace; font-size: 38px; font-weight: 700;
-  color: #FFC93C; letter-spacing: -2px;
+  color: #A78BFA; letter-spacing: -2px;
 }
 .mz.paper .mz-cell.txt .num { color: #DE3163; }
 
@@ -207,7 +207,10 @@
    ═══════════════════════════════════════════════════════════ */
 .mz-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)) !important;
+  /* The old mosaic forced fixed row heights — cards size themselves now. */
+  grid-auto-rows: auto !important;
+  grid-auto-flow: row !important;
   gap: 20px;
 }
 
@@ -337,7 +340,10 @@
    ═══════════════════════════════════════════════════════════ */
 .mz-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(276px, 1fr)) !important;
+  /* The old mosaic forced fixed row heights — cards size themselves now. */
+  grid-auto-rows: auto !important;
+  grid-auto-flow: row !important;
   gap: 20px;
 }
 
@@ -348,18 +354,18 @@
   transition: transform .32s cubic-bezier(.22,1,.36,1), box-shadow .32s;
   animation: mzIn .5s cubic-bezier(.22,1,.36,1) both;
 }
-.fcard:hover { transform: translateY(-8px); }
+.fcard:hover, .fcard.is-open { transform: translateY(-8px); }
 
 /* The drawer: on hover the panel slides down, uncovering the photo. */
-.fcard:hover .fcard-panel { height: 40%; }
-.fcard:hover .fcard-tab   { bottom: 40%; width: 70%; }
+.fcard:hover .fcard-panel, .fcard.is-open .fcard-panel { height: 40%; }
+.fcard:hover .fcard-tab, .fcard.is-open .fcard-tab { bottom: 40%; width: 70%; }
 
 /* Sports chips step aside as the drawer closes, so nothing clips. */
 .fcard-sports {
   transition: opacity .28s ease, max-height .42s cubic-bezier(.22,1,.36,1);
   max-height: 60px; overflow: hidden;
 }
-.fcard:hover .fcard-sports { opacity: 0; max-height: 0; }
+.fcard:hover .fcard-sports, .fcard.is-open .fcard-sports { opacity: 0; max-height: 0; }
 
 /* ── skins ── */
 .fcard[data-skin="indigo"] {
@@ -376,7 +382,7 @@
 }
 .fcard[data-skin="ink"] {
   --panel: #0F1216; --fg: #FFFFFF; --dim: rgba(255,255,255,.6);
-  --chip: rgba(255,255,255,.1); --accent: #FFC93C;
+  --chip: rgba(255,255,255,.1); --accent: #A78BFA;
   background: var(--panel);
   box-shadow: 0 20px 44px -20px rgba(0,0,0,.85);
 }
@@ -388,7 +394,7 @@
   overflow: hidden;
   transition: height .42s cubic-bezier(.22,1,.36,1);
 }
-.fcard:hover .fcard-media { height: 60%; }
+.fcard:hover .fcard-media, .fcard.is-open .fcard-media { height: 60%; }
 
 /* Blurred, over-scaled copy fills the frame — no empty letterbox bars. */
 .fcard-blur {
@@ -403,7 +409,7 @@
   width: 100%; height: 100%; object-fit: contain; display: block;
   transition: transform .6s cubic-bezier(.22,1,.36,1);
 }
-.fcard:hover .fcard-photo { transform: scale(1.04); }
+.fcard:hover .fcard-photo, .fcard.is-open .fcard-photo { transform: scale(1.04); }
 .fcard-noimg {
   width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
   color: var(--dim); opacity: .45;
@@ -448,7 +454,7 @@
   display: inline-flex; color: var(--fg); opacity: .55;
   transition: transform .3s cubic-bezier(.22,1,.36,1), opacity .3s, color .3s;
 }
-.fcard:hover .fcard-arrow { transform: translate(3px, -3px); opacity: 1; color: var(--accent); }
+.fcard:hover .fcard-arrow, .fcard.is-open .fcard-arrow { transform: translate(3px, -3px); opacity: 1; color: var(--accent); }
 
 /* ── panel ── */
 .fcard-panel {
@@ -482,16 +488,129 @@
   transition: background .22s, color .22s, transform .16s;
 }
 .fcard-book { background: var(--accent); color: var(--panel); }
-.fcard:hover .fcard-book { transform: translateY(-1px); }
+.fcard:hover .fcard-book, .fcard.is-open .fcard-book { transform: translateY(-1px); }
 .fcard-map { background: var(--chip); color: var(--dim); }
 .fcard-map:hover { color: var(--fg); transform: translateY(-1px); }
 
-@media (max-width: 520px) {
-  .mz-grid { grid-template-columns: repeat(auto-fill, minmax(158px, 1fr)); gap: 13px; }
-  .fcard { border-radius: 20px; }
-  .fcard-tab { height: 48px; padding: 0 13px; border-radius: 20px 16px 0 0; }
-  .fcard-price { font-size: 17px; }
-  .fcard-panel { padding: 13px; border-radius: 0 16px 20px 20px; }
+/* ── Phones: one card per row. Two columns left the panel far too
+   short, so the buttons were being clipped. ── */
+@media (max-width: 620px) {
+  .mz-grid { grid-template-columns: 1fr !important; grid-auto-rows: auto !important; gap: 15px; }
+
+  /* Landscape-ish card: photo left of centre, panel below. */
+  .fcard { aspect-ratio: 5 / 4; border-radius: 22px; }
+
+  .fcard-media { height: 44%; }
+
+  .fcard-tab {
+    bottom: 56%; width: 62%; height: 52px;
+    padding: 0 15px; border-radius: 22px 18px 0 0;
+  }
+  .fcard.is-open .fcard-tab   { bottom: 42%; width: 74%; }
+  .fcard.is-open .fcard-media { height: 58%; }
+
+  .fcard-panel {
+    height: 56%; padding: 14px 15px 15px;
+    border-radius: 0 18px 22px 22px;
+  }
+  .fcard.is-open .fcard-panel { height: 42%; }
+
+  /* Chips stay on one line so the buttons never get pushed out. */
+  .fcard-sports { flex-wrap: nowrap; overflow: hidden; }
+  .fcard.is-open .fcard-sports { opacity: 0; max-height: 0; }
+
+  .fcard-price { font-size: 19px; }
+  .fcard-name { font-size: 17px; }
+  .fcard-verified { top: 10px; right: 10px; padding: 4px 9px; font-size: 10px; }
+}
+
+@media (max-width: 380px) {
+  .fcard { aspect-ratio: 1 / 1; }
   .fcard-name { font-size: 16px; }
-  .fcard-book, .fcard-map { padding: 7px 10px; font-size: 11.5px; }
+  .fcard-book, .fcard-map { padding: 8px 12px; font-size: 12px; }
+}
+
+/* ── Search ── */
+.mz-search {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 15px; border-radius: 14px; margin-bottom: 18px;
+  border: 1px solid var(--line, rgba(242,237,230,.14));
+  background: rgba(255,255,255,.04);
+  color: var(--chalk, #F2EDE6);
+}
+[data-theme="paper"] .mz-search { background: #fff; border-color: rgba(20,23,30,.12); color: #14171E; }
+.mz-search input {
+  flex: 1; border: none; background: transparent; color: inherit;
+  font-family: inherit; font-size: 14.5px; outline: none;
+}
+.mz-search input::placeholder { opacity: .45; }
+.mz-search button {
+  border: none; background: transparent; color: inherit; opacity: .5;
+  cursor: pointer; display: inline-flex; padding: 0;
+}
+.mz-search button:hover { opacity: 1; }
+
+
+/* ═══════════════════════════════════════════════════════════
+   PHONE: same folder card, just sized so photos actually fit.
+   One per row, taller frame, and the blurred backdrop keeps
+   whole photos visible instead of cropping heads off.
+   ═══════════════════════════════════════════════════════════ */
+@media (max-width: 620px) {
+  .mz-grid { grid-template-columns: 1fr !important; gap: 15px; }
+
+  .fcard { aspect-ratio: 4 / 5; border-radius: 22px; }
+
+  /* A tall enough window that a contained photo reads properly. */
+  .fcard-media { height: 48%; }
+  .fcard.is-open .fcard-media, .fcard:hover .fcard-media { height: 60%; }
+
+  .fcard-tab {
+    bottom: 52%; width: 64%; height: 52px;
+    padding: 0 15px; border-radius: 22px 18px 0 0;
+  }
+  .fcard.is-open .fcard-tab, .fcard:hover .fcard-tab { bottom: 40%; width: 76%; }
+
+  .fcard-panel {
+    height: 52%; padding: 14px 15px 15px;
+    border-radius: 0 18px 22px 22px;
+  }
+  .fcard.is-open .fcard-panel, .fcard:hover .fcard-panel { height: 40%; }
+
+  .fcard-price { font-size: 19px; }
+  .fcard-name { font-size: 18px; }
+  .fcard-verified { top: 10px; right: 10px; padding: 4px 9px; font-size: 10px; }
+  .fcard-book, .fcard-map { padding: 9px 14px; font-size: 12.5px; }
+}
+
+@media (max-width: 380px) {
+  .fcard-name { font-size: 16.5px; }
+  .fcard-price { font-size: 17px; }
+}
+
+/* ── Where it is: address + distance, under the name ── */
+.fcard-where {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 12px; color: var(--dim); margin: 0;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+}
+.fcard-where b { color: var(--accent); font-weight: 700; }
+.fcard-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 11.5px; color: var(--dim);
+}
+.fcard-meta span { display: inline-flex; align-items: center; gap: 4px; }
+
+/* ── Live offer badge on a venue card ── */
+.fcard-offer {
+  position: absolute; top: 12px; left: 12px; z-index: 4;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: 999px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+  background: linear-gradient(135deg, #4ADE80, #16A34A);
+  color: #06240F;
+  box-shadow: 0 6px 18px -6px rgba(74,222,128,.8);
+}
+@media (max-width: 620px) {
+  .fcard-offer { top: 10px; left: 10px; padding: 4px 9px; font-size: 10px; }
 }

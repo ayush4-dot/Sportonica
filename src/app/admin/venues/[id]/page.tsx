@@ -46,7 +46,7 @@ export default async function VenueDetail({ params }: { params: Promise<{ id: st
         {/* Quick actions */}
         <div className="adm-grid-3" style={{ marginBottom: 20 }}>
           <Link href={`/admin/calendar?venue=${venue.id}`} className="adm-card" style={{ textDecoration: "none", color: "inherit", padding: 16 }}>
-            <CalendarClock size={18} style={{ color: "var(--a-sodium)", marginBottom: 8 }} />
+            <CalendarClock size={18} style={{ color: "var(--a-accent)", marginBottom: 8 }} />
             <div style={{ fontWeight: 600, fontSize: 14 }}>Calendar</div>
             <div className="adm-dim" style={{ fontSize: 12 }}>Bookings & blocks</div>
           </Link>
@@ -70,9 +70,9 @@ export default async function VenueDetail({ params }: { params: Promise<{ id: st
         />
 
         {venue.verification_status === "unverified" && (
-          <div className="adm-card" style={{ marginTop: 20, borderColor: "rgba(255,201,60,0.25)" }}>
+          <div className="adm-card" style={{ marginTop: 20, borderColor: "rgba(167,139,250,0.25)" }}>
             <div className="adm-flex" style={{ alignItems: "flex-start", gap: 14 }}>
-              <ShieldCheck size={20} style={{ color: "var(--a-sodium)", marginTop: 2 }} />
+              <ShieldCheck size={20} style={{ color: "var(--a-accent)", marginTop: 2 }} />
               <div>
                 <div className="adm-card-t">Get verified to lift your payout cap</div>
                 <div className="adm-card-sub" style={{ marginBottom: 12 }}>

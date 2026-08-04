@@ -20,7 +20,7 @@ const COLS: Column<BookingRow>[] = [
   { key: "price", label: "Amount", type: "money" },
   {
     key: "commission", label: "Our cut", type: "custom",
-    render: (r) => <span className="dt-mono" style={{ color: "#FFC93C" }}>Rs {Math.round((Number(r.price) || 0) * COMMISSION).toLocaleString("en-IN")}</span>,
+    render: (r) => <span className="dt-mono" style={{ color: "#A78BFA" }}>Rs {Math.round((Number(r.price) || 0) * COMMISSION).toLocaleString("en-IN")}</span>,
   },
   {
     key: "status", label: "Status", type: "badge",

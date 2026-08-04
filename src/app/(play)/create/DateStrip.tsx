@@ -90,7 +90,7 @@ export default function DateStrip({
           font-family: 'Bricolage Grotesque', sans-serif;
           font-size: clamp(22px, 3.2vw, 32px); font-weight: 800;
           letter-spacing: -1px; line-height: 1; margin: 0;
-          background: linear-gradient(96deg, #FFE9A8, #FFC93C 55%, #E9A61F);
+          background: linear-gradient(96deg, #DDD6FE, #A78BFA 55%, #6D28D9);
           -webkit-background-clip: text; background-clip: text;
           -webkit-text-fill-color: transparent;
         }
@@ -104,8 +104,8 @@ export default function DateStrip({
           transition: border-color .2s, background .2s, transform .14s;
         }
         .ds-nav button:hover {
-          border-color: rgba(255,201,60,.55);
-          background: rgba(255,201,60,.1);
+          border-color: rgba(167,139,250,.55);
+          background: rgba(167,139,250,.1);
           transform: translateY(-1px);
         }
 
@@ -120,7 +120,7 @@ export default function DateStrip({
         .ds-monthmark {
           position: absolute; top: -3px; left: 50%; transform: translateX(-50%);
           font-size: 9px; font-weight: 800; letter-spacing: .14em;
-          text-transform: uppercase; color: #FFC93C; opacity: .8;
+          text-transform: uppercase; color: #A78BFA; opacity: .8;
         }
 
         .ds-day {
@@ -132,18 +132,18 @@ export default function DateStrip({
           background: transparent;
           transition: transform .22s cubic-bezier(.22,1,.36,1), border-color .2s, background .2s;
         }
-        .ds-day:hover { transform: translateY(-4px); border-color: rgba(255,201,60,.45); }
+        .ds-day:hover { transform: translateY(-4px); border-color: rgba(167,139,250,.45); }
 
         /* Weekends read warmer, so the week has a rhythm. */
         .ds-day.wknd .ds-dow { color: #DE3163; opacity: .75; }
 
         .ds-day.on {
           border-color: transparent; color: #14171E; transform: translateY(-4px);
-          background: linear-gradient(168deg, #FFE9A8 0%, #FFC93C 48%, #EDAE24 100%);
+          background: linear-gradient(168deg, #DDD6FE 0%, #A78BFA 48%, #7C3AED 100%);
           box-shadow:
             inset 0 1px 0 rgba(255,255,255,.75),
-            0 0 0 1px rgba(255,201,60,.35),
-            0 16px 30px -12px rgba(255,201,60,.7);
+            0 0 0 1px rgba(167,139,250,.35),
+            0 16px 30px -12px rgba(167,139,250,.7);
         }
         .ds-day.on .ds-dow { color: rgba(20,23,30,.66); opacity: 1; }
 

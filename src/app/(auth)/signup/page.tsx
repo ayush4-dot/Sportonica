@@ -113,8 +113,8 @@ function RoleCard({ active, onClick, title, desc }: {
     <button type="button" onClick={onClick}
       style={{
         textAlign: "left", cursor: "pointer",
-        background: active ? "rgba(255,201,60,0.12)" : "var(--panel)",
-        border: `1px solid ${active ? "rgba(255,201,60,0.4)" : "var(--line-2)"}`,
+        background: active ? "rgba(167,139,250,0.12)" : "var(--panel)",
+        border: `1px solid ${active ? "rgba(167,139,250,0.4)" : "var(--line-2)"}`,
         borderRadius: 11, padding: "12px 13px",
         transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
         color: "inherit", fontFamily: "inherit",

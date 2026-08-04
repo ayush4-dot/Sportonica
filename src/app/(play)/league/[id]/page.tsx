@@ -13,7 +13,7 @@ import SquadPolls from "./SquadPolls";
 export const dynamic = "force-dynamic";
 
 const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#FFC93C", Cricket: "#f97316",
+  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
   Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
 };
 

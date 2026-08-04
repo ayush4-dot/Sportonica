@@ -60,17 +60,17 @@ export default async function AnalyticsPage() {
         ) : (
           <>
             <div className="adm-stats">
-              <Stat label="Bookings (30d)" value={active.length} accent="var(--a-sodium)" />
+              <Stat label="Bookings (30d)" value={active.length} accent="var(--a-accent)" />
               <Stat label="Revenue (30d)" value={money(revenue)} accent="var(--a-lime)" />
               <Stat label="Courts live" value={courts.length} accent="var(--a-turf)" />
               <Stat label="No-show rate" value={`${noShowRate}%`} accent={noShowRate > 15 ? "var(--a-pink)" : "var(--a-sky)"} />
             </div>
 
             {busiest.n > 0 && (
-              <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(255,201,60,0.2)" }}>
+              <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(167,139,250,0.2)" }}>
                 <div style={{ fontSize: 13.5 }}>
                   <span style={{ fontWeight: 600 }}>Your goldmine:</span>{" "}
-                  <span className="adm-mono" style={{ color: "var(--a-sodium)" }}>
+                  <span className="adm-mono" style={{ color: "var(--a-accent)" }}>
                     {DOW_LABELS[busiest.dow]} {String(HOURS[busiest.band]).padStart(2, "0")}:00
                   </span>{" "}
                   <span className="adm-dim">is your busiest slot — {busiest.n} booking{busiest.n !== 1 ? "s" : ""} in the last month.</span>
@@ -94,7 +94,7 @@ export default async function AnalyticsPage() {
                         <div key={`${d}-${b}`} className="adm-heat-cell"
                           title={`${label} ${HOURS[b]}:00 — ${n} booking${n !== 1 ? "s" : ""}`}
                           style={{
-                            background: n === 0 ? "var(--a-panel-2)" : `rgba(255,201,60,${0.12 + intensity * 0.7})`,
+                            background: n === 0 ? "var(--a-panel-2)" : `rgba(167,139,250,${0.12 + intensity * 0.7})`,
                             display: "grid", placeItems: "center",
                             color: intensity > 0.5 ? "#0B0D11" : "var(--a-dim)",
                             fontWeight: 600,

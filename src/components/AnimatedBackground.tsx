@@ -15,7 +15,7 @@ interface Props {
 
 export default function AnimatedBackground({
   accent1 = "#DE3163",
-  accent2 = "#FFC93C",
+  accent2 = "#A78BFA",
   accent3 = "#2E7D5B",
   opacity = 1,
 }: Props) {
@@ -89,7 +89,15 @@ export default function AnimatedBackground({
     };
     window.addEventListener("mousemove", onMove);
 
+    // Blurred elements (header, dock) sit on top of this canvas and have to
+    // resample it every frame it changes. At 60fps that's expensive enough
+    // on weaker mobile GPUs to drop frames and read as a visible flicker —
+    // capping to ~30fps halves that compositing cost with no visible loss
+    // since the drift here is slow to begin with.
+    let last = 0;
     const draw = (ts: number) => {
+      if (ts - last < 32) { raf = requestAnimationFrame(draw); return; }
+      last = ts;
       ctx.clearRect(0, 0, W, H);
 
       /* ── 1. deep base ── */
@@ -181,6 +189,8 @@ export default function AnimatedBackground({
         zIndex: 0,
         pointerEvents: "none",
         opacity,
+        transform: "translateZ(0)",
+        willChange: "transform",
       }}
       aria-hidden="true"
     />

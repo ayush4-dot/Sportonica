@@ -9,7 +9,7 @@
   --pf-dim:   rgba(242,237,230,0.62);
   --pf-faint: rgba(242,237,230,0.38);
   --pf-hair:  rgba(242,237,230,0.14);
-  --pf-accent:#FFC93C;
+  --pf-accent:#A78BFA;
   min-height: 100vh;
   background: var(--pf-bg);
   color: var(--pf-text);
@@ -47,7 +47,7 @@
   flex-shrink: 0; margin-top: 8px;
   display: grid; place-items: center;
   font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800;
-  background: linear-gradient(150deg, #DE3163, #FFC93C); color: #0B0D11;
+  background: linear-gradient(150deg, #DE3163, #A78BFA); color: #0B0D11;
 }
 @media (max-width: 640px) { .pf-avatar { width: 84px; height: 84px; font-size: 34px; } }
 

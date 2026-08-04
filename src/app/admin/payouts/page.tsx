@@ -45,7 +45,7 @@ export default async function PayoutsPage() {
         ) : (
           <>
             <div className="adm-stats">
-              <Stat label="Gross earnings" value={money(gross)} accent="var(--a-sodium)" />
+              <Stat label="Gross earnings" value={money(gross)} accent="var(--a-accent)" />
               <Stat label="Commission (10%)" value={money(commission)} accent="var(--a-pink)" />
               <Stat label="Net payable" value={money(net)} accent="var(--a-lime)" />
               <Stat label="Settled to date" value={money(settled)} accent="var(--a-turf)" />

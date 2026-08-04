@@ -134,11 +134,11 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
         {photos.length > 0 && (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px,1fr))", gap: 12, marginBottom: 16 }}>
             {photos.map((url, i) => (
-              <div key={url} style={{ position: "relative", borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", border: i === 0 ? "2px solid var(--a-sodium)" : "1px solid var(--a-line)" }}>
+              <div key={url} style={{ position: "relative", borderRadius: 12, overflow: "hidden", aspectRatio: "4/3", border: i === 0 ? "2px solid var(--a-accent)" : "1px solid var(--a-line)" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 {i === 0 && (
-                  <span style={{ position: "absolute", top: 6, left: 6, fontSize: 10, fontWeight: 700, background: "var(--a-sodium)", color: "#0B0D11", padding: "2px 7px", borderRadius: 5, fontFamily: "var(--a-mono)" }}>COVER</span>
+                  <span style={{ position: "absolute", top: 6, left: 6, fontSize: 10, fontWeight: 700, background: "var(--a-accent)", color: "#0B0D11", padding: "2px 7px", borderRadius: 5, fontFamily: "var(--a-mono)" }}>COVER</span>
                 )}
                 <div style={{ position: "absolute", bottom: 6, right: 6, display: "flex", gap: 5 }}>
                   {i !== 0 && (

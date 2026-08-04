@@ -21,7 +21,7 @@ const COLS: Column<PayoutRow>[] = [
   { key: "venue_name", label: "Venue" },
   { key: "bookings", label: "Bookings", type: "custom", render: (v) => <span className="dt-mono">{v.bookings}</span> },
   { key: "gross_total", label: "Gross", type: "money" },
-  { key: "commission_total", label: "Our cut", type: "custom", render: (v) => <span className="dt-mono" style={{ color: "#FFC93C" }}>Rs {Number(v.commission_total || 0).toLocaleString("en-IN")}</span> },
+  { key: "commission_total", label: "Our cut", type: "custom", render: (v) => <span className="dt-mono" style={{ color: "#A78BFA" }}>Rs {Number(v.commission_total || 0).toLocaleString("en-IN")}</span> },
   { key: "payout_total", label: "Venue earns", type: "money" },
   { key: "payout_pending", label: "Unpaid", type: "custom", render: (v) => <span className="dt-mono" style={{ color: Number(v.payout_pending) > 0 ? "#DE3163" : undefined }}>Rs {Number(v.payout_pending || 0).toLocaleString("en-IN")}</span> },
 ];

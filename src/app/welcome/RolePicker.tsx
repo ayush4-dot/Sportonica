@@ -65,7 +65,7 @@ export default function RolePicker({ name, next }: { name: string; next: string 
         .wc-card { width: 100%; max-width: 430px; }
         .wc-eyebrow {
           font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
-          letter-spacing: 0.2em; text-transform: uppercase; color: #FFC93C; margin-bottom: 14px;
+          letter-spacing: 0.2em; text-transform: uppercase; color: #A78BFA; margin-bottom: 14px;
         }
         .wc-title {
           font-family: 'Bricolage Grotesque', sans-serif;
@@ -80,19 +80,19 @@ export default function RolePicker({ name, next }: { name: string; next: string 
           border: 1px solid rgba(242,237,230,0.14);
           transition: border-color .2s, background .2s, transform .2s cubic-bezier(.22,1,.36,1);
         }
-        .wc-opt:hover { transform: translateY(-2px); border-color: rgba(255,201,60,.45); }
-        .wc-opt.on { border-color: #FFC93C; background: rgba(255,201,60,0.1); }
+        .wc-opt:hover { transform: translateY(-2px); border-color: rgba(167,139,250,.45); }
+        .wc-opt.on { border-color: #A78BFA; background: rgba(167,139,250,0.1); }
         .wc-ic {
           width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
           display: grid; place-items: center; background: rgba(255,255,255,0.06);
         }
-        .wc-opt.on .wc-ic { background: rgba(255,201,60,0.18); color: #FFC93C; }
+        .wc-opt.on .wc-ic { background: rgba(167,139,250,0.18); color: #A78BFA; }
         .wc-opt b { display: block; font-size: 14.5px; margin-bottom: 3px; }
         .wc-opt small { font-size: 12.5px; opacity: 0.6; line-height: 1.45; }
         .wc-go {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
           margin-top: 10px; padding: 14px; border-radius: 12px; cursor: pointer;
-          background: #FFC93C; color: #0B0D11; border: none;
+          background: #A78BFA; color: #0B0D11; border: none;
           font-family: inherit; font-size: 15px; font-weight: 700;
         }
         .wc-go:disabled { opacity: .6; cursor: default; }

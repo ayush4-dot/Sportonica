@@ -1,0 +1,322 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import {
+  SlidersHorizontal, X, Clock, Banknote, Navigation, Trophy, Volleyball, Check,
+  ChevronDown, MapPin, Search,
+} from "lucide-react";
+import {
+  formatsFor, SKILLS, TIMES, FEES, DISTANCES, activeCount,
+  type PlayQuery, NO_FILTERS,
+} from "@/lib/playFilters";
+
+/**
+ * Finding a game is a different question from booking a court, so this
+ * asks about the game and the people: what format, what level, when,
+ * how much, and can I still get in.
+ */
+export default function PlayFilters({
+  sport, setSport, sports, value, onChange, count, city, onNeedLocation,
+}: {
+  sport: string | null;
+  setSport: (s: string | null) => void;
+  sports: string[];
+  value: PlayQuery;
+  onChange: (q: PlayQuery) => void;
+  count: number;
+  city?: string | null;
+  onNeedLocation: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [sportOpen, setSportOpen] = useState(false);
+  const boxRef = useRef<HTMLDivElement>(null);
+  const formats = formatsFor(sport);
+  const n = activeCount(value);
+
+  useEffect(() => {
+    function onDoc(e: MouseEvent) {
+      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
+        setOpen(false); setSportOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  // A format from another sport makes no sense — drop it on switch.
+  useEffect(() => {
+    if (value.format && !formats.some((f) => f.key === value.format)) {
+      onChange({ ...value, format: null });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sport]);
+
+  const set = <K extends keyof PlayQuery>(k: K, v: PlayQuery[K]) =>
+    onChange({ ...value, [k]: value[k] === v ? (typeof v === "boolean" ? false : null) as PlayQuery[K] : v });
+
+  const chips = [
+    value.format && { k: "format", label: formats.find((f) => f.key === value.format)?.label ?? "", on: () => set("format", null) },
+    value.skill  && { k: "skill",  label: SKILLS.find((s) => s.key === value.skill)?.label ?? "",  on: () => set("skill", null) },
+    value.time   && { k: "time",   label: TIMES.find((t) => t.key === value.time)?.label ?? "",    on: () => set("time", null) },
+    value.fee    && { k: "fee",    label: FEES.find((f) => f.key === value.fee)?.label ?? "",      on: () => set("fee", null) },
+    value.dist   && { k: "dist",   label: DISTANCES.find((d) => d.key === value.dist)?.label ?? "", on: () => set("dist", null) },
+    value.openOnly && { k: "open", label: "Has spots", on: () => onChange({ ...value, openOnly: false }) },
+  ].filter(Boolean) as { k: string; label: string; on: () => void }[];
+
+  function Group({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+    return (
+      <div className="pf-g">
+        <p className="pf-gt">{icon}{title}</p>
+        <div className="pf-go">{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="pf" ref={boxRef}>
+      {/* Sport · Area · Filters · Find — one row, in the order people think. */}
+      <div className="pf-search">
+        <div className="pf-seg sport">
+          <button onClick={() => { setSportOpen((v) => !v); setOpen(false); }}>
+            <Volleyball size={15} />
+            <span>{sport ?? "Any sport"}</span>
+            <ChevronDown size={14} className={sportOpen ? "flip" : ""} />
+          </button>
+          {sportOpen && (
+            <div className="pf-drop">
+              <button className={!sport ? "on" : ""} onClick={() => { setSport(null); setSportOpen(false); }}>
+                Any sport
+              </button>
+              {sports.map((sp) => (
+                <button key={sp} className={sport === sp ? "on" : ""}
+                  onClick={() => { setSport(sp); setSportOpen(false); }}>
+                  {sp}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="pf-seg area">
+          <span className="pf-area">
+            <MapPin size={15} />
+            <b>{city ?? "Anywhere"}</b>
+            <em>change in header</em>
+          </span>
+        </div>
+
+        <div className="pf-seg">
+          <button onClick={() => { setOpen((v) => !v); setSportOpen(false); }}
+            className={n ? "lit" : ""}>
+            <SlidersHorizontal size={15} />
+            <span>Filters{n ? ` · ${n}` : ""}</span>
+          </button>
+        </div>
+
+        <button className="pf-find" onClick={() => { setOpen(false); setSportOpen(false); }}>
+          <Search size={15} />
+          {count} game{count === 1 ? "" : "s"}
+        </button>
+      </div>
+
+      {chips.length > 0 && (
+        <div className="pf-chips">
+          {chips.map((c) => (
+            <button key={c.k} className="pf-chip" onClick={c.on}>
+              {c.label} <X size={11} />
+            </button>
+          ))}
+          <button className="pf-clear" onClick={() => onChange(NO_FILTERS)}>Clear all</button>
+        </div>
+      )}
+
+      {open && (
+        <div className="pf-panel">
+          {formats.length > 0 && (
+            <Group icon={<Volleyball size={13} />} title={`${sport} format`}>
+              {formats.map((f) => (
+                <button key={f.key} className={value.format === f.key ? "on" : ""}
+                  onClick={() => set("format", f.key)}>{f.label}</button>
+              ))}
+            </Group>
+          )}
+
+          <Group icon={<Trophy size={13} />} title="Skill level">
+            {SKILLS.map((s) => (
+              <button key={s.key} className={value.skill === s.key ? "on" : ""}
+                onClick={() => set("skill", s.key)}>{s.label}</button>
+            ))}
+          </Group>
+
+          <Group icon={<Clock size={13} />} title="When">
+            {TIMES.map((t) => (
+              <button key={t.key} className={value.time === t.key ? "on" : ""}
+                onClick={() => set("time", t.key)}>{t.label}</button>
+            ))}
+          </Group>
+
+          <Group icon={<Banknote size={13} />} title="Cost per player">
+            {FEES.map((f) => (
+              <button key={f.key} className={value.fee === f.key ? "on" : ""}
+                onClick={() => set("fee", f.key)}>{f.label}</button>
+            ))}
+          </Group>
+
+          <Group icon={<Navigation size={13} />} title="Distance">
+            {DISTANCES.map((d) => (
+              <button key={d.key} className={value.dist === d.key ? "on" : ""}
+                onClick={() => { set("dist", d.key); onNeedLocation(); }}>{d.label}</button>
+            ))}
+          </Group>
+
+          <label className="pf-check">
+            <input type="checkbox" checked={value.openOnly}
+              onChange={(e) => onChange({ ...value, openOnly: e.target.checked })} />
+            <span className="pf-box">{value.openOnly && <Check size={12} />}</span>
+            <span>Only games I can still join</span>
+          </label>
+        </div>
+      )}
+
+      <style>{`
+        .pf { margin-bottom: 20px; position: relative; }
+
+        .pf-search {
+          display:flex; align-items:stretch; gap:0;
+          border:1px solid var(--line, rgba(242,237,230,.14));
+          border-radius:16px; overflow:visible;
+          background:rgba(255,255,255,.04);
+        }
+        [data-theme="paper"] .pf-search { background:#fff; border-color:rgba(20,23,30,.12); }
+
+        .pf-seg { position:relative; flex:1; min-width:0; display:flex; }
+        .pf-seg + .pf-seg { border-left:1px solid var(--line, rgba(242,237,230,.1)); }
+        .pf-seg > button, .pf-area {
+          flex:1; display:flex; align-items:center; gap:9px; min-width:0;
+          padding:14px 16px; border:none; background:none; color:inherit;
+          font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
+          text-align:left;
+        }
+        .pf-seg > button:hover { background:rgba(167,139,250,.07); }
+        .pf-seg > button.lit { color:#A78BFA; }
+        .pf-seg > button svg:first-child, .pf-area svg { opacity:.55; flex-shrink:0; }
+        .pf-seg > button span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        .pf-seg > button svg:last-child { opacity:.45; transition:transform .25s; }
+        .pf-seg > button svg.flip { transform:rotate(180deg); }
+
+        .pf-area { cursor:default; }
+        .pf-area b { font-weight:700; }
+        .pf-area em {
+          font-style:normal; font-size:11px; opacity:.35; margin-left:auto;
+          white-space:nowrap;
+        }
+
+        .pf-find {
+          display:inline-flex; align-items:center; gap:7px; flex-shrink:0;
+          padding:0 22px; margin:5px; border:none; border-radius:12px; cursor:pointer;
+          font-family:inherit; font-size:13.5px; font-weight:800; white-space:nowrap;
+          background:linear-gradient(140deg,#C4B5FD,#A78BFA 55%,#8B5CF6);
+          color:#14171E;
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px -8px rgba(167,139,250,.8);
+          transition:transform .16s;
+        }
+        .pf-find:hover { transform:translateY(-1px); }
+
+        .pf-drop {
+          position:absolute; top:calc(100% + 8px); left:0; z-index:70;
+          min-width:210px; max-height:300px; overflow-y:auto;
+          border-radius:14px; padding:6px;
+          background:#12151b; border:1px solid rgba(242,237,230,.12);
+          box-shadow:0 24px 56px -20px rgba(0,0,0,.85);
+        }
+        [data-theme="paper"] .pf-drop { background:#fff; border-color:rgba(20,23,30,.12); }
+        .pf-drop button {
+          width:100%; text-align:left; padding:9px 12px; border-radius:10px;
+          border:none; background:none; color:inherit; cursor:pointer;
+          font-family:inherit; font-size:13.5px; font-weight:600;
+        }
+        .pf-drop button:hover { background:rgba(167,139,250,.12); }
+        .pf-drop button.on { color:#A78BFA; background:rgba(167,139,250,.14); }
+
+        @media (max-width:820px) {
+          .pf-search { flex-wrap:wrap; }
+          .pf-seg { flex:1 1 45%; }
+          .pf-seg.area em { display:none; }
+          .pf-find { flex:1 1 100%; justify-content:center; padding:13px; }
+        }
+
+        .pf-btn, .pf-quick {
+          display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+          border:1px solid var(--line, rgba(242,237,230,.14)); background:transparent;
+          color:inherit; border-radius:999px; padding:8px 14px;
+          font-size:12.5px; font-weight:700; font-family:inherit;
+          transition:border-color .2s, background .2s, color .2s;
+        }
+        .pf-btn:hover, .pf-quick:hover { border-color:rgba(167,139,250,.55); }
+        .pf-btn.on, .pf-quick.on {
+          background:rgba(167,139,250,.15); border-color:rgba(167,139,250,.55); color:#A78BFA;
+        }
+        .pf-count {
+          margin-left:auto; font-family:'JetBrains Mono',monospace;
+          font-size:11.5px; opacity:.55; white-space:nowrap;
+        }
+        .pf-count em { font-style:normal; opacity:.7; }
+
+        .pf-chips { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:10px; }
+        .pf-chip {
+          display:inline-flex; align-items:center; gap:6px; cursor:pointer;
+          padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;
+          font-family:inherit; color:#A78BFA;
+          background:rgba(167,139,250,.14); border:1px solid rgba(167,139,250,.42);
+        }
+        .pf-chip:hover { background:rgba(167,139,250,.24); }
+        .pf-clear {
+          border:none; background:none; color:inherit; cursor:pointer;
+          font-size:12px; font-weight:700; opacity:.5; font-family:inherit;
+        }
+        .pf-clear:hover { opacity:1; }
+
+        .pf-panel {
+          margin-top:12px; padding:18px; border-radius:18px;
+          background:rgba(255,255,255,.035);
+          border:1px solid var(--line, rgba(242,237,230,.12));
+          display:flex; flex-direction:column; gap:18px;
+        }
+        [data-theme="paper"] .pf-panel { background:rgba(20,23,30,.03); }
+
+        .pf-gt {
+          display:flex; align-items:center; gap:7px; margin:0 0 9px;
+          font-size:11px; font-weight:800; letter-spacing:.1em;
+          text-transform:uppercase; opacity:.5;
+        }
+        .pf-go { display:flex; gap:7px; flex-wrap:wrap; }
+        .pf-go button {
+          padding:8px 14px; border-radius:999px; cursor:pointer;
+          border:1px solid var(--line, rgba(242,237,230,.14)); background:transparent;
+          color:inherit; font-size:12.5px; font-weight:600; font-family:inherit;
+          transition:border-color .2s, background .2s, color .2s;
+        }
+        .pf-go button:hover { border-color:rgba(167,139,250,.5); }
+        .pf-go button.on {
+          background:rgba(167,139,250,.15); border-color:rgba(167,139,250,.55); color:#A78BFA;
+        }
+
+        .pf-check {
+          display:flex; align-items:center; gap:10px; cursor:pointer; font-size:13.5px;
+          padding-top:4px;
+        }
+        .pf-check input { position:absolute; opacity:0; pointer-events:none; }
+        .pf-box {
+          width:20px; height:20px; border-radius:6px; flex-shrink:0;
+          display:inline-flex; align-items:center; justify-content:center;
+          border:1px solid var(--line, rgba(242,237,230,.22)); color:#0B0D11;
+        }
+        .pf-check input:checked + .pf-box { background:#A78BFA; border-color:#A78BFA; }
+
+        @media (max-width:620px) {
+          .pf-count { width:100%; margin-left:0; order:99; }
+        }
+      `}</style>
+    </div>
+  );
+}

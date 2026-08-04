@@ -19,7 +19,7 @@ export interface Sport {
 export const SPORTS: Sport[] = [
   { name: "Futsal",     color: "#2E7D5B", squad: 5,  tagline: "Floodlit nights, fast feet" },
   { name: "Cricket",    color: "#f97316", squad: 8,  tagline: "Box cages after dark" },
-  { name: "Basketball", color: "#FFC93C", squad: 5,  tagline: "Three on three, all week" },
+  { name: "Basketball", color: "#A78BFA", squad: 5,  tagline: "Three on three, all week" },
   { name: "Volleyball", color: "#3b82f6", squad: 6,  tagline: "Sand, net, sunset" },
   { name: "Badminton",  color: "#a855f7", squad: 2,  tagline: "Dawn doubles, indoor courts" },
   { name: "Tennis",     color: "#ec4899", squad: 2,  tagline: "Baseline rallies" },

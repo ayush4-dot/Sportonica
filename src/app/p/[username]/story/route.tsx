@@ -7,7 +7,7 @@ import {
 export const runtime = "nodejs";
 
 const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#FFC93C", Cricket: "#f97316",
+  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
   Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
 };
 
@@ -43,7 +43,7 @@ export async function GET(
   // Theme palette
   const C = theme === "paper"
     ? { bg: "#F2EDE6", text: "#14171E", dim: "#6B7280", faint: "#9CA3AF", hair: "#D6CEC0", accent: "#B8860B" }
-    : { bg: "#0B0D11", text: "#F2EDE6", dim: "#8A95A3", faint: "#5A6472", hair: "#22262E", accent: "#FFC93C" };
+    : { bg: "#0B0D11", text: "#F2EDE6", dim: "#8A95A3", faint: "#5A6472", hair: "#22262E", accent: "#A78BFA" };
 
   const safeAvatar =
     profile.avatar_url && /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(profile.avatar_url)
@@ -129,7 +129,7 @@ export async function GET(
 
         {/* footer brand */}
         <div style={{ display: "flex", alignItems: "center", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-          <div style={{ width: 68, height: 68, background: "#FFC93C", color: "#0B0D11", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
+          <div style={{ width: 68, height: 68, background: "#A78BFA", color: "#0B0D11", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
             K
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>

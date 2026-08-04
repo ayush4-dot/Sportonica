@@ -129,9 +129,9 @@ export default function VenueFilters({
           font-family: inherit; cursor: pointer;
           transition: border-color .2s, background .2s, color .2s;
         }
-        .vf-toggle:hover, .vf-chip:hover { border-color: rgba(255,201,60,.5); }
+        .vf-toggle:hover, .vf-chip:hover { border-color: rgba(167,139,250,.5); }
         .vf-toggle.on, .vf-chip.on {
-          background: rgba(255,201,60,.14); border-color: rgba(255,201,60,.5); color: #FFC93C;
+          background: rgba(167,139,250,.14); border-color: rgba(167,139,250,.5); color: #A78BFA;
         }
         .vf-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; opacity: .55; }
         .vf-clear { border: none; opacity: .6; padding: 8px; }
@@ -140,12 +140,12 @@ export default function VenueFilters({
         .vf-active { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
         .vf-pill {
           display: inline-flex; align-items: center; gap: 6px;
-          border: 1px solid rgba(255,201,60,.45); background: rgba(255,201,60,.14);
-          color: #FFC93C; border-radius: 999px; padding: 6px 12px;
+          border: 1px solid rgba(167,139,250,.45); background: rgba(167,139,250,.14);
+          color: #A78BFA; border-radius: 999px; padding: 6px 12px;
           font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
           transition: background .18s, border-color .18s;
         }
-        .vf-pill:hover { background: rgba(255,201,60,.24); border-color: rgba(255,201,60,.7); }
+        .vf-pill:hover { background: rgba(167,139,250,.24); border-color: rgba(167,139,250,.7); }
 
         .vf-panel {
           margin-top: 12px; padding: 16px; border-radius: 16px;
@@ -165,8 +165,8 @@ export default function VenueFilters({
           font-size: 12.5px; font-weight: 600; font-family: inherit; cursor: pointer;
           transition: border-color .2s, background .2s, color .2s;
         }
-        .vf-opt:hover { border-color: rgba(255,201,60,.5); }
-        .vf-opt.on { background: rgba(255,201,60,.14); border-color: rgba(255,201,60,.5); color: #FFC93C; }
+        .vf-opt:hover { border-color: rgba(167,139,250,.5); }
+        .vf-opt.on { background: rgba(167,139,250,.14); border-color: rgba(167,139,250,.5); color: #A78BFA; }
 
         @media (max-width: 640px) {
           .vf-count { width: 100%; margin-left: 0; order: 99; }
