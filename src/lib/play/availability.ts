@@ -33,17 +33,40 @@ export async function getDaySlots(
   // Weekday in Kathmandu (0 = Sunday, matching court_hours.dow)
   const dow = new Date(`${dateStr}T12:00:00${KTM_OFFSET}`).getUTCDay();
 
-  const { data: hours, error: hoursErr } = await sb
-    .from("court_hours")
-    .select("*")
-    .eq("court_id", courtId)
-    .eq("dow", dow)
-    .maybeSingle();
+  // Existing bookings and blocks for that court on that day.
+  const dayStart = `${dateStr}T00:00:00${KTM_OFFSET}`;
+  const dayEnd = `${dateStr}T23:59:59${KTM_OFFSET}`;
+
+  // None of these three depend on each other's results — they used to run
+  // as a waterfall (hours, then bookings+blocks), doubling the round-trip
+  // time on every date/duration change. Firing them together instead.
+  const [
+    { data: hours, error: hoursErr },
+    { data: bookings, error: bErr },
+    { data: blocks },
+  ] = await Promise.all([
+    sb.from("court_hours")
+      .select("*")
+      .eq("court_id", courtId)
+      .eq("dow", dow)
+      .maybeSingle(),
+    sb.from("court_bookings")
+      .select("*")
+      .eq("court_id", courtId)
+      .gte("starts_at", dayStart)
+      .lte("starts_at", dayEnd),
+    sb.from("court_blocks")
+      .select("starts_at, ends_at")
+      .eq("court_id", courtId)
+      .gte("starts_at", dayStart)
+      .lte("starts_at", dayEnd),
+  ]);
 
   if (hoursErr) {
     console.error("[availability] court_hours query failed:", hoursErr.message);
     return [];
   }
+  if (bErr) console.error("[availability] bookings query failed:", bErr.message);
 
   // Schemas vary — some have is_closed, some mark closure by null times.
   const row = hours as Record<string, unknown> | null;
@@ -61,25 +84,6 @@ export async function getDaySlots(
   const open = toMins(openRaw);
   const close = toMins(closeRaw);
   if (!(close > open)) return [];
-
-  // Existing bookings and blocks for that court on that day.
-  const dayStart = `${dateStr}T00:00:00${KTM_OFFSET}`;
-  const dayEnd = `${dateStr}T23:59:59${KTM_OFFSET}`;
-
-  const [{ data: bookings, error: bErr }, { data: blocks }] = await Promise.all([
-    sb.from("court_bookings")
-      .select("*")
-      .eq("court_id", courtId)
-      .gte("starts_at", dayStart)
-      .lte("starts_at", dayEnd),
-    sb.from("court_blocks")
-      .select("starts_at, ends_at")
-      .eq("court_id", courtId)
-      .gte("starts_at", dayStart)
-      .lte("starts_at", dayEnd),
-  ]);
-
-  if (bErr) console.error("[availability] bookings query failed:", bErr.message);
 
   // Busy ranges, in minutes from midnight (Kathmandu).
   const busy: [number, number][] = [];

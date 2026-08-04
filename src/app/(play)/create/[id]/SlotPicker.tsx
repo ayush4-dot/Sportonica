@@ -10,6 +10,12 @@ const BANDS = [
   { key: "evening",   label: "Evening",   from: 17 * 60, to: 24 * 60 },
 ];
 
+// People commonly bounce between a few dates while picking a slot — cache
+// briefly so flipping back feels instant instead of re-querying from zero.
+// Short TTL because this is live booking availability, not static data.
+const CACHE_TTL_MS = 20_000;
+const cache = new Map<string, { data: Slot[]; at: number }>();
+
 export default function SlotPicker({
   courtId, dateStr, durationMins, value, onPick,
 }: {
@@ -26,11 +32,23 @@ export default function SlotPicker({
   useEffect(() => {
     if (!courtId || !dateStr) return;
     let cancelled = false;
+
+    const key = `${courtId}|${dateStr}|${durationMins}`;
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
+      setSlots(cached.data);
+      if (value != null && !cached.data.some((x) => x.mins === value && x.available)) {
+        onPick(null);
+      }
+      return;
+    }
+
     startTransition(async () => {
       setSlots(null);
       try {
         const next = await getDaySlots(courtId, dateStr, durationMins);
         if (cancelled) return;
+        cache.set(key, { data: next, at: Date.now() });
         setSlots(next);
         if (value != null && !next.some((x) => x.mins === value && x.available)) {
           onPick(null);
