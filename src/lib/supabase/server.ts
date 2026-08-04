@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { cache } from 'react'
 
 export async function createClient() {
   const cookieStore = await cookies()
@@ -27,3 +28,15 @@ export async function createClient() {
     }
   )
 }
+
+// Server-side pages often fetch several things that each independently
+// need "who's logged in" (e.g. LeaguePage's browseSquads() + myMemberships()
+// both called auth.getUser() on their own client, two redundant network
+// round-trips for one page render). React's cache() memoizes this per
+// request — same dedup idea as the client-side authCache.ts, but scoped
+// to a single server render instead of a browser session.
+export const getUser = cache(async () => {
+  const sb = await createClient()
+  const { data: { user } } = await sb.auth.getUser()
+  return user
+})

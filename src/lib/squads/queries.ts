@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 
 export interface Squad {
   id: string;
@@ -36,7 +36,7 @@ export async function browseSquads(): Promise<Squad[]> {
 
   // Unlisted squads are hidden from strangers — but you always see the
   // ones you're a member of, otherwise you'd lose your own squad.
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return all.filter((s) => !s.unlisted);
 
   const { data: mine } = await sb
@@ -82,7 +82,7 @@ export async function getSquadMembers(squadId: string): Promise<SquadMember[]> {
 // Which squad ids the current user is already in (for button state).
 export async function myMemberships(): Promise<Set<string>> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return new Set();
   const { data } = await sb.from("squad_members").select("squad_id").eq("user_id", user.id);
   return new Set((data ?? []).map((r) => r.squad_id));

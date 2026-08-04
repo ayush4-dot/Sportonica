@@ -8,11 +8,13 @@
 // the full rationale.
 
 import { createClient } from "@/lib/supabase/client";
+import { getCachedUser } from "@/lib/supabase/authCache";
 import { generateKeyPair, exportPublicKeyJwk } from "./e2e";
 
 const DB_NAME = "khelamna-e2e";
 const STORE = "keypair";
 const KEY = "self";
+const RECONCILED_FLAG = "khelamna-e2e-reconciled";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -54,27 +56,36 @@ async function loadOrGenerate(): Promise<CryptoKeyPair> {
     isNew = true;
   }
 
-  const jwk = await exportPublicKeyJwk(pair.publicKey);
+  // This used to call sb.auth.getUser() directly here — a real network
+  // round-trip on every fresh page load. getCachedUser() shares the same
+  // request other components on the page are already making.
+  const user = await getCachedUser();
+  if (!user) return pair;
+
   const sb = createClient();
-  const { data: { user } } = await sb.auth.getUser();
-  if (user) {
-    if (isNew) {
-      await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
-    } else {
-      // Reconcile: if an earlier race ever generated two different
-      // keypairs concurrently (EnsureE2EKey + DMThread both mounting at
-      // once, before either finished its IndexedDB write), the server
-      // could be holding a public key that doesn't match this device's
-      // actual local private key — every message encrypted "to us" would
-      // then use the wrong key and permanently fail to decrypt. The local
-      // IndexedDB key is authoritative (it's the one we can actually
-      // decrypt with), so make sure the server agrees with it.
-      const { data: existing } = await sb.from("user_keys").select("public_key").eq("user_id", user.id).maybeSingle();
-      if (existing?.public_key !== jwk) {
-        await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
-      }
-    }
+
+  if (isNew) {
+    const jwk = await exportPublicKeyJwk(pair.publicKey);
+    await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
+    try { localStorage.setItem(RECONCILED_FLAG, "1"); } catch { /* ignore */ }
+    return pair;
   }
+
+  // Reconcile at most once per browser, not on every page load. This only
+  // exists to self-heal a since-fixed race (EnsureE2EKey + DMThread both
+  // generating a keypair concurrently on first mount) — it has nothing to
+  // catch after the first successful check, so paying a network round-trip
+  // for it on every single visit forever isn't worth it.
+  let alreadyReconciled = false;
+  try { alreadyReconciled = localStorage.getItem(RECONCILED_FLAG) === "1"; } catch { /* ignore */ }
+  if (alreadyReconciled) return pair;
+
+  const jwk = await exportPublicKeyJwk(pair.publicKey);
+  const { data: existing } = await sb.from("user_keys").select("public_key").eq("user_id", user.id).maybeSingle();
+  if (existing?.public_key !== jwk) {
+    await sb.from("user_keys").upsert({ user_id: user.id, public_key: jwk });
+  }
+  try { localStorage.setItem(RECONCILED_FLAG, "1"); } catch { /* ignore */ }
 
   return pair;
 }

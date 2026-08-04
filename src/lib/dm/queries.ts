@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 
 export interface EncryptedMessage {
   id: string;
@@ -38,7 +38,7 @@ export async function getConversationMessages(conversationId: string): Promise<E
 /** Who's on the other side of a conversation, and am I actually a participant? */
 export async function getConversationPeer(conversationId: string) {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return null;
 
   const { data: convo } = await sb
@@ -63,7 +63,7 @@ export async function getConversationPeer(conversationId: string) {
 /** Every conversation the current user is part of, newest activity first. */
 export async function listConversations(): Promise<ConversationSummary[]> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data: convos } = await sb

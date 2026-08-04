@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getUser } from "@/lib/supabase/server";
 
 export type Relationship =
   | { status: "none" }
@@ -9,7 +9,7 @@ export type Relationship =
 /** Where do I stand with this other player? */
 export async function getRelationship(otherUserId: string): Promise<Relationship> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user || user.id === otherUserId) return { status: "none" };
 
   const { data } = await sb
@@ -38,7 +38,7 @@ export type FriendProfile = {
 /** Everyone the current user is friends with. */
 export async function listFriends(): Promise<FriendProfile[]> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data } = await sb
@@ -69,7 +69,7 @@ export type PendingRequest = {
 /** Incoming requests waiting on the current user's decision. */
 export async function listPendingRequests(): Promise<PendingRequest[]> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
   if (!user) return [];
 
   const { data } = await sb
@@ -93,7 +93,7 @@ export type PlayerListItem = FriendProfile & { relationship: Relationship };
  */
 export async function listAllPlayers(search?: string): Promise<PlayerListItem[]> {
   const sb = await createClient();
-  const { data: { user } } = await sb.auth.getUser();
+  const user = await getUser();
 
   const term = search?.trim() ?? "";
   let query = sb.from("profiles").select("id, full_name, username, avatar_url").limit(30);
