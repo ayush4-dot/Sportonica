@@ -57,5 +57,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  // Previously this only excluded _next/static|_next/image|favicon.ico —
+  // every other request, including every plain static file under /public
+  // (panel photos, sport photos, icons, manifest, service worker) was
+  // running a full Supabase auth round-trip before being served. None of
+  // that is a page navigation and none of it needs the auth/role gating
+  // below, so it's excluded here too.
+  matcher: [
+    '/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|sw\\.js|icons/|panels/|sports/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|mp4|css|js|woff2?|geojson)$).*)',
+  ],
 }
