@@ -75,7 +75,11 @@ function ensureLoaded(): Promise<void> {
 function ensureAuthListener() {
   if (authListenerSetup) return;
   authListenerSetup = true;
-  sb().auth.onAuthStateChange(() => {
+  // Skip the synthetic INITIAL_SESSION event fired right after
+  // subscribing — reacting to it re-triggered a second, redundant fetch
+  // on top of the one ensureLoaded() already kicks off in subscribe().
+  sb().auth.onAuthStateChange((event) => {
+    if (event === "INITIAL_SESSION") return;
     inFlight = null;
     void ensureLoaded();
   });

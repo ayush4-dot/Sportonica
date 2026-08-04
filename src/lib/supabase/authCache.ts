@@ -14,7 +14,14 @@ let cached: Promise<User | null> | null = null;
 function sb() {
   if (!client) {
     client = createClient();
-    client.auth.onAuthStateChange(() => { cached = null; });
+    // Supabase fires this once synchronously-ish right after subscribing
+    // with a synthetic INITIAL_SESSION event, even when nothing changed —
+    // resetting the cache on that wiped out the very first getCachedUser()
+    // call before it had even resolved, forcing a second real request.
+    client.auth.onAuthStateChange((event) => {
+      if (event === "INITIAL_SESSION") return;
+      cached = null;
+    });
   }
   return client;
 }
