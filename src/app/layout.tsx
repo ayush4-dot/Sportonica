@@ -36,12 +36,12 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
-// No region was configured, so every serverless function ran in Vercel's
-// default us-east-1 (Washington D.C.) — for users and the Supabase project
-// both sitting in/near South Asia, that meant two international round
-// trips added to every single page render. bom1 (Mumbai) is the closest
-// Vercel region to Nepal. Set globally here so it applies to every route.
-export const preferredRegion = 'bom1'
+// Function region is set via vercel.json's "regions" field (bom1 —
+// Mumbai, closest to Nepal), not here: `preferredRegion` only applies to
+// Edge Runtime functions, and this app runs standard Node.js serverless
+// functions (needed for the cookie-based Supabase auth in lib/supabase/
+// server.ts). Confirmed via x-vercel-id header before/after which one
+// actually takes effect for this project.
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
