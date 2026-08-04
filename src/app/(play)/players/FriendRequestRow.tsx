@@ -9,13 +9,17 @@ import type { PendingRequest } from "@/lib/friends/queries";
 export default function FriendRequestRow({ request }: { request: PendingRequest }) {
   const [gone, setGone] = useState(false);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const { requester } = request;
   const name = requester.full_name ?? requester.username ?? "Player";
 
   function decide(decision: "accepted" | "declined") {
+    setError(null);
     startTransition(async () => {
-      await respondToRequest(request.id, decision);
-      setGone(true);
+      try {
+        await respondToRequest(request.id, decision);
+        setGone(true);
+      } catch { setError("Couldn't update — try again."); }
     });
   }
 
@@ -49,6 +53,7 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
         aria-label="Decline">
         <X size={15} />
       </button>
+      {error && <span style={{ fontSize: 11, color: "#DE3163", flexBasis: "100%" }}>{error}</span>}
     </div>
   );
 }

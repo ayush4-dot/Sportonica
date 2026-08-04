@@ -25,6 +25,7 @@ export default function DMThread({
   const [ready, setReady] = useState(false);
   const [messages, setMessages] = useState<DecryptedMessage[]>([]);
   const [text, setText] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const bottomRef = useRef<HTMLDivElement>(null);
   const aesKeyRef = useRef<CryptoKey | null>(null);
@@ -95,10 +96,11 @@ export default function DMThread({
     const key = aesKeyRef.current;
     if (!body || !key) return;
     setText("");
+    setSendError(null);
     startTransition(async () => {
       const { ciphertext, iv } = await encryptText(key, body);
       try { await sendEncryptedMessage(conversationId, ciphertext, iv); }
-      catch { setText(body); }
+      catch { setText(body); setSendError("Couldn't send — try again."); }
     });
   }
 
@@ -149,6 +151,9 @@ export default function DMThread({
         <div ref={bottomRef} />
       </div>
 
+      {sendError && (
+        <div style={{ padding: "0 12px 6px", fontSize: 11.5, color: "#DE3163" }}>{sendError}</div>
+      )}
       <div style={{ display: "flex", gap: 8, padding: 12, borderTop: "1px solid var(--border-line)" }}>
         <input
           value={text}

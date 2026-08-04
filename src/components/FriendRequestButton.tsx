@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { UserPlus, Clock, Check, X, MessageCircle, Loader2 } from "lucide-react";
 import { sendFriendRequest, respondToRequest, cancelRequest } from "@/lib/friends/actions";
 import { startConversation } from "@/lib/dm/actions";
+import { getCachedUser } from "@/lib/supabase/authCache";
 import type { Relationship } from "@/lib/friends/queries";
 
 export default function FriendRequestButton({
@@ -13,48 +14,56 @@ export default function FriendRequestButton({
   const router = useRouter();
   const [rel, setRel] = useState<Relationship>(initial);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
 
-  // Any action here requires being logged in — bounce to login with a
-  // redirect back to this profile rather than failing silently.
-  function guardAuth(e: unknown): boolean {
-    if (e instanceof Error && e.message === "UNAUTHORIZED") {
+  // Checked client-side, before ever calling the server action — Next.js
+  // redacts thrown Server Action error messages down to a bare digest in
+  // production, so a previous version of this that tried to string-match
+  // "UNAUTHORIZED" on the caught error never actually matched and just
+  // failed silently. This is reliable; that wasn't.
+  async function requireLoggedIn(): Promise<boolean> {
+    const user = await getCachedUser();
+    if (!user) {
       window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
-      return true;
+      return false;
     }
-    return false;
+    return true;
+  }
+
+  function run(action: () => Promise<void>) {
+    setError(null);
+    startTransition(async () => {
+      if (!(await requireLoggedIn())) return;
+      try { await action(); }
+      catch { setError("Something went wrong. Try again."); }
+    });
   }
 
   function send() {
-    startTransition(async () => {
-      try {
-        const id = await sendFriendRequest(profileId);
-        setRel({ status: "pending_sent", requestId: id });
-      } catch (e) { guardAuth(e); }
+    run(async () => {
+      const id = await sendFriendRequest(profileId);
+      setRel({ status: "pending_sent", requestId: id });
     });
   }
 
   function cancel(requestId: string) {
-    startTransition(async () => {
-      try { await cancelRequest(requestId); setRel({ status: "none" }); }
-      catch (e) { guardAuth(e); }
+    run(async () => {
+      await cancelRequest(requestId);
+      setRel({ status: "none" });
     });
   }
 
   function respond(requestId: string, decision: "accepted" | "declined") {
-    startTransition(async () => {
-      try {
-        await respondToRequest(requestId, decision);
-        setRel(decision === "accepted" ? { status: "friends" } : { status: "none" });
-      } catch (e) { guardAuth(e); }
+    run(async () => {
+      await respondToRequest(requestId, decision);
+      setRel(decision === "accepted" ? { status: "friends" } : { status: "none" });
     });
   }
 
   function message() {
-    startTransition(async () => {
-      try {
-        const id = await startConversation(profileId);
-        router.push(`/messages/${id}`);
-      } catch (e) { guardAuth(e); }
+    run(async () => {
+      const id = await startConversation(profileId);
+      router.push(`/messages/${id}`);
     });
   }
 
@@ -95,8 +104,9 @@ export default function FriendRequestButton({
   })();
 
   return (
-    <>
+    <span style={{ display: "inline-flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
       {body}
+      {error && <span style={{ fontSize: 11.5, color: "#DE3163" }}>{error}</span>}
       <style>{`
         .frb-btn {
           display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
@@ -116,6 +126,6 @@ export default function FriendRequestButton({
         .frb-spin { animation: frbspin 1s linear infinite; }
         @keyframes frbspin { to { transform: rotate(360deg); } }
       `}</style>
-    </>
+    </span>
   );
 }
