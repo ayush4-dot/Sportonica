@@ -2,6 +2,12 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { listAllPlayers, type PlayerListItem } from "./queries";
+
+/** Live search-as-you-type for the Players tab. */
+export async function searchPlayersAction(query: string): Promise<PlayerListItem[]> {
+  return listAllPlayers(query);
+}
 
 async function requireUser() {
   const sb = await createClient();

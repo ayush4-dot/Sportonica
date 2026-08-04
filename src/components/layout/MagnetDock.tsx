@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Volleyball, CalendarPlus, MessagesSquare, MessageCircle, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile } from "@/lib/hooks/useProfile";
 
@@ -12,8 +12,7 @@ const LINKS: Item[] = [
   { label: "Home", href: "/", icon: <Home size={20} /> },
   { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
-  { label: "Chat", href: "/league", icon: <MessagesSquare size={20} /> },
-  { label: "Messages", href: "/messages", icon: <MessageCircle size={20} /> },
+  { label: "Chat", href: "/messages", icon: <MessagesSquare size={20} /> },
   { label: "Profile", href: "/profile", icon: <User size={20} /> },
 ];
 
@@ -54,7 +53,13 @@ export default function MagnetDock() {
     window.location.href = "/";
   }
 
-  const isActive = (href: string) => href === "/" ? pathname === "/" : pathname.startsWith(href);
+  // "Chat" covers all three social tabs (Messages/Players/Groups), not just its own href.
+  const CHAT_PREFIXES = ["/messages", "/players", "/league"];
+  const isActive = (href: string) => {
+    if (href === "/") return pathname === "/";
+    if (href === "/messages") return CHAT_PREFIXES.some((p) => pathname.startsWith(p));
+    return pathname.startsWith(href);
+  };
 
   // account item lives at index = LINKS.length for magnify math
   const accountIdx = LINKS.length;

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { MessageCircle, Users } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { listConversations } from "@/lib/dm/queries";
+import ChatTabs from "@/components/ChatTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +17,9 @@ export default async function MessagesPage() {
   const conversations = await listConversations();
 
   return (
-    <div style={{ maxWidth: 620, margin: "0 auto", padding: "36px 20px 100px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 28 }}>
-        <h1 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: "clamp(26px,4vw,34px)", fontWeight: 800, letterSpacing: "-0.5px" }}>
-          Messages
-        </h1>
-        <Link href="/friends" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#A78BFA", textDecoration: "none" }}>
-          <Users size={15} /> Friends
-        </Link>
-      </div>
+    <div className="play">
+    <div className="play-wrap">
+      <ChatTabs />
 
       {conversations.length === 0 ? (
         <div style={{ textAlign: "center", padding: "48px 20px", opacity: 0.5 }}>
@@ -62,6 +57,7 @@ export default async function MessagesPage() {
           );
         })
       )}
+    </div>
     </div>
   );
 }

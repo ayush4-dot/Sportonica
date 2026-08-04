@@ -63,7 +63,7 @@ export default function FriendRequestButton({
   const body = (() => {
     if (rel.status === "friends") {
       return (
-        <button className="pf-btn" disabled={pending} onClick={message}>
+        <button className="frb-btn" disabled={pending} onClick={message}>
           {pending ? spin : <MessageCircle size={15} />} Message
         </button>
       );
@@ -71,10 +71,10 @@ export default function FriendRequestButton({
     if (rel.status === "pending_received") {
       return (
         <span style={{ display: "inline-flex", gap: 8 }}>
-          <button className="pf-btn" disabled={pending} onClick={() => respond(rel.requestId, "accepted")}>
+          <button className="frb-btn" disabled={pending} onClick={() => respond(rel.requestId, "accepted")}>
             {pending ? spin : <Check size={15} />} Accept
           </button>
-          <button className="pf-btn ghost" disabled={pending} onClick={() => respond(rel.requestId, "declined")}>
+          <button className="frb-btn ghost" disabled={pending} onClick={() => respond(rel.requestId, "declined")}>
             <X size={15} /> Decline
           </button>
         </span>
@@ -82,13 +82,13 @@ export default function FriendRequestButton({
     }
     if (rel.status === "pending_sent") {
       return (
-        <button className="pf-btn ghost" disabled={pending} onClick={() => cancel(rel.requestId)}>
+        <button className="frb-btn ghost" disabled={pending} onClick={() => cancel(rel.requestId)}>
           {pending ? spin : <Clock size={15} />} Request sent
         </button>
       );
     }
     return (
-      <button className="pf-btn" disabled={pending} onClick={send}>
+      <button className="frb-btn" disabled={pending} onClick={send}>
         {pending ? spin : <UserPlus size={15} />} Add friend
       </button>
     );
@@ -98,6 +98,21 @@ export default function FriendRequestButton({
     <>
       {body}
       <style>{`
+        .frb-btn {
+          display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+          padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
+          font-family: inherit; cursor: pointer; text-decoration: none;
+          background: #A78BFA; color: #0B0D11; border: 1px solid #A78BFA;
+          transition: transform .2s cubic-bezier(.22,1,.36,1), opacity .2s;
+        }
+        .frb-btn:hover { opacity: 0.88; }
+        .frb-btn:active { transform: scale(0.97); }
+        .frb-btn:disabled { cursor: default; }
+        .frb-btn.ghost {
+          background: transparent; color: inherit;
+          border-color: var(--line, rgba(255,255,255,.14));
+        }
+        .frb-btn.ghost:hover { border-color: #A78BFA; opacity: 1; }
         .frb-spin { animation: frbspin 1s linear infinite; }
         @keyframes frbspin { to { transform: rotate(360deg); } }
       `}</style>

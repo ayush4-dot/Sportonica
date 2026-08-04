@@ -160,7 +160,7 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                   key={n.id}
                   className="notif-item"
                   onClick={() => {
-                    if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/friends");
+                    if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/players");
                     else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
                     else if (n.squad_id) router.push(`/league/${n.squad_id}`);
                     else if (n.event_id) router.push(`/game/${n.event_id}`);

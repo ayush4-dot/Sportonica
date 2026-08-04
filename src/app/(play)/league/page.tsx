@@ -1,5 +1,6 @@
 import { browseSquads, myMemberships } from "@/lib/squads/queries";
 import SquadsClient from "./SquadsClient";
+import ChatTabs from "@/components/ChatTabs";
 
 export const dynamic = "force-dynamic";
 
@@ -8,6 +9,7 @@ export default async function LeaguePage() {
   return (
     <div className="play">
       <div className="play-wrap">
+        <ChatTabs />
         <div className="play-hero">
           <div className="play-eyebrow">Chat &amp; communities</div>
           <h1>Find your regular crew.</h1>

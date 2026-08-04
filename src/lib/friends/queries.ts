@@ -82,3 +82,49 @@ export async function listPendingRequests(): Promise<PendingRequest[]> {
   return ((data ?? []) as unknown as { id: string; created_at: string; requester: FriendProfile }[])
     .filter((r) => r.requester);
 }
+
+export type PlayerListItem = FriendProfile & { relationship: Relationship };
+
+/**
+ * Browse/search players to friend. With no search term, shows the most
+ * recently joined players (a simple "suggested" default); with one,
+ * matches name/username. Relationship status for every result is fetched
+ * in one batched query rather than one-per-row.
+ */
+export async function listAllPlayers(search?: string): Promise<PlayerListItem[]> {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+
+  const term = search?.trim() ?? "";
+  let query = sb.from("profiles").select("id, full_name, username, avatar_url").limit(30);
+  query = term.length >= 2
+    ? query.or(`full_name.ilike.%${term}%,username.ilike.%${term}%`)
+    : query.order("created_at", { ascending: false });
+
+  const { data: profiles } = await query;
+  const list = ((profiles ?? []) as FriendProfile[]).filter((p) => p.id !== user?.id);
+  if (!user || list.length === 0) {
+    return list.map((p) => ({ ...p, relationship: { status: "none" } as Relationship }));
+  }
+
+  const ids = list.map((p) => p.id);
+  const { data: rels } = await sb
+    .from("friend_requests")
+    .select("id, requester_id, addressee_id, status")
+    .or(ids.map((id) =>
+      `and(requester_id.eq.${user.id},addressee_id.eq.${id}),and(requester_id.eq.${id},addressee_id.eq.${user.id})`
+    ).join(","));
+
+  const relMap = new Map<string, Relationship>();
+  (rels ?? []).forEach((r) => {
+    const otherId = r.requester_id === user.id ? r.addressee_id : r.requester_id;
+    if (r.status === "accepted") relMap.set(otherId, { status: "friends" });
+    else if (r.status === "pending") {
+      relMap.set(otherId, r.requester_id === user.id
+        ? { status: "pending_sent", requestId: r.id }
+        : { status: "pending_received", requestId: r.id });
+    }
+  });
+
+  return list.map((p) => ({ ...p, relationship: relMap.get(p.id) ?? { status: "none" } }));
+}
