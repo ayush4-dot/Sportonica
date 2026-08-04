@@ -6,8 +6,10 @@ import {
   getProfileByUsername, getPlayerStats, getPlayerSports, getRecentGames,
   computeBadges, trustLabel,
 } from "@/lib/profile/queries";
+import { getRelationship } from "@/lib/friends/queries";
 import ShareButton from "./ShareButton";
 import DownloadButton from "./DownloadButton";
+import FriendRequestButton from "@/components/FriendRequestButton";
 import "../profile.css";
 
 export const dynamic = "force-dynamic";
@@ -56,10 +58,11 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     );
   }
 
-  const [stats, sports, recent] = await Promise.all([
+  const [stats, sports, recent, relationship] = await Promise.all([
     getPlayerStats(profile.id),
     getPlayerSports(profile.id),
     getRecentGames(profile.id),
+    getRelationship(profile.id),
   ]);
   const badges = computeBadges(stats, sports);
   const trust = trustLabel(profile.trust_score ?? 50);
@@ -95,6 +98,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
         </div>
 
         <div className="pf-actions">
+          <FriendRequestButton profileId={profile.id} initial={relationship} />
           <ShareButton url={`/p/${profile.username}`} name={name} />
           <DownloadButton username={profile.username} name={name} />
           <Link href="/discover" className="pf-btn ghost">Find a game</Link>

@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, MessageCircle, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useProfile } from "@/lib/hooks/useProfile";
 
@@ -13,6 +13,7 @@ const LINKS: Item[] = [
   { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
   { label: "Chat", href: "/league", icon: <MessagesSquare size={20} /> },
+  { label: "Messages", href: "/messages", icon: <MessageCircle size={20} /> },
   { label: "Profile", href: "/profile", icon: <User size={20} /> },
 ];
 

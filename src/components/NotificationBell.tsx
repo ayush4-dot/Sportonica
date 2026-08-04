@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, UserPlus, UserMinus, Zap, Calendar, Check } from "lucide-react";
+import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/hooks/useNotifications";
 
 function timeAgo(iso: string): string {
@@ -19,6 +19,8 @@ function iconFor(kind: Notification["kind"]) {
     case "left": return <UserMinus size={16} />;
     case "spots_needed": return <Zap size={16} />;
     case "event": return <Calendar size={16} />;
+    case "friend_request": return <Users size={16} />;
+    case "friend_accepted": return <MessageCircle size={16} />;
     default: return <Bell size={16} />;
   }
 }
@@ -158,7 +160,9 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                   key={n.id}
                   className="notif-item"
                   onClick={() => {
-                    if (n.squad_id) router.push(`/league/${n.squad_id}`);
+                    if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/friends");
+                    else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
+                    else if (n.squad_id) router.push(`/league/${n.squad_id}`);
                     else if (n.event_id) router.push(`/game/${n.event_id}`);
                     setOpen(false);
                   }}

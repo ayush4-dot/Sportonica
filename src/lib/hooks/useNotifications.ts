@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 
 export type Notification = {
   id: string;
-  kind: "joined" | "left" | "spots_needed" | "hosted" | "event";
+  kind: "joined" | "left" | "spots_needed" | "hosted" | "event" | "friend_request" | "friend_accepted";
   title: string;
   body: string | null;
   event_id: string | null;
   squad_id: string | null;
+  conversation_id: string | null;
   read: boolean;
   created_at: string;
 };
@@ -26,7 +27,7 @@ export function useNotifications() {
     setUserId(user.id);
     const { data } = await supabase
       .from("notifications")
-      .select("id, kind, title, body, event_id, squad_id, read, created_at")
+      .select("id, kind, title, body, event_id, squad_id, conversation_id, read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30);
