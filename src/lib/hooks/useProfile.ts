@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getCachedUser } from "@/lib/supabase/authCache";
 
@@ -19,58 +19,105 @@ export type Profile = {
   created_at: string;
 };
 
-export function useProfile() {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [user, setUser]       = useState<{ id: string; email: string | undefined } | null>(null);
+type UserRef = { id: string; email: string | undefined };
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    const u = await getCachedUser();
-    if (!u) { setLoading(false); return; }
+// Shared across every useProfile() caller on the page (header, dock, home
+// content, ...) instead of each independently fetching the profile row
+// and attaching its own onAuthStateChange listener — with several of
+// those mounted at once, that meant the same query firing 3-6x and the
+// same session-validation work repeating per listener.
+let snapshot: { profile: Profile | null; user: UserRef | null; loading: boolean } = {
+  profile: null, user: null, loading: true,
+};
+let inFlight: Promise<void> | null = null;
+let authListenerSetup = false;
+const listeners = new Set<() => void>();
 
-    setUser({ id: u.id, email: u.email });
+function setSnapshot(next: Partial<typeof snapshot>) {
+  snapshot = { ...snapshot, ...next };
+  listeners.forEach((l) => l());
+}
 
-    const { data, error } = await sb()
+async function loadProfile(): Promise<void> {
+  setSnapshot({ loading: true });
+  const u = await getCachedUser();
+  if (!u) { setSnapshot({ loading: false, user: null, profile: null }); return; }
+  setSnapshot({ user: { id: u.id, email: u.email } });
+
+  const { data, error } = await sb()
+    .from("profiles")
+    .select("*")
+    .eq("id", u.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    // Profile doesn't exist yet — create it
+    const { data: created } = await sb()
       .from("profiles")
-      .select("*")
-      .eq("id", u.id)
-      .maybeSingle();
+      .upsert({
+        id:        u.id,
+        full_name: u.user_metadata?.full_name ?? u.email ?? null,
+        role:      u.user_metadata?.role ?? "player",
+      }, { onConflict: "id" })
+      .select()
+      .single();
+    setSnapshot({ profile: created as Profile | null, loading: false });
+  } else {
+    setSnapshot({ profile: data as Profile, loading: false });
+  }
+}
 
-    if (error || !data) {
-      // Profile doesn't exist yet — create it
-      const { data: created } = await sb()
-        .from("profiles")
-        .upsert({
-          id:        u.id,
-          full_name: u.user_metadata?.full_name ?? u.email ?? null,
-          role:      u.user_metadata?.role ?? "player",
-        }, { onConflict: "id" })
-        .select()
-        .single();
-      setProfile(created as Profile | null);
-    } else {
-      setProfile(data as Profile);
-    }
-    setLoading(false);
+function ensureLoaded(): Promise<void> {
+  if (!inFlight) inFlight = loadProfile();
+  return inFlight;
+}
+
+function ensureAuthListener() {
+  if (authListenerSetup) return;
+  authListenerSetup = true;
+  sb().auth.onAuthStateChange(() => {
+    inFlight = null;
+    void ensureLoaded();
+  });
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  ensureAuthListener();
+  void ensureLoaded();
+  return () => { listeners.delete(listener); };
+}
+
+function getSnapshot() {
+  return snapshot;
+}
+
+// Stable reference (not a fresh object per call) — required for
+// useSyncExternalStore's server-render path, hit by any statically
+// prerendered page (e.g. /login) that includes AppHeader/MagnetDock.
+const SERVER_SNAPSHOT = { profile: null, user: null, loading: true };
+function getServerSnapshot() {
+  return SERVER_SNAPSHOT;
+}
+
+export function useProfile() {
+  const snap = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const reload = useCallback(() => {
+    inFlight = null;
+    return ensureLoaded();
   }, []);
 
-  useEffect(() => {
-    void load();
-    // Re-fetch on sign-in/sign-out so consumers (header, dock, nav) that
-    // now share this hook instead of polling auth themselves stay live.
-    const { data: sub } = sb().auth.onAuthStateChange(() => { void load(); });
-    return () => sub.subscription.unsubscribe();
-  }, [load]);
-
-  const update = async (patch: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {
-    if (!user) return { error: "Not authenticated" };
-    const { error } = await sb().from("profiles").update(patch).eq("id", user.id);
-    if (!error) setProfile(p => p ? { ...p, ...patch } : p);
+  const update = useCallback(async (patch: Partial<Pick<Profile, "full_name" | "phone" | "avatar_url">>) => {
+    if (!snapshot.user) return { error: "Not authenticated" };
+    const { error } = await sb().from("profiles").update(patch).eq("id", snapshot.user.id);
+    if (!error) {
+      setSnapshot({ profile: snapshot.profile ? { ...snapshot.profile, ...patch } : snapshot.profile });
+    }
     return { error: error?.message ?? null };
-  };
+  }, []);
 
-  return { profile, user, loading, reload: load, update };
+  return { profile: snap.profile, user: snap.user, loading: snap.loading, reload, update };
 }
 
 // ── Fetch any user's public profile ──────────────────────────────

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getCachedUser } from "@/lib/supabase/authCache";
 
 export type Notification = {
   id: string;
@@ -22,7 +23,7 @@ export function useNotifications() {
   const [userId, setUserId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = await getCachedUser();
     if (!user) { setItems([]); setLoading(false); return; }
     setUserId(user.id);
     const { data } = await supabase
