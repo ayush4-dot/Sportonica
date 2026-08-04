@@ -36,6 +36,13 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 }
 
+// No region was configured, so every serverless function ran in Vercel's
+// default us-east-1 (Washington D.C.) — for users and the Supabase project
+// both sitting in/near South Asia, that meant two international round
+// trips added to every single page render. bom1 (Mumbai) is the closest
+// Vercel region to Nepal. Set globally here so it applies to every route.
+export const preferredRegion = 'bom1'
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
