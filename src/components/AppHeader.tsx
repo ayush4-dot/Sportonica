@@ -218,6 +218,12 @@ export default function AppHeader() {
           -webkit-transform:translateZ(0);
           isolation:isolate;
         }
+        [data-theme="paper"] .ah {
+          background:radial-gradient(circle at top right, rgba(167,139,250,.1) 0%, rgba(242,237,230,.82) 60%);
+          color:#14171E;
+          border-bottom-color:rgba(20,23,30,.08);
+          box-shadow:0 24px 40px -28px rgba(20,23,30,.15);
+        }
         .ah-in {
           display:flex; align-items:center; justify-content:space-between; gap:16px;
           padding:11px clamp(16px,5vw,56px);

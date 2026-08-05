@@ -123,7 +123,7 @@
 .auth-input:focus {
   outline: none;
   border-color: var(--sodium);
-  background: #171b23;
+  background: var(--input-focus, #171b23);
   box-shadow: 0 0 0 4px rgba(167,139,250,0.12);
 }
 
@@ -180,6 +180,18 @@
 @media (prefers-reduced-motion: reduce) {
   .auth *, .auth-stage::before, .auth-stage::after { animation: none !important; }
   .auth-card, .auth-brand, .auth-tagline h2, .auth-tagline p, .auth-foot { opacity: 1 !important; }
+}
+
+/* ── Paper theme ── */
+[data-theme="paper"] .auth {
+  --bg:      #F2EDE6;
+  --panel:   #FFFFFF;
+  --line:    rgba(20,23,30,0.1);
+  --line-2:  rgba(20,23,30,0.16);
+  --text:    #14171E;
+  --dim:     #5A6472;
+  --faint:   #8A95A3;
+  --input-focus: #FFFFFF;
 }
 
 /* Divider between password and Google sign-in */

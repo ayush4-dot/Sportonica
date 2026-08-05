@@ -4,7 +4,10 @@ import { useState, useEffect } from "react";
 
 export type Theme = "glass" | "paper";
 
-const KEY = "khelamna-theme";
+// v2: bumped so pre-existing "glass" values written by the old default
+// (nothing ever exposed a real theme toggle) don't shadow the new
+// light-by-default rollout.
+const KEY = "khelamna-theme-v2";
 const EVT = "khelamna-theme-change";
 
 function applyTheme(t: Theme) {
@@ -14,16 +17,17 @@ function applyTheme(t: Theme) {
 }
 
 // Shared theme state: any component using this hook stays in sync, and the
-// choice persists across pages and visits via localStorage.
+// choice persists across pages and visits via localStorage. "paper" (light)
+// is the default look across the app; "glass" (dark) is opt-in.
 export function useTheme(): [Theme, (t: Theme) => void] {
-  const [theme, setTheme] = useState<Theme>("glass");
+  const [theme, setTheme] = useState<Theme>("paper");
 
   useEffect(() => {
-    const saved = (localStorage.getItem(KEY) as Theme) || "glass";
+    const saved = (localStorage.getItem(KEY) as Theme) || "paper";
     applyTheme(saved);
     setTheme(saved);
     const onChange = () =>
-      setTheme((document.documentElement.dataset.theme as Theme) || "glass");
+      setTheme((document.documentElement.dataset.theme as Theme) || "paper");
     window.addEventListener(EVT, onChange);
     return () => window.removeEventListener(EVT, onChange);
   }, []);

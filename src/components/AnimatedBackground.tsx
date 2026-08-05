@@ -117,10 +117,20 @@ export default function AnimatedBackground({
       last = ts;
       ctx.clearRect(0, 0, W, H);
 
+      // Read live so a theme switch repaints the very next frame — this
+      // canvas sits behind the CSS-driven chrome and has no other way to
+      // know the page flipped from dark to light.
+      const isPaper = document.documentElement.dataset.theme === "paper";
+
       /* ── 1. deep base ── */
       const base = ctx.createLinearGradient(0, 0, W, H);
-      base.addColorStop(0, "#0B0D11");
-      base.addColorStop(1, "#0d1017");
+      if (isPaper) {
+        base.addColorStop(0, "#F2EDE6");
+        base.addColorStop(1, "#EDE6D8");
+      } else {
+        base.addColorStop(0, "#0B0D11");
+        base.addColorStop(1, "#0d1017");
+      }
       ctx.fillStyle = base;
       ctx.fillRect(0, 0, W, H);
 
@@ -178,8 +188,13 @@ export default function AnimatedBackground({
 
       /* ── 5. vignette ── */
       const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.2, W / 2, H / 2, H * 0.85);
-      vig.addColorStop(0, "rgba(0,0,0,0)");
-      vig.addColorStop(1, "rgba(0,0,0,0.55)");
+      if (isPaper) {
+        vig.addColorStop(0, "rgba(20,23,30,0)");
+        vig.addColorStop(1, "rgba(20,23,30,0.05)");
+      } else {
+        vig.addColorStop(0, "rgba(0,0,0,0)");
+        vig.addColorStop(1, "rgba(0,0,0,0.55)");
+      }
       ctx.fillStyle = vig;
       ctx.fillRect(0, 0, W, H);
 

@@ -137,6 +137,10 @@ export default function WeekStrip({
           -webkit-background-clip: text; background-clip: text;
           -webkit-text-fill-color: transparent;
         }
+        [data-theme="paper"] .wsx-big {
+          background: linear-gradient(96deg, #7C3AED, #6D28D9 55%, #4C1D95);
+          -webkit-background-clip: text; background-clip: text;
+        }
 
         .wsx-nav { display: flex; gap: 7px; flex-shrink: 0; }
         .wsx-nav button {

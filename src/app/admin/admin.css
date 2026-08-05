@@ -312,6 +312,10 @@
   -webkit-backdrop-filter: blur(16px) saturate(150%);
   box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 10px 30px -22px rgba(0,0,0,.9);
 }
+[data-theme="paper"] .adm-topbar {
+  background: linear-gradient(180deg, rgba(255,255,255,.92), rgba(242,237,230,.75));
+  box-shadow: 0 1px 0 rgba(20,23,30,.04), 0 10px 30px -22px rgba(20,23,30,.15);
+}
 .adm-topbar h1 { letter-spacing: -.5px; }
 
 /* ── Panels ──────────────────────────────────────────────────── */
@@ -350,6 +354,10 @@
   -webkit-background-clip: text; background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+[data-theme="paper"] .adm-stat-val {
+  background: linear-gradient(180deg, #14171E, #3A424F);
+  -webkit-background-clip: text; background-clip: text;
+}
 .adm-stat-label { color: var(--a-dim); }
 .adm-stat-delta.up   { text-shadow: 0 0 14px rgba(200,243,91,.35); }
 .adm-stat-delta.down { text-shadow: 0 0 14px rgba(222,49,99,.35); }
@@ -359,6 +367,9 @@
   position: sticky; top: 60px; z-index: 2;
   background: linear-gradient(180deg, var(--a-panel), rgba(19,22,28,.96));
   backdrop-filter: blur(8px);
+}
+[data-theme="paper"] .adm-table th {
+  background: linear-gradient(180deg, var(--a-panel), rgba(242,237,230,.9));
 }
 .adm-table tbody tr { transition: background .16s ease; }
 .adm-table tr:hover td {

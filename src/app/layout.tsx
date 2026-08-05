@@ -29,7 +29,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0B0D11',
+  themeColor: '#F2EDE6',
   width: 'device-width',
   initialScale: 1,
   // Let the app fill the notch area on phones.
@@ -52,7 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("khelamna-theme")||"glass";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="glass";}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("khelamna-theme-v2")||"paper";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="paper";}})();`,
           }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

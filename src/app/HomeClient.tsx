@@ -135,6 +135,8 @@ const CSS = `
   .p-hero-eyebrow { display:flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:18px; }
   .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Bricolage Grotesque',sans-serif; margin:0; }
   .p-hero-h1 em { font-style:normal; color:#A78BFA; }
+  [data-theme="paper"] .p-hero-eyebrow { color:rgba(20,23,30,0.6); }
+  [data-theme="paper"] .p-hero-h1 { color:#14171E; }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
