@@ -24,10 +24,6 @@ import type { Venue, Court } from "@/lib/admin/types";
 
 type VenueWithCourts = Venue & { courts: Court[] };
 
-// Build the best Google Maps link we have for a venue.
-// Mosaic span pattern — hero first, then rhythm. Repeats past 8 cells.
-const SPANS = ["s-hero", "", "", "s-tall", "", "s-wide", "", ""];
-
 export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWithCourts[] ; offers?: Record<string, { label: string; amount: number }> }) {
   const router = useRouter();
   const [theme] = useTheme();
@@ -73,14 +69,8 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
     return true;
   });
 
-  // Interleave text cards the way the Framer mosaic mixes card types.
-  const cells: ({ kind: "venue"; v: VenueWithCourts } | { kind: "text"; id: string; el: React.ReactNode })[] =
+  const cells: { kind: "venue"; v: VenueWithCourts }[] =
     shown.map((v) => ({ kind: "venue" as const, v }));
-
-  const textCards: { id: string; el: React.ReactNode }[] = [];
-  // slot text cards into positions 2 and 5 for rhythm
-  if (cells.length >= 1) cells.splice(Math.min(2, cells.length), 0, { kind: "text", ...textCards[0] });
-  if (cells.length >= 4) cells.splice(Math.min(5, cells.length), 0, { kind: "text", ...textCards[1] });
 
   function cellTap(e: React.MouseEvent, id: string, href: string) {
     // Details are always visible now, so a tap goes straight to the venue.
@@ -177,16 +167,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
         ) : (
           <div className="mz-grid" ref={gridRef}>
             {cells.map((cell, i) => {
-              const span = SPANS[i % SPANS.length];
               const delay = `${0.08 + i * 0.07}s`;
-
-              if (cell.kind === "text") {
-                return (
-                  <div key={cell.id} className={`mz-cell txt ${span}`} style={{ animationDelay: delay, cursor: "default" }}>
-                    {cell.el}
-                  </div>
-                );
-              }
 
               const v = cell.v;
               const photo = v.photos?.[0];

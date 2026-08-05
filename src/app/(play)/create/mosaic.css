@@ -390,6 +390,23 @@
 }
 .fcard:hover { box-shadow: 0 32px 60px -22px rgba(0,0,0,.7); }
 
+/* Paper theme: the mosaic still cycles three tones, but all of them
+   stay light — the dark "indigo"/"ink" skins otherwise read as
+   dead black cutouts against the paper background. */
+.mz.paper .fcard[data-skin="indigo"] {
+  --panel: #ECE9FA; --fg: #241C5E; --dim: rgba(36,28,94,.62);
+  --chip: rgba(36,28,94,.08); --accent: #6D28D9;
+  background: var(--panel);
+  box-shadow: 0 20px 44px -24px rgba(36,28,94,.3);
+}
+.mz.paper .fcard[data-skin="ink"] {
+  --panel: #FBEAEF; --fg: #3A1220; --dim: rgba(58,18,32,.6);
+  --chip: rgba(58,18,32,.07); --accent: #DE3163;
+  background: var(--panel);
+  box-shadow: 0 20px 44px -24px rgba(58,18,32,.22);
+}
+.mz.paper .fcard:hover { box-shadow: 0 32px 60px -24px rgba(20,23,30,.25); }
+
 /* photo strip */
 .fcard-media {
   position: absolute; top: 0; left: 0; right: 0; height: 46%;
