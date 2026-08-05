@@ -51,7 +51,7 @@ function SignupInner() {
           <div className="auth-brand-name">Khelam Na</div>
         </div>
         <div className="auth-tagline">
-          <h2>Two ways to play.</h2>
+          <h2>Two ways to <em>play.</em></h2>
           <p>Join as a player to host and find matches — or list your venue and start taking bookings today.</p>
         </div>
         <div className="auth-foot">KATHMANDU · SINCE 2026</div>

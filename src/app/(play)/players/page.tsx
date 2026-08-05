@@ -14,7 +14,7 @@ export default async function PlayersPage() {
         <ChatTabs />
         <div className="play-hero">
           <div className="play-eyebrow">Chat &amp; communities</div>
-          <h1>Find people to play with.</h1>
+          <h1>Find people to <em>play</em> with.</h1>
           <p>Send a friend request, then message them once they accept.</p>
         </div>
 

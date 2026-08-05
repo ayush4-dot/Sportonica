@@ -37,6 +37,8 @@
   letter-spacing: -2px; margin: 0 0 20px;
   opacity: 0; animation: prise 0.9s cubic-bezier(0.22,1,0.36,1) 0.15s forwards;
 }
+.play-hero h1 em { font-style: normal; color: var(--sodium); }
+[data-theme="paper"] .play-hero h1 em { color: var(--pink); }
 .play-hero p {
   font-size: clamp(16px, 2vw, 19px); line-height: 1.55; color: var(--dim); margin: 0;
   max-width: 560px;

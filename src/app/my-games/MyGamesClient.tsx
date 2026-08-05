@@ -44,7 +44,7 @@ export default function MyGamesClient({
     <main className="mg">
       <header className="mg-head">
         <p className="mg-eyebrow">Your games</p>
-        <h1 className="mg-h1">My games</h1>
+        <h1 className="mg-h1">My <em>games</em></h1>
         <p className="mg-sub">
           Everything you&apos;re hosting or playing. Edit details, invite players,
           and keep your squad in the loop.
@@ -150,7 +150,9 @@ export default function MyGamesClient({
           text-transform: uppercase; opacity: .5; margin: 0 0 10px; }
         .mg-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(34px,5vw,60px);
           font-weight: 800; letter-spacing: -2px; line-height: .95; margin: 0; color: #fff; }
+        .mg-h1 em { font-style: normal; color: #A78BFA; }
         [data-theme="paper"] .mg-h1 { color: #14171E; }
+        [data-theme="paper"] .mg-h1 em { color: #DE3163; }
         .mg-sub { font-size: 14.5px; opacity: .6; margin: 12px 0 0; max-width: 520px; line-height: 1.55; }
 
         .mg-tabs { display: flex; gap: 8px; margin: 28px 0 20px; }

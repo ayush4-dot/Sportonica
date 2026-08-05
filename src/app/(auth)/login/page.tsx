@@ -42,7 +42,7 @@ function LoginInner() {
           <div className="auth-brand-name">Khelam Na</div>
         </div>
         <div className="auth-tagline">
-          <h2>The game&apos;s already on. Come find it.</h2>
+          <h2>The game&apos;s already on. <em>Come find it.</em></h2>
           <p>Book courts, host matches, and fill your ground — all from one place.</p>
         </div>
         <div className="auth-foot">KATHMANDU · SINCE 2026</div>

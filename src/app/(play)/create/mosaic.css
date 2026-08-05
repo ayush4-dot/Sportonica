@@ -29,6 +29,8 @@
   font-size: clamp(34px, 5.5vw, 58px); font-weight: 800;
   letter-spacing: -1.8px; line-height: 1.02; margin: 0;
 }
+.mz-head h1 em { font-style: normal; color: #A78BFA; }
+.mz.paper .mz-head h1 em { color: #DE3163; }
 .mz-head p { max-width: 460px; font-size: 15.5px; line-height: 1.55; margin: 14px 0 0; opacity: 0.65; }
 
 /* ── Theme toggle ── */

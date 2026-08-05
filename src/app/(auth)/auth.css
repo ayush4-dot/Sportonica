@@ -83,6 +83,8 @@
   margin: 0 0 16px;
   opacity: 0; animation: rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.25s forwards;
 }
+.auth-tagline h2 em { font-style: normal; color: var(--sodium); }
+[data-theme="paper"] .auth-tagline h2 em { color: var(--pink); }
 .auth-tagline p {
   font-size: 15px; line-height: 1.6; color: var(--dim); margin: 0;
   opacity: 0; animation: rise 0.8s cubic-bezier(0.22,1,0.36,1) 0.4s forwards;
