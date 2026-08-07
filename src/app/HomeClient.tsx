@@ -4,15 +4,14 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { MapPin, Calendar, ArrowRight, Zap, ChevronDown } from "lucide-react";
+import { MapPin, ArrowRight, ChevronDown } from "lucide-react";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
 import SiteNav from "@/components/layout/SiteNav";
 import { useCity, inCity } from "@/lib/city";
 
-import { useEvents, bookEvent, SPORT_COLOR } from "@/lib/hooks/useEvents";
-import { useProfile } from "@/lib/hooks/useProfile";
+import { useEvents } from "@/lib/hooks/useEvents";
 
 type HomeRails = Awaited<ReturnType<typeof getHomeRails>>;
 
@@ -83,7 +82,6 @@ const CSS = `
   @media (min-width:781px) {
     .p-hero-content,
     .p-sportbar,
-    .p-matches,
     .p-footer { padding-right:clamp(104px,9vw,132px); }
   }
 
@@ -189,7 +187,6 @@ const CSS = `
 
   /* ── sport slider (Playo-style clickable rail) ── */
   .p-sportbar { padding:56px clamp(24px,5vw,56px) 8px; }
-  .p-matches { padding:100px clamp(24px,5vw,56px); }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
   .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Bricolage Grotesque',sans-serif; line-height:0.95; color:#ffffff; }
@@ -211,7 +208,6 @@ const CSS = `
   .p-sportchip-label { position:absolute; left:14px; bottom:34px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
   .p-sportchip-cta { position:absolute; left:14px; bottom:13px; z-index:1; font-size:11px; font-weight:700; display:flex; align-items:center; gap:5px; }
   [data-theme="paper"] .p-sportbar-title { color:#14171E; }
-  [data-theme="paper"] .p-matches-title { color:#14171E !important; }
   [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.55); }
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
@@ -258,16 +254,6 @@ const CSS = `
   .p-stat:last-child { border-right:none; }
   .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#006241; line-height:1; margin-bottom:8px; }
   .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
-
-  /* ── featured ── */
-  .p-card { background:#111; border:1px solid rgba(255,255,255,0.08); border-radius:16px; overflow:hidden; }
-  .p-card-banner { aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
-  .p-card-body { padding:20px 22px 24px; }
-  .p-card-sport { font-size:10px; font-weight:800; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:8px; }
-  .p-card-title { font-size:17px; font-weight:700; margin-bottom:10px; font-family:'Bricolage Grotesque',sans-serif; line-height:1.25; color:#fff; }
-  .p-card-meta { font-size:12px; color:rgba(255,255,255,0.45); display:flex; flex-direction:column; gap:4px; margin-bottom:16px; }
-  .p-card-footer { display:flex; align-items:center; justify-content:space-between; }
-  .p-fill-bar { height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; margin-bottom:14px; }
 
   /* ── FAQ section ── */
   .p-faq-section { max-width:900px; margin:0 auto; padding:100px 24px; }
@@ -322,7 +308,6 @@ const CSS = `
     .p-faq-q { font-size:15.5px; padding:18px 2px; }
     .p-faq-a { padding:0 24px 20px 2px; font-size:14px; }
     .p-footer { padding:32px clamp(24px,5vw,56px); }
-    .p-match-grid { grid-template-columns:1fr !important; }
   }
 
   /* ══ Paper theme — flip the homepage's dark class styles ══ */
@@ -340,8 +325,6 @@ const CSS = `
   [data-theme="paper"] .p-gcard.fact .small { color: rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-gcard.host .small { color: rgba(20,23,30,0.55); }
   [data-theme="paper"] .btn-ghost { color: #14171E; border-color: rgba(20,23,30,0.25); }
-  [data-theme="paper"] .p-card-title { color: #14171E; }
-  [data-theme="paper"] .p-fill-bar { background: rgba(20,23,30,0.1); }
 `;
 
 const SPORT_IMG: Record<string, string> = {
@@ -357,11 +340,9 @@ const SPORT_IMG: Record<string, string> = {
 export default function HomeClient({ rails }: { rails?: HomeRails }) {
   const router = useRouter();
   const supabase = createClient();
-  const { profile } = useProfile();
   const { city, area } = useCity();
   const heroRef = useRef<HTMLDivElement>(null);
 
-  const { events: featured, loading: evLoading } = useEvents({ limit: 3, onlyUpcoming: true });
   // All upcoming games, grouped by sport, to fill each sport panel.
   const { events: allGames } = useEvents({ limit: 60, onlyUpcoming: true });
   const gamesBySport = allGames.reduce((acc, g) => {
@@ -561,88 +542,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             <GamesRail games={rails.games} />
           </div>
         )}
-
-        {/* ══════════════════════════════════
-            FEATURED MATCHES
-        ══════════════════════════════════ */}
-        <div className="p-matches" style={{ borderTop:"1px solid rgba(255,255,255,0.06)" }}>
-          <motion.div initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-            style={{ marginBottom:"48px", display:"flex", alignItems:"flex-end", justifyContent:"space-between", flexWrap:"wrap" as const, gap:"16px" }}>
-            <div>
-              <p style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"var(--faint)", marginBottom:"12px" }}>
-                Live on Khelamna
-              </p>
-              <h2 className="p-matches-title" style={{ fontSize:"clamp(38px,5.5vw,68px)", fontWeight:800, letterSpacing:"-2.5px", fontFamily:"'Bricolage Grotesque',sans-serif", lineHeight:0.95, color:"#ffffff" }}>
-                Matches near you
-              </h2>
-            </div>
-            <a href="/discover">
-              <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                See all matches <ArrowRight size={16} />
-              </motion.button>
-            </a>
-          </motion.div>
-
-          <div className="p-match-grid" style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"20px" }}>
-            {evLoading ? (
-              Array.from({ length:3 }).map((_,i) => (
-                <div key={i} style={{ background:"#111", borderRadius:"16px", height:"360px", opacity:0.4, animation:"pulse 1.5s ease-in-out infinite" }} />
-              ))
-            ) : featured.length === 0 ? (
-              <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"var(--muted)" }}>
-                <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
-                <a href="/create" style={{ color:"#006241", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
-                  Host the first one →
-                </a>
-              </div>
-            ) : featured.map((ev, i) => {
-              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241";
-              const emo: Record<string,string> = { Futsal:"⚽", Football:"⚽", Basketball:"🏀", Cricket:"🏏", Volleyball:"🏐", Badminton:"🏸", Tennis:"🎾" };
-              const pct = ev.max_players > 0 ? Math.round((ev.confirmed_count / ev.max_players) * 100) : 0;
-              return (
-                <motion.div key={ev.id} className="p-card"
-                  initial={{ opacity:0, y:24 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                  transition={{ duration:0.5, delay:i*0.1 }}
-                  whileHover={{ y:-6, borderColor: color + "44" }}
-                >
-                  <div className="p-card-banner" style={{ background:`linear-gradient(135deg,${color}20,#000)` }}>
-                    {ev.flash && (
-                      <div style={{ position:"absolute", top:"12px", left:"12px", background:"#E85D24", color:"#fff", fontSize:"10px", fontWeight:800, padding:"4px 10px", borderRadius:"100px", display:"flex", alignItems:"center", gap:"4px", letterSpacing:"0.08em" }}>
-                        <Zap size={9} fill="#fff" /> FLASH
-                      </div>
-                    )}
-                    <span style={{ fontSize:"72px", lineHeight:1 }}>{emo[ev.sport] ?? "🏅"}</span>
-                  </div>
-                  <div className="p-card-body">
-                    <p className="p-card-sport" style={{ color }}>{ev.sport.toUpperCase()}</p>
-                    <h3 className="p-card-title">{ev.title}</h3>
-                    <div className="p-card-meta">
-                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><MapPin size={11} />{ev.venue}</span>
-                      <span style={{ display:"flex", alignItems:"center", gap:"5px" }}><Calendar size={11} />{new Date(ev.event_date).toLocaleDateString([],{weekday:"short",month:"short",day:"numeric"})} · {new Date(ev.event_date).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})}</span>
-                    </div>
-                    <div className="p-fill-bar">
-                      <motion.div initial={{ width:0 }} whileInView={{ width:`${pct}%` }} viewport={{ once:true }}
-                        transition={{ duration:0.8 }}
-                        style={{ height:"100%", background: pct>=90?"#ef4444":color, borderRadius:"2px" }} />
-                    </div>
-                    <div className="p-card-footer">
-                      <span style={{ fontSize:"12px", color:"var(--faint)", fontFamily:"'JetBrains Mono',monospace" }}>
-                        {ev.confirmed_count}/{ev.max_players} joined · {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
-                      </span>
-                      <motion.button
-                        whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
-                        onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
-                        disabled={ev.slots_remaining === 0}
-                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#006241"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
-                        {ev.slots_remaining===0 ? "Full" : "Join"}
-                      </motion.button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
 
         {/* ══════════════════════════════════
             FAQ — objections answered right before the ask.
