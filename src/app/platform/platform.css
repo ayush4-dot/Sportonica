@@ -17,7 +17,7 @@
 [data-theme="paper"] .plt-top { border-bottom-color: rgba(20,23,30,0.12); }
 .plt-brand { display: flex; align-items: center; gap: 13px; }
 .plt-k {
-  width: 40px; height: 40px; border-radius: 11px; background: #006241; color: #0B0D11;
+  width: 40px; height: 40px; border-radius: 11px; background: #006241; color: #ffffff;
   display: grid; place-items: center; font-weight: 800; font-size: 22px;
   font-family: 'Bricolage Grotesque', sans-serif;
 }

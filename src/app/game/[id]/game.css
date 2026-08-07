@@ -136,7 +136,7 @@
 .gm-pay-b.on { border-color: rgba(0,98,65,0.55); background: rgba(0,98,65,0.12); color: #006241; }
 .gm-btn {
   width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  background: #006241; color: #0B0D11; border: none; border-radius: 11px;
+  background: #006241; color: #ffffff; border: none; border-radius: 11px;
   padding: 13px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit; text-decoration: none;
 }

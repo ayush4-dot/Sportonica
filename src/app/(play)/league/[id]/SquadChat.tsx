@@ -98,7 +98,7 @@ export default function SquadChat({
           return (
             <div key={m.id} style={{ display: "flex", gap: 9, flexDirection: mine ? "row-reverse" : "row" }}>
               <Link href={m.username ? `/p/${m.username}` : "#"} style={{ flexShrink: 0 }}>
-                <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "#0B0D11" }}>
+                <div style={{ width: 30, height: 30, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 800, color: "#ffffff" }}>
                   {m.avatar_url && /\.(jpe?g|png|gif|webp)$/i.test(m.avatar_url)
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={m.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -144,7 +144,7 @@ export default function SquadChat({
           placeholder="Message your squad…"
           style={{ flex: 1, background: "transparent", border: "1px solid rgba(128,128,128,0.28)", borderRadius: 10, padding: "10px 13px", color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none" }}
         />
-        <button onClick={send} style={{ background: "#006241", color: "#0B0D11", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center" }}>
+        <button onClick={send} style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center" }}>
           <Send size={16} />
         </button>
       </div>

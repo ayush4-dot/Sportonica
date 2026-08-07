@@ -112,7 +112,7 @@ export default function FriendRequestButton({
           display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
           padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
           font-family: inherit; cursor: pointer; text-decoration: none;
-          background: #006241; color: #0B0D11; border: 1px solid #006241;
+          background: #006241; color: #ffffff; border: 1px solid #006241;
           transition: transform .2s cubic-bezier(.22,1,.36,1), opacity .2s;
         }
         .frb-btn:hover { opacity: 0.88; }

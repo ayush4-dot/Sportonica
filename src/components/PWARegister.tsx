@@ -116,7 +116,7 @@ export default function PWARegister() {
         @keyframes pwaUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .pwa-mark {
           width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
-          background: #006241; color: #0B0D11; display: grid; place-items: center;
+          background: #006241; color: #ffffff; display: grid; place-items: center;
           font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; font-weight: 800;
         }
         .pwa-copy { flex: 1; min-width: 0; }
@@ -124,7 +124,7 @@ export default function PWARegister() {
         .pwa-copy small { display: block; font-size: 11.5px; opacity: 0.65; margin-top: 2px; }
         .pwa-go {
           display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-          background: #006241; color: #0B0D11; border: none; border-radius: 10px;
+          background: #006241; color: #ffffff; border: none; border-radius: 10px;
           padding: 9px 14px; font-size: 13px; font-weight: 700; cursor: pointer;
           font-family: inherit;
         }

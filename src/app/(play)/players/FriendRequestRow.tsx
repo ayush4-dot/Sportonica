@@ -44,7 +44,7 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
         {requester.username && <div style={{ fontSize: 12, opacity: 0.55 }}>@{requester.username}</div>}
       </div>
       <button disabled={pending} onClick={() => decide("accepted")}
-        style={{ background: "#006241", color: "#0B0D11", border: "none", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
+        style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
         aria-label="Accept">
         <Check size={15} />
       </button>

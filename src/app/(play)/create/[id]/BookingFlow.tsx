@@ -475,7 +475,7 @@ export default function BookingFlow({
           font-size: 12px; font-weight: 800;
           border: 1px solid var(--line); background: transparent;
         }
-        .bkw-steps li.on .dot { background: #006241; border-color: #006241; color: #14171E; }
+        .bkw-steps li.on .dot { background: #006241; border-color: #006241; color: #ffffff; }
         .bkw-steps li.done .dot { background: #2E7D5B; border-color: #2E7D5B; color: #fff; }
         .bkw-steps .lbl { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
         @media (max-width: 560px) { .bkw-steps .lbl { display: none; } }

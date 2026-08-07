@@ -61,7 +61,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             <p style={{ fontSize: 14, color: "rgba(242,237,230,0.75)", margin: "0 0 20px", lineHeight: 1.5 }}>
               You&apos;ve joined {event.title}. See you on the pitch! Your spot is confirmed.
             </p>
-            <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#0B0D11", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
+            <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
           </div>
         ) : (
           <>
@@ -99,7 +99,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
             <button onClick={confirm} disabled={pending || event.slots_remaining === 0}
-              style={{ width: "100%", background: "#006241", color: "#0B0D11", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pending || event.slots_remaining === 0 ? 0.6 : 1 }}>
+              style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pending || event.slots_remaining === 0 ? 0.6 : 1 }}>
               {pending ? "Joining…" : event.slots_remaining === 0 ? "Game full" : `Pay Rs ${Number(event.fee) || 0} & join`}
             </button>
             <p style={{ fontSize: 11.5, textAlign: "center", color: "rgba(242,237,230,0.45)", marginTop: 10, marginBottom: 0 }}>

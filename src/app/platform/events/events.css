@@ -22,7 +22,7 @@
 .ev-err { color: #ef4444; font-size: 13px; margin-bottom: 14px; }
 .ev-btn {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
-  background: #006241; color: #0B0D11; border: none; border-radius: 11px;
+  background: #006241; color: #ffffff; border: none; border-radius: 11px;
   padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit;
 }

@@ -53,7 +53,7 @@
 }
 .adm-brand-mark {
   width: 30px; height: 30px; border-radius: 8px;
-  background: var(--a-accent); color: #0B0D11;
+  background: var(--a-accent); color: #ffffff;
   display: grid; place-items: center;
   font-family: var(--a-disp); font-weight: 800; font-size: 18px;
   box-shadow: 0 0 0 1px rgba(0,98,65,0.3), 0 4px 20px -4px rgba(0,98,65,0.5);
@@ -167,7 +167,7 @@
 }
 .adm-btn:hover { border-color: var(--a-dim); background: #20252f; }
 .adm-btn.primary {
-  background: var(--a-accent); color: #0B0D11; border-color: var(--a-accent);
+  background: var(--a-accent); color: #ffffff; border-color: var(--a-accent);
   box-shadow: 0 4px 20px -6px rgba(0,98,65,0.5);
 }
 .adm-btn.primary:hover { background: #004a31; }

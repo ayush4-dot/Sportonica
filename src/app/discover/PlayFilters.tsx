@@ -205,7 +205,7 @@ export default function PlayFilters({
           padding:0 22px; margin:5px; border:none; border-radius:12px; cursor:pointer;
           font-family:inherit; font-size:13.5px; font-weight:800; white-space:nowrap;
           background:linear-gradient(140deg,#3d8a68,#006241 55%,#004a31);
-          color:#14171E;
+          color:#ffffff;
           box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px -8px rgba(0,98,65,.8);
           transition:transform .16s;
         }

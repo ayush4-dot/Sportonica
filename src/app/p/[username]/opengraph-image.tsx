@@ -100,7 +100,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
           <div style={{ display: "flex", alignItems: "center" }}>
             <div
               style={{
-                width: 44, height: 44, borderRadius: 10, background: "#006241", color: "#0B0D11",
+                width: 44, height: 44, borderRadius: 10, background: "#006241", color: "#ffffff",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 28, fontWeight: 700, marginRight: 14,
               }}

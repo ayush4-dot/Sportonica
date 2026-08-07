@@ -117,7 +117,7 @@ const CSS = `
   .p-book-in {
     position:relative; z-index:2;
     display:flex; align-items:center; gap:13px;
-    padding:13px 15px 13px 20px; color:#14171E;
+    padding:13px 15px 13px 20px; color:#ffffff;
   }
   .p-book-txt { display:flex; flex-direction:column; align-items:flex-start; line-height:1.15; }
   .p-book-txt b { font-size:15.5px; font-weight:800; letter-spacing:-.2px; }

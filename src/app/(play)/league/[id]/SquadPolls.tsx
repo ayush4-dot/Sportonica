@@ -173,7 +173,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
         {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <button onClick={submit} disabled={pending}
-          style={{ width: "100%", background: "#006241", color: "#0B0D11", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+          style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           {pending ? "Creating…" : "Post poll"}
         </button>
 

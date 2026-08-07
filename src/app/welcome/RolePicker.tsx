@@ -92,7 +92,7 @@ export default function RolePicker({ name, next }: { name: string; next: string 
         .wc-go {
           width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
           margin-top: 10px; padding: 14px; border-radius: 12px; cursor: pointer;
-          background: #006241; color: #0B0D11; border: none;
+          background: #006241; color: #ffffff; border: none;
           font-family: inherit; font-size: 15px; font-weight: 700;
         }
         .wc-go:disabled { opacity: .6; cursor: default; }

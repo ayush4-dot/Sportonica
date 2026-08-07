@@ -77,7 +77,7 @@ export default function MemberManager({
 function Avatar({ name, url }: { name: string; url: string | null }) {
   const ok = url && /\.(jpe?g|png|gif|webp)$/i.test(url);
   return (
-    <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontWeight: 800, color: "#0B0D11", flexShrink: 0 }}>
+    <div style={{ width: 38, height: 38, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontWeight: 800, color: "#ffffff", flexShrink: 0 }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       {ok ? <img src={url!} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : name.charAt(0).toUpperCase()}
     </div>
@@ -137,7 +137,7 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
                 {p.username && <div style={{ fontSize: 11.5, opacity: 0.5, fontFamily: "'JetBrains Mono',monospace" }}>@{p.username}</div>}
               </div>
               <button onClick={() => invite(p.id)} disabled={pending || added.has(p.id)}
-                style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#0B0D11", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#ffffff", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {added.has(p.id) ? "Added ✓" : "Add"}
               </button>
             </div>

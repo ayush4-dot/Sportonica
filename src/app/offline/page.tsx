@@ -9,7 +9,7 @@ export default function OfflinePage() {
     }}>
       <div style={{ maxWidth: 380 }}>
         <div style={{
-          width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#0B0D11",
+          width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#ffffff",
           display: "grid", placeItems: "center", margin: "0 auto 22px",
           fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 34, fontWeight: 800,
         }}>K</div>

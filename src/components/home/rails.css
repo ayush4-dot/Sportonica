@@ -98,7 +98,7 @@
 .rc-host { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 600; }
 .rc-av {
   width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
-  background: linear-gradient(150deg,#006241,#1e3932); color: #0B0D11;
+  background: linear-gradient(150deg,#006241,#1e3932); color: #ffffff;
   display: grid; place-items: center; font-size: 10px; font-weight: 800;
 }
 .rc-av img { width: 100%; height: 100%; object-fit: cover; }
