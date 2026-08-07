@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Compass, CalendarPlus, MessageCircle, ClipboardList, Users } from "lucide-react";
+import { ArrowRight, Compass, CalendarPlus, LayoutGrid, ClipboardList, Users } from "lucide-react";
 import type { ReactNode } from "react";
 
 type Feature = {
@@ -50,14 +50,14 @@ const FEATURES: Feature[] = [
     icon: <Users size={14} />,
   },
   {
-    key: "chat",
-    label: "Chat",
-    title: "Keep your crew together",
-    blurb: "Every game gets its own group. Sort the details, plan the next one.",
-    href: "/league",
+    key: "sports",
+    label: "Sports",
+    title: "Pick your game",
+    blurb: "Futsal, cricket, basketball, badminton and more — browse every sport we cover.",
+    href: "/#sports",
     color: "#a855f7",
-    img: "/panels/chat.jpg",
-    icon: <MessageCircle size={14} />,
+    img: "/sports/futsal.jpg",
+    icon: <LayoutGrid size={14} />,
   },
   {
     key: "games",
