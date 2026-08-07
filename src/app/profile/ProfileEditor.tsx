@@ -95,7 +95,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, opacity: 0.6 }}>{origin}/p/</span>
             <input className="pf-input" value={unInput} onChange={(e) => setUnInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && saveUsername()}
-              style={{ width: 160, background: "transparent", border: "1px solid var(--pf-line)", borderRadius: 9, padding: "8px 10px", color: "inherit", fontFamily: "'JetBrains Mono',monospace", fontSize: 13 }} />
+              style={{ width: 160, background: "transparent", border: "1px solid var(--pf-hair)", borderRadius: 9, padding: "8px 10px", color: "inherit", fontFamily: "'JetBrains Mono',monospace", fontSize: 13 }} />
             <button className="pf-btn" style={{ padding: "7px 14px", fontSize: 12 }} onClick={saveUsername} disabled={pending}>Save</button>
             <button className="pf-btn ghost" style={{ padding: "7px 14px", fontSize: 12 }} onClick={() => { setEditingUn(false); setUnInput(username); }}>Cancel</button>
           </div>
@@ -141,7 +141,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
                   fontFamily: "inherit",
                   background: sports.includes(s) ? "rgba(167,139,250,0.14)" : "transparent",
                   color: sports.includes(s) ? "#A78BFA" : "var(--pf-dim)",
-                  border: `1px solid ${sports.includes(s) ? "rgba(167,139,250,0.4)" : "var(--pf-line)"}`,
+                  border: `1px solid ${sports.includes(s) ? "rgba(167,139,250,0.4)" : "var(--pf-hair)"}`,
                 }}>
                 {s}
               </button>
@@ -150,7 +150,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
         </Field>
 
         {/* Privacy */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "16px 0 4px", borderTop: "1px solid var(--pf-line)", marginTop: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "16px 0 4px", borderTop: "1px solid var(--pf-hair)", marginTop: 8 }}>
           <div>
             <div style={{ fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 7 }}>
               {isPublic ? <Globe size={14} /> : <Lock size={14} />}
@@ -181,7 +181,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
       <style>{`
         .pf-in {
           width: 100%; box-sizing: border-box;
-          background: transparent; border: 1px solid var(--pf-line);
+          background: transparent; border: 1px solid var(--pf-hair);
           border-radius: 10px; padding: 10px 12px; color: inherit;
           font-family: inherit; font-size: 14px;
         }

@@ -218,7 +218,13 @@ export default function AnimatedBackground({
         inset: 0,
         width: "100%",
         height: "100%",
-        zIndex: 0,
+        // Must be negative, not 0: a static (non-positioned) page's content
+        // paints *before* a z-index:0 positioned descendant in CSS's stacking
+        // order, so at z-index:0 this canvas silently painted over every
+        // page's text the instant its first frame drew its opaque gradient
+        // fill, washing everything out. Negative z-index paints it in the
+        // backdrop step instead, unambiguously behind static content.
+        zIndex: -1,
         pointerEvents: "none",
         opacity,
         transform: "translateZ(0)",
