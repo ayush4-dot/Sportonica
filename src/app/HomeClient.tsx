@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
-import { MapPin, Calendar, ArrowRight, Zap } from "lucide-react";
+import { MapPin, Calendar, ArrowRight, Zap, ChevronDown } from "lucide-react";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
@@ -40,6 +40,36 @@ const STATS = [
   { value:"500+",   label:"Games" },
   { value:"30+",    label:"Venues" },
   { value:"9",      label:"Sports" },
+];
+
+// Written for the person who's about to close the tab: real objections,
+// answered plainly, right before the final CTA — and marked up as
+// FAQPage structured data so Google can surface it as a rich result.
+const FAQS = [
+  {
+    q: "Is Khelam Na free to use?",
+    a: "Finding and joining pickup games is completely free. Booking a court only costs the venue's hourly rate, split automatically between everyone in the game — Khelam Na doesn't add booking fees on top.",
+  },
+  {
+    q: "What sports can I play on Khelam Na?",
+    a: "Futsal, cricket, basketball, volleyball, badminton, pickleball, swimming and running, with more added as venues sign up. Browse by sport on the Play page to see what's live near you today.",
+  },
+  {
+    q: "How do I book a futsal court or ground?",
+    a: "Go to Book, pick a sport, date and location, then choose from verified grounds with live hourly availability. You don't need a full squad — open your booking to the city and other players can fill the empty spots.",
+  },
+  {
+    q: "Is it safe to play with people I don't know?",
+    a: "Every player builds a trust score from how reliably they show up, and you can see who's joining before you commit. Payment happens through the app and is held in escrow until the game is actually played, never released upfront.",
+  },
+  {
+    q: "How do payments and refunds work?",
+    a: "Pay with Khalti, eSewa, FonePay or bank transfer. Your money sits in escrow and only reaches the host or venue after the game happens — if it's cancelled, you're covered.",
+  },
+  {
+    q: "Which cities does Khelam Na cover?",
+    a: "We started in Kathmandu and have since expanded across the valley to Lalitpur and Bhaktapur, plus Pokhara, Bharatpur, Biratnagar and other cities around Nepal. Set your city from the location picker to see what's live there.",
+  },
 ];
 
 const CSS = `
@@ -239,6 +269,28 @@ const CSS = `
   .p-card-footer { display:flex; align-items:center; justify-content:space-between; }
   .p-fill-bar { height:3px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; margin-bottom:14px; }
 
+  /* ── FAQ section ── */
+  .p-faq-section { max-width:900px; margin:0 auto; padding:100px 24px; }
+  .p-faq-head { text-align:center; margin-bottom:48px; }
+  .p-faq-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
+  .p-faq-h2 { font-size:clamp(32px,4.5vw,52px); font-weight:800; letter-spacing:-1.5px; font-family:'Bricolage Grotesque',sans-serif; line-height:1; color:#ffffff; }
+  [data-theme="paper"] .p-faq-eyebrow { color:rgba(20,23,30,0.6); }
+  [data-theme="paper"] .p-faq-h2 { color:#14171E; }
+
+  .p-faq-list { display:flex; flex-direction:column; }
+  .p-faq-item { border-bottom:1px solid var(--border-line, rgba(255,255,255,0.1)); }
+  .p-faq-item:first-child { border-top:1px solid var(--border-line, rgba(255,255,255,0.1)); }
+  .p-faq-q {
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:20px;
+    background:none; border:none; cursor:pointer; text-align:left;
+    padding:22px 4px; font-family:'Inter',sans-serif; font-size:17px; font-weight:700;
+    color:var(--chalk); transition:color 0.2s;
+  }
+  .p-faq-item.on .p-faq-q { color:#DE3163; }
+  .p-faq-chev { flex-shrink:0; opacity:0.5; transition:transform 0.25s ease; }
+  .p-faq-item.on .p-faq-chev { transform:rotate(180deg); opacity:1; }
+  .p-faq-a { padding:0 32px 24px 4px; font-size:15px; line-height:1.65; color:var(--muted); overflow:hidden; }
+
   /* ── CTA section ── */
   .p-cta-section { min-height:80vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:80px 40px; }
   .p-cta-h2 { font-size:clamp(40px,7vw,88px); font-weight:800; line-height:0.95; letter-spacing:-3px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:32px; }
@@ -266,6 +318,9 @@ const CSS = `
     .p-stat:nth-child(odd) { border-right:1px solid rgba(255,255,255,0.08); }
     .p-stat:last-child { border-bottom:none; }
     .p-cta-section { min-height:60vh; padding:60px 24px; }
+    .p-faq-section { padding:64px 20px; }
+    .p-faq-q { font-size:15.5px; padding:18px 2px; }
+    .p-faq-a { padding:0 24px 20px 2px; font-size:14px; }
     .p-footer { padding:32px clamp(24px,5vw,56px); }
     .p-match-grid { grid-template-columns:1fr !important; }
   }
@@ -315,6 +370,9 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
   }, {} as Record<string, typeof allGames>);
   // Which sport panel is expanded below the slider. Null = none open.
   const [openSport, setOpenSport] = useState<string | null>(null);
+  // Which FAQ item is expanded. 0 = first question open by default, so
+  // the section doesn't read as an empty wall of collapsed bars.
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   useEffect(() => {
     (async () => {
@@ -585,6 +643,60 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             })}
           </div>
         </div>
+
+        {/* ══════════════════════════════════
+            FAQ — objections answered right before the ask.
+        ══════════════════════════════════ */}
+        <div className="p-faq-section">
+          <div className="p-faq-head">
+            <p className="p-faq-eyebrow">Questions</p>
+            <h2 className="p-faq-h2">Before you jump in.</h2>
+          </div>
+          <div className="p-faq-list">
+            {FAQS.map((f, i) => {
+              const open = openFaq === i;
+              return (
+                <div key={f.q} className={`p-faq-item ${open ? "on" : ""}`}>
+                  <button
+                    className="p-faq-q"
+                    onClick={() => setOpenFaq(open ? null : i)}
+                    aria-expanded={open}
+                  >
+                    <span>{f.q}</span>
+                    <ChevronDown size={18} className="p-faq-chev" />
+                  </button>
+                  {open && (
+                    <motion.p
+                      className="p-faq-a"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      {f.a}
+                    </motion.p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Structured data so search engines can show these as a rich
+            FAQ result directly on the results page. */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FAQPage",
+              mainEntity: FAQS.map((f) => ({
+                "@type": "Question",
+                name: f.q,
+                acceptedAnswer: { "@type": "Answer", text: f.a },
+              })),
+            }),
+          }}
+        />
 
         {/* ══════════════════════════════════
             FULL-BLEED CTA
