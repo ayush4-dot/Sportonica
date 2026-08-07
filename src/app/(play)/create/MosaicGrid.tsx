@@ -6,11 +6,11 @@ import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus, Tag } from "lucid
 
 // Eight accent pairs, cycled so a wall of grounds never looks flat.
 const HUES = [
-  { a: "#A78BFA", b: "#F0872A" },  // amber
+  { a: "#006241", b: "#F0872A" },  // amber
   { a: "#4ADE80", b: "#16A34A" },  // green
   { a: "#60A5FA", b: "#2563EB" },  // blue
-  { a: "#F472B6", b: "#DB2777" },  // pink
-  { a: "#C084FC", b: "#7C3AED" },  // violet
+  { a: "#5f756d", b: "#1e3932" },  // slate
+  { a: "#3d8a68", b: "#004a31" },  // deep green
   { a: "#2DD4BF", b: "#0D9488" },  // teal
   { a: "#FB923C", b: "#EA580C" },  // orange
   { a: "#F87171", b: "#DC2626" },  // red
@@ -162,7 +162,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
             </p>
             {venues.length > 0 && (
               <button onClick={() => { setQ(NO_BOOK_FILTERS); setMyCoords(null); }}
-                style={{ marginTop: 14, background: "none", border: "none", color: "#A78BFA", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                style={{ marginTop: 14, background: "none", border: "none", color: "#006241", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
                 Clear filters →
               </button>
             )}

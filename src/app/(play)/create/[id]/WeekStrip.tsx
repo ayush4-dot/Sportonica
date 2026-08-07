@@ -133,12 +133,12 @@ export default function WeekStrip({
           font-family: 'Bricolage Grotesque', sans-serif;
           font-size: clamp(21px, 3vw, 30px); font-weight: 800;
           letter-spacing: -1px; line-height: 1; margin: 0;
-          background: linear-gradient(96deg, #DDD6FE, #A78BFA 55%, #6D28D9);
+          background: linear-gradient(96deg, #d4e9e2, #006241 55%, #1e3932);
           -webkit-background-clip: text; background-clip: text;
           -webkit-text-fill-color: transparent;
         }
         [data-theme="paper"] .wsx-big {
-          background: linear-gradient(96deg, #7C3AED, #6D28D9 55%, #4C1D95);
+          background: linear-gradient(96deg, #004a31, #006241 55%, #1e3932);
           -webkit-background-clip: text; background-clip: text;
         }
 
@@ -150,7 +150,7 @@ export default function WeekStrip({
           transition: border-color .2s, background .2s, transform .14s;
         }
         .wsx-nav button:hover {
-          border-color: rgba(167,139,250,.55); background: rgba(167,139,250,.1);
+          border-color: rgba(0,98,65,.55); background: rgba(0,98,65,.1);
           transform: translateY(-1px);
         }
 
@@ -165,7 +165,7 @@ export default function WeekStrip({
         .wsx-monthmark {
           position: absolute; top: -3px; left: 50%; transform: translateX(-50%);
           font-size: 9px; font-weight: 800; letter-spacing: .14em;
-          text-transform: uppercase; color: #A78BFA; opacity: .8;
+          text-transform: uppercase; color: #006241; opacity: .8;
         }
 
         .wsx-day {
@@ -176,19 +176,19 @@ export default function WeekStrip({
           border: 1px solid var(--line, rgba(242,237,230,.12)); background: transparent;
           transition: transform .22s cubic-bezier(.22,1,.36,1), border-color .2s, opacity .2s;
         }
-        .wsx-day:hover { transform: translateY(-4px); border-color: rgba(167,139,250,.45); }
+        .wsx-day:hover { transform: translateY(-4px); border-color: rgba(0,98,65,.45); }
         .wsx-day.full { opacity: .38; }
-        .wsx-day.wknd .wsx-dow { color: #DE3163; opacity: .75; }
+        .wsx-day.wknd .wsx-dow { color: #006241; opacity: .75; }
 
         .wsx-day.on {
-          border-color: transparent; color: #14171E; transform: translateY(-4px); opacity: 1;
-          background: linear-gradient(168deg, #DDD6FE 0%, #A78BFA 48%, #7C3AED 100%);
+          border-color: transparent; color: #ffffff; transform: translateY(-4px); opacity: 1;
+          background: linear-gradient(168deg, #3d8a68 0%, #006241 48%, #004a31 100%);
           box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.75),
-            0 0 0 1px rgba(167,139,250,.35),
-            0 16px 30px -12px rgba(167,139,250,.7);
+            inset 0 1px 0 rgba(255,255,255,.35),
+            0 0 0 1px rgba(0,98,65,.35),
+            0 16px 30px -12px rgba(0,98,65,.7);
         }
-        .wsx-day.on .wsx-dow { color: rgba(20,23,30,.66); opacity: 1; }
+        .wsx-day.on .wsx-dow { color: rgba(255,255,255,.75); opacity: 1; }
 
         .wsx-sheen {
           position: absolute; top: 0; bottom: 0; width: 40%;
@@ -205,7 +205,7 @@ export default function WeekStrip({
         }
         .wsx-dot { width: 5px; height: 5px; border-radius: 99px; background: transparent; }
         .wsx-dot.ok      { background: #2E7D5B; }
-        .wsx-dot.low     { background: #DE3163; }
+        .wsx-dot.low     { background: #006241; }
         .wsx-dot.unknown { background: rgba(255,255,255,.16); }
         .wsx-day.on .wsx-dot.ok, .wsx-day.on .wsx-dot.low { background: rgba(20,23,30,.62); }
 

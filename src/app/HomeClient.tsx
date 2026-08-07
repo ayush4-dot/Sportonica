@@ -28,9 +28,9 @@ const SPORT_FACT: Record<string, { big: string; small: string }> = {
 const SPORTS_PANELS = [
   { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
   { sport:"Cricket",    label:"CRICKET",    color:"#f97316", emoji:"🏏", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
-  { sport:"Basketball", label:"BASKETBALL", color:"#A78BFA", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
+  { sport:"Basketball", label:"BASKETBALL", color:"#006241", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
   { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
-  { sport:"Badminton",  label:"BADMINTON",  color:"#a855f7", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
+  { sport:"Badminton",  label:"BADMINTON",  color:"#006241", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
   { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🥒", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
   { sport:"Swimming",   label:"SWIMMING",   color:"#06b6d4", emoji:"🏊", desc:"Lane bookings, early-morning laps, and coached sessions." },
 ];
@@ -101,10 +101,10 @@ const CSS = `
   .p-book {
     position:relative; overflow:hidden; cursor:pointer;
     border:none; border-radius:999px; padding:0;
-    background:linear-gradient(140deg,#DDD6FE 0%,#A78BFA 46%,#7C3AED 100%);
+    background:linear-gradient(140deg,#d4e9e2 0%,#006241 46%,#004a31 100%);
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.75),
-      0 14px 34px -12px rgba(167,139,250,.75);
+      0 14px 34px -12px rgba(0,98,65,.75);
     transition:transform .28s cubic-bezier(.22,1,.36,1), box-shadow .28s;
     font-family:'Inter',sans-serif;
   }
@@ -112,7 +112,7 @@ const CSS = `
     transform:translateY(-3px);
     box-shadow:
       inset 0 1px 0 rgba(255,255,255,.85),
-      0 22px 46px -14px rgba(167,139,250,.95);
+      0 22px 46px -14px rgba(0,98,65,.95);
   }
   .p-book:active { transform:translateY(-1px); }
 
@@ -128,7 +128,7 @@ const CSS = `
   .p-book-go {
     width:34px; height:34px; border-radius:999px; flex-shrink:0;
     display:inline-flex; align-items:center; justify-content:center;
-    background:#14171E; color:#A78BFA;
+    background:#14171E; color:#006241;
     transition:transform .3s cubic-bezier(.22,1,.36,1);
   }
   .p-book:hover .p-book-go { transform:translateX(3px); }
@@ -163,7 +163,7 @@ const CSS = `
     }
   .p-hero-eyebrow { display:flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:18px; }
   .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Bricolage Grotesque',sans-serif; margin:0; }
-  .p-hero-h1 em { font-style:normal; color:#A78BFA; }
+  .p-hero-h1 em { font-style:normal; color:#006241; }
   [data-theme="paper"] .p-hero-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-hero-h1 { color:#14171E; }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
@@ -256,7 +256,7 @@ const CSS = `
   .p-stats { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid rgba(255,255,255,0.08); border-bottom:1px solid rgba(255,255,255,0.08); }
   .p-stat { padding:48px 40px; border-right:1px solid rgba(255,255,255,0.08); }
   .p-stat:last-child { border-right:none; }
-  .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#A78BFA; line-height:1; margin-bottom:8px; }
+  .p-stat-val { font-size:clamp(36px,4vw,56px); font-weight:800; letter-spacing:-2px; font-family:'JetBrains Mono',monospace; color:#006241; line-height:1; margin-bottom:8px; }
   .p-stat-label { font-size:12px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); }
 
   /* ── featured ── */
@@ -286,7 +286,7 @@ const CSS = `
     padding:22px 4px; font-family:'Inter',sans-serif; font-size:17px; font-weight:700;
     color:var(--chalk); transition:color 0.2s;
   }
-  .p-faq-item.on .p-faq-q { color:#DE3163; }
+  .p-faq-item.on .p-faq-q { color:#006241; }
   .p-faq-chev { flex-shrink:0; opacity:0.5; transition:transform 0.25s ease; }
   .p-faq-item.on .p-faq-chev { transform:rotate(180deg); opacity:1; }
   .p-faq-a { padding:0 32px 24px 4px; font-size:15px; line-height:1.65; color:var(--muted); overflow:hidden; }
@@ -294,13 +294,13 @@ const CSS = `
   /* ── CTA section ── */
   .p-cta-section { display:flex; align-items:center; justify-content:center; text-align:center; padding:64px 40px; }
   .p-cta-h2 { font-size:clamp(28px,4.5vw,52px); font-weight:800; line-height:0.98; letter-spacing:-1.5px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:24px; }
-  .p-cta-h2 em { font-style:normal; color:#DE3163; }
+  .p-cta-h2 em { font-style:normal; color:#006241; }
 
   /* ── footer ── */
   .p-footer { border-top:1px solid var(--border-line, rgba(255,255,255,0.08)); padding:40px clamp(24px,5vw,56px); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
 
   /* ── buttons ── */
-  .btn-primary { background:#DE3163; color:#fff; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
+  .btn-primary { background:#006241; color:#fff; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; letter-spacing:-0.01em; }
   .btn-ghost { background:rgba(255,255,255,0.08); color:#fff; border:1px solid rgba(255,255,255,0.15); padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; backdrop-filter:blur(8px); }
   .btn-white { background:#fff; color:#000; border:none; padding:14px 28px; border-radius:10px; font-size:15px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; font-family:'Inter',sans-serif; }
 
@@ -591,12 +591,12 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             ) : featured.length === 0 ? (
               <div style={{ gridColumn:"1/-1", textAlign:"center", padding:"64px", color:"var(--muted)" }}>
                 <p style={{ fontSize:"18px", marginBottom:"16px" }}>No upcoming events yet.</p>
-                <a href="/create" style={{ color:"#DE3163", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
+                <a href="/create" style={{ color:"#006241", fontWeight:700, textDecoration:"none", fontSize:"16px" }}>
                   Host the first one →
                 </a>
               </div>
             ) : featured.map((ev, i) => {
-              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
+              const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241";
               const emo: Record<string,string> = { Futsal:"⚽", Football:"⚽", Basketball:"🏀", Cricket:"🏏", Volleyball:"🏐", Badminton:"🏸", Tennis:"🎾" };
               const pct = ev.max_players > 0 ? Math.round((ev.confirmed_count / ev.max_players) * 100) : 0;
               return (
@@ -633,7 +633,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                         whileHover={{ scale:1.06 }} whileTap={{ scale:0.96 }}
                         onClick={() => { if(!profile){ router.push("/login"); return; } void bookEvent(ev.id); }}
                         disabled={ev.slots_remaining === 0}
-                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#A78BFA"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
+                        style={{ background: ev.slots_remaining===0?"rgba(255,255,255,0.08)":color, color: ev.slots_remaining===0?"rgba(255,255,255,0.3)":(color==="#006241"?"#000":"#fff"), border:"none", padding:"9px 18px", borderRadius:"10px", fontSize:"13px", fontWeight:700, cursor: ev.slots_remaining===0?"default":"pointer", fontFamily:"'Inter',sans-serif" }}>
                         {ev.slots_remaining===0 ? "Full" : "Join"}
                       </motion.button>
                     </div>
@@ -701,7 +701,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         {/* ══════════════════════════════════
             FULL-BLEED CTA
         ══════════════════════════════════ */}
-        <div style={{ position:"relative", overflow:"hidden", background:"#DE3163", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ position:"relative", overflow:"hidden", background:"#006241", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
           {/* noise texture overlay */}
           <div style={{ position:"absolute", inset:0, backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize:"200px", opacity:0.5, pointerEvents:"none" }} />
           <div className="p-cta-section">
@@ -744,7 +744,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         <footer className="p-footer">
           <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
             <span style={{ fontSize:"18px", fontWeight:800, color:"var(--chalk)", fontFamily:"'Bricolage Grotesque',sans-serif" }}>Khelam</span>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"#DE3163", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#006241", fontFamily:"'Bricolage Grotesque',sans-serif" }}> Na.</span>
           </a>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
             {[

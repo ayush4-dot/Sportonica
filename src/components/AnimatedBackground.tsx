@@ -14,9 +14,9 @@ interface Props {
 }
 
 export default function AnimatedBackground({
-  accent1 = "#DE3163",
-  accent2 = "#A78BFA",
-  accent3 = "#2E7D5B",
+  accent1 = "#006241",
+  accent2 = "#1e3932",
+  accent3 = "#5f756d",
   opacity = 1,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);

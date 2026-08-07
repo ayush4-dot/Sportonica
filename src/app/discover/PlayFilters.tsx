@@ -193,8 +193,8 @@ export default function PlayFilters({
           font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
           text-align:left;
         }
-        .pf-seg > button:hover { background:rgba(167,139,250,.07); }
-        .pf-seg > button.lit { color:#A78BFA; }
+        .pf-seg > button:hover { background:rgba(0,98,65,.07); }
+        .pf-seg > button.lit { color:#006241; }
         .pf-seg > button svg:first-child { opacity:.55; flex-shrink:0; }
         .pf-seg > button span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .pf-seg > button svg:last-child { opacity:.45; transition:transform .25s; }
@@ -204,9 +204,9 @@ export default function PlayFilters({
           display:inline-flex; align-items:center; gap:7px; flex-shrink:0;
           padding:0 22px; margin:5px; border:none; border-radius:12px; cursor:pointer;
           font-family:inherit; font-size:13.5px; font-weight:800; white-space:nowrap;
-          background:linear-gradient(140deg,#C4B5FD,#A78BFA 55%,#8B5CF6);
+          background:linear-gradient(140deg,#3d8a68,#006241 55%,#004a31);
           color:#14171E;
-          box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px -8px rgba(167,139,250,.8);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 8px 20px -8px rgba(0,98,65,.8);
           transition:transform .16s;
         }
         .pf-find:hover { transform:translateY(-1px); }
@@ -224,8 +224,8 @@ export default function PlayFilters({
           border:none; background:none; color:inherit; cursor:pointer;
           font-family:inherit; font-size:13.5px; font-weight:600;
         }
-        .pf-drop button:hover { background:rgba(167,139,250,.12); }
-        .pf-drop button.on { color:#A78BFA; background:rgba(167,139,250,.14); }
+        .pf-drop button:hover { background:rgba(0,98,65,.12); }
+        .pf-drop button.on { color:#006241; background:rgba(0,98,65,.14); }
 
         @media (max-width:820px) {
           .pf-search { flex-wrap:wrap; }
@@ -240,9 +240,9 @@ export default function PlayFilters({
           font-size:12.5px; font-weight:700; font-family:inherit;
           transition:border-color .2s, background .2s, color .2s;
         }
-        .pf-btn:hover, .pf-quick:hover { border-color:rgba(167,139,250,.55); }
+        .pf-btn:hover, .pf-quick:hover { border-color:rgba(0,98,65,.55); }
         .pf-btn.on, .pf-quick.on {
-          background:rgba(167,139,250,.15); border-color:rgba(167,139,250,.55); color:#A78BFA;
+          background:rgba(0,98,65,.15); border-color:rgba(0,98,65,.55); color:#006241;
         }
         .pf-count {
           margin-left:auto; font-family:'JetBrains Mono',monospace;
@@ -254,10 +254,10 @@ export default function PlayFilters({
         .pf-chip {
           display:inline-flex; align-items:center; gap:6px; cursor:pointer;
           padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700;
-          font-family:inherit; color:#A78BFA;
-          background:rgba(167,139,250,.14); border:1px solid rgba(167,139,250,.42);
+          font-family:inherit; color:#006241;
+          background:rgba(0,98,65,.14); border:1px solid rgba(0,98,65,.42);
         }
-        .pf-chip:hover { background:rgba(167,139,250,.24); }
+        .pf-chip:hover { background:rgba(0,98,65,.24); }
         .pf-clear {
           border:none; background:none; color:inherit; cursor:pointer;
           font-size:12px; font-weight:700; opacity:.5; font-family:inherit;
@@ -284,9 +284,9 @@ export default function PlayFilters({
           color:inherit; font-size:12.5px; font-weight:600; font-family:inherit;
           transition:border-color .2s, background .2s, color .2s;
         }
-        .pf-go button:hover { border-color:rgba(167,139,250,.5); }
+        .pf-go button:hover { border-color:rgba(0,98,65,.5); background:rgba(212,233,226,.4); }
         .pf-go button.on {
-          background:rgba(167,139,250,.15); border-color:rgba(167,139,250,.55); color:#A78BFA;
+          background:#d4e9e2; border-color:#006241; color:#1e3932;
         }
 
         .pf-check {
@@ -299,7 +299,7 @@ export default function PlayFilters({
           display:inline-flex; align-items:center; justify-content:center;
           border:1px solid var(--line, rgba(242,237,230,.22)); color:#0B0D11;
         }
-        .pf-check input:checked + .pf-box { background:#A78BFA; border-color:#A78BFA; }
+        .pf-check input:checked + .pf-box { background:#006241; border-color:#006241; }
 
         @media (max-width:620px) {
           .pf-count { width:100%; margin-left:0; order:99; }

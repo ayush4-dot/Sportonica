@@ -66,7 +66,7 @@ function Row({
       </div>
       <button onClick={onToggle} disabled={disabled} aria-label={title}
         style={{ width: 44, height: 25, borderRadius: 99, border: "none", cursor: "pointer", flexShrink: 0, position: "relative",
-          background: on ? "#A78BFA" : "rgba(128,128,128,0.35)", transition: "background 0.3s" }}>
+          background: on ? "#006241" : "rgba(128,128,128,0.35)", transition: "background 0.3s" }}>
         <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 19, height: 19, borderRadius: "50%", background: "#fff", transition: "left 0.3s cubic-bezier(0.22,1,0.36,1)" }} />
       </button>
     </div>

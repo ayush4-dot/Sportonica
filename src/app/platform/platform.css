@@ -17,7 +17,7 @@
 [data-theme="paper"] .plt-top { border-bottom-color: rgba(20,23,30,0.12); }
 .plt-brand { display: flex; align-items: center; gap: 13px; }
 .plt-k {
-  width: 40px; height: 40px; border-radius: 11px; background: #A78BFA; color: #0B0D11;
+  width: 40px; height: 40px; border-radius: 11px; background: #006241; color: #0B0D11;
   display: grid; place-items: center; font-weight: 800; font-size: 22px;
   font-family: 'Bricolage Grotesque', sans-serif;
 }
@@ -41,7 +41,7 @@
 }
 [data-theme="paper"] .plt-stat { background: #fff; border-color: rgba(20,23,30,0.1); }
 .plt-stat-v { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; letter-spacing: -1px; }
-.plt-stat-v.warn { color: #A78BFA; }
+.plt-stat-v.warn { color: #d97706; }
 .plt-stat-l { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.5; margin-top: 8px; }
 
 .plt-sec-t { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; margin: 34px 0 14px; }
@@ -89,7 +89,7 @@
 .dt-actions .dt-btn { margin-left: 6px; }
 .dt-btn.ok { border-color: rgba(46,125,91,0.5); color: #2E7D5B; }
 .dt-btn.ok:hover { background: rgba(46,125,91,0.12); }
-.dt-btn.bad { border-color: rgba(222,49,99,0.5); color: #DE3163; }
-.dt-btn.bad:hover { background: rgba(222,49,99,0.12); }
+.dt-btn.bad { border-color: rgba(239,68,68,0.5); color: #ef4444; }
+.dt-btn.bad:hover { background: rgba(239,68,68,0.12); }
 
 .dt-pages { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 12px; border-top: 1px solid rgba(128,128,128,0.14); }

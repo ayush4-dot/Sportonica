@@ -27,7 +27,7 @@ export default async function RevenuePage() {
           <div className="plt-stat-l">Owed to venues</div>
         </div>
         <div className="plt-stat">
-          <div className="plt-stat-v dt-mono" style={{ color: "#DE3163" }}>{rs(r.payoutPending)}</div>
+          <div className="plt-stat-v dt-mono" style={{ color: "#006241" }}>{rs(r.payoutPending)}</div>
           <div className="plt-stat-l">Unpaid to venues</div>
         </div>
       </div>

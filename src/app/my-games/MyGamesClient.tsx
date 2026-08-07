@@ -150,9 +150,9 @@ export default function MyGamesClient({
           text-transform: uppercase; opacity: .5; margin: 0 0 10px; }
         .mg-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(34px,5vw,60px);
           font-weight: 800; letter-spacing: -2px; line-height: .95; margin: 0; color: #fff; }
-        .mg-h1 em { font-style: normal; color: #A78BFA; }
+        .mg-h1 em { font-style: normal; color: #006241; }
         [data-theme="paper"] .mg-h1 { color: #14171E; }
-        [data-theme="paper"] .mg-h1 em { color: #DE3163; }
+        [data-theme="paper"] .mg-h1 em { color: #006241; }
         .mg-sub { font-size: 14.5px; opacity: .6; margin: 12px 0 0; max-width: 520px; line-height: 1.55; }
 
         .mg-tabs { display: flex; gap: 8px; margin: 28px 0 20px; }
@@ -163,7 +163,7 @@ export default function MyGamesClient({
           font-size: 13px; font-weight: 700; font-family: inherit; transition: all .2s;
         }
         .mg-tabs button span { opacity: .55; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
-        .mg-tabs button.on { background: rgba(222,49,99,.15); border-color: rgba(222,49,99,.5); color: #DE3163; }
+        .mg-tabs button.on { background: rgba(0,98,65,.15); border-color: rgba(0,98,65,.5); color: #006241; }
 
         .mg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 14px; }
         .mg-card {
@@ -185,7 +185,7 @@ export default function MyGamesClient({
           text-transform: uppercase; opacity: .45; margin: 0 0 7px; }
         .mg-inv { display: inline-flex; align-items: center; gap: 5px; margin: 0 5px 5px 0;
           font-size: 11.5px; padding: 4px 9px; border-radius: 999px;
-          background: rgba(167,139,250,.12); border: 1px solid rgba(167,139,250,.3); color: #A78BFA; }
+          background: rgba(0,98,65,.12); border: 1px solid rgba(0,98,65,.3); color: #006241; }
         .mg-inv b { font-weight: 700; opacity: .8; }
         .mg-inv button { background: none; border: none; color: inherit; cursor: pointer;
           display: inline-flex; padding: 0; opacity: .7; }
@@ -196,7 +196,7 @@ export default function MyGamesClient({
           display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
           border: none; border-radius: 10px; padding: 8px 14px;
           font-size: 12.5px; font-weight: 700; font-family: inherit;
-          background: #DE3163; color: #fff; text-decoration: none; transition: transform .15s;
+          background: #006241; color: #fff; text-decoration: none; transition: transform .15s;
         }
         .mg-btn:hover { transform: translateY(-1px); }
         .mg-btn.ghost { background: transparent; border: 1px solid var(--line, rgba(242,237,230,.16)); color: inherit; }

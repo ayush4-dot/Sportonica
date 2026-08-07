@@ -21,7 +21,7 @@ export default function NavWrapper() {
   return (
     <>
       {!hideChrome && (
-        <AnimatedBackground accent1="#DE3163" accent2="#A78BFA" accent3="#2E7D5B" opacity={0.4} />
+        <AnimatedBackground accent1="#006241" accent2="#1e3932" accent3="#5f756d" opacity={0.4} />
       )}
       <AppHeader />
       <MagnetDock />

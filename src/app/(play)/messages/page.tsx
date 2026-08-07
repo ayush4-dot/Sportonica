@@ -36,14 +36,14 @@ export default async function MessagesPage() {
               style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border-line)", textDecoration: "none", color: "inherit" }}
             >
               <div style={{ position: "relative", flexShrink: 0 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center", fontSize: 16, fontWeight: 800, color: "#0B0D11" }}>
+                <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontSize: 16, fontWeight: 800, color: "#0B0D11" }}>
                   {c.other.avatar_url
                     // eslint-disable-next-line @next/next/no-img-element
                     ? <img src={c.other.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     : name.charAt(0).toUpperCase()}
                 </div>
                 {c.unread && (
-                  <span style={{ position: "absolute", top: -2, right: -2, width: 11, height: 11, borderRadius: "50%", background: "#DE3163", border: "2px solid var(--ink, #0B0D11)" }} />
+                  <span style={{ position: "absolute", top: -2, right: -2, width: 11, height: 11, borderRadius: "50%", background: "#006241", border: "2px solid var(--ink, #0B0D11)" }} />
                 )}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>

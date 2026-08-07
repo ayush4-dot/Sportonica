@@ -42,8 +42,8 @@ export async function GET(
 
   // Theme palette
   const C = theme === "paper"
-    ? { bg: "#F2EDE6", text: "#14171E", dim: "#6B7280", faint: "#9CA3AF", hair: "#D6CEC0", accent: "#B8860B" }
-    : { bg: "#0B0D11", text: "#F2EDE6", dim: "#8A95A3", faint: "#5A6472", hair: "#22262E", accent: "#A78BFA" };
+    ? { bg: "#F2EDE6", text: "#1e3932", dim: "#5f756d", faint: "#5f756d", hair: "#D6CEC0", accent: "#006241" }
+    : { bg: "#0B0D11", text: "#F2EDE6", dim: "#5f756d", faint: "#5f756d", hair: "#22262E", accent: "#006241" };
 
   const safeAvatar =
     profile.avatar_url && /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(profile.avatar_url)
@@ -77,7 +77,7 @@ export async function GET(
           {safeAvatar ? (
             <img src={safeAvatar} width={168} height={168} style={{ objectFit: "cover" }} alt="" />
           ) : (
-            <div style={{ width: 168, height: 168, background: "#DE3163", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 84, fontWeight: 800, color: "#0B0D11" }}>
+            <div style={{ width: 168, height: 168, background: "#006241", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 84, fontWeight: 800, color: "#ffffff" }}>
               {name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -129,7 +129,7 @@ export async function GET(
 
         {/* footer brand */}
         <div style={{ display: "flex", alignItems: "center", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-          <div style={{ width: 68, height: 68, background: "#A78BFA", color: "#0B0D11", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
+          <div style={{ width: 68, height: 68, background: "#006241", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
             K
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>

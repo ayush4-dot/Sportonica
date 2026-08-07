@@ -135,7 +135,7 @@ export default function LocationPicker() {
           font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
           text-align:left;
         }
-        .lp-trigger:hover { background:rgba(167,139,250,.07); }
+        .lp-trigger:hover { background:rgba(0,98,65,.07); }
         .lp-trigger svg:first-child { opacity:.55; flex-shrink:0; }
         .lp-trigger span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .lp-trigger svg:last-child { opacity:.45; transition:transform .25s; flex-shrink:0; }
@@ -152,8 +152,8 @@ export default function LocationPicker() {
         .lp-detect {
           width:100%; display:flex; align-items:center; gap:8px; cursor:pointer;
           padding:10px 12px; border-radius:11px; font-size:13px; font-weight:700;
-          border:1px dashed rgba(167,139,250,.45); background:rgba(167,139,250,.1);
-          color:#A78BFA; font-family:inherit; margin-bottom:6px;
+          border:1px dashed rgba(0,98,65,.45); background:rgba(0,98,65,.1);
+          color:#006241; font-family:inherit; margin-bottom:6px;
         }
         .lp-find {
           display:flex; align-items:center; gap:8px;
@@ -170,7 +170,7 @@ export default function LocationPicker() {
         .lp-find input::placeholder { opacity:.4; }
         .lp-back {
           width:100%; text-align:left; padding:7px 12px; margin-bottom:4px;
-          border:none; background:none; color:#A78BFA; cursor:pointer;
+          border:none; background:none; color:#006241; cursor:pointer;
           font-family:inherit; font-size:12px; font-weight:700;
         }
         .lp-none { padding:16px 12px; text-align:center; font-size:12.5px; opacity:.45; margin:0; }

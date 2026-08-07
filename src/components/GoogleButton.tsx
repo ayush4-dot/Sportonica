@@ -57,7 +57,7 @@ export default function GoogleButton({
         }
         .g-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px -10px rgba(0,0,0,.5); }
         .g-btn:disabled { opacity: .65; cursor: default; }
-        .g-err { color: #DE3163; font-size: 12.5px; margin: 8px 0 0; }
+        .g-err { color: #ef4444; font-size: 12.5px; margin: 8px 0 0; }
       `}</style>
     </>
   );

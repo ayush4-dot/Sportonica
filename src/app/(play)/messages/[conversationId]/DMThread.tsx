@@ -111,7 +111,7 @@ export default function DMThread({
     <div style={{ border: "1px solid var(--border-line)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", height: "70vh", minHeight: 460 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: "1px solid var(--border-line)" }}>
         <Link href={peer.username ? `/p/${peer.username}` : "#"} style={{ flexShrink: 0 }}>
-          <div style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800, color: "#0B0D11" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "50%", overflow: "hidden", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800, color: "#0B0D11" }}>
             {peer.avatar_url
               // eslint-disable-next-line @next/next/no-img-element
               ? <img src={peer.avatar_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
@@ -132,7 +132,7 @@ export default function DMThread({
             <div style={{ marginTop: 4, opacity: 0.7 }}>Once they open the app, you&apos;ll be able to write here.</div>
             <button
               onClick={() => setupKey({ current: false })}
-              style={{ marginTop: 12, background: "transparent", color: "#A78BFA", border: "1px solid rgba(167,139,250,.4)", borderRadius: 9, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+              style={{ marginTop: 12, background: "transparent", color: "#006241", border: "1px solid rgba(0,98,65,.4)", borderRadius: 9, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
             >
               Check again
             </button>
@@ -147,7 +147,7 @@ export default function DMThread({
             <div key={m.id} style={{ display: "flex", flexDirection: mine ? "row-reverse" : "row" }}>
               <div style={{
                 maxWidth: "72%", display: "inline-block", padding: "8px 12px", borderRadius: 13, fontSize: 13.5, lineHeight: 1.4,
-                background: mine ? "#A78BFA" : "var(--ink-3, rgba(255,255,255,0.06))",
+                background: mine ? "#006241" : "var(--ink-3, rgba(255,255,255,0.06))",
                 color: mine ? "#0B0D11" : "inherit",
                 fontStyle: m.failed ? "italic" : "normal", opacity: m.failed ? 0.6 : 1,
                 borderTopRightRadius: mine ? 3 : 13, borderTopLeftRadius: mine ? 13 : 3,
@@ -161,7 +161,7 @@ export default function DMThread({
       </div>
 
       {sendError && (
-        <div style={{ padding: "0 12px 6px", fontSize: 11.5, color: "#DE3163" }}>{sendError}</div>
+        <div style={{ padding: "0 12px 6px", fontSize: 11.5, color: "#ef4444" }}>{sendError}</div>
       )}
       <div style={{ display: "flex", gap: 8, padding: 12, borderTop: "1px solid var(--border-line)" }}>
         <input
@@ -173,7 +173,7 @@ export default function DMThread({
           style={{ flex: 1, background: "transparent", border: "1px solid rgba(128,128,128,0.28)", borderRadius: 10, padding: "10px 13px", color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none" }}
         />
         <button onClick={send} disabled={keyMissing || !ready}
-          style={{ background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center", opacity: (keyMissing || !ready) ? 0.5 : 1 }}>
+          style={{ background: "#006241", color: "#0B0D11", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center", opacity: (keyMissing || !ready) ? 0.5 : 1 }}>
           <Send size={16} />
         </button>
       </div>

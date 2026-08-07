@@ -30,7 +30,7 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
       <Link href={requester.username ? `/p/${requester.username}` : "#"} style={{ flexShrink: 0 }}>
         <div style={{
           width: 42, height: 42, borderRadius: "50%", overflow: "hidden",
-          background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center",
+          background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center",
           fontSize: 15, fontWeight: 800, color: "#0B0D11",
         }}>
           {requester.avatar_url
@@ -44,7 +44,7 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
         {requester.username && <div style={{ fontSize: 12, opacity: 0.55 }}>@{requester.username}</div>}
       </div>
       <button disabled={pending} onClick={() => decide("accepted")}
-        style={{ background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
+        style={{ background: "#006241", color: "#0B0D11", border: "none", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
         aria-label="Accept">
         <Check size={15} />
       </button>
@@ -53,7 +53,7 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
         aria-label="Decline">
         <X size={15} />
       </button>
-      {error && <span style={{ fontSize: 11, color: "#DE3163", flexBasis: "100%" }}>{error}</span>}
+      {error && <span style={{ fontSize: 11, color: "#ef4444", flexBasis: "100%" }}>{error}</span>}
     </div>
   );
 }

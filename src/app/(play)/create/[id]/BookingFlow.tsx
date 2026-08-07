@@ -362,7 +362,7 @@ export default function BookingFlow({
             {priced.rule && (
               <div className="bk-sum-row">
                 <span className="lbl">{priced.saved > 0 ? "Offer applied" : "Peak rate"}</span>
-                <span className="val" style={{ color: priced.saved > 0 ? "#2E7D5B" : "#A78BFA" }}>
+                <span className="val" style={{ color: priced.saved > 0 ? "#006241" : "#5f756d" }}>
                   {priced.rule.label} · {offerLabel(priced.rule)}
                 </span>
               </div>
@@ -475,7 +475,7 @@ export default function BookingFlow({
           font-size: 12px; font-weight: 800;
           border: 1px solid var(--line); background: transparent;
         }
-        .bkw-steps li.on .dot { background: #A78BFA; border-color: #A78BFA; color: #14171E; }
+        .bkw-steps li.on .dot { background: #006241; border-color: #006241; color: #14171E; }
         .bkw-steps li.done .dot { background: #2E7D5B; border-color: #2E7D5B; color: #fff; }
         .bkw-steps .lbl { font-size: 12.5px; font-weight: 700; white-space: nowrap; }
         @media (max-width: 560px) { .bkw-steps .lbl { display: none; } }

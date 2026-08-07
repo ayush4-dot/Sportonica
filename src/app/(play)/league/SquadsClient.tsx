@@ -172,7 +172,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           <textarea className="sq-in" rows={2} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Casual futsal crew, all levels welcome." />
         </Field>
 
-        {err && <div style={{ color: "#DE3163", fontSize: 13, marginBottom: 12 }}>{err}</div>}
+        {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <button className="play-btn" style={{ width: "100%", justifyContent: "center" }} onClick={submit} disabled={pending}>
           {pending ? "Creating…" : "Create group"}
@@ -180,7 +180,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
         <style>{`
           .sq-in { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid rgba(128,128,128,0.28); border-radius: 10px; padding: 10px 12px; color: inherit; font-family: inherit; font-size: 14px; }
-          .sq-in:focus { outline: none; border-color: #A78BFA; }
+          .sq-in:focus { outline: none; border-color: #006241; }
           .sq-in option { background: #14171E; color: #F2EDE6; }
         `}</style>
       </div>

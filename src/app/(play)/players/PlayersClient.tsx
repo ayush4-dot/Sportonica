@@ -53,7 +53,7 @@ export default function PlayersClient({ initial }: { initial: PlayerListItem[] }
                 <Link href={p.username ? `/p/${p.username}` : "#"} style={{ flexShrink: 0 }}>
                   <div style={{
                     width: 44, height: 44, borderRadius: "50%", overflow: "hidden",
-                    background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center",
+                    background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center",
                     fontSize: 16, fontWeight: 800, color: "#0B0D11",
                   }}>
                     {p.avatar_url

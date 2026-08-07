@@ -168,9 +168,9 @@ export default function DiscoverFilters({
           font-family: inherit; cursor: pointer;
           transition: border-color 0.2s, background 0.2s, color 0.2s;
         }
-        .df-toggle:hover, .df-chip:hover { border-color: rgba(167,139,250,0.5); }
+        .df-toggle:hover, .df-chip:hover { border-color: rgba(0,98,65,0.5); }
         .df-toggle.on, .df-chip.on {
-          background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.45); color: #A78BFA;
+          background: rgba(0,98,65,0.14); border-color: rgba(0,98,65,0.45); color: #006241;
         }
         .df-count {
           margin-left: auto; font-family: 'JetBrains Mono', monospace;
@@ -181,12 +181,12 @@ export default function DiscoverFilters({
         .df-active { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 10px; }
         .df-pill {
           display: inline-flex; align-items: center; gap: 6px;
-          border: 1px solid rgba(222,49,99,0.45); background: rgba(222,49,99,0.14);
-          color: #DE3163; border-radius: 999px; padding: 6px 12px;
+          border: 1px solid rgba(0,98,65,0.45); background: rgba(0,98,65,0.14);
+          color: #006241; border-radius: 999px; padding: 6px 12px;
           font-size: 12px; font-weight: 700; font-family: inherit; cursor: pointer;
           transition: background .18s, border-color .18s;
         }
-        .df-pill:hover { background: rgba(222,49,99,0.24); border-color: rgba(222,49,99,0.7); }
+        .df-pill:hover { background: rgba(0,98,65,0.24); border-color: rgba(0,98,65,0.7); }
         .df-clear:hover { opacity: 1; }
         .df-panel {
           margin-top: 12px; padding: 16px; border-radius: 16px;

@@ -67,7 +67,7 @@ export default async function AnalyticsPage() {
             </div>
 
             {busiest.n > 0 && (
-              <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(167,139,250,0.2)" }}>
+              <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(0,98,65,0.2)" }}>
                 <div style={{ fontSize: 13.5 }}>
                   <span style={{ fontWeight: 600 }}>Your goldmine:</span>{" "}
                   <span className="adm-mono" style={{ color: "var(--a-accent)" }}>
@@ -94,7 +94,7 @@ export default async function AnalyticsPage() {
                         <div key={`${d}-${b}`} className="adm-heat-cell"
                           title={`${label} ${HOURS[b]}:00 — ${n} booking${n !== 1 ? "s" : ""}`}
                           style={{
-                            background: n === 0 ? "var(--a-panel-2)" : `rgba(167,139,250,${0.12 + intensity * 0.7})`,
+                            background: n === 0 ? "var(--a-panel-2)" : `rgba(0,98,65,${0.12 + intensity * 0.7})`,
                             display: "grid", placeItems: "center",
                             color: intensity > 0.5 ? "#0B0D11" : "var(--a-dim)",
                             fontWeight: 600,

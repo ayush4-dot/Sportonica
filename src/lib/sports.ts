@@ -37,7 +37,7 @@ export const SPORT_COLORS: Record<string, string> = Object.fromEntries(
 );
 
 export function sportColor(name: string | null | undefined): string {
-  return (name && SPORT_COLORS[name]) || "#DE3163";
+  return (name && SPORT_COLORS[name]) || "#006241";
 }
 
 export function sportSquad(name: string | null | undefined): number {

@@ -9,7 +9,7 @@
   --pf-dim:   rgba(242,237,230,0.62);
   --pf-faint: rgba(242,237,230,0.38);
   --pf-hair:  rgba(242,237,230,0.14);
-  --pf-accent:#A78BFA;
+  --pf-accent:#006241;
   min-height: 100vh;
   background: var(--pf-bg);
   color: var(--pf-text);
@@ -19,11 +19,11 @@
 @media (max-width: 760px) { .pf { padding-top: 34px; } }
 [data-theme="paper"] .pf {
   --pf-bg:    #F2EDE6;
-  --pf-text:  #14171E;
-  --pf-dim:   rgba(20,23,30,0.62);
-  --pf-faint: rgba(20,23,30,0.4);
-  --pf-hair:  rgba(20,23,30,0.16);
-  --pf-accent:#B8860B;
+  --pf-text:  #1e3932;
+  --pf-dim:   rgba(95,117,109,0.85);
+  --pf-faint: rgba(95,117,109,0.65);
+  --pf-hair:  rgba(30,57,50,0.16);
+  --pf-accent:#006241;
 }
 
 .pf-wrap { max-width: 880px; margin: 0 auto; }
@@ -48,7 +48,7 @@
   flex-shrink: 0; margin-top: 8px;
   display: grid; place-items: center;
   font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800;
-  background: linear-gradient(150deg, #DE3163, #A78BFA); color: #0B0D11;
+  background: linear-gradient(150deg, #006241, #1e3932); color: #ffffff;
 }
 @media (max-width: 640px) { .pf-avatar { width: 84px; height: 84px; font-size: 34px; } }
 

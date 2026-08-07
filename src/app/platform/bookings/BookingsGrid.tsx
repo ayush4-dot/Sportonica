@@ -20,15 +20,15 @@ const COLS: Column<BookingRow>[] = [
   { key: "price", label: "Amount", type: "money" },
   {
     key: "commission", label: "Our cut", type: "custom",
-    render: (r) => <span className="dt-mono" style={{ color: "#A78BFA" }}>Rs {Math.round((Number(r.price) || 0) * COMMISSION).toLocaleString("en-IN")}</span>,
+    render: (r) => <span className="dt-mono" style={{ color: "#006241" }}>Rs {Math.round((Number(r.price) || 0) * COMMISSION).toLocaleString("en-IN")}</span>,
   },
   {
     key: "status", label: "Status", type: "badge",
-    badgeColors: { confirmed: "#2E7D5B", booked: "#2E7D5B", cancelled: "#DE3163", no_show: "#DE3163", played: "#3b82f6" },
+    badgeColors: { confirmed: "#2E7D5B", booked: "#2E7D5B", cancelled: "#ef4444", no_show: "#ef4444", played: "#3b82f6" },
   },
   {
     key: "source", label: "Source", type: "badge",
-    badgeColors: { platform: "#3b82f6", walk_in: "#8A95A3", phone: "#a855f7" },
+    badgeColors: { platform: "#3b82f6", walk_in: "#8A95A3", phone: "#006241" },
   },
 ];
 

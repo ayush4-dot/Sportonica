@@ -106,13 +106,13 @@ export default function FriendRequestButton({
   return (
     <span style={{ display: "inline-flex", flexDirection: "column", gap: 5, alignItems: "flex-start" }}>
       {body}
-      {error && <span style={{ fontSize: 11.5, color: "#DE3163" }}>{error}</span>}
+      {error && <span style={{ fontSize: 11.5, color: "#ef4444" }}>{error}</span>}
       <style>{`
         .frb-btn {
           display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
           padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
           font-family: inherit; cursor: pointer; text-decoration: none;
-          background: #A78BFA; color: #0B0D11; border: 1px solid #A78BFA;
+          background: #006241; color: #0B0D11; border: 1px solid #006241;
           transition: transform .2s cubic-bezier(.22,1,.36,1), opacity .2s;
         }
         .frb-btn:hover { opacity: 0.88; }
@@ -122,7 +122,7 @@ export default function FriendRequestButton({
           background: transparent; color: inherit;
           border-color: var(--line, rgba(255,255,255,.14));
         }
-        .frb-btn.ghost:hover { border-color: #A78BFA; opacity: 1; }
+        .frb-btn.ghost:hover { border-color: #006241; opacity: 1; }
         .frb-spin { animation: frbspin 1s linear infinite; }
         @keyframes frbspin { to { transform: rotate(360deg); } }
       `}</style>

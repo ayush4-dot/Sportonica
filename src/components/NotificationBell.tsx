@@ -64,7 +64,7 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
           border-color: rgba(242,237,230,.14); backdrop-filter: none;
         }
         [data-theme="paper"] .notif-wrap.inline .notif-btn { border-color: rgba(20,23,30,.14); }
-        .notif-wrap.inline .notif-btn:hover { border-color: rgba(167,139,250,.55); }
+        .notif-wrap.inline .notif-btn:hover { border-color: rgba(0,98,65,.55); }
         .notif-wrap.inline .notif-panel { top: 52px; }
         @media (max-width: 560px) {
           .notif-wrap.inline .notif-btn { width: 38px; height: 38px; }
@@ -85,7 +85,7 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
         }
         .notif-badge {
           position: absolute; top: -3px; right: -3px; min-width: 18px; height: 18px;
-          padding: 0 5px; border-radius: 999px; background: #DE3163; color: #fff;
+          padding: 0 5px; border-radius: 999px; background: #006241; color: #fff;
           font-size: 10.5px; font-weight: 800; display: flex; align-items: center;
           justify-content: center; border: 2px solid var(--ink, #0B0D11);
         }
@@ -115,12 +115,12 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
         .notif-ic {
           width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
           display: flex; align-items: center; justify-content: center;
-          background: rgba(222,49,99,0.14); color: #DE3163;
+          background: rgba(0,98,65,0.14); color: #006241;
         }
         .notif-title { font-size: 13.5px; font-weight: 600; line-height: 1.35; }
         .notif-body { font-size: 12px; opacity: 0.6; margin-top: 2px; line-height: 1.4; }
         .notif-time { font-size: 11px; opacity: 0.45; margin-top: 3px; }
-        .notif-dot { width: 7px; height: 7px; border-radius: 999px; background: #DE3163; flex-shrink: 0; margin-top: 6px; }
+        .notif-dot { width: 7px; height: 7px; border-radius: 999px; background: #006241; flex-shrink: 0; margin-top: 6px; }
         .notif-empty { padding: 40px 20px; text-align: center; font-size: 13px; opacity: 0.5; }
         @media (max-width: 780px) {
           .notif-wrap { top: calc(12px + env(safe-area-inset-top,0px)); right: calc(12px + env(safe-area-inset-right,0px)); }

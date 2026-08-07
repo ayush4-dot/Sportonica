@@ -72,7 +72,7 @@ export default function NepalMap({
   src = "/nepal-provinces.geojson",
   counts = {},
   points = [],
-  accent = "#DE3163",
+  accent = "#006241",
   height = 420,
   onProvinceClick,
 }: Props) {

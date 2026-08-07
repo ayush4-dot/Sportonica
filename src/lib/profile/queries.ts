@@ -93,10 +93,10 @@ export interface Badge { key: string; label: string; note: string; color: string
 export function computeBadges(stats: PlayerStats, sports: SportCount[]): Badge[] {
   const out: Badge[] = [];
   if (stats.games_played >= 1)  out.push({ key: "first",   label: "First game",   note: "Played their first match", color: "#2E7D5B" });
-  if (stats.games_played >= 10) out.push({ key: "ten",     label: "Ten games",    note: "10 games and counting",    color: "#A78BFA" });
-  if (stats.games_played >= 50) out.push({ key: "fifty",   label: "Fifty club",   note: "50 games played",          color: "#DE3163" });
+  if (stats.games_played >= 10) out.push({ key: "ten",     label: "Ten games",    note: "10 games and counting",    color: "#006241" });
+  if (stats.games_played >= 50) out.push({ key: "fifty",   label: "Fifty club",   note: "50 games played",          color: "#006241" });
   if (stats.games_hosted >= 1)  out.push({ key: "host",    label: "Host",         note: "Organised a game",         color: "#f97316" });
-  if (stats.games_hosted >= 5)  out.push({ key: "host5",   label: "Ringleader",   note: "Hosted 5+ games",          color: "#a855f7" });
+  if (stats.games_hosted >= 5)  out.push({ key: "host5",   label: "Ringleader",   note: "Hosted 5+ games",          color: "#006241" });
   if (sports.length >= 3)       out.push({ key: "allrnd",  label: "All-rounder",  note: "Plays 3+ sports",          color: "#3b82f6" });
   if (stats.reliability !== null && stats.reliability >= 90 && stats.games_played >= 5)
                                 out.push({ key: "solid",   label: "Rock solid",   note: "90%+ show-up rate",        color: "#22c55e" });
@@ -106,9 +106,9 @@ export function computeBadges(stats: PlayerStats, sports: SportCount[]): Badge[]
 export function trustLabel(score: number): { label: string; color: string } {
   if (score >= 85) return { label: "Rock solid", color: "#22c55e" };
   if (score >= 65) return { label: "Reliable",   color: "#2E7D5B" };
-  if (score >= 45) return { label: "Building trust", color: "#A78BFA" };
+  if (score >= 45) return { label: "Building trust", color: "#006241" };
   if (score >= 25) return { label: "Shaky",      color: "#f97316" };
-  return { label: "Unreliable", color: "#DE3163" };
+  return { label: "Unreliable", color: "#006241" };
 }
 
 // ── Anonymous variants for the OG image route ───────────────────

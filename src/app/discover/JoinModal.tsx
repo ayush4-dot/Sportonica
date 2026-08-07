@@ -61,7 +61,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             <p style={{ fontSize: 14, color: "rgba(242,237,230,0.75)", margin: "0 0 20px", lineHeight: 1.5 }}>
               You&apos;ve joined {event.title}. See you on the pitch! Your spot is confirmed.
             </p>
-            <button onClick={onClose} style={{ width: "100%", background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
+            <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#0B0D11", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
           </div>
         ) : (
           <>
@@ -72,34 +72,34 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${event.venue_lat},${event.venue_lng}`}
                   target="_blank" rel="noopener noreferrer"
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#A78BFA", textDecoration: "none", marginTop: 6, fontWeight: 600 }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#006241", textDecoration: "none", marginTop: 6, fontWeight: 600 }}
                 >
                   <MapPin size={12} /> Open in Google Maps →
                 </a>
               )}
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(242,237,230,0.1)" }}>
                 <span style={{ color: "rgba(242,237,230,0.6)" }}>Your share</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#A78BFA" }}>Rs {Number(event.fee) || 0}</span>
+                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#006241" }}>Rs {Number(event.fee) || 0}</span>
               </div>
             </div>
 
             <div style={{ marginBottom: 8, fontSize: 12.5, color: "rgba(242,237,230,0.6)" }}>
               <Wallet size={13} style={{ verticalAlign: -2, marginRight: 5 }} />Pay with
-              <span style={{ marginLeft: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#A78BFA", background: "rgba(167,139,250,0.1)", border: "1px solid rgba(167,139,250,0.3)", padding: "3px 8px", borderRadius: 6 }}>demo</span>
+              <span style={{ marginLeft: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#006241", background: "rgba(0,98,65,0.1)", border: "1px solid rgba(0,98,65,0.3)", padding: "3px 8px", borderRadius: 6 }}>demo</span>
             </div>
             <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
               {(["khalti", "esewa"] as const).map((m) => (
                 <button key={m} onClick={() => setPay(m)}
-                  style={{ flex: 1, padding: 12, borderRadius: 11, border: `1px solid ${pay === m ? "#A78BFA" : "rgba(242,237,230,0.15)"}`, background: pay === m ? "rgba(167,139,250,0.1)" : "#0B0D11", color: "#F2EDE6", cursor: "pointer", fontWeight: 700, fontSize: 13, textTransform: "capitalize" }}>
+                  style={{ flex: 1, padding: 12, borderRadius: 11, border: `1px solid ${pay === m ? "#006241" : "rgba(242,237,230,0.15)"}`, background: pay === m ? "rgba(0,98,65,0.1)" : "#0B0D11", color: "#F2EDE6", cursor: "pointer", fontWeight: 700, fontSize: 13, textTransform: "capitalize" }}>
                   {m}
                 </button>
               ))}
             </div>
 
-            {err && <div style={{ color: "#DE3163", fontSize: 13, marginBottom: 12 }}>{err}</div>}
+            {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
             <button onClick={confirm} disabled={pending || event.slots_remaining === 0}
-              style={{ width: "100%", background: "#A78BFA", color: "#0B0D11", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pending || event.slots_remaining === 0 ? 0.6 : 1 }}>
+              style={{ width: "100%", background: "#006241", color: "#0B0D11", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pending || event.slots_remaining === 0 ? 0.6 : 1 }}>
               {pending ? "Joining…" : event.slots_remaining === 0 ? "Game full" : `Pay Rs ${Number(event.fee) || 0} & join`}
             </button>
             <p style={{ fontSize: 11.5, textAlign: "center", color: "rgba(242,237,230,0.45)", marginTop: 10, marginBottom: 0 }}>

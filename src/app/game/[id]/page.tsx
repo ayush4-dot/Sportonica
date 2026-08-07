@@ -40,7 +40,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
   const { data: { user } } = await sb.auth.getUser();
   const alreadyIn = players.some((p) => p.user_id === user?.id);
 
-  const color = game.sport_color ?? SPORT_COLOR[game.sport] ?? "#DE3163";
+  const color = game.sport_color ?? SPORT_COLOR[game.sport] ?? "#006241";
   const start = new Date(game.event_date);
   const end = new Date(start.getTime() + (game.duration_mins ?? 60) * 60000);
   const fmt = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM });
@@ -142,7 +142,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
                 <h2 className="gm-sec-t"><span className="gm-num">03</span> More {game.sport}</h2>
                 <div className="gm-rail">
                   {similar.map((s) => {
-                    const sc = s.sport_color ?? SPORT_COLOR[s.sport] ?? "#DE3163";
+                    const sc = s.sport_color ?? SPORT_COLOR[s.sport] ?? "#006241";
                     return (
                       <Link key={s.id} href={`/game/${s.id}`} className="gm-mini">
                         <div className="gm-mini-t">{s.title}</div>
@@ -218,7 +218,7 @@ function Avatar({ name, url, size }: { name: string; url: string | null; size: n
   return (
     <div style={{
       width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0,
-      background: "linear-gradient(150deg,#DE3163,#A78BFA)", display: "grid", placeItems: "center",
+      background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center",
       fontWeight: 800, color: "#0B0D11", fontSize: size * 0.4,
     }}>
       {/* eslint-disable-next-line @next/next/no-img-element */}

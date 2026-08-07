@@ -48,7 +48,7 @@ export default function PricingManager({
   return (
     <>
       {/* Auto-suggest teaser (blueprint 6.3) */}
-      <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(200,243,91,0.2)" }}>
+      <div className="adm-card" style={{ marginBottom: 18, borderColor: "rgba(223,249,186,0.2)" }}>
         <div className="adm-flex" style={{ alignItems: "flex-start", gap: 12 }}>
           <Sparkles size={18} style={{ color: "var(--a-lime)", marginTop: 2 }} />
           <div>

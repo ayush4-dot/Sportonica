@@ -11,9 +11,9 @@
   --dim:     rgba(242,237,230,0.62);
   --faint:   rgba(242,237,230,0.4);
   --line:    rgba(242,237,230,0.1);
-  --pink:    #DE3163;
-  --sodium:  #A78BFA;
-  --turf:    #2E7D5B;
+  --pink:    #006241;
+  --sodium:  #006241;
+  --turf:    #1e3932;
 
   min-height: 100vh;
   background: var(--ink);
@@ -182,9 +182,9 @@
   background: var(--ink); color: var(--dim); cursor: pointer; font-size: 14px; font-weight: 600;
   transition: all 0.3s cubic-bezier(0.22,1,0.36,1); font-family: inherit;
 }
-.bk-chip.on { background: rgba(167,139,250,0.14); color: var(--sodium); border-color: rgba(167,139,250,0.4); }
+.bk-chip.on { background: rgba(0,98,65,0.14); color: var(--sodium); border-color: rgba(0,98,65,0.4); }
 .bk-chip small { display: block; font-size: 11px; font-weight: 400; color: var(--faint); margin-top: 2px; }
-.bk-chip.on small { color: rgba(167,139,250,0.7); }
+.bk-chip.on small { color: rgba(0,98,65,0.7); }
 
 .bk-times { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px,1fr)); gap: 9px; }
 .bk-time {
@@ -229,12 +229,12 @@
   background: var(--ink); cursor: pointer; font-family: inherit; font-size: 13px; font-weight: 700;
   color: var(--paper); transition: all 0.25s ease;
 }
-.bk-pay.on { border-color: var(--sodium); background: rgba(167,139,250,0.1); }
+.bk-pay.on { border-color: var(--sodium); background: rgba(0,98,65,0.1); }
 
 .bk-mock-tag {
   display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px;
   letter-spacing: 0.08em; text-transform: uppercase; color: var(--sodium);
-  background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.3);
+  background: rgba(0,98,65,0.1); border: 1px solid rgba(0,98,65,0.3);
   padding: 3px 8px; border-radius: 6px; margin-left: 8px;
 }
 
@@ -253,10 +253,10 @@
   --ink:   #F2EDE6;
   --ink-2: #FFFFFF;
   --ink-3: #E7E0D3;
-  --paper: #14171E;
-  --dim:   rgba(20,23,30,0.62);
-  --faint: rgba(20,23,30,0.4);
-  --line:  rgba(20,23,30,0.12);
+  --paper: #1e3932;
+  --dim:   rgba(95,117,109,0.85);
+  --faint: rgba(95,117,109,0.65);
+  --line:  rgba(30,57,50,0.14);
 }
 
 /* Host's note to the squad — what to bring, house rules. */
@@ -266,7 +266,7 @@
   border-radius: 10px; padding: 10px 12px; color: inherit;
   font-family: inherit; font-size: 13.5px; line-height: 1.5; resize: vertical;
 }
-.bk-note:focus { outline: none; border-color: #A78BFA; }
+.bk-note:focus { outline: none; border-color: #006241; }
 .bk-note::placeholder { color: var(--faint); }
 
 /* ── Venue hero: words sit under the photo, never on top of it ── */

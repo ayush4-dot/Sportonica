@@ -207,7 +207,7 @@ export default function AppHeader() {
       <style>{`
         .ah {
           position:sticky; top:0; z-index:400;
-          background:radial-gradient(circle at top right, rgba(167,139,250,.14) 0%, rgba(11,13,17,.72) 60%);
+          background:radial-gradient(circle at top right, rgba(0,98,65,.14) 0%, rgba(11,13,17,.72) 60%);
           color:#F2EDE6;
           backdrop-filter:blur(20px) saturate(160%);
           -webkit-backdrop-filter:blur(20px) saturate(160%);
@@ -219,7 +219,7 @@ export default function AppHeader() {
           isolation:isolate;
         }
         [data-theme="paper"] .ah {
-          background:radial-gradient(circle at top right, rgba(167,139,250,.1) 0%, rgba(242,237,230,.82) 60%);
+          background:radial-gradient(circle at top right, rgba(0,98,65,.1) 0%, rgba(242,237,230,.82) 60%);
           color:#14171E;
           border-bottom-color:rgba(20,23,30,.08);
           box-shadow:0 24px 40px -28px rgba(20,23,30,.15);
@@ -234,9 +234,9 @@ export default function AppHeader() {
         .ah-av {
           width:42px; height:42px; border-radius:999px; flex-shrink:0; overflow:hidden;
           display:flex; align-items:center; justify-content:center; text-decoration:none;
-          background:linear-gradient(140deg,#A78BFA,#7C3AED); color:#fff;
+          background:linear-gradient(140deg,#006241,#004a31); color:#fff;
           font-weight:800; font-size:16px;
-          box-shadow:0 6px 18px -8px rgba(167,139,250,.9);
+          box-shadow:0 6px 18px -8px rgba(0,98,65,.9);
         }
         .ah-av img { width:100%; height:100%; object-fit:cover; }
         .ah-txt { min-width:0; }
@@ -262,8 +262,8 @@ export default function AppHeader() {
           transition:border-color .2s, background .2s, color .2s, transform .15s;
         }
         [data-theme="paper"] .ah-btn { border-color:rgba(20,23,30,.14); }
-        .ah-btn:hover { transform:translateY(-1px); border-color:rgba(167,139,250,.55); }
-        .ah-btn.on { border-color:#A78BFA; color:#A78BFA; background:rgba(167,139,250,.12); }
+        .ah-btn:hover { transform:translateY(-1px); border-color:rgba(0,98,65,.55); }
+        .ah-btn.on { border-color:#006241; color:#006241; background:rgba(0,98,65,.12); }
 
         .ah-menu {
           position:absolute; top:calc(100% + 10px); left:0; z-index:60;
@@ -275,8 +275,8 @@ export default function AppHeader() {
         .ah-detect {
           width:100%; display:flex; align-items:center; gap:8px; cursor:pointer;
           padding:10px 12px; border-radius:11px; font-size:13px; font-weight:700;
-          border:1px dashed rgba(167,139,250,.45); background:rgba(167,139,250,.1);
-          color:#A78BFA; font-family:inherit; margin-bottom:6px;
+          border:1px dashed rgba(0,98,65,.45); background:rgba(0,98,65,.1);
+          color:#006241; font-family:inherit; margin-bottom:6px;
         }
         .ah-detect.big { justify-content:center; padding:13px; font-size:14px; margin:0 0 18px; }
         .ah-find {
@@ -294,7 +294,7 @@ export default function AppHeader() {
         .ah-find input::placeholder { opacity:.4; }
         .ah-back {
           width:100%; text-align:left; padding:7px 12px; margin-bottom:4px;
-          border:none; background:none; color:#A78BFA; cursor:pointer;
+          border:none; background:none; color:#006241; cursor:pointer;
           font-family:inherit; font-size:12px; font-weight:700;
         }
         .ah-none { padding:16px 12px; text-align:center; font-size:12.5px; opacity:.45; margin:0; }
@@ -320,7 +320,7 @@ export default function AppHeader() {
           background:#12151b; border:1px solid rgba(242,237,230,.12);
         }
         [data-theme="paper"] .ah-sheet { background:#F8F5F0; border-color:rgba(20,23,30,.12); }
-        .ah-namaste { font-size:22px; color:#A78BFA; margin:0 0 8px; font-weight:600; }
+        .ah-namaste { font-size:22px; color:#006241; margin:0 0 8px; font-weight:600; }
         .ah-sheet h2 {
           font-family:'Bricolage Grotesque',sans-serif; font-size:27px; font-weight:800;
           letter-spacing:-1px; margin:0 0 8px;
@@ -335,7 +335,7 @@ export default function AppHeader() {
         }
         [data-theme="paper"] .ah-grid button { border-color:rgba(20,23,30,.12); }
         .ah-grid button:hover {
-          border-color:#A78BFA; background:rgba(167,139,250,.1); transform:translateY(-2px);
+          border-color:#006241; background:rgba(0,98,65,.1); transform:translateY(-2px);
         }
         .ah-grid b { font-size:13px; font-weight:700; }
         .ah-grid small { font-size:10.5px; opacity:.5; }

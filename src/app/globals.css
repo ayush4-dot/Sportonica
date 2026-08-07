@@ -4,17 +4,31 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
+  /* ── KhelamNa green system — the single source of truth. Every other
+     color token on this page (and most component-local ones) resolves
+     back to one of these five. ── */
+  --color-primary:       #006241;
+  --color-primary-light: #3d8a68;
+  --color-primary-dark:  #004a31;
+  --color-dark:          #1e3932;
+  --color-secondary:     #5f756d;
+  --color-light:         #d4e9e2;
+  --color-highlight:     #dff9ba;
+  --color-white:         #ffffff;
+
   --ink:      #0B0D11;
   --inkSoft:  #13161C;
   --inkMid:   #1C2029;
   --paper:    #F2EDE6;
   --chalk:    #F2EDE6;
-  --pink:     #DE3163;
-  --flood:    #A78BFA;
-  --lime:     #C8F35B;
-  --sodium:   #A78BFA;
-  --turf:     #2E7D5B;
-  --slate:    #8A95A3;
+  /* Legacy accent names — kept so the many existing var(--x) call sites
+     across the app repaint from these five tokens without a rename. */
+  --pink:     var(--color-primary);
+  --flood:    var(--color-primary);
+  --lime:     var(--color-highlight);
+  --sodium:   var(--color-primary);
+  --turf:     var(--color-primary-dark);
+  --slate:    var(--color-secondary);
   --bg: var(--ink);
   --muted:    rgba(255,255,255,0.62);
   --faint:    rgba(255,255,255,0.42);
@@ -117,16 +131,16 @@ body {
   --ink:      #F2EDE6;
   --inkSoft:  #E9E2D4;
   --inkMid:   #DED5C4;
-  --paper:    #14171E;
-  --chalk:    #14171E;
+  --paper:    var(--color-dark);
+  --chalk:    var(--color-dark);
   --bg:       #F2EDE6;
-  --muted:    rgba(20,23,30,0.68);
-  --faint:    rgba(20,23,30,0.5);
-  --border-line: rgba(20,23,30,0.12);
+  --muted:    rgba(95,117,109,0.78);
+  --faint:    rgba(95,117,109,0.6);
+  --border-line: rgba(30,57,50,0.14);
 }
 [data-theme="paper"] body {
   background: #F2EDE6;
-  color: #14171E;
+  color: var(--color-dark);
 }
 
 /* Floating mobile dock clearance — keep page content above the bottom bar. */

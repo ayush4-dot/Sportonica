@@ -70,7 +70,7 @@ export default async function VenueDetail({ params }: { params: Promise<{ id: st
         />
 
         {venue.verification_status === "unverified" && (
-          <div className="adm-card" style={{ marginTop: 20, borderColor: "rgba(167,139,250,0.25)" }}>
+          <div className="adm-card" style={{ marginTop: 20, borderColor: "rgba(0,98,65,0.25)" }}>
             <div className="adm-flex" style={{ alignItems: "flex-start", gap: 14 }}>
               <ShieldCheck size={20} style={{ color: "var(--a-accent)", marginTop: 2 }} />
               <div>

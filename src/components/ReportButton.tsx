@@ -74,7 +74,7 @@ export default function ReportButton({
                   style={{ width: "100%", boxSizing: "border-box", background: "transparent", border: "1px solid rgba(128,128,128,0.3)", borderRadius: 9, padding: "10px 12px", color: "inherit", fontFamily: "inherit", fontSize: 14, marginBottom: 16 }} />
 
                 <button onClick={submit} disabled={pending}
-                  style={{ width: "100%", background: "#DE3163", color: "#fff", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                  style={{ width: "100%", background: "#006241", color: "#fff", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
                   {pending ? "Sending…" : "Send report"}
                 </button>
               </>

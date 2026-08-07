@@ -43,7 +43,7 @@ export default async function VenueBookingPage({
                 <a
                   href={venue.maps_url ?? `https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
                   target="_blank" rel="noopener noreferrer"
-                  style={{ color: "#A78BFA", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}
+                  style={{ color: "#006241", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 5, fontWeight: 600 }}
                 >
                   <MapPin size={14} /> View location
                 </a>

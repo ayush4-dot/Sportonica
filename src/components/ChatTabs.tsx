@@ -39,7 +39,7 @@ export default function ChatTabs() {
           transition: color .18s, border-color .18s;
         }
         .chat-tab:hover { color: inherit; }
-        .chat-tab.on { color: #A78BFA; border-color: #A78BFA; }
+        .chat-tab.on { color: #006241; border-color: #006241; }
       `}</style>
     </div>
   );

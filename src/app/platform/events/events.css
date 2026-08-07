@@ -13,16 +13,16 @@
   font-family: inherit; font-size: 14px; width: 100%; box-sizing: border-box;
 }
 .ev-field input:focus, .ev-field select:focus, .ev-field textarea:focus {
-  outline: none; border-color: #A78BFA; box-shadow: 0 0 0 3px rgba(167,139,250,0.12);
+  outline: none; border-color: #006241; box-shadow: 0 0 0 3px rgba(0,98,65,0.12);
 }
 .ev-field select option { background: #14171E; color: #F2EDE6; }
 [data-theme="paper"] .ev-field select option { background: #fff; color: #14171E; }
 .ev-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 @media (max-width: 520px) { .ev-row { grid-template-columns: 1fr; } }
-.ev-err { color: #DE3163; font-size: 13px; margin-bottom: 14px; }
+.ev-err { color: #ef4444; font-size: 13px; margin-bottom: 14px; }
 .ev-btn {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;
-  background: #A78BFA; color: #0B0D11; border: none; border-radius: 11px;
+  background: #006241; color: #0B0D11; border: none; border-radius: 11px;
   padding: 13px 22px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit;
 }

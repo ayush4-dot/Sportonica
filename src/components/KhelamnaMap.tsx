@@ -103,7 +103,7 @@ export default function KhelamnaMap({
 
       // Add pins
       pins.forEach(pin => {
-        const color = pin.flash ? "#E85D24" : (pin.color ?? SPORT_COLORS[pin.sport ?? ""] ?? "#DE3163");
+        const color = pin.flash ? "#E85D24" : (pin.color ?? SPORT_COLORS[pin.sport ?? ""] ?? "#006241");
         const svgIcon = L.divIcon({
           className: "",
           html: `
@@ -150,7 +150,7 @@ export default function KhelamnaMap({
           } else {
             const pickIcon = L.divIcon({
               className: "",
-              html: `<div style="width:14px;height:14px;border-radius:50%;background:#DE3163;border:3px solid #fff;box-shadow:0 0 0 3px rgba(222,49,99,0.4);"></div>`,
+              html: `<div style="width:14px;height:14px;border-radius:50%;background:#006241;border:3px solid #fff;box-shadow:0 0 0 3px rgba(0,98,65,0.4);"></div>`,
               iconAnchor: [7, 7],
             });
             (map as unknown as { _pickMarker: import("leaflet").Marker })._pickMarker =
@@ -203,7 +203,7 @@ export default function KhelamnaMap({
           background: "rgba(11,13,17,0.85)", backdropFilter: "blur(10px)",
           border: "1px solid rgba(255,255,255,0.1)", borderRadius: "100px",
           padding: "6px 16px", fontSize: "12px", fontWeight: 600,
-          color: picked ? "#DE3163" : "#F2EDE6", fontFamily: "'Inter',sans-serif",
+          color: picked ? "#dff9ba" : "#F2EDE6", fontFamily: "'Inter',sans-serif",
           zIndex: 1000, pointerEvents: "none", whiteSpace: "nowrap" as const,
         }}>
           {picked

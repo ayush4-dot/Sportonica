@@ -22,16 +22,16 @@
 .mz-eyebrow {
   font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
   letter-spacing: 0.22em; text-transform: uppercase; margin-bottom: 14px;
-  color: #A78BFA;
+  color: #006241;
 }
-.mz.paper .mz-eyebrow { color: #DE3163; }
+.mz.paper .mz-eyebrow { color: #006241; }
 .mz-head h1 {
   font-family: 'Bricolage Grotesque', sans-serif;
   font-size: clamp(34px, 5.5vw, 58px); font-weight: 800;
   letter-spacing: -1.8px; line-height: 1.02; margin: 0;
 }
-.mz-head h1 em { font-style: normal; color: #A78BFA; }
-.mz.paper .mz-head h1 em { color: #DE3163; }
+.mz-head h1 em { font-style: normal; color: #006241; }
+.mz.paper .mz-head h1 em { color: #006241; }
 .mz-head p { max-width: 460px; font-size: 15.5px; line-height: 1.55; margin: 14px 0 0; opacity: 0.65; }
 
 /* ── Theme toggle ── */
@@ -99,7 +99,7 @@
 .mz-cell:hover .mz-img img, .mz-cell.open .mz-img img { transform: scale(1.07); }
 .mz-img-empty {
   position: absolute; inset: 0; display: grid; place-items: center; opacity: 0.35;
-  background: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(46,125,91,0.12));
+  background: linear-gradient(135deg, rgba(0,98,65,0.12), rgba(46,125,91,0.12));
 }
 
 /* ── Gradient overlay: revealed on hover ── */
@@ -117,7 +117,7 @@
   font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
   letter-spacing: 0.08em; text-transform: uppercase;
   padding: 6px 11px; border-radius: 8px;
-  background: rgba(167,139,250,0.92); color: #0B0D11;
+  background: rgba(0,98,65,0.92); color: #0B0D11;
   transform: translateY(0); opacity: 1;
   transition: transform 0.5s var(--mz-ease) 0.05s, opacity 0.4s ease 0.05s;
 }
@@ -156,7 +156,7 @@
 /* animated divider line */
 .mz-content .dv {
   height: 2px; width: 44px; margin: 10px 0;
-  background: #A78BFA; border-radius: 2px;
+  background: #006241; border-radius: 2px;
   transform: translateY(16px) scaleX(0); transform-origin: left;
 }
 
@@ -187,9 +187,9 @@
 .mz-cell.txt .small { font-size: 13px; opacity: 0.6; line-height: 1.5; }
 .mz-cell.txt .num {
   font-family: 'JetBrains Mono', monospace; font-size: 38px; font-weight: 700;
-  color: #A78BFA; letter-spacing: -2px;
+  color: #006241; letter-spacing: -2px;
 }
-.mz.paper .mz-cell.txt .num { color: #DE3163; }
+.mz.paper .mz-cell.txt .num { color: #006241; }
 
 /* entrance stagger for the whole grid */
 .mz-cell { opacity: 0; animation: mzin 0.7s var(--mz-ease) forwards; }
@@ -372,20 +372,20 @@
 
 /* ── skins ── */
 .fcard[data-skin="indigo"] {
-  --panel: #1B1B5C; --fg: #FFFFFF; --dim: rgba(255,255,255,.62);
-  --chip: rgba(255,255,255,.13); --accent: #A9B0FF;
+  --panel: #16241f; --fg: #FFFFFF; --dim: rgba(255,255,255,.62);
+  --chip: rgba(255,255,255,.13); --accent: #5ab896;
   background: var(--panel);
-  box-shadow: 0 20px 44px -20px rgba(27,27,92,.85);
+  box-shadow: 0 20px 44px -20px rgba(22,36,31,.85);
 }
 .fcard[data-skin="chalk"] {
-  --panel: #E9EBEF; --fg: #14171E; --dim: rgba(20,23,30,.6);
-  --chip: rgba(20,23,30,.07); --accent: #B4442F;
+  --panel: #E9EBEF; --fg: #1e3932; --dim: rgba(30,57,50,.6);
+  --chip: rgba(30,57,50,.07); --accent: #006241;
   background: var(--panel);
   box-shadow: 0 20px 44px -22px rgba(0,0,0,.45);
 }
 .fcard[data-skin="ink"] {
   --panel: #0F1216; --fg: #FFFFFF; --dim: rgba(255,255,255,.6);
-  --chip: rgba(255,255,255,.1); --accent: #A78BFA;
+  --chip: rgba(255,255,255,.1); --accent: #dff9ba;
   background: var(--panel);
   box-shadow: 0 20px 44px -20px rgba(0,0,0,.85);
 }
@@ -393,18 +393,21 @@
 
 /* Paper theme: the mosaic still cycles three tones, but all of them
    stay light — the dark "indigo"/"ink" skins otherwise read as
-   dead black cutouts against the paper background. */
+   dead black cutouts against the paper background. Same dark-green
+   text and brand-green accent across all three; the panel tint is
+   the only thing that varies, so a row reads as one family of cards
+   instead of three unrelated colors. */
 .mz.paper .fcard[data-skin="indigo"] {
-  --panel: #ECE9FA; --fg: #241C5E; --dim: rgba(36,28,94,.62);
-  --chip: rgba(36,28,94,.08); --accent: #6D28D9;
+  --panel: #F3F0E6; --fg: #1e3932; --dim: rgba(30,57,50,.62);
+  --chip: rgba(30,57,50,.08); --accent: #006241;
   background: var(--panel);
-  box-shadow: 0 20px 44px -24px rgba(36,28,94,.3);
+  box-shadow: 0 20px 44px -24px rgba(30,57,50,.2);
 }
 .mz.paper .fcard[data-skin="ink"] {
-  --panel: #FBEAEF; --fg: #3A1220; --dim: rgba(58,18,32,.6);
-  --chip: rgba(58,18,32,.07); --accent: #DE3163;
+  --panel: #EAF3EE; --fg: #1e3932; --dim: rgba(30,57,50,.6);
+  --chip: rgba(30,57,50,.07); --accent: #006241;
   background: var(--panel);
-  box-shadow: 0 20px 44px -24px rgba(58,18,32,.22);
+  box-shadow: 0 20px 44px -24px rgba(30,57,50,.18);
 }
 .mz.paper .fcard:hover { box-shadow: 0 32px 60px -24px rgba(20,23,30,.25); }
 

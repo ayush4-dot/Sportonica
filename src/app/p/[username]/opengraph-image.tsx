@@ -69,7 +69,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
             <div
               style={{
                 width: 140, height: 140, borderRadius: 24, marginRight: 32,
-                background: "#DE3163", display: "flex",
+                background: "#006241", display: "flex",
                 alignItems: "center", justifyContent: "center",
                 fontSize: 68, fontWeight: 700, color: "#0B0D11",
               }}
@@ -89,7 +89,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
 
         {/* stats */}
         <div style={{ display: "flex" }}>
-          <Stat label="GAMES PLAYED" value={String(stats.games_played)} color="#A78BFA" />
+          <Stat label="GAMES PLAYED" value={String(stats.games_played)} color="#006241" />
           <Stat label="SHOW-UP RATE" value={stats.reliability !== null ? `${stats.reliability}%` : "—"} color={trust.color} />
           <Stat label="HOSTED" value={String(stats.games_hosted)} color="#2E7D5B" />
           <Stat label="TRUST" value={String(profile.trust_score ?? 50)} color={trust.color} />
@@ -100,7 +100,7 @@ export default async function OG({ params }: { params: Promise<{ username: strin
           <div style={{ display: "flex", alignItems: "center" }}>
             <div
               style={{
-                width: 44, height: 44, borderRadius: 10, background: "#A78BFA", color: "#0B0D11",
+                width: 44, height: 44, borderRadius: 10, background: "#006241", color: "#0B0D11",
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 28, fontWeight: 700, marginRight: 14,
               }}

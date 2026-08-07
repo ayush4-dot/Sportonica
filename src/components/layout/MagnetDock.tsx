@@ -93,10 +93,10 @@ export default function MagnetDock() {
         }
         .dock-item:hover { color: var(--chalk, #F2EDE6); background: rgba(255,255,255,0.09); }
         .dock-item.active {
-          color: #A78BFA; background: rgba(167,139,250,0.14);
-          border-color: rgba(167,139,250,0.3);
+          color: #006241; background: rgba(0,98,65,0.14);
+          border-color: rgba(0,98,65,0.3);
         }
-        .dock-item.account { background: rgba(222,49,99,0.16); border-color: rgba(222,49,99,0.3); color: #F2EDE6; }
+        .dock-item.account { background: rgba(0,98,65,0.16); border-color: rgba(0,98,65,0.3); color: #F2EDE6; }
         /* label that slides in from the right-hand side */
         .dock-label {
           position: absolute; right: calc(100% + 14px); top: 50%;
@@ -115,7 +115,7 @@ export default function MagnetDock() {
           border: 5px solid transparent; border-left-color: var(--ink, #0B0D11);
         }
         .dock-avatar {
-          width: 26px; height: 26px; border-radius: 50%; background: #DE3163;
+          width: 26px; height: 26px; border-radius: 50%; background: #006241;
           display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff;
         }
         .dock-menu {
@@ -143,7 +143,7 @@ export default function MagnetDock() {
         }
         [data-theme="paper"] .dock-item { background: rgba(20,23,30,0.05); color: rgba(20,23,30,0.7); }
         [data-theme="paper"] .dock-item:hover { background: rgba(20,23,30,0.1); color: #14171E; }
-        [data-theme="paper"] .dock-item.active { color: #8a6500; background: rgba(167,139,250,0.25); border-color: rgba(167,139,250,0.5); }
+        [data-theme="paper"] .dock-item.active { color: #006241; background: rgba(0,98,65,0.16); border-color: rgba(0,98,65,0.4); }
         [data-theme="paper"] .dock-label { background: #14171E; color: #F2EDE6; border-color: rgba(20,23,30,0.2); }
         [data-theme="paper"] .dock-label::after { border-left-color: #14171E; }
         [data-theme="paper"] .dock-menu { background: #FFFFFF; border-color: rgba(20,23,30,0.12); box-shadow: 0 20px 50px -12px rgba(20,23,30,0.25); }

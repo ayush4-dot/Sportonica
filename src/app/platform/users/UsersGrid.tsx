@@ -21,7 +21,7 @@ const COLS: Column<UserRow>[] = [
   { key: "city", label: "City" },
   {
     key: "role", label: "Role", type: "badge",
-    badgeColors: { player: "#8A95A3", venue_owner: "#2E7D5B", super_admin: "#A78BFA" },
+    badgeColors: { player: "#8A95A3", venue_owner: "#2E7D5B", super_admin: "#006241" },
   },
   { key: "trust_score", label: "Trust", type: "custom", render: (u) => <span className="dt-mono">{u.trust_score ?? 50}</span> },
 ];

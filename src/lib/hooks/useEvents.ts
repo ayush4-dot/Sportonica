@@ -93,7 +93,7 @@ export function useEvents(opts: UseEventsOptions = {}) {
         // Derive sport colour client-side if not stored
         const rows = (data ?? []).map((e: EventRow) => ({
           ...e,
-          sport_color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#DE3163",
+          sport_color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#006241",
           event_type: e.event_type ?? "pickup",
           organizer_name: e.organizer_name ?? null,
           confirmed_count: Number(e.confirmed_count ?? 0),

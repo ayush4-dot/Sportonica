@@ -9,7 +9,7 @@ export default function OfflinePage() {
     }}>
       <div style={{ maxWidth: 380 }}>
         <div style={{
-          width: 62, height: 62, borderRadius: 16, background: "#A78BFA", color: "#0B0D11",
+          width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#0B0D11",
           display: "grid", placeItems: "center", margin: "0 auto 22px",
           fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 34, fontWeight: 800,
         }}>K</div>
@@ -26,7 +26,7 @@ export default function OfflinePage() {
         </p>
 
         <a href="/discover" style={{
-          display: "inline-block", background: "#A78BFA", color: "#0B0D11",
+          display: "inline-block", background: "#006241", color: "#ffffff",
           padding: "13px 26px", borderRadius: 12, fontWeight: 700,
           fontSize: 14.5, textDecoration: "none",
         }}>

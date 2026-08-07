@@ -64,7 +64,7 @@ export async function createOfficialEvent(input: {
     description: input.description ?? null,
     status: "open",
     flash: false,
-    sport_color: SPORT_COLOR[input.sport] ?? "#DE3163",
+    sport_color: SPORT_COLOR[input.sport] ?? "#006241",
     venue_lat: lat,
     venue_lng: lng,
     skill_level: input.skill_level ?? "any",

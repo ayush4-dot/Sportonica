@@ -59,9 +59,9 @@ export function EventsRail({ events }: { events: RailEvent[] }) {
         return (
           <Link key={e.id} href={`/game/${e.id}`} className="rc rc-event" style={{ ["--rc-accent" as string]: c }}>
             <div className="rc-badge" style={{
-              color: platform ? "#A78BFA" : "#2E7D5B",
-              borderColor: platform ? "rgba(167,139,250,.4)" : "rgba(46,125,91,.4)",
-              background: platform ? "rgba(167,139,250,.12)" : "rgba(46,125,91,.12)",
+              color: platform ? "#006241" : "#2E7D5B",
+              borderColor: platform ? "rgba(0,98,65,.4)" : "rgba(46,125,91,.4)",
+              background: platform ? "rgba(0,98,65,.12)" : "rgba(46,125,91,.12)",
             }}>
               {platform ? <><Star size={10} /> Khelam Na</> : <><Check size={10} /> Official</>}
             </div>
@@ -103,7 +103,7 @@ export function VenuesRail({ venues }: { venues: RailVenue[] }) {
             <div className="rc-meta">{(v.sports ?? []).slice(0, 3).join(" · ") || v.venue_type}</div>
             <div className="rc-foot">
               <span>{v.address ?? "Kathmandu"}</span>
-              {v.from_price && <span style={{ color: "#A78BFA" }}>from Rs {v.from_price}/hr</span>}
+              {v.from_price && <span style={{ color: "#006241" }}>from Rs {v.from_price}/hr</span>}
             </div>
           </Link>
         );

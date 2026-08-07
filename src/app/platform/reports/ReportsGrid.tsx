@@ -22,13 +22,13 @@ const COLS: Column<ReportRow>[] = [
   { key: "reporter", label: "Reported by" },
   {
     key: "target_type", label: "Type", type: "badge",
-    badgeColors: { message: "#3b82f6", squad: "#a855f7", user: "#f97316" },
+    badgeColors: { message: "#3b82f6", squad: "#006241", user: "#f97316" },
   },
   { key: "reason", label: "Reason" },
   { key: "details", label: "Details" },
   {
     key: "status", label: "Status", type: "badge",
-    badgeColors: { open: "#DE3163", reviewed: "#2E7D5B", dismissed: "#8A95A3" },
+    badgeColors: { open: "#d97706", reviewed: "#2E7D5B", dismissed: "#8A95A3" },
   },
 ];
 

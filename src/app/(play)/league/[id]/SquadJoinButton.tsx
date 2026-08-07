@@ -35,7 +35,7 @@ export default function SquadJoinButton({ squadId, initialJoined }: { squadId: s
       <button className={`play-btn ${joined ? "ghost" : ""}`} onClick={toggle} disabled={pending}>
         {joined ? <><Check size={15} /> Joined — tap to leave</> : <><UserPlus size={15} /> Join this squad</>}
       </button>
-      {msg && <div style={{ fontSize: 12.5, color: "#DE3163", marginTop: 8 }}>{msg}</div>}
+      {msg && <div style={{ fontSize: 12.5, color: "#ef4444", marginTop: 8 }}>{msg}</div>}
     </div>
   );
 }

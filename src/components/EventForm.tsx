@@ -177,7 +177,7 @@ export default function EventForm({
             </button>
           </div>
           {locMsg && (
-            <div style={{ fontSize: 12, marginTop: 6, color: coords ? "#2E7D5B" : "#DE3163", display: "flex", alignItems: "center", gap: 5 }}>
+            <div style={{ fontSize: 12, marginTop: 6, color: coords ? "#2E7D5B" : "#006241", display: "flex", alignItems: "center", gap: 5 }}>
               {coords && <MapPin size={12} />}{locMsg}
               {coords && <span className="dt-mono" style={{ opacity: 0.6 }}> {coords.lat.toFixed(4)}, {coords.lng.toFixed(4)}</span>}
             </div>

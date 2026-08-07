@@ -227,7 +227,7 @@ function DiscoverInner() {
                     <p>No games match these filters.</p>
                     <button
                       onClick={() => { setPq(NO_FILTERS); setMyCoords(null); }}
-                      style={{ background: "none", border: "none", color: "#A78BFA", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      style={{ background: "none", border: "none", color: "#006241", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
                       Clear filters →
                     </button>
                   </>
@@ -241,7 +241,7 @@ function DiscoverInner() {
             )}
             <div className="disc-cards">
               {visible.map((ev, i) => {
-                const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163";
+                const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241";
                 const isFull = ev.slots_remaining === 0;
                 const pct = Math.round((ev.confirmed_count / ev.max_players) * 100);
                 const selected = false;
@@ -262,7 +262,7 @@ function DiscoverInner() {
                         {ev.sport}
                       </span>
                       {ev.event_type === "platform_event" ? (
-                        <span className="disc-official-badge" style={{ color: "#A78BFA", borderColor: "rgba(167,139,250,0.4)", background: "rgba(167,139,250,0.12)" }}>
+                        <span className="disc-official-badge" style={{ color: "#006241", borderColor: "rgba(0,98,65,0.4)", background: "rgba(0,98,65,0.12)" }}>
                           ★ Khelam Na
                         </span>
                       ) : ev.event_type === "venue_event" ? (
@@ -327,7 +327,7 @@ function DiscoverInner() {
                         {ev.fee === 0 ? "Free" : `Rs. ${ev.fee}`}
                       </span>
                       {myCoords && ev.venue_lat != null && ev.venue_lng != null && (
-                        <span style={{ color: "#A78BFA" }}>
+                        <span style={{ color: "#006241" }}>
                           <MapPin size={11} />
                           {kmBetween(myCoords, [ev.venue_lat, ev.venue_lng]).toFixed(1)} km
                         </span>
@@ -408,7 +408,7 @@ function DiscoverInner() {
       <div className="disc-map disc-map-wide">
         {!drill ? (
           <NepalMap
-            accent="#DE3163"
+            accent="#006241"
             points={visible
               .filter((ev) => ev.venue_lat != null && ev.venue_lng != null)
               .map((ev) => [ev.venue_lng as number, ev.venue_lat as number])}
@@ -436,7 +436,7 @@ function DiscoverInner() {
                   label: ev.title,
                   sport: ev.sport,
                   flash: ev.flash,
-                  color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#DE3163",
+                  color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241",
                 }))}
             />
           </div>
@@ -484,7 +484,7 @@ function DiscoverInner() {
         <div className="disc-cta-inner">
           <h2>Don&apos;t see your game?</h2>
           <p>Host your own event and let Kathmandu&apos;s players come to you.</p>
-          <a href="/create" style={{ background: "#DE3163", color: "#fff", border: "none", padding: "14px 28px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+          <a href="/create" style={{ background: "#006241", color: "#fff", border: "none", padding: "14px 28px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
             Host an event →
           </a>
         </div>
@@ -701,7 +701,7 @@ const CSS = `
 }
 .disc-host-av {
   width: 22px; height: 22px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
-  background: linear-gradient(150deg,#DE3163,#A78BFA); color: #0B0D11;
+  background: linear-gradient(150deg,#006241,#1e3932); color: #0B0D11;
   display: grid; place-items: center; font-size: 10px; font-weight: 800;
 }
 .disc-host-av img { width: 100%; height: 100%; object-fit: cover; }
@@ -789,7 +789,7 @@ const CSS = `
 [data-theme="paper"] .disc-map-toggle { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.04); }
 .disc-map-wide { height: auto; border-radius: 18px; overflow: hidden; }
 .disc-map-back { position: absolute; top: 14px; left: 14px; z-index: 500; display: inline-flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 700; padding: 9px 15px; border-radius: 999px; border: none; cursor: pointer; background: rgba(17,19,23,0.9); color: #fff; backdrop-filter: blur(8px); box-shadow: 0 6px 20px rgba(0,0,0,0.35); }
-.disc-map-back:hover { background: #DE3163; }
+.disc-map-back:hover { background: #006241; }
 @media (max-width: 760px){ .disc-map-wide { height: auto; } }
 .disc-flash-popup {
   position: absolute;
@@ -880,7 +880,7 @@ const CSS = `
   border-radius: 24px;
   border: 1px solid var(--line);
   background:
-    radial-gradient(80% 50% at 50% 0%, rgba(200,243,91,0.08), transparent 70%),
+    radial-gradient(80% 50% at 50% 0%, rgba(223,249,186,0.08), transparent 70%),
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
 }
 .disc-cta h2 {
