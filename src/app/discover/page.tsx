@@ -164,7 +164,7 @@ function DiscoverInner() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
         >
-          Find your game
+          Find your <em>game</em>
         </motion.h1>
         <motion.p
           className="disc-sub"
@@ -528,6 +528,8 @@ const CSS = `
   margin: 0 0 16px;
   color: var(--chalk);
 }
+.disc-title em { font-style: normal; color: var(--sodium); }
+[data-theme="paper"] .disc-title em { color: var(--pink); }
 .disc-sub {
   font-size: 16px;
   line-height: 1.6;
@@ -536,6 +538,8 @@ const CSS = `
   max-width: 520px;
 }
 .disc-sub a { color: var(--lime); text-decoration: none; }
+[data-theme="paper"] .disc-eyebrow { color: var(--turf); }
+[data-theme="paper"] .disc-sub a { color: var(--turf); }
 
 .disc-filter-wrap {
   padding: 20px clamp(20px, 5vw, 56px) 0;
@@ -853,6 +857,7 @@ const CSS = `
   text-align: center;
 }
 .disc-empty a { color: var(--lime); font-weight: 700; text-decoration: none; }
+[data-theme="paper"] .disc-empty a { color: var(--turf); }
 .disc-error { color: #ef4444; flex-direction: row; }
 .disc-spin { animation: disc-spin 1s linear infinite; }
 @keyframes disc-spin { to { transform: rotate(360deg); } }
