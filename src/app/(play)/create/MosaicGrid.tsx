@@ -15,10 +15,10 @@ const HUES = [
   { a: "#FB923C", b: "#EA580C" },  // orange
   { a: "#F87171", b: "#DC2626" },  // red
 ];
-import SmartSearch, { EMPTY, type Query } from "./SmartSearch";
+import BookFilters, { NO_BOOK_FILTERS, type BookQuery } from "./BookFilters";
 import DateStrip from "@/components/shared/DateStrip";
 import { useCity, inCity } from "@/lib/city";
-import { normalizeSport } from "@/lib/sports";
+import { normalizeSport, SPORT_NAMES } from "@/lib/sports";
 import { useTheme } from "@/lib/useTheme";
 import type { Venue, Court } from "@/lib/admin/types";
 
@@ -28,9 +28,10 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
   const router = useRouter();
   const [theme] = useTheme();
   const { city, area } = useCity();
-  const [q, setQ] = useState<Query>(EMPTY);
+  const [q, setQ] = useState<BookQuery>(NO_BOOK_FILTERS);
   const [pickDate, setPickDate] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" }));
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
+  const venueTypes = [...new Set(venues.map((v) => v.venue_type).filter(Boolean))];
 
   // ── Filter the venues before laying out the mosaic ──────────────
   const R = 6371;
@@ -55,6 +56,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
       const list = (v.sports ?? []).map(normalizeSport);
       if (!list.includes(q.sport)) return false;
     }
+    if (q.venueType && v.venue_type !== q.venueType) return false;
     if (q.maxKm != null) {
       if (!myCoords || v.lat == null || v.lng == null) return false;
       const km = kmTo(v.lat, v.lng);
@@ -128,23 +130,24 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
 
         <DateStrip value={pickDate} onPick={setPickDate} />
 
-        {/* One field for everything: sport, budget, distance, ground name. */}
-        <SmartSearch
+        {/* Sport, area, ground type, price, distance — the Play bar's shape,
+            asking about a ground instead of a game. */}
+        <BookFilters
+          sport={q.sport}
+          setSport={(sp) => setQ((cur) => ({ ...cur, sport: sp }))}
+          sports={SPORT_NAMES}
+          venueTypes={venueTypes}
           value={q}
-          onChange={(next) => {
-            // Asking for a distance needs a location — get it once, quietly.
-            if (next.maxKm != null && !myCoords && navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                (p) => setMyCoords([p.coords.latitude, p.coords.longitude]),
-                () => setQ((cur) => ({ ...cur, maxKm: null })),
-                { timeout: 8000 }
-              );
-            }
-            setQ(next);
-          }}
-          venueNames={venues.map((v) => v.name)}
+          onChange={setQ}
           count={shown.length}
-          city={area?.name ?? city?.name ?? null}
+          onNeedLocation={() => {
+            if (myCoords || !navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(
+              (p) => setMyCoords([p.coords.latitude, p.coords.longitude]),
+              () => setQ((cur) => ({ ...cur, maxKm: null })),
+              { timeout: 8000 }
+            );
+          }}
         />
 
         {shown.length === 0 ? (
@@ -158,7 +161,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
                 : "Once owners list their grounds, they'll appear here ready to book."}
             </p>
             {venues.length > 0 && (
-              <button onClick={() => { setQ(EMPTY); setMyCoords(null); }}
+              <button onClick={() => { setQ(NO_BOOK_FILTERS); setMyCoords(null); }}
                 style={{ marginTop: 14, background: "none", border: "none", color: "#A78BFA", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
                 Clear filters →
               </button>

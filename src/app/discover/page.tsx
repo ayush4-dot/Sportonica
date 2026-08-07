@@ -187,7 +187,6 @@ function DiscoverInner() {
           value={pq}
           onChange={setPq}
           count={sortedAll.length}
-          city={area?.name ?? city?.name ?? null}
           onNeedLocation={() => {
             if (myCoords || !navigator.geolocation) return;
             navigator.geolocation.getCurrentPosition(

@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   SlidersHorizontal, X, Clock, Banknote, Navigation, Trophy, Volleyball, Check,
-  ChevronDown, MapPin, Search,
+  ChevronDown, Search,
 } from "lucide-react";
 import {
   formatsFor, SKILLS, TIMES, FEES, DISTANCES, activeCount,
   type PlayQuery, NO_FILTERS,
 } from "@/lib/playFilters";
+import LocationPicker from "@/components/shared/LocationPicker";
 
 /**
  * Finding a game is a different question from booking a court, so this
@@ -16,7 +17,7 @@ import {
  * how much, and can I still get in.
  */
 export default function PlayFilters({
-  sport, setSport, sports, value, onChange, count, city, onNeedLocation,
+  sport, setSport, sports, value, onChange, count, onNeedLocation,
 }: {
   sport: string | null;
   setSport: (s: string | null) => void;
@@ -24,7 +25,6 @@ export default function PlayFilters({
   value: PlayQuery;
   onChange: (q: PlayQuery) => void;
   count: number;
-  city?: string | null;
   onNeedLocation: () => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -98,11 +98,7 @@ export default function PlayFilters({
         </div>
 
         <div className="pf-seg area">
-          <span className="pf-area">
-            <MapPin size={15} />
-            <b>{city ?? "Anywhere"}</b>
-            <em>change in header</em>
-          </span>
+          <LocationPicker />
         </div>
 
         <div className="pf-seg">
@@ -191,7 +187,7 @@ export default function PlayFilters({
 
         .pf-seg { position:relative; flex:1; min-width:0; display:flex; }
         .pf-seg + .pf-seg { border-left:1px solid var(--line, rgba(242,237,230,.1)); }
-        .pf-seg > button, .pf-area {
+        .pf-seg > button {
           flex:1; display:flex; align-items:center; gap:9px; min-width:0;
           padding:14px 16px; border:none; background:none; color:inherit;
           font-family:inherit; font-size:14px; font-weight:600; cursor:pointer;
@@ -199,17 +195,10 @@ export default function PlayFilters({
         }
         .pf-seg > button:hover { background:rgba(167,139,250,.07); }
         .pf-seg > button.lit { color:#A78BFA; }
-        .pf-seg > button svg:first-child, .pf-area svg { opacity:.55; flex-shrink:0; }
+        .pf-seg > button svg:first-child { opacity:.55; flex-shrink:0; }
         .pf-seg > button span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .pf-seg > button svg:last-child { opacity:.45; transition:transform .25s; }
         .pf-seg > button svg.flip { transform:rotate(180deg); }
-
-        .pf-area { cursor:default; }
-        .pf-area b { font-weight:700; }
-        .pf-area em {
-          font-style:normal; font-size:11px; opacity:.35; margin-left:auto;
-          white-space:nowrap;
-        }
 
         .pf-find {
           display:inline-flex; align-items:center; gap:7px; flex-shrink:0;
@@ -241,7 +230,6 @@ export default function PlayFilters({
         @media (max-width:820px) {
           .pf-search { flex-wrap:wrap; }
           .pf-seg { flex:1 1 45%; }
-          .pf-seg.area em { display:none; }
           .pf-find { flex:1 1 100%; justify-content:center; padding:13px; }
         }
 
