@@ -175,7 +175,7 @@ export default function MagnetDock() {
           }
           .dock-item svg { width: 19px; height: 19px; }
           .dock-avatar { width: 22px; height: 22px; font-size: 11px; }
-          .dock-label {
+          .dock-label, [data-theme="paper"] .dock-label {
             position: static; transform: none; opacity: 1; background: none; border: none;
             box-shadow: none; padding: 0; font-size: 9.5px; font-weight: 600;
             color: inherit; letter-spacing: -0.2px;
