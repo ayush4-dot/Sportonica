@@ -292,8 +292,8 @@ const CSS = `
   .p-faq-a { padding:0 32px 24px 4px; font-size:15px; line-height:1.65; color:var(--muted); overflow:hidden; }
 
   /* ── CTA section ── */
-  .p-cta-section { min-height:80vh; display:flex; align-items:center; justify-content:center; text-align:center; padding:80px 40px; }
-  .p-cta-h2 { font-size:clamp(40px,7vw,88px); font-weight:800; line-height:0.95; letter-spacing:-3px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:32px; }
+  .p-cta-section { display:flex; align-items:center; justify-content:center; text-align:center; padding:64px 40px; }
+  .p-cta-h2 { font-size:clamp(28px,4.5vw,52px); font-weight:800; line-height:0.98; letter-spacing:-1.5px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:24px; }
   .p-cta-h2 em { font-style:normal; color:#DE3163; }
 
   /* ── footer ── */
@@ -317,7 +317,7 @@ const CSS = `
     .p-stat { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); }
     .p-stat:nth-child(odd) { border-right:1px solid rgba(255,255,255,0.08); }
     .p-stat:last-child { border-bottom:none; }
-    .p-cta-section { min-height:60vh; padding:60px 24px; }
+    .p-cta-section { padding:48px 24px; }
     .p-faq-section { padding:64px 20px; }
     .p-faq-q { font-size:15.5px; padding:18px 2px; }
     .p-faq-a { padding:0 24px 20px 2px; font-size:14px; }
