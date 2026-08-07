@@ -43,6 +43,8 @@
   padding: 20px 14px;
   display: flex; flex-direction: column; gap: 4px;
 }
+.adm-side-head { display: flex; align-items: center; justify-content: space-between; }
+.adm-side-close { display: none; }
 .adm-brand {
   display: flex; align-items: center; gap: 10px;
   padding: 6px 10px 20px;
@@ -213,6 +215,28 @@
 .adm-empty h3 { font-family: var(--a-disp); font-size: 16px; margin-bottom: 6px; }
 .adm-empty p { font-size: 13px; color: var(--a-dim); max-width: 340px; margin: 0 auto 18px; }
 
+/* ── Feature tiles (Settings "all features" hub) ── */
+.adm-feat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.adm-feat {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px; border-radius: var(--a-radius);
+  border: 1px solid var(--a-line); background: var(--a-panel);
+  text-decoration: none; color: inherit;
+  transition: border-color 0.16s ease, transform 0.16s ease, background 0.16s ease;
+}
+.adm-feat:hover { border-color: var(--a-line-2); background: var(--a-panel-2); transform: translateY(-2px); }
+.adm-feat-ic {
+  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(167,139,250,0.12); color: var(--a-accent);
+}
+.adm-feat-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.adm-feat-l { font-size: 13.5px; font-weight: 700; }
+.adm-feat-d { font-size: 11.5px; color: var(--a-dim); line-height: 1.4; }
+.adm-feat-arrow { margin-left: auto; flex-shrink: 0; opacity: 0.35; align-self: center; }
+.adm-feat:hover .adm-feat-arrow { opacity: 0.8; }
+@media (max-width: 640px) { .adm-feat-grid { grid-template-columns: 1fr; } }
+
 /* ── Calendar grid (availability) ── */
 .adm-cal { display: grid; grid-template-columns: 56px 1fr; gap: 0; font-size: 12px; }
 .adm-cal-hour {
@@ -245,12 +269,59 @@
 }
 .adm-heat-cell { height: 22px; border-radius: 4px; background: var(--a-panel-2); }
 
+/* ── Mobile app bar + drawer ──
+   Below 900px the sidebar becomes an off-canvas drawer (closed by
+   default) instead of vanishing outright — this bar is the only way
+   to open it there, so it has to exist even when the drawer is shut. */
+.adm-mobilebar { display: none; }
+.adm-scrim {
+  position: fixed; inset: 0; z-index: 490;
+  background: rgba(0,0,0,0.55); backdrop-filter: blur(2px);
+}
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
   .adm { grid-template-columns: 1fr; }
-  .adm-side { display: none; }
+
+  .adm-mobilebar {
+    display: flex; align-items: center; gap: 12px;
+    height: 56px; padding: 0 16px; flex-shrink: 0;
+    position: sticky; top: 0; z-index: 480;
+    background: var(--a-panel); border-bottom: 1px solid var(--a-line);
+  }
+  .adm-mobilebar-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+    border: 1px solid var(--a-line-2); background: var(--a-panel-2);
+    color: var(--a-text); cursor: pointer;
+  }
+  .adm-mobilebar-brand { display: flex; align-items: center; gap: 9px; }
+  .adm-mobilebar-brand span {
+    font-family: var(--a-disp); font-weight: 800; font-size: 15px; letter-spacing: -0.3px;
+  }
+  .adm-mobilebar .adm-brand-mark { width: 26px; height: 26px; font-size: 15px; border-radius: 7px; }
+
+  .adm-side {
+    position: fixed; inset: 0 auto 0 0; z-index: 500;
+    width: 280px; max-width: 84vw; height: 100vh;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.22,1,0.36,1);
+    box-shadow: 24px 0 60px -20px rgba(0,0,0,0.6);
+  }
+  .adm-side.open { transform: translateX(0); }
+  .adm-side-close {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 8px; margin: 6px 10px 0 0;
+    border: 1px solid var(--a-line-2); background: var(--a-panel-2);
+    color: var(--a-text); cursor: pointer;
+  }
+
   .adm-stats { grid-template-columns: repeat(2,1fr); }
   .adm-row, .adm-grid-2, .adm-grid-3 { grid-template-columns: 1fr; }
+
+  /* Tables scroll sideways instead of squeezing every column unreadable. */
+  .adm-card { overflow-x: auto; }
+  .adm-table { min-width: 560px; }
 }
 
 /* reduced motion */

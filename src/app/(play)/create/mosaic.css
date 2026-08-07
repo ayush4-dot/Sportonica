@@ -11,6 +11,7 @@
   transition: background 0.6s ease, color 0.6s ease;
   padding: 110px 24px 80px;
 }
+@media (max-width: 760px) { .mz { padding-top: 28px; } }
 .mz.glass { background: #0B0D11; color: #F2EDE6; }
 .mz.paper { background: #F2EDE6; color: #14171E; }
 

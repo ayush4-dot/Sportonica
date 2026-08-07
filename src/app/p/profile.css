@@ -16,6 +16,7 @@
   font-family: 'Inter', system-ui, sans-serif;
   padding: 130px 24px 110px;
 }
+@media (max-width: 760px) { .pf { padding-top: 34px; } }
 [data-theme="paper"] .pf {
   --pf-bg:    #F2EDE6;
   --pf-text:  #14171E;

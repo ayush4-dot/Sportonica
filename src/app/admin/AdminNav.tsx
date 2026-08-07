@@ -1,76 +1,86 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, Building2, CalendarClock, Ticket,
-  Tag, Wallet, BarChart3, Users, Settings,
-} from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { NAV } from "./nav";
 
-const NAV: { label: string; items: { href: string; label: string; icon: React.ReactNode }[] }[] = [
-  {
-    label: "Operate",
-    items: [
-      { href: "/admin", label: "Overview", icon: <LayoutDashboard size={16} /> },
-      { href: "/admin/calendar", label: "Calendar", icon: <CalendarClock size={16} /> },
-      { href: "/admin/events", label: "Events", icon: <Ticket size={16} /> },
-      { href: "/admin/bookings", label: "Bookings", icon: <Ticket size={16} /> },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { href: "/admin/venues", label: "Venues & courts", icon: <Building2 size={16} /> },
-      { href: "/admin/pricing", label: "Pricing rules", icon: <Tag size={16} /> },
-      { href: "/admin/staff", label: "Staff", icon: <Users size={16} /> },
-    ],
-  },
-  {
-    label: "Money",
-    items: [
-      { href: "/admin/payouts", label: "Payouts", icon: <Wallet size={16} /> },
-      { href: "/admin/analytics", label: "Analytics", icon: <BarChart3 size={16} /> },
-    ],
-  },
-];
+const mainGroups = NAV.filter((g) => g.label !== "Account");
+const accountItem = NAV.find((g) => g.label === "Account")?.items[0];
 
 export default function AdminNav() {
   const path = usePathname();
+  const [open, setOpen] = useState(false);
+  // The sidebar becomes a drawer below 900px — close it whenever the route
+  // changes, so it never sits open over the page you just picked. Adjusted
+  // during render (not an effect) per React's rules on resetting state
+  // when a prop/derived value changes.
+  const [lastPath, setLastPath] = useState(path);
+  if (path !== lastPath) { setLastPath(path); setOpen(false); }
+
   const isActive = (href: string) =>
     href === "/admin" ? path === "/admin" : path.startsWith(href);
 
-  return (
-    <aside className="adm-side">
-      <Link href="/admin" className="adm-brand" style={{ textDecoration: "none", color: "inherit" }}>
-        <div className="adm-brand-mark">K</div>
-        <div>
-          <div className="adm-brand-name">Khelam Na</div>
-          <div className="adm-brand-sub">Venue Console</div>
-        </div>
-      </Link>
-
-      {NAV.map((group) => (
-        <div key={group.label}>
-          <div className="adm-navlabel">{group.label}</div>
-          {group.items.map((it) => (
-            <Link
-              key={it.href}
-              href={it.href}
-              className={`adm-navlink ${isActive(it.href) ? "active" : ""}`}
-            >
-              {it.icon}
-              <span>{it.label}</span>
-            </Link>
-          ))}
-        </div>
-      ))}
-
-      <div style={{ marginTop: "auto" }}>
-        <Link href="/admin/settings" className={`adm-navlink ${isActive("/admin/settings") ? "active" : ""}`}>
-          <Settings size={16} />
-          <span>Settings</span>
-        </Link>
+  const brand = (
+    <Link href="/admin" className="adm-brand" style={{ textDecoration: "none", color: "inherit" }}>
+      <div className="adm-brand-mark">K</div>
+      <div>
+        <div className="adm-brand-name">Khelam Na</div>
+        <div className="adm-brand-sub">Venue Console</div>
       </div>
-    </aside>
+    </Link>
+  );
+
+  return (
+    <>
+      {/* Mobile-only app bar — the sidebar collapses into a drawer below
+          900px, so this is the only way in to open it there. */}
+      <div className="adm-mobilebar">
+        <button className="adm-mobilebar-btn" onClick={() => setOpen(true)} aria-label="Open menu">
+          <Menu size={20} />
+        </button>
+        <div className="adm-mobilebar-brand">
+          <div className="adm-brand-mark">K</div>
+          <span>Khelam Na</span>
+        </div>
+      </div>
+
+      {open && <div className="adm-scrim" onClick={() => setOpen(false)} />}
+
+      <aside className={`adm-side ${open ? "open" : ""}`}>
+        <div className="adm-side-head">
+          {brand}
+          <button className="adm-side-close" onClick={() => setOpen(false)} aria-label="Close menu">
+            <X size={18} />
+          </button>
+        </div>
+
+        {mainGroups.map((group) => (
+          <div key={group.label}>
+            <div className="adm-navlabel">{group.label}</div>
+            {group.items.map((it) => (
+              <Link
+                key={it.href}
+                href={it.href}
+                className={`adm-navlink ${isActive(it.href) ? "active" : ""}`}
+              >
+                {it.icon}
+                <span>{it.label}</span>
+              </Link>
+            ))}
+          </div>
+        ))}
+
+        {accountItem && (
+          <div style={{ marginTop: "auto" }}>
+            <Link href={accountItem.href} className={`adm-navlink ${isActive(accountItem.href) ? "active" : ""}`}>
+              {accountItem.icon}
+              <span>{accountItem.label}</span>
+            </Link>
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
