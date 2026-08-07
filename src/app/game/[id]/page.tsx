@@ -4,15 +4,12 @@ import type { Metadata } from "next";
 import { ArrowLeft, MapPin, Clock, Users, Wallet, ShieldCheck, Zap, ExternalLink } from "lucide-react";
 import { getGame, getGamePlayers, getSimilarGames, getNearbyVenues, SKILL_LABEL } from "@/lib/play/gameQueries";
 import { createClient } from "@/lib/supabase/server";
+import { sportColor, normalizeSport } from "@/lib/sports";
 import GameJoinPanel from "./GameJoinPanel";
 import "./game.css";
 
 export const dynamic = "force-dynamic";
 
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
-  Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
-};
 const KTM = "Asia/Kathmandu";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
@@ -40,7 +37,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
   const { data: { user } } = await sb.auth.getUser();
   const alreadyIn = players.some((p) => p.user_id === user?.id);
 
-  const color = game.sport_color ?? SPORT_COLOR[game.sport] ?? "#006241";
+  const color = game.sport_color ?? sportColor(normalizeSport(game.sport));
   const start = new Date(game.event_date);
   const end = new Date(start.getTime() + (game.duration_mins ?? 60) * 60000);
   const fmt = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM });
@@ -142,7 +139,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
                 <h2 className="gm-sec-t"><span className="gm-num">03</span> More {game.sport}</h2>
                 <div className="gm-rail">
                   {similar.map((s) => {
-                    const sc = s.sport_color ?? SPORT_COLOR[s.sport] ?? "#006241";
+                    const sc = s.sport_color ?? sportColor(normalizeSport(s.sport));
                     return (
                       <Link key={s.id} href={`/game/${s.id}`} className="gm-mini">
                         <div className="gm-mini-t">{s.title}</div>

@@ -3,13 +3,9 @@ import {
   getProfileByUsernameAnon, getPlayerStatsAnon, getPlayerSportsAnon,
   computeBadges, trustLabel,
 } from "@/lib/profile/queries";
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 export const runtime = "nodejs";
-
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
-  Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
-};
 
 // 9:16 story card — 1080x1920. Rendered by Satori, so: every element with
 // more than one child needs display:flex, and only jpeg/png/gif/webp images.
@@ -104,7 +100,7 @@ export async function GET(
                   <div style={{ fontSize: 28, color: C.dim, display: "flex" }}>{`${s.games} game${s.games !== 1 ? "s" : ""}`}</div>
                 </div>
                 <div style={{ display: "flex", height: 4, background: C.hair, marginTop: 14 }}>
-                  <div style={{ width: `${(s.games / maxGames) * 100}%`, background: SPORT_COLOR[s.sport] ?? "#2E7D5B", display: "flex" }} />
+                  <div style={{ width: `${(s.games / maxGames) * 100}%`, background: sportColor(normalizeSport(s.sport)), display: "flex" }} />
                 </div>
               </div>
             ))}

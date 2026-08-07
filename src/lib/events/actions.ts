@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 async function requireUser() {
   const sb = await createClient();
@@ -9,11 +10,6 @@ async function requireUser() {
   if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
-
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
-  Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
-};
 
 // Create an official event. `kind` is venue_event or platform_event.
 // Venue owners can only attach to venues they own; super admin can do anything.
@@ -64,7 +60,7 @@ export async function createOfficialEvent(input: {
     description: input.description ?? null,
     status: "open",
     flash: false,
-    sport_color: SPORT_COLOR[input.sport] ?? "#006241",
+    sport_color: sportColor(normalizeSport(input.sport)),
     venue_lat: lat,
     venue_lng: lng,
     skill_level: input.skill_level ?? "any",

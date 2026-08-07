@@ -10,6 +10,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 export type MapPin = {
   id: string;
@@ -38,16 +39,6 @@ interface Props {
 
 // Kathmandu city centre default
 const KTM: [number, number] = [27.7172, 85.324];
-
-const SPORT_COLORS: Record<string, string> = {
-  Futsal:     "#2E7D5B",
-  Football:   "#22c55e",
-  Basketball: "#A78BFA",
-  Cricket:    "#f97316",
-  Volleyball: "#3b82f6",
-  Badminton:  "#a855f7",
-  Tennis:     "#ec4899",
-};
 
 export default function KhelamnaMap({
   center = KTM,
@@ -103,7 +94,7 @@ export default function KhelamnaMap({
 
       // Add pins
       pins.forEach(pin => {
-        const color = pin.flash ? "#E85D24" : (pin.color ?? SPORT_COLORS[pin.sport ?? ""] ?? "#006241");
+        const color = pin.flash ? "#E85D24" : (pin.color ?? sportColor(normalizeSport(pin.sport)));
         const svgIcon = L.divIcon({
           className: "",
           html: `

@@ -10,14 +10,10 @@ import { getRelationship } from "@/lib/friends/queries";
 import ShareButton from "./ShareButton";
 import DownloadButton from "./DownloadButton";
 import FriendRequestButton from "@/components/FriendRequestButton";
+import { sportColor, normalizeSport } from "@/lib/sports";
 import "../profile.css";
 
 export const dynamic = "force-dynamic";
-
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
-  Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
-};
 
 export async function generateMetadata({ params }: { params: Promise<{ username: string }> }): Promise<Metadata> {
   const { username } = await params;
@@ -145,7 +141,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                   <span className="pf-sport-n">{s.games} game{s.games !== 1 ? "s" : ""}</span>
                 </div>
                 <div className="pf-bar">
-                  <div style={{ width: `${(s.games / maxGames) * 100}%`, background: SPORT_COLOR[s.sport] ?? "#2E7D5B" }} />
+                  <div style={{ width: `${(s.games / maxGames) * 100}%`, background: sportColor(normalizeSport(s.sport)) }} />
                 </div>
               </div>
             ))}
@@ -192,7 +188,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                   <div className="pf-game-t">{g.title}</div>
                   <div className="pf-game-v">{g.venue}</div>
                 </div>
-                <span className="pf-dot" style={{ background: g.sport_color ?? SPORT_COLOR[g.sport] ?? "#2E7D5B" }} />
+                <span className="pf-dot" style={{ background: g.sport_color ?? sportColor(normalizeSport(g.sport)) }} />
               </div>
             ))
           )}

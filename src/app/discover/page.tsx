@@ -12,12 +12,12 @@ import {
 import NepalMap from "@/components/NepalMap";
 import { useCity, inCity } from "@/lib/city";
 import KhelamnaMap from "@/components/KhelamnaMap";
-import { useEvents, SPORT_COLOR, type EventRow } from "@/lib/hooks/useEvents";
+import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
 import JoinModal from "./JoinModal";
 import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
-import { SPORT_NAMES } from "@/lib/sports";
+import { SPORT_NAMES, sportColor, normalizeSport } from "@/lib/sports";
 import DateStrip from "@/components/shared/DateStrip";
 import { NO_FILTERS, type PlayQuery, formatOf, inTimeBand, inFeeBand, DISTANCES } from "@/lib/playFilters";
 
@@ -241,7 +241,7 @@ function DiscoverInner() {
             )}
             <div className="disc-cards">
               {visible.map((ev, i) => {
-                const color = ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241";
+                const color = ev.sport_color ?? sportColor(normalizeSport(ev.sport));
                 const isFull = ev.slots_remaining === 0;
                 const pct = Math.round((ev.confirmed_count / ev.max_players) * 100);
                 const selected = false;
@@ -436,7 +436,7 @@ function DiscoverInner() {
                   label: ev.title,
                   sport: ev.sport,
                   flash: ev.flash,
-                  color: ev.sport_color ?? SPORT_COLOR[ev.sport] ?? "#006241",
+                  color: ev.sport_color ?? sportColor(normalizeSport(ev.sport)),
                 }))}
             />
           </div>

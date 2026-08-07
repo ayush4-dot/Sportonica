@@ -2,20 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 const sb = () => createClient();
-
-// ── Sport colour map ─────────────────────────────────────────────
-export const SPORT_COLOR: Record<string, string> = {
-  Futsal:     "#2E7D5B",
-  Football:   "#22c55e",
-  Basketball: "#A78BFA",
-  Cricket:    "#f97316",
-  Volleyball: "#3b82f6",
-  Badminton:  "#a855f7",
-  Tennis:     "#ec4899",
-  Running:    "#60a5fa",
-};
 
 export type EventRow = {
   id: string;
@@ -93,7 +82,7 @@ export function useEvents(opts: UseEventsOptions = {}) {
         // Derive sport colour client-side if not stored
         const rows = (data ?? []).map((e: EventRow) => ({
           ...e,
-          sport_color: e.sport_color ?? SPORT_COLOR[e.sport] ?? "#006241",
+          sport_color: e.sport_color ?? sportColor(normalizeSport(e.sport)),
           event_type: e.event_type ?? "pickup",
           organizer_name: e.organizer_name ?? null,
           confirmed_count: Number(e.confirmed_count ?? 0),

@@ -3,12 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { notifyGameHosted, notifyGameJoined } from "@/lib/mail/notify";
-
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA",
-  Cricket: "#f97316", Volleyball: "#3b82f6", Badminton: "#a855f7",
-  Tennis: "#ec4899", Running: "#60a5fa",
-};
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 async function requireUser() {
   const sb = await createClient();
@@ -75,7 +70,7 @@ export async function hostGameFromBooking(input: {
       description: `${input.court_name} · Rs ${perHead}/head. Booked on Khelam Na.`,
       status: "open",
       flash: false,
-      sport_color: SPORT_COLOR[input.sport] ?? "#2E7D5B",
+      sport_color: sportColor(normalizeSport(input.sport)),
     })
     .select()
     .single();

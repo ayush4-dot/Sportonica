@@ -9,13 +9,9 @@ import SquadSettings from "./SquadSettings";
 import ReportButton from "@/components/ReportButton";
 import MemberManager from "./MemberManager";
 import SquadPolls from "./SquadPolls";
+import { sportColor, normalizeSport } from "@/lib/sports";
 
 export const dynamic = "force-dynamic";
-
-const SPORT_COLOR: Record<string, string> = {
-  Futsal: "#2E7D5B", Football: "#22c55e", Basketball: "#A78BFA", Cricket: "#f97316",
-  Volleyball: "#3b82f6", Badminton: "#a855f7", Tennis: "#ec4899", Running: "#60a5fa",
-};
 
 export default async function SquadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,7 +23,7 @@ export default async function SquadPage({ params }: { params: Promise<{ id: stri
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
 
-  const color = squad.color ?? SPORT_COLOR[squad.sport] ?? "#2E7D5B";
+  const color = squad.color ?? sportColor(normalizeSport(squad.sport));
   const isIn = memberships.has(squad.id);
 
   return (
