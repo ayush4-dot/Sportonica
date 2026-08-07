@@ -154,7 +154,7 @@ function DiscoverInner() {
           className="disc-eyebrow"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
         >
           Live in Kathmandu
         </motion.p>
@@ -162,7 +162,7 @@ function DiscoverInner() {
           className="disc-title"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.1 }}
+          transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
         >
           Find your <em>game</em>
         </motion.h1>
@@ -170,7 +170,7 @@ function DiscoverInner() {
           className="disc-sub"
           initial={{ opacity: 0, y: 14 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
         >
           Pick a sport, scan the map, and join the game — or{" "}
           <a href="/create">host your own</a>.
