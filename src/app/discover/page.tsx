@@ -499,12 +499,19 @@ function DiscoverInner() {
 const CSS = `
 .disc-root {
   --line: rgba(255, 255, 255, 0.1);
+  --card-tint-1: rgba(255,255,255,0.035);
+  --card-tint-2: rgba(255,255,255,0);
   min-height: 100vh;
   background: var(--ink);
   color: var(--chalk);
   font-family: 'Inter', system-ui, sans-serif;
   overflow-x: hidden;
   padding-top: 88px;
+}
+[data-theme="paper"] .disc-root {
+  --line: rgba(20,23,30,0.14);
+  --card-tint-1: rgba(20,23,30,0.035);
+  --card-tint-2: rgba(20,23,30,0);
 }
 
 .disc-hero {
@@ -652,9 +659,10 @@ const CSS = `
   border-radius: 18px;
   padding: 14px 16px;
   cursor: pointer;
-  background: linear-gradient(170deg, rgba(255,255,255,0.035), rgba(255,255,255,0));
-  transition: border-color 0.25s, transform 0.2s;
+  background: linear-gradient(170deg, var(--card-tint-1), var(--card-tint-2));
+  transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
 }
+[data-theme="paper"] .disc-card { box-shadow: 0 2px 10px -4px rgba(20,23,30,0.12); }
 .disc-card:hover { transform: translateY(-1px); }
 .disc-card[data-on="true"] { border-color: color-mix(in srgb, var(--lime) 65%, transparent); }
 .disc-card-top {
