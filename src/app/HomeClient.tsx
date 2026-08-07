@@ -9,7 +9,6 @@ import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
 import SiteNav from "@/components/layout/SiteNav";
-import FeatureFan from "@/components/home/FeatureFan";
 import { useCity, inCity } from "@/lib/city";
 
 import { useEvents, bookEvent, SPORT_COLOR } from "@/lib/hooks/useEvents";
@@ -371,8 +370,126 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               </div>
             </div>
 
-            {/* The gallery is the hero — it shows what the app does. */}
-            <FeatureFan />
+            {/* Browse by sport — moved up from further down the page so it's
+                the first thing people act on, right under the hero copy. */}
+            <div id="sports">
+              <div className="p-sportbar">
+                <div className="p-sportbar-head">
+                  <div>
+                    <p className="p-sportbar-eyebrow">Browse by sport</p>
+                    <h2 className="p-sportbar-title">Pick your game</h2>
+                  </div>
+                  <span className="p-sportbar-hint"><ArrowRight size={13} /> Swipe</span>
+                </div>
+
+                <div className="p-sportrail">
+                  {SPORTS_PANELS.map((sp) => {
+                    const isOpen = openSport === sp.sport;
+                    return (
+                      <button
+                        key={sp.sport}
+                        className="p-sportchip"
+                        onClick={() => setOpenSport(isOpen ? null : sp.sport)}
+                        aria-label={`Show ${sp.sport}`}
+                        style={{ borderColor: isOpen ? sp.color : undefined }}
+                      >
+                        <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
+                        <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
+                        <span className="p-sportchip-shade" />
+                        <span className="p-sportchip-emoji">{sp.emoji}</span>
+                        <span className="p-sportchip-label">{sp.sport}</span>
+                        <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
+                          {isOpen ? "Showing" : "View"} <ArrowRight size={12} color={sp.color} strokeWidth={3} />
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Expanded panel — only the selected sport, opens on tap */}
+              {(() => {
+                const sp = SPORTS_PANELS.find((x) => x.sport === openSport);
+                if (!sp) return null;
+                const i = SPORTS_PANELS.findIndex((x) => x.sport === sp.sport);
+                return (
+                  <motion.div
+                    key={sp.sport}
+                    className="p-panel"
+                    initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }}
+                    transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
+                    style={{ background:"var(--inkSoft)", borderTop:`1px solid ${sp.color}44` }}
+                  >
+                    <div className="p-panel-bg">{sp.emoji}</div>
+                    <div className="p-panel-accent">{sp.emoji}</div>
+                    <div className="p-panel-content">
+                      <p className="p-panel-num" style={{ color: sp.color }}>
+                        {String(i+1).padStart(2,"0")} — {sp.label}
+                      </p>
+                      <h2 className="p-panel-title" style={{ color: sp.color }}>{sp.label}</h2>
+                      <p className="p-panel-desc">{sp.desc}</p>
+                      <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
+                        <a href={`/discover?sport=${sp.sport}`}>
+                          <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
+                            style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
+                            Find {sp.sport} games <ArrowRight size={16} />
+                          </motion.button>
+                        </a>
+                        <a href="/create">
+                          <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
+                            Host a game
+                          </motion.button>
+                        </a>
+                      </div>
+                    </div>
+
+                    {/* Game cards for this sport (real games + fact, or host prompt) */}
+                    <div className="p-games">
+                      {(gamesBySport[sp.sport] ?? []).slice(0, 3).map((g) => {
+                        const pct = Math.round(((g.max_players - g.slots_remaining) / g.max_players) * 100);
+                        const when = new Date(g.event_date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" });
+                        return (
+                          <a key={g.id} href="/discover" className="p-gcard link">
+                            <div className="p-gcard-title">{g.title}</div>
+                            <div className="p-gcard-venue"><MapPin size={12} /> {g.venue}</div>
+                            <div className="p-gcard-row">
+                              <span className="p-gcard-when">{when}</span>
+                              <span className="p-gcard-fee" style={{ color: sp.color }}>Rs {g.fee}</span>
+                            </div>
+                            <div className="p-gcard-bar"><div style={{ height:"100%", width:`${pct}%`, background: sp.color, borderRadius:2 }} /></div>
+                            <div className="p-gcard-slots">{g.slots_remaining} of {g.max_players} spots left</div>
+                          </a>
+                        );
+                      })}
+
+                      {/* Fact card — untouchable */}
+                      {SPORT_FACT[sp.sport] && (
+                        <div className="p-gcard fact">
+                          <div>
+                            <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
+                            <div className="small">{SPORT_FACT[sp.sport].small}</div>
+                          </div>
+                          <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"var(--faint)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
+                            {sp.label} · Kathmandu
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Empty state — aesthetic host prompt */}
+                      {(gamesBySport[sp.sport] ?? []).length === 0 && (
+                        <a href="/create" className="p-gcard host link" style={{ borderColor: `${sp.color}55` }}>
+                          <div className="big" style={{ color: sp.color }}>No {sp.sport} games yet</div>
+                          <div className="small">Be the first to host one. Book a court, set your spots, and let players come to you.</div>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:700, color: sp.color }}>
+                            Host a {sp.sport} game <ArrowRight size={14} />
+                          </span>
+                        </a>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })()}
+            </div>
           </div>
         </div>
 
@@ -467,128 +584,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               );
             })}
           </div>
-        </div>
-
-        {/* ══════════════════════════════════
-            SPORTS — clickable slider + expandable panel
-        ══════════════════════════════════ */}
-        <div id="sports">
-          <div className="p-sportbar">
-            <div className="p-sportbar-head">
-              <div>
-                <p className="p-sportbar-eyebrow">Browse by sport</p>
-                <h2 className="p-sportbar-title">Pick your game</h2>
-              </div>
-              <span className="p-sportbar-hint"><ArrowRight size={13} /> Swipe</span>
-            </div>
-
-            <div className="p-sportrail">
-              {SPORTS_PANELS.map((sp) => {
-                const isOpen = openSport === sp.sport;
-                return (
-                  <button
-                    key={sp.sport}
-                    className="p-sportchip"
-                    onClick={() => setOpenSport(isOpen ? null : sp.sport)}
-                    aria-label={`Show ${sp.sport}`}
-                    style={{ borderColor: isOpen ? sp.color : undefined }}
-                  >
-                    <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
-                    <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
-                    <span className="p-sportchip-shade" />
-                    <span className="p-sportchip-emoji">{sp.emoji}</span>
-                    <span className="p-sportchip-label">{sp.sport}</span>
-                    <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
-                      {isOpen ? "Showing" : "View"} <ArrowRight size={12} color={sp.color} strokeWidth={3} />
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Expanded panel — only the selected sport, opens on tap */}
-          {(() => {
-            const sp = SPORTS_PANELS.find((x) => x.sport === openSport);
-            if (!sp) return null;
-            const i = SPORTS_PANELS.findIndex((x) => x.sport === sp.sport);
-            return (
-              <motion.div
-                key={sp.sport}
-                className="p-panel"
-                initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }}
-                transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
-                style={{ background:"var(--inkSoft)", borderTop:`1px solid ${sp.color}44` }}
-              >
-                <div className="p-panel-bg">{sp.emoji}</div>
-                <div className="p-panel-accent">{sp.emoji}</div>
-                <div className="p-panel-content">
-                  <p className="p-panel-num" style={{ color: sp.color }}>
-                    {String(i+1).padStart(2,"0")} — {sp.label}
-                  </p>
-                  <h2 className="p-panel-title" style={{ color: sp.color }}>{sp.label}</h2>
-                  <p className="p-panel-desc">{sp.desc}</p>
-                  <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
-                    <a href={`/discover?sport=${sp.sport}`}>
-                      <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                        style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
-                        Find {sp.sport} games <ArrowRight size={16} />
-                      </motion.button>
-                    </a>
-                    <a href="/create">
-                      <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                        Host a game
-                      </motion.button>
-                    </a>
-                  </div>
-                </div>
-
-                {/* Game cards for this sport (real games + fact, or host prompt) */}
-                <div className="p-games">
-                  {(gamesBySport[sp.sport] ?? []).slice(0, 3).map((g) => {
-                    const pct = Math.round(((g.max_players - g.slots_remaining) / g.max_players) * 100);
-                    const when = new Date(g.event_date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" });
-                    return (
-                      <a key={g.id} href="/discover" className="p-gcard link">
-                        <div className="p-gcard-title">{g.title}</div>
-                        <div className="p-gcard-venue"><MapPin size={12} /> {g.venue}</div>
-                        <div className="p-gcard-row">
-                          <span className="p-gcard-when">{when}</span>
-                          <span className="p-gcard-fee" style={{ color: sp.color }}>Rs {g.fee}</span>
-                        </div>
-                        <div className="p-gcard-bar"><div style={{ height:"100%", width:`${pct}%`, background: sp.color, borderRadius:2 }} /></div>
-                        <div className="p-gcard-slots">{g.slots_remaining} of {g.max_players} spots left</div>
-                      </a>
-                    );
-                  })}
-
-                  {/* Fact card — untouchable */}
-                  {SPORT_FACT[sp.sport] && (
-                    <div className="p-gcard fact">
-                      <div>
-                        <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
-                        <div className="small">{SPORT_FACT[sp.sport].small}</div>
-                      </div>
-                      <div style={{ fontSize:11, fontFamily:"'JetBrains Mono',monospace", color:"var(--faint)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
-                        {sp.label} · Kathmandu
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Empty state — aesthetic host prompt */}
-                  {(gamesBySport[sp.sport] ?? []).length === 0 && (
-                    <a href="/create" className="p-gcard host link" style={{ borderColor: `${sp.color}55` }}>
-                      <div className="big" style={{ color: sp.color }}>No {sp.sport} games yet</div>
-                      <div className="small">Be the first to host one. Book a court, set your spots, and let players come to you.</div>
-                      <span style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:700, color: sp.color }}>
-                        Host a {sp.sport} game <ArrowRight size={14} />
-                      </span>
-                    </a>
-                  )}
-                </div>
-              </motion.div>
-            );
-          })()}
         </div>
 
         {/* ══════════════════════════════════
