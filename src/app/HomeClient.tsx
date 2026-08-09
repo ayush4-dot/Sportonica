@@ -179,8 +179,7 @@ const CSS = `
   }
   .p-panel { position:relative; min-height:auto; overflow:hidden; padding:52px 0; }
   .p-panel-bg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:24vw; line-height:1; opacity:0.045; pointer-events:none; user-select:none; }
-  .p-panel-content { position:relative; z-index:2; padding:0 56px; max-width:700px; }
-  .p-panel-num { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:20px; opacity:0.5; }
+  .p-panel-content { position:relative; z-index:2; padding:0 clamp(24px,5vw,56px); max-width:700px; }
   .p-panel-title { font-size:clamp(36px,5.5vw,64px); font-weight:800; line-height:0.95; letter-spacing:-2px; font-family:'Bricolage Grotesque',sans-serif; margin-bottom:14px; }
   .p-panel-desc { font-size:15px; line-height:1.55; color:rgba(255,255,255,0.6); max-width:440px; margin-bottom:20px; }
   .p-panel-accent { position:absolute; right:0; top:0; bottom:0; width:40%; display:flex; align-items:center; justify-content:center; font-size:28vw; opacity:0.1; pointer-events:none; }
@@ -219,7 +218,7 @@ const CSS = `
   }
 
   /* game cards inside each sport panel */
-  .p-games { position:relative; z-index:2; padding:24px 56px 0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
+  .p-games { position:relative; z-index:2; padding:24px clamp(24px,5vw,56px) 0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
   .p-gcard { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:18px; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s, background 0.4s; }
   .p-gcard.link { cursor:pointer; text-decoration:none; color:inherit; display:block; }
   .p-gcard.link:hover { transform:translateY(-5px); border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.05); }
@@ -238,7 +237,7 @@ const CSS = `
   .p-gcard.host { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; min-height:150px; border-style:dashed; }
   .p-gcard.host .big { font-family:'Bricolage Grotesque',sans-serif; font-size:18px; font-weight:800; line-height:1.2; }
   .p-gcard.host .small { font-size:12.5px; color:rgba(255,255,255,0.55); line-height:1.5; }
-  @media (max-width:640px){ .p-games { padding:28px 24px 0; grid-template-columns:1fr; } }
+  @media (max-width:640px){ .p-games { padding:28px clamp(24px,5vw,56px) 0; grid-template-columns:1fr; } }
 
   /* ── editorial grid ── */
   .p-editorial { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
@@ -292,9 +291,7 @@ const CSS = `
 
   /* ── mobile ── */
   @media(max-width:900px){
-    .p-hero-content { padding:0 24px; }
     .p-hero-h1 { letter-spacing:-1.5px; }
-    .p-panel-content { padding:0 24px; }
     .p-panel-accent { display:none; }
     .p-editorial { grid-template-columns:1fr; }
     .p-editorial-left { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:56px 24px; }
@@ -462,9 +459,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                     <div className="p-panel-bg">{sp.emoji}</div>
                     <div className="p-panel-accent">{sp.emoji}</div>
                     <div className="p-panel-content">
-                      <p className="p-panel-num" style={{ color: sp.color }}>
-                        {String(i+1).padStart(2,"0")} — {sp.label}
-                      </p>
                       <h2 className="p-panel-title" style={{ color: sp.color }}>{sp.label}</h2>
                       <p className="p-panel-desc">{sp.desc}</p>
                       <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
