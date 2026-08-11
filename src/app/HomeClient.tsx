@@ -146,12 +146,24 @@ const CSS = `
 
 
   @media (max-width:900px) {
-    .p-hero-top { flex-direction:column; align-items:flex-start; gap:22px; padding-bottom:18px; }
-    .p-hero-aside { flex:1 1 auto; gap:16px; }
-    }
+    .p-hero-top { align-items:flex-end; gap:14px; padding-bottom:16px; }
+  }
   .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Inter',sans-serif; margin:0; }
   .p-hero-h1 em { font-style:normal; color:#006241; }
   [data-theme="paper"] .p-hero-h1 { color:#14171E; }
+
+  /* Phones: keep the CTA beside the headline instead of stacking it in
+     its own row (which used to leave a slab of empty vertical space
+     under a full-width button) — shrink both just enough to sit flush. */
+  @media (max-width:560px) {
+    .p-hero-h1 { font-size:clamp(30px,10.5vw,44px); letter-spacing:-1.4px; }
+    .p-hero-top { gap:10px; }
+    .p-hero-aside { flex:0 1 auto; min-width:0; }
+    .p-book-in { padding:10px 12px 10px 14px; gap:8px; }
+    .p-book-txt b { font-size:13px; }
+    .p-book-txt small { font-size:9px; white-space:nowrap; }
+    .p-book-go { width:26px; height:26px; }
+  }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
