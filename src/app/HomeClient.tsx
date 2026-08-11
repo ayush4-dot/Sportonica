@@ -447,7 +447,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               {(() => {
                 const sp = SPORTS_PANELS.find((x) => x.sport === openSport);
                 if (!sp) return null;
-                const i = SPORTS_PANELS.findIndex((x) => x.sport === sp.sport);
                 return (
                   <motion.div
                     key={sp.sport}
@@ -458,23 +457,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                   >
                     <div className="p-panel-bg">{sp.emoji}</div>
                     <div className="p-panel-accent">{sp.emoji}</div>
-                    <div className="p-panel-content">
-                      <h2 className="p-panel-title" style={{ color: sp.color }}>{sp.label}</h2>
-                      <p className="p-panel-desc">{sp.desc}</p>
-                      <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
-                        <a href={`/discover?sport=${sp.sport}`}>
-                          <motion.button className="btn-primary" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}
-                            style={{ background: sp.color, color: i === 2 ? "#000" : "#fff" }}>
-                            Find {sp.sport} games <ArrowRight size={16} />
-                          </motion.button>
-                        </a>
-                        <a href="/create">
-                          <motion.button className="btn-ghost" whileHover={{ scale:1.04 }} whileTap={{ scale:0.97 }}>
-                            Host a game
-                          </motion.button>
-                        </a>
-                      </div>
-                    </div>
 
                     {/* Game cards for this sport (real games + fact, or host prompt) */}
                     <div className="p-games">
