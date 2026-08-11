@@ -57,7 +57,7 @@ export default function MyGamesClient({
   const [editing, setEditing] = useState<Game | null>(null);
   const [inviting, setInviting] = useState<Game | null>(null);
   const [resubmit, setResubmit] = useState<
-    { bookingType: BookingType; bookingId: string; amount: number } | null
+    { bookingType: BookingType; bookingId: string; amount: number; summary: { label: string; value: string }[] } | null
   >(null);
 
   return (
@@ -163,7 +163,14 @@ export default function MyGamesClient({
                   {g.paymentStatus === "rejected" && g.bookingId && (
                     <button
                       className="mg-btn"
-                      onClick={() => setResubmit({ bookingType: "event_booking", bookingId: g.bookingId!, amount: g.fee })}
+                      onClick={() => setResubmit({
+                        bookingType: "event_booking", bookingId: g.bookingId!, amount: g.fee,
+                        summary: [
+                          { label: "Game", value: `${g.sport} · ${g.title}` },
+                          { label: "Venue", value: g.venue },
+                          { label: "When", value: when(g.event_date) },
+                        ],
+                      })}
                     >
                       Resubmit payment
                     </button>
@@ -196,7 +203,14 @@ export default function MyGamesClient({
                 <div className="mg-actions">
                   <button
                     className="mg-btn"
-                    onClick={() => setResubmit({ bookingType: "court_booking", bookingId: b.id, amount: Number(b.price) })}
+                    onClick={() => setResubmit({
+                      bookingType: "court_booking", bookingId: b.id, amount: Number(b.price),
+                      summary: [
+                        { label: "Court", value: b.courts?.name ?? "Court" },
+                        { label: "Venue", value: b.venues?.name ?? "—" },
+                        { label: "When", value: when(b.starts_at) },
+                      ],
+                    })}
                   >
                     Resubmit payment
                   </button>
@@ -216,6 +230,7 @@ export default function MyGamesClient({
               bookingType={resubmit.bookingType}
               bookingId={resubmit.bookingId}
               amount={resubmit.amount}
+              summary={resubmit.summary}
               footer={<button className="mg-btn" onClick={() => { setResubmit(null); router.refresh(); }}>Done</button>}
             />
           </div>

@@ -11,6 +11,8 @@ import type { Payment } from "@/lib/payments/types";
 interface Row extends Payment, Record<string, unknown> {
   customer_name: string;
   booking_label: string;
+  venue_name: string;
+  booking_when: string;
 }
 
 function timeAgo(iso: string): string {
@@ -21,13 +23,23 @@ function timeAgo(iso: string): string {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+function whenLabel(iso: string): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleString("en-GB", {
+    day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu",
+  });
+}
+
 const COLS: Column<Row>[] = [
   { key: "booking_label", label: "Booking" },
   { key: "customer_name", label: "Customer" },
+  { key: "venue_name", label: "Venue" },
+  { key: "booking_when", label: "Date/Time", render: (r) => whenLabel(r.booking_when) },
   { key: "expected_amount", label: "Amount", type: "money" },
   {
+    // Both stay within the KhelamNa green/ink palette — no new colors.
     key: "payment_method", label: "Method", type: "badge",
-    badgeColors: { esewa: "#006241", khalti: "#5A67D8" },
+    badgeColors: { esewa: "#006241", khalti: "#1e3932" },
   },
   { key: "transaction_id", label: "Transaction" },
   { key: "submitted_at", label: "Submitted", render: (r) => timeAgo(r.submitted_at) },

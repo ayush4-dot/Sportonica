@@ -168,6 +168,12 @@ export default function BookingFlow({
             bookingType="court_booking"
             bookingId={awaitingPayment.id}
             amount={awaitingPayment.price}
+            summary={[
+              { label: "Venue", value: venueName },
+              { label: "Court", value: court?.name ?? "—" },
+              { label: "Date", value: new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: KTM_TZ }) },
+              { label: "Time", value: hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—" },
+            ]}
             footer={
               <>
                 <button className="play-btn gold" onClick={() => router.push("/discover")}>See my games</button>

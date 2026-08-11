@@ -228,7 +228,7 @@ export async function notifyPaymentReviewed(paymentId: string) {
       user_id: ctx.payment.user_id,
       kind: "payment_approved",
       title: "Booking confirmed",
-      body: `Your payment of Rs ${Math.round(ctx.payment.expected_amount)} for ${ctx.label} has been verified.`,
+      body: `Payment verified. Your booking is confirmed. Rs ${Math.round(ctx.payment.expected_amount)} · ${ctx.label}`,
     });
   } else if (ctx.payment.status === "REJECTED") {
     const reason = REJECTION_REASONS[ctx.payment.rejection_reason ?? "other"] ?? "Payment could not be verified";
@@ -239,7 +239,7 @@ export async function notifyPaymentReviewed(paymentId: string) {
       user_id: ctx.payment.user_id,
       kind: "payment_rejected",
       title: "Payment verification failed",
-      body: `${ctx.label}: ${reason}. Please submit a valid payment or contact support.`,
+      body: `Payment could not be verified. ${ctx.label} · Reason: ${reason}`,
     });
   }
 }

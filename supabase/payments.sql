@@ -220,6 +220,13 @@ begin
       from public.bookings where id = p_booking_id for update;
     if not found then raise exception 'BOOKING_NOT_FOUND'; end if;
     if v_owner is null or v_owner <> auth.uid() then raise exception 'NOT_YOUR_BOOKING'; end if;
+    if exists (
+      select 1 from public.bookings b
+      join public.events e on e.id = b.event_id
+      where b.id = p_booking_id and e.status = 'cancelled'
+    ) then
+      raise exception 'BOOKING_CANCELLED';
+    end if;
     if exists (select 1 from public.bookings where id = p_booking_id and payment_status = 'paid') then
       raise exception 'BOOKING_ALREADY_PAID';
     end if;
@@ -321,6 +328,8 @@ declare
   v_row       public.payments;
   v_new_status text;
   v_audit_action text;
+  v_court_state text;
+  v_event_status text;
 begin
   if not public.is_super_admin() then
     raise exception 'FORBIDDEN';
@@ -331,6 +340,26 @@ begin
   if v_row.status <> 'PENDING_VERIFICATION' then raise exception 'ALREADY_REVIEWED'; end if;
 
   if p_action = 'APPROVE' then
+    -- The booking may have been cancelled by staff/host while this payment
+    -- sat pending — never let an approval blindly resurrect it back to
+    -- confirmed. Lock the booking row too so a concurrent cancel can't
+    -- race past this check.
+    if v_row.booking_type = 'court_booking' then
+      select state into v_court_state from public.court_bookings where id = v_row.court_booking_id for update;
+      if v_court_state is null then raise exception 'BOOKING_NOT_FOUND'; end if;
+      if v_court_state in ('cancelled','dropped','no_show','refunded') then
+        raise exception 'BOOKING_NO_LONGER_VALID';
+      end if;
+    else
+      select e.status into v_event_status
+        from public.bookings b join public.events e on e.id = b.event_id
+        where b.id = v_row.event_booking_id for update of e;
+      if v_event_status is null then raise exception 'BOOKING_NOT_FOUND'; end if;
+      if v_event_status = 'cancelled' then
+        raise exception 'BOOKING_NO_LONGER_VALID';
+      end if;
+    end if;
+
     v_new_status := 'APPROVED';
     v_audit_action := 'APPROVED';
     update public.payments set status = 'APPROVED', reviewed_at = now(), reviewed_by = auth.uid()

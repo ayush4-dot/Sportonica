@@ -172,6 +172,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
               isHost={user?.id === game.host_id}
               venue={game.venue}
               mapsHref={mapsHref}
+              eventDate={game.event_date}
             />
 
             {nearby.length > 0 && (

@@ -165,9 +165,10 @@ export function paymentApproved(p: {
     subject: `Booking confirmed — ${p.bookingLabel}`,
     body: `Hi ${p.playerName},
 
-Your payment of ${rs(p.amount)} has been verified. Your booking is confirmed.
+Payment verified. Your booking is confirmed.
 
   Booking   ${p.bookingLabel}
+  Amount    ${rs(p.amount)}
   Venue     ${p.venue}
   When      ${fmtWhen(p.startsAt)} – ${fmtWhen(p.endsAt).split(", ").pop()}
 
@@ -186,8 +187,9 @@ export function paymentRejected(p: {
     subject: `Payment verification failed — ${p.bookingLabel}`,
     body: `Hi ${p.playerName},
 
-Your payment for ${p.bookingLabel} could not be verified.
+Payment could not be verified.
 
+  Booking  ${p.bookingLabel}
   Reason   ${p.reason}
 
 Please submit a valid payment or contact support.

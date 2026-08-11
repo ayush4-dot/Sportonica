@@ -111,8 +111,9 @@ export async function listAllPayments(limit = 200) {
   return attachDisplayInfo(sb, (data ?? []) as Payment[]);
 }
 
-// Batches the customer-name/booking-label lookups a review table needs so
-// the UI doesn't have to join client-side.
+// Batches the customer-name/booking-label/venue/when lookups a review table
+// needs so the UI doesn't have to join client-side (and so this stays O(1)
+// queries regardless of how many rows are in the list, not O(n)).
 async function attachDisplayInfo(
   sb: Awaited<ReturnType<typeof createClient>>,
   payments: Payment[]
@@ -123,11 +124,48 @@ async function attachDisplayInfo(
     : { data: [] as { id: string; full_name: string | null; name: string | null }[] };
   const nameMap = new Map((profiles ?? []).map((p) => [p.id, p.full_name ?? p.name ?? "—"]));
 
-  return payments.map((p) => ({
-    ...p,
-    customer_name: nameMap.get(p.user_id) ?? "—",
-    booking_label: bookingLabel(p.booking_type, p.court_booking_id ?? p.event_booking_id ?? ""),
-  }));
+  const courtIds = payments.filter((p) => p.booking_type === "court_booking").map((p) => p.court_booking_id!);
+  const eventBookingIds = payments.filter((p) => p.booking_type === "event_booking").map((p) => p.event_booking_id!);
+
+  const whenMap = new Map<string, { venue: string; when: string }>();
+
+  if (courtIds.length) {
+    const { data: courtBookings } = await sb
+      .from("court_bookings").select("id, starts_at, venue_id").in("id", courtIds);
+    const venueIds = [...new Set((courtBookings ?? []).map((b) => b.venue_id).filter(Boolean))];
+    const { data: venues } = venueIds.length
+      ? await sb.from("venues").select("id, name").in("id", venueIds)
+      : { data: [] as { id: string; name: string }[] };
+    const venueNameMap = new Map((venues ?? []).map((v) => [v.id, v.name]));
+    for (const b of courtBookings ?? []) {
+      whenMap.set(`court_booking:${b.id}`, { venue: venueNameMap.get(b.venue_id) ?? "—", when: b.starts_at });
+    }
+  }
+
+  if (eventBookingIds.length) {
+    const { data: legacyBookings } = await sb
+      .from("bookings").select("id, event_id").in("id", eventBookingIds);
+    const eventIds = [...new Set((legacyBookings ?? []).map((b) => b.event_id).filter(Boolean))];
+    const { data: events } = eventIds.length
+      ? await sb.from("events").select("id, venue, event_date").in("id", eventIds)
+      : { data: [] as { id: string; venue: string | null; event_date: string }[] };
+    const eventMap = new Map((events ?? []).map((e) => [e.id, e]));
+    for (const b of legacyBookings ?? []) {
+      const ev = b.event_id ? eventMap.get(b.event_id) : null;
+      whenMap.set(`event_booking:${b.id}`, { venue: ev?.venue ?? "—", when: ev?.event_date ?? "" });
+    }
+  }
+
+  return payments.map((p) => {
+    const w = whenMap.get(`${p.booking_type}:${p.court_booking_id ?? p.event_booking_id}`);
+    return {
+      ...p,
+      customer_name: nameMap.get(p.user_id) ?? "—",
+      booking_label: bookingLabel(p.booking_type, p.court_booking_id ?? p.event_booking_id ?? ""),
+      venue_name: w?.venue ?? "—",
+      booking_when: w?.when ?? "",
+    };
+  });
 }
 
 // Booking/venue/date/time context for the review screen — the `payments`

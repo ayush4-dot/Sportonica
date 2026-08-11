@@ -81,6 +81,11 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             bookingType="event_booking"
             bookingId={awaitingPayment.id}
             amount={awaitingPayment.amount}
+            summary={[
+              { label: "Game", value: `${event.sport} · ${event.title}` },
+              { label: "Venue", value: event.venue },
+              { label: "When", value: new Date(event.event_date).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" }) },
+            ]}
             footer={
               <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
             }

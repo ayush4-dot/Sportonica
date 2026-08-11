@@ -87,6 +87,7 @@ export const PAYMENT_ERROR_MESSAGES: Record<string, string> = {
   FORBIDDEN: "You don't have permission to do that.",
   PAYMENT_NOT_FOUND: "We couldn't find that payment.",
   ALREADY_REVIEWED: "This payment has already been reviewed.",
+  BOOKING_NO_LONGER_VALID: "This booking was cancelled since the payment was submitted — it can't be approved.",
   REJECTION_REASON_REQUIRED: "Pick a reason before rejecting a payment.",
   INVALID_ACTION: "Something went wrong. Please try again.",
 };

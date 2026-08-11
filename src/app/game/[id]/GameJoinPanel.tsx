@@ -8,11 +8,11 @@ import { confirmFreeBooking } from "@/lib/payments/actions";
 import PaymentStep from "@/components/payments/PaymentStep";
 
 export default function GameJoinPanel({
-  gameId, venueId, sport, fee, slotsLeft, alreadyIn, isHost, venue, mapsHref,
+  gameId, venueId, sport, fee, slotsLeft, alreadyIn, isHost, venue, mapsHref, eventDate,
 }: {
   gameId: string; venueId: string | null; sport: string; fee: number;
   slotsLeft: number; alreadyIn: boolean; isHost: boolean;
-  venue: string; mapsHref: string | null;
+  venue: string; mapsHref: string | null; eventDate: string;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -69,7 +69,16 @@ export default function GameJoinPanel({
       {err && <div className="gm-err">{err}</div>}
 
       {awaitingPayment ? (
-        <PaymentStep bookingType="event_booking" bookingId={awaitingPayment.id} amount={awaitingPayment.amount} />
+        <PaymentStep
+          bookingType="event_booking"
+          bookingId={awaitingPayment.id}
+          amount={awaitingPayment.amount}
+          summary={[
+            { label: "Game", value: sport },
+            { label: "Venue", value: venue },
+            { label: "When", value: new Date(eventDate).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" }) },
+          ]}
+        />
       ) : isHost ? (
         <div className="gm-join-note">You&apos;re hosting this game.</div>
       ) : joined ? (

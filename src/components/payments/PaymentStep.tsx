@@ -21,11 +21,14 @@ export default function PaymentStep({
   bookingType,
   bookingId,
   amount,
+  summary,
   footer,
 }: {
   bookingType: BookingType;
   bookingId: string;
   amount: number;
+  /** Booking summary rows (venue, date, time, court/sport…) shown above the amount — whatever context the caller already has. */
+  summary?: { label: string; value: string }[];
   /** Extra actions rendered under the "submitted" confirmation (e.g. "Done" / "See my games"). */
   footer?: React.ReactNode;
 }) {
@@ -95,6 +98,7 @@ export default function PaymentStep({
           <h3>Payment Submitted</h3>
           <div className="pymt-done-rows">
             <Row label="Booking" value={bookingLabel(bookingType, bookingId)} />
+            {summary?.map((s) => <Row key={s.label} label={s.label} value={s.value} />)}
             <Row label="Amount" value={rs(submitted.expected_amount)} />
             <Row label="Payment" value={submitted.payment_method === "esewa" ? "eSewa" : "Khalti"} />
             <Row label="Transaction" value={submitted.transaction_id} />
@@ -112,6 +116,13 @@ export default function PaymentStep({
   return (
     <div className="pymt">
       <style>{PYMT_CSS}</style>
+
+      {summary && summary.length > 0 && (
+        <div className="pymt-summary">
+          <span className="pymt-summary-t">Booking Summary</span>
+          {summary.map((s) => <Row key={s.label} label={s.label} value={s.value} />)}
+        </div>
+      )}
 
       <div className="pymt-amt">
         <span className="pymt-amt-lbl">Amount to Pay</span>
@@ -232,6 +243,14 @@ const PYMT_CSS = `
   color: inherit; transition: all .2s ease;
 }
 .pymt-method.on { border-color: #006241; background: rgba(0,98,65,.14); color: #4ADE80; }
+.pymt-summary {
+  background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
+  border-radius: 12px; padding: 4px 14px; margin-bottom: 16px;
+}
+.pymt-summary-t {
+  display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  opacity: .5; padding-top: 10px;
+}
 .pymt-panel {
   background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
   border-radius: 16px; padding: 20px;
@@ -295,4 +314,5 @@ const PYMT_CSS = `
 [data-theme="paper"] .pymt-in { background: #fff; border-color: rgba(20,23,30,.14); }
 [data-theme="paper"] .pymt-in::placeholder { color: rgba(20,23,30,.35); }
 [data-theme="paper"] .pymt-done-rows { background: #fff; border-color: rgba(20,23,30,.1); }
+[data-theme="paper"] .pymt-summary { background: #fff; border-color: rgba(20,23,30,.1); }
 `;
