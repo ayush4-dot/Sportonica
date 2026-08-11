@@ -116,7 +116,7 @@ export function GamesRail({ games }: { games: RailEvent[] }) {
   if (games.length === 0) return null;
   return (
     <Rail
-      title="Games to join"
+      title="Play socially"
       sub="Someone booked a court and needs players. Take a spot."
       href="/discover" hrefLabel="See all games"
     >
