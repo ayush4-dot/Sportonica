@@ -133,7 +133,7 @@ const PMC_CSS = `
 .pmc-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(242,237,230,0.09); border-radius: 16px; padding: 18px; }
 [data-theme="paper"] .pmc-card { background: #fff; border-color: rgba(20,23,30,0.1); }
 .pmc-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.pmc-head h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 18px; font-weight: 800; margin: 0; }
+.pmc-head h3 { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; margin: 0; }
 .pmc-status { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; }
 .pmc-status .dot { width: 7px; height: 7px; border-radius: 999px; }
 .pmc-status.on { color: #2E7D5B; }
@@ -150,7 +150,7 @@ const PMC_CSS = `
 .pmc-info { cursor: pointer; text-align: center; padding: 4px 0 12px; border-radius: 8px; }
 .pmc-info:hover { background: rgba(128,128,128,0.06); }
 .pmc-info-name { font-weight: 700; font-size: 14px; }
-.pmc-info-acct { font-family: 'JetBrains Mono', monospace; font-size: 13px; opacity: 0.7; margin-top: 2px; }
+.pmc-info-acct { font-family: 'Inter', sans-serif; font-size: 13px; opacity: 0.7; margin-top: 2px; }
 .pmc-edit { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
 .pmc-edit label { font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.55; margin-top: 6px; }
 .pmc-edit input {

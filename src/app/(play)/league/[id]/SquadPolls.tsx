@@ -31,7 +31,7 @@ export default function SquadPolls({
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "34px 0 14px" }}>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 18, fontWeight: 800, margin: 0 }}>
+        <h2 style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, margin: 0 }}>
           Polls {polls.length > 0 && <span style={{ opacity: 0.4, fontWeight: 500 }}>({polls.length})</span>}
         </h2>
         <button className="play-btn" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => setShowCreate(true)}>
@@ -51,7 +51,7 @@ export default function SquadPolls({
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
                 <div>
                   <div style={{ fontSize: 15, fontWeight: 700, lineHeight: 1.3 }}>{p.question}</div>
-                  <div style={{ fontSize: 11.5, color: "var(--faint)", marginTop: 4, fontFamily: "'JetBrains Mono',monospace" }}>
+                  <div style={{ fontSize: 11.5, color: "var(--faint)", marginTop: 4, fontFamily: "'Inter',sans-serif" }}>
                     {p.totalVotes} vote{p.totalVotes !== 1 ? "s" : ""}
                     {p.multi && " · pick many"}
                     {p.closed && " · closed"}
@@ -89,7 +89,7 @@ export default function SquadPolls({
                           {mine && <Check size={13} style={{ color: "#006241" }} />}
                           {o.label}
                         </span>
-                        <span style={{ fontSize: 12, fontFamily: "'JetBrains Mono',monospace", color: "var(--dim)", flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontFamily: "'Inter',sans-serif", color: "var(--dim)", flexShrink: 0 }}>
                           {o.votes} · {pct}%
                         </span>
                       </span>
@@ -138,7 +138,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
       <div onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 430, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 19, fontWeight: 800 }}>New poll</h3>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>New poll</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer" }}><X size={18} /></button>
         </div>
 

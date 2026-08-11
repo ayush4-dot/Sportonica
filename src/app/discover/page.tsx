@@ -518,7 +518,7 @@ const CSS = `
   max-width: 720px;
 }
 .disc-eyebrow {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   letter-spacing: 0.28em;
   text-transform: uppercase;
@@ -526,7 +526,7 @@ const CSS = `
   margin: 0 0 14px;
 }
 .disc-title {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 800;
   font-size: clamp(36px, 6vw, 64px);
   line-height: 0.98;
@@ -606,7 +606,7 @@ const CSS = `
   .disc-section, .disc-hero, .disc-filter-wrap { padding-right: 104px; }
 }
 .disc-count {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: 12px;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -644,12 +644,12 @@ const CSS = `
 [data-theme="paper"] .disc-loadmore { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.04); }
 
 .disc-collections { max-width:1200px; margin:0 auto; padding:48px 24px 8px; }
-.disc-collections-h { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:var(--chalk); font-family:'Bricolage Grotesque',sans-serif; margin:0 0 20px; }
+.disc-collections-h { font-size:22px; font-weight:800; letter-spacing:-0.5px; color:var(--chalk); font-family:'Inter',sans-serif; margin:0 0 20px; }
 .disc-collections-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
 .disc-coll-card { display:flex; flex-direction:column; gap:6px; padding:22px; border-radius:18px; text-decoration:none; border:1px solid rgba(255,255,255,0.1); background:linear-gradient(150deg, color-mix(in srgb, var(--c) 14%, transparent), rgba(255,255,255,0.02)); transition:transform .3s cubic-bezier(0.22,1,0.36,1), border-color .3s; }
 .disc-coll-card:hover { transform:translateY(-5px); border-color:var(--c); }
 .disc-coll-emoji { font-size:30px; line-height:1; margin-bottom:6px; }
-.disc-coll-title { font-size:17px; font-weight:800; color:var(--chalk); font-family:'Bricolage Grotesque',sans-serif; letter-spacing:-0.3px; }
+.disc-coll-title { font-size:17px; font-weight:800; color:var(--chalk); font-family:'Inter',sans-serif; letter-spacing:-0.3px; }
 .disc-coll-sub { font-size:13px; color:var(--muted, rgba(242,237,230,0.6)); }
 [data-theme="paper"] .disc-coll-card { border-color:rgba(20,23,30,0.12); }
 @media (max-width:760px){ .disc-collections-grid { grid-template-columns:1fr; } }
@@ -708,11 +708,11 @@ const CSS = `
 .disc-host-n { font-weight: 600; }
 .disc-host-t {
   display: inline-flex; align-items: center; gap: 3px;
-  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  font-family: 'Inter', sans-serif; font-size: 10.5px;
   border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; opacity: 0.75;
 }
 .disc-host-g {
-  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  margin-left: auto; font-family: 'Inter', sans-serif;
   font-size: 11px; opacity: 0.55;
 }
 .disc-skill {
@@ -733,7 +733,7 @@ const CSS = `
   color: color-mix(in srgb, var(--chalk) 50%, transparent);
 }
 .disc-card-title {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 700;
   font-size: 17px;
   line-height: 1.25;
@@ -783,7 +783,7 @@ const CSS = `
 .disc-map { position: relative; min-height: 280px; }
 .disc-mapsection { margin-top: 40px; }
 .disc-mapsection-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
-.disc-mapsection-h { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--chalk); font-family: 'Bricolage Grotesque', sans-serif; margin: 0; }
+.disc-mapsection-h { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: var(--chalk); font-family: 'Inter', sans-serif; margin: 0; }
 .disc-map-toggle { font-size:13px; font-weight:700; padding:9px 18px; border-radius:999px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); color:var(--chalk); cursor:pointer; transition:all .2s; display:inline-flex; align-items:center; gap:6px; font-family:'Inter',sans-serif; }
 .disc-map-toggle:hover { background:rgba(255,255,255,0.12); border-color:rgba(255,255,255,0.3); transform:translateY(-1px); }
 [data-theme="paper"] .disc-map-toggle { border-color:rgba(20,23,30,0.15); background:rgba(20,23,30,0.04); }
@@ -818,7 +818,7 @@ const CSS = `
   gap: 8px;
   margin-bottom: 10px;
   font-weight: 800;
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Inter', sans-serif;
   color: #E85D24;
 }
 .disc-flash-title { font-size: 14px; font-weight: 600; margin: 0 0 6px; }
@@ -884,7 +884,7 @@ const CSS = `
     linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
 }
 .disc-cta h2 {
-  font-family: 'Bricolage Grotesque', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-weight: 800;
   font-size: clamp(28px, 5vw, 44px);
   letter-spacing: -0.02em;

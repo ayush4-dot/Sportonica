@@ -354,7 +354,7 @@ export default function BookFilters({
         .bf-step-box button:hover:not(:disabled) { background:rgba(0,98,65,.16); }
         .bf-step-box button:disabled { opacity:.25; cursor:not-allowed; }
         .bf-step-v {
-          flex:1; text-align:center; font-family:'JetBrains Mono',monospace;
+          flex:1; text-align:center; font-family:'Inter',sans-serif;
           font-size:13px; font-weight:700; white-space:nowrap;
         }
         .bf-step-v.ph { opacity:.35; font-weight:500; }

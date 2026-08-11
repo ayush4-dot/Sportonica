@@ -32,7 +32,7 @@ export default function MemberManager({
   return (
     <>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "34px 0 14px" }}>
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 18, fontWeight: 800, margin: 0 }}>
+        <h2 style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, margin: 0 }}>
           Members <span style={{ opacity: 0.4, fontWeight: 500 }}>({members.length})</span>
         </h2>
         {isCreator && (
@@ -50,7 +50,7 @@ export default function MemberManager({
               <Avatar name={m.name} url={m.avatar_url} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 600 }}>{m.name}</div>
-                {m.username && <div style={{ fontSize: 12, color: "var(--faint)", fontFamily: "'JetBrains Mono',monospace" }}>@{m.username}</div>}
+                {m.username && <div style={{ fontSize: 12, color: "var(--faint)", fontFamily: "'Inter',sans-serif" }}>@{m.username}</div>}
               </div>
             </Link>
 
@@ -114,7 +114,7 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
       <div onClick={(e) => e.stopPropagation()}
         style={{ width: "100%", maxWidth: 420, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 19, fontWeight: 800 }}>Invite players</h3>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Invite players</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer" }}><X size={18} /></button>
         </div>
 
@@ -134,7 +134,7 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
               <Avatar name={p.name} url={p.avatar_url} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{p.name}</div>
-                {p.username && <div style={{ fontSize: 11.5, opacity: 0.5, fontFamily: "'JetBrains Mono',monospace" }}>@{p.username}</div>}
+                {p.username && <div style={{ fontSize: 11.5, opacity: 0.5, fontFamily: "'Inter',sans-serif" }}>@{p.username}</div>}
               </div>
               <button onClick={() => invite(p.id)} disabled={pending || added.has(p.id)}
                 style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#ffffff", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>

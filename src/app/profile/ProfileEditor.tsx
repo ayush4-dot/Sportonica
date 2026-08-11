@@ -84,7 +84,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
         <h2 className="pf-card-t">Your player card</h2>
         {!editingUn ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <code style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, opacity: 0.8 }}>{publicUrl}</code>
+            <code style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, opacity: 0.8 }}>{publicUrl}</code>
             <button className="pf-btn ghost" style={{ padding: "6px 12px", fontSize: 12 }} onClick={() => setEditingUn(true)}>Edit</button>
             <Link className="pf-btn ghost" style={{ padding: "6px 12px", fontSize: 12 }} href={`/p/${username}`}>
               <ExternalLink size={12} /> View
@@ -92,10 +92,10 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
           </div>
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, opacity: 0.6 }}>{origin}/p/</span>
+            <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 13, opacity: 0.6 }}>{origin}/p/</span>
             <input className="pf-input" value={unInput} onChange={(e) => setUnInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && saveUsername()}
-              style={{ width: 160, background: "transparent", border: "1px solid var(--pf-hair)", borderRadius: 9, padding: "8px 10px", color: "inherit", fontFamily: "'JetBrains Mono',monospace", fontSize: 13 }} />
+              style={{ width: 160, background: "transparent", border: "1px solid var(--pf-hair)", borderRadius: 9, padding: "8px 10px", color: "inherit", fontFamily: "'Inter',sans-serif", fontSize: 13 }} />
             <button className="pf-btn" style={{ padding: "7px 14px", fontSize: 12 }} onClick={saveUsername} disabled={pending}>Save</button>
             <button className="pf-btn ghost" style={{ padding: "7px 14px", fontSize: 12 }} onClick={() => { setEditingUn(false); setUnInput(username); }}>Cancel</button>
           </div>

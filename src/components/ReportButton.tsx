@@ -52,13 +52,13 @@ export default function ReportButton({
             {sent ? (
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <Check size={28} style={{ color: "#2E7D5B", marginBottom: 10 }} />
-                <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 18, fontWeight: 800 }}>Report sent</div>
+                <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>Report sent</div>
                 <div style={{ fontSize: 13, opacity: 0.65, marginTop: 6 }}>Our team will review it. Thanks for keeping Khelam Na safe.</div>
               </div>
             ) : (
               <>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                  <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 19, fontWeight: 800 }}>Report {targetType}</h3>
+                  <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Report {targetType}</h3>
                   <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer" }}><X size={18} /></button>
                 </div>
 

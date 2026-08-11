@@ -152,7 +152,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
 
         {shown.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", opacity: 0.65 }}>
-            <h3 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22 }}>
+            <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 22 }}>
               {venues.length > 0 ? "No grounds match that" : "No venues listed yet"}
             </h3>
             <p style={{ fontSize: 14 }}>

@@ -139,7 +139,7 @@ export default function ReviewPaymentModal({
           background: #12151b; border: 1px solid rgba(242,237,230,.12); border-radius: 18px; padding: 22px; }
         [data-theme="paper"] .rpm-card { background: #fff; border-color: rgba(20,23,30,.1); }
         .rpm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-        .rpm-head h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; font-weight: 800; margin: 0; }
+        .rpm-head h3 { font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 800; margin: 0; }
         .rpm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer; }
         .rpm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; }
         .rpm-wa:hover { opacity: 1; }
@@ -169,7 +169,7 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0", fontSize: 13.5 }}>
       <span style={{ opacity: 0.6 }}>{label}</span>
-      <span style={{ fontWeight: 700, fontFamily: accent ? "'JetBrains Mono', monospace" : undefined, color: accent ? "#006241" : undefined }}>
+      <span style={{ fontWeight: 700, fontFamily: accent ? "'Inter', sans-serif" : undefined, color: accent ? "#006241" : undefined }}>
         {value}
       </span>
     </div>

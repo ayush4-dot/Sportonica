@@ -38,7 +38,7 @@ export default async function SquadPage({ params }: { params: Promise<{ id: stri
             <Users size={26} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 30, fontWeight: 800, letterSpacing: "-1px" }}>{squad.name}</h1>
+            <h1 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 30, fontWeight: 800, letterSpacing: "-1px" }}>{squad.name}</h1>
             <span className="venue-tag">{squad.sport}</span>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default async function SquadPage({ params }: { params: Promise<{ id: stri
           />
         )}
 
-        <h2 style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 18, fontWeight: 800, margin: "34px 0 14px" }}>
+        <h2 style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, margin: "34px 0 14px" }}>
           Squad chat
         </h2>
         <SquadChat

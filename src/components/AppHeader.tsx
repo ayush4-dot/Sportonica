@@ -322,7 +322,7 @@ export default function AppHeader() {
         [data-theme="paper"] .ah-sheet { background:#F8F5F0; border-color:rgba(20,23,30,.12); }
         .ah-namaste { font-size:22px; color:#006241; margin:0 0 8px; font-weight:600; }
         .ah-sheet h2 {
-          font-family:'Bricolage Grotesque',sans-serif; font-size:27px; font-weight:800;
+          font-family:'Inter',sans-serif; font-size:27px; font-weight:800;
           letter-spacing:-1px; margin:0 0 8px;
         }
         .ah-sub { font-size:13.5px; opacity:.6; line-height:1.5; margin:0 0 20px; }

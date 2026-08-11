@@ -19,17 +19,17 @@
 .plt-k {
   width: 40px; height: 40px; border-radius: 11px; background: #006241; color: #ffffff;
   display: grid; place-items: center; font-weight: 800; font-size: 22px;
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
-.plt-name { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.4px; }
-.plt-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; }
+.plt-name { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.4px; }
+.plt-sub { font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; }
 .plt-nav { display: flex; gap: 20px; }
 .plt-nav a { color: inherit; text-decoration: none; font-size: 13.5px; font-weight: 600; opacity: 0.75; }
 .plt-nav a:hover { opacity: 1; }
 
 .plt-body { padding: 30px 28px 80px; max-width: 1200px; margin: 0 auto; }
 
-.plt-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -1px; margin: 0 0 4px; }
+.plt-h1 { font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 800; letter-spacing: -1px; margin: 0 0 4px; }
 .plt-sub2 { font-size: 13.5px; opacity: 0.6; margin: 0 0 26px; }
 
 /* stat strip */
@@ -40,11 +40,11 @@
   border-radius: 15px; padding: 18px;
 }
 [data-theme="paper"] .plt-stat { background: #fff; border-color: rgba(20,23,30,0.1); }
-.plt-stat-v { font-family: 'JetBrains Mono', monospace; font-size: 30px; font-weight: 700; letter-spacing: -1px; }
+.plt-stat-v { font-family: 'Inter', sans-serif; font-size: 30px; font-weight: 700; letter-spacing: -1px; }
 .plt-stat-v.warn { color: #d97706; }
-.plt-stat-l { font-family: 'JetBrains Mono', monospace; font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.5; margin-top: 8px; }
+.plt-stat-l { font-family: 'Inter', sans-serif; font-size: 9.5px; letter-spacing: 0.15em; text-transform: uppercase; opacity: 0.5; margin-top: 8px; }
 
-.plt-sec-t { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; margin: 34px 0 14px; }
+.plt-sec-t { font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 800; letter-spacing: -0.4px; margin: 34px 0 14px; }
 
 /* ── DataTable ── */
 .dt { border: 1px solid rgba(242,237,230,0.09); border-radius: 15px; overflow: hidden; background: rgba(255,255,255,0.02); }
@@ -56,7 +56,7 @@
   font-family: inherit; font-size: 13.5px; width: 100%;
 }
 .dt-bar-right { display: flex; align-items: center; gap: 12px; }
-.dt-count { font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.5; }
+.dt-count { font-family: 'Inter', sans-serif; font-size: 11px; opacity: 0.5; }
 .dt-btn {
   display: inline-flex; align-items: center; gap: 6px;
   background: transparent; border: 1px solid rgba(128,128,128,0.3); border-radius: 8px;
@@ -70,7 +70,7 @@
 .dt table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
 .dt th {
   text-align: left; padding: 11px 14px;
-  font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em;
+  font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.12em;
   text-transform: uppercase; opacity: 0.55; white-space: nowrap; user-select: none;
 }
 .dt th.sortable { cursor: pointer; }
@@ -80,7 +80,7 @@
 .dt tbody tr:hover { background: rgba(128,128,128,0.05); }
 .dt-empty { text-align: center; opacity: 0.5; padding: 34px !important; }
 .dt-dim { opacity: 0.35; }
-.dt-mono { font-family: 'JetBrains Mono', monospace; }
+.dt-mono { font-family: 'Inter', sans-serif; }
 .dt-badge {
   display: inline-block; padding: 3px 10px; border-radius: 7px;
   border: 1px solid; font-size: 11.5px; font-weight: 700; text-transform: capitalize;

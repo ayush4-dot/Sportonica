@@ -241,7 +241,7 @@ export default function MyGamesClient({
         .mg { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
         .mg-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .2em;
           text-transform: uppercase; opacity: .5; margin: 0 0 10px; }
-        .mg-h1 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(34px,5vw,60px);
+        .mg-h1 { font-family: 'Inter', sans-serif; font-size: clamp(34px,5vw,60px);
           font-weight: 800; letter-spacing: -2px; line-height: .95; margin: 0; color: #fff; }
         .mg-h1 em { font-style: normal; color: #006241; }
         [data-theme="paper"] .mg-h1 { color: #14171E; }
@@ -255,7 +255,7 @@ export default function MyGamesClient({
           color: inherit; border-radius: 999px; padding: 9px 16px;
           font-size: 13px; font-weight: 700; font-family: inherit; transition: all .2s;
         }
-        .mg-tabs button span { opacity: .55; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+        .mg-tabs button span { opacity: .55; font-family: 'Inter', sans-serif; font-size: 11.5px; }
         .mg-tabs button.on { background: rgba(0,98,65,.15); border-color: rgba(0,98,65,.5); color: #006241; }
 
         .mg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px,1fr)); gap: 14px; }
@@ -267,8 +267,8 @@ export default function MyGamesClient({
         .mg-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 9px; }
         .mg-sport { font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; opacity: .65; }
         .mg-going { display: inline-flex; align-items: center; gap: 4px;
-          font-family: 'JetBrains Mono', monospace; font-size: 11.5px; opacity: .7; }
-        .mg-title { font-family: 'Bricolage Grotesque', sans-serif; font-size: 17px;
+          font-family: 'Inter', sans-serif; font-size: 11.5px; opacity: .7; }
+        .mg-title { font-family: 'Inter', sans-serif; font-size: 17px;
           font-weight: 700; margin: 0 0 8px; letter-spacing: -.3px; }
         .mg-meta { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
           opacity: .62; margin: 0 0 5px; }
@@ -301,7 +301,7 @@ export default function MyGamesClient({
 
         .mg-empty { text-align: center; padding: 70px 20px; border-radius: 18px;
           border: 1px dashed var(--line, rgba(242,237,230,.16)); }
-        .mg-empty h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px;
+        .mg-empty h3 { font-family: 'Inter', sans-serif; font-size: 19px;
           font-weight: 800; margin: 0 0 8px; }
         .mg-empty p { font-size: 13.5px; opacity: .6; margin: 0 0 18px; }
 
@@ -312,7 +312,7 @@ export default function MyGamesClient({
           border-radius: 20px; padding: 22px; background: #12151b;
           border: 1px solid rgba(242,237,230,.12); }
         [data-theme="paper"] .mg-sheet { background: #F8F5F0; }
-        .mg-sheet h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 20px;
+        .mg-sheet h3 { font-family: 'Inter', sans-serif; font-size: 20px;
           font-weight: 800; margin: 0 0 4px; }
         .mg-sheet .hint { font-size: 12.5px; opacity: .58; margin: 0 0 18px; line-height: 1.5; }
         .mg-field { margin-bottom: 14px; }

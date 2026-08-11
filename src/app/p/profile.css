@@ -30,7 +30,7 @@
 
 /* ── Hero: portfolio-style masthead ── */
 .pf-eyebrow {
-  font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  font-family: 'Inter', sans-serif; font-size: 11.5px;
   letter-spacing: 0.24em; text-transform: uppercase; color: var(--pf-accent);
   margin-bottom: 22px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
 }
@@ -38,7 +38,7 @@
 
 .pf-hero { display: flex; gap: 32px; align-items: flex-start; justify-content: space-between; }
 .pf-name {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: clamp(52px, 11vw, 104px);
   font-weight: 800; letter-spacing: -0.04em; line-height: 0.94;
   margin: 0; text-transform: none;
@@ -47,7 +47,7 @@
   width: 128px; height: 128px; border-radius: 0; object-fit: cover;
   flex-shrink: 0; margin-top: 8px;
   display: grid; place-items: center;
-  font-family: 'Bricolage Grotesque', sans-serif; font-size: 52px; font-weight: 800;
+  font-family: 'Inter', sans-serif; font-size: 52px; font-weight: 800;
   background: linear-gradient(150deg, #006241, #1e3932); color: #ffffff;
 }
 @media (max-width: 640px) { .pf-avatar { width: 84px; height: 84px; font-size: 34px; } }
@@ -57,7 +57,7 @@
   max-width: 560px; margin: 26px 0 0;
 }
 .pf-meta {
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12px;
   color: var(--pf-faint); margin-top: 18px; display: flex; gap: 22px; flex-wrap: wrap;
 }
 
@@ -96,12 +96,12 @@
 }
 .pf-stat + .pf-stat { padding-left: 22px; }
 .pf-stat-v {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Inter', sans-serif;
   font-size: clamp(38px, 6vw, 56px); font-weight: 700;
   letter-spacing: -0.05em; line-height: 1;
 }
 .pf-stat-l {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  font-family: 'Inter', sans-serif; font-size: 10px;
   letter-spacing: 0.18em; text-transform: uppercase; color: var(--pf-faint);
   margin-top: 12px;
 }
@@ -115,16 +115,16 @@
   border-top: 1px solid var(--pf-hair); padding-top: 22px; margin-bottom: 30px;
 }
 .pf-sec-num {
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  font-family: 'Inter', sans-serif; font-size: 12px;
   color: var(--pf-accent); letter-spacing: 0.1em;
 }
 .pf-sec-t {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: clamp(22px, 3.6vw, 32px); font-weight: 800;
   letter-spacing: -0.03em; margin: 0;
 }
 .pf-sec-count {
-  margin-left: auto; font-family: 'JetBrains Mono', monospace;
+  margin-left: auto; font-family: 'Inter', sans-serif;
   font-size: 12px; color: var(--pf-faint);
 }
 
@@ -133,10 +133,10 @@
 .pf-sport:last-child { border-bottom: none; }
 .pf-sport-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
 .pf-sport-name {
-  font-family: 'Bricolage Grotesque', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: clamp(18px, 2.6vw, 24px); font-weight: 700; letter-spacing: -0.02em;
 }
-.pf-sport-n { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--pf-dim); }
+.pf-sport-n { font-family: 'Inter', sans-serif; font-size: 13px; color: var(--pf-dim); }
 .pf-bar { height: 2px; background: var(--pf-hair); overflow: hidden; }
 .pf-bar > div { height: 100%; }
 
@@ -155,7 +155,7 @@
   padding: 16px 0; border-bottom: 1px solid var(--pf-hair);
 }
 .pf-game:last-child { border-bottom: none; }
-.pf-game-date { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--pf-faint); }
+.pf-game-date { font-family: 'Inter', sans-serif; font-size: 12px; color: var(--pf-faint); }
 .pf-game-t { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
 .pf-game-v { font-size: 12.5px; color: var(--pf-faint); margin-top: 2px; }
 .pf-dot { width: 9px; height: 9px; border-radius: 99px; }
@@ -165,7 +165,7 @@
 .pf-trustline {
   margin-top: 72px; border-top: 1px solid var(--pf-hair); padding-top: 22px;
   display: flex; justify-content: space-between; align-items: baseline; gap: 16px; flex-wrap: wrap;
-  font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+  font-family: 'Inter', sans-serif; font-size: 11.5px;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--pf-faint);
 }
 

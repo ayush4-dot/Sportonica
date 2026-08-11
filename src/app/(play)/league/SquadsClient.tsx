@@ -71,7 +71,7 @@ export default function SquadsClient({
                         <Users size={20} />
                       </div>
                       <div>
-                        <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 18, fontWeight: 700 }}>{g.name}</h3>
+                        <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 700 }}>{g.name}</h3>
                         <span className="venue-tag" style={{ marginTop: 4, display: "inline-block" }}>{g.sport}</span>
                       </div>
                     </div>
@@ -148,7 +148,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(6,7,10,0.72)", backdropFilter: "blur(6px)", zIndex: 400, display: "grid", placeItems: "center", padding: 20 }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: "var(--ink-2, #14171E)", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 18, padding: 26, color: "var(--paper, #F2EDE6)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22, fontWeight: 800 }}>Make a group</h3>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 22, fontWeight: 800 }}>Make a group</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6 }}><X size={20} /></button>
         </div>
 

@@ -11,11 +11,11 @@ export default function OfflinePage() {
         <div style={{
           width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#ffffff",
           display: "grid", placeItems: "center", margin: "0 auto 22px",
-          fontFamily: "'Bricolage Grotesque', sans-serif", fontSize: 34, fontWeight: 800,
+          fontFamily: "'Inter', sans-serif", fontSize: 34, fontWeight: 800,
         }}>K</div>
 
         <h1 style={{
-          fontFamily: "'Bricolage Grotesque', sans-serif",
+          fontFamily: "'Inter', sans-serif",
           fontSize: 30, fontWeight: 800, letterSpacing: "-1px", margin: "0 0 10px",
         }}>
           You&apos;re offline

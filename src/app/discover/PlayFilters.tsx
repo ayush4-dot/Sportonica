@@ -245,7 +245,7 @@ export default function PlayFilters({
           background:rgba(0,98,65,.15); border-color:rgba(0,98,65,.55); color:#006241;
         }
         .pf-count {
-          margin-left:auto; font-family:'JetBrains Mono',monospace;
+          margin-left:auto; font-family:'Inter',sans-serif;
           font-size:11.5px; opacity:.55; white-space:nowrap;
         }
         .pf-count em { font-style:normal; opacity:.7; }

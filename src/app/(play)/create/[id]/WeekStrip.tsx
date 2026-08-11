@@ -130,7 +130,7 @@ export default function WeekStrip({
           text-transform: uppercase; opacity: .45; margin: 0 0 6px;
         }
         .wsx-big {
-          font-family: 'Bricolage Grotesque', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: clamp(21px, 3vw, 30px); font-weight: 800;
           letter-spacing: -1px; line-height: 1; margin: 0;
           background: linear-gradient(96deg, #d4e9e2, #006241 55%, #1e3932);
@@ -200,7 +200,7 @@ export default function WeekStrip({
 
         .wsx-dow { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; opacity: .55; }
         .wsx-num {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: 'Inter', sans-serif;
           font-size: 22px; font-weight: 800; letter-spacing: -1px; line-height: 1;
         }
         .wsx-dot { width: 5px; height: 5px; border-radius: 99px; background: transparent; }

@@ -27,7 +27,7 @@ export default function SquadSettings({
 
   return (
     <div style={{ border: "1px solid var(--line)", borderRadius: 14, padding: 16, marginTop: 18 }}>
-      <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.5, marginBottom: 14 }}>
+      <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.5, marginBottom: 14 }}>
         Squad settings
       </div>
 

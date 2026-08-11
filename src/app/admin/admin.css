@@ -22,8 +22,8 @@
   --a-warn:    #d97706;   /* genuine warning — pending, reserved states */
 
   --a-radius:  14px;
-  --a-mono: 'JetBrains Mono', ui-monospace, monospace;
-  --a-disp: 'Bricolage Grotesque', system-ui, sans-serif;
+  --a-mono: 'Inter', system-ui, sans-serif;
+  --a-disp: 'Inter', system-ui, sans-serif;
   --a-body: 'Inter', system-ui, sans-serif;
 
   background: var(--a-bg);

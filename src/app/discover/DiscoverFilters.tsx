@@ -173,7 +173,7 @@ export default function DiscoverFilters({
           background: rgba(0,98,65,0.14); border-color: rgba(0,98,65,0.45); color: #006241;
         }
         .df-count {
-          margin-left: auto; font-family: 'JetBrains Mono', monospace;
+          margin-left: auto; font-family: 'Inter', sans-serif;
           font-size: 11.5px; opacity: 0.55;
         }
         .df-clear { border: none; opacity: 0.6; padding: 8px 8px; }

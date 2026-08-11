@@ -117,7 +117,7 @@ export default function PWARegister() {
         .pwa-mark {
           width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
           background: #006241; color: #ffffff; display: grid; place-items: center;
-          font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; font-weight: 800;
+          font-family: 'Inter', sans-serif; font-size: 21px; font-weight: 800;
         }
         .pwa-copy { flex: 1; min-width: 0; }
         .pwa-copy b { display: block; font-size: 13.5px; font-weight: 700; }

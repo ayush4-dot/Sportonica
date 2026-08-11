@@ -85,7 +85,7 @@ export default function EventForm({
     return (
       <div className="ev-card" style={{ textAlign: "center", padding: 40 }}>
         <Check size={30} style={{ color: "#2E7D5B", marginBottom: 12 }} />
-        <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 22, fontWeight: 800 }}>Event is live</div>
+        <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 22, fontWeight: 800 }}>Event is live</div>
         <div style={{ opacity: 0.6, fontSize: 13.5, marginTop: 6 }}>It&apos;s on discover now. Taking you there…</div>
       </div>
     );

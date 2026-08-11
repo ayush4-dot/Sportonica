@@ -471,7 +471,7 @@ export default function BookingFlow({
           background: linear-gradient(150deg, rgba(46,125,91,.16), rgba(46,125,91,.04));
         }
         .bkw-offer .amt {
-          font-family: 'JetBrains Mono', monospace; font-size: 17px; font-weight: 800;
+          font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 800;
           letter-spacing: -.5px; color: #4ADE80;
         }
         .bkw-offer .lbl { font-size: 12.5px; font-weight: 700; }
@@ -518,7 +518,7 @@ export default function BookingFlow({
         [data-theme="paper"] .bkw-bar { background: rgba(248,245,240,0.94); }
         .bkw-price { display: flex; flex-direction: column; line-height: 1.25; }
         .bkw-price .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .5; }
-        .bkw-price .val { font-family: 'JetBrains Mono', monospace; font-size: 19px; font-weight: 700; }
+        .bkw-price .val { font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 700; }
         .bkw-price .sub { font-size: 11.5px; opacity: .55; }
         .bkw-nav { display: flex; gap: 8px; }
         @media (max-width: 480px) {

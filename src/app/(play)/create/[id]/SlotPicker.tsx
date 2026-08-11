@@ -154,7 +154,7 @@ export default function SlotPicker({
         .sp-tab:hover { border-color: rgba(0,98,65,.45); }
         .sp-tab.on { background: rgba(0,98,65,.14); border-color: rgba(0,98,65,.55); color: #006241; }
         .sp-tab .t { font-size: 13px; font-weight: 700; }
-        .sp-tab .n { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; opacity: .6; }
+        .sp-tab .n { font-family: 'Inter', sans-serif; font-size: 10.5px; opacity: .6; }
 
         .sp-grid {
           display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px;
@@ -162,7 +162,7 @@ export default function SlotPicker({
         .sp-slot {
           padding: 13px 6px; border-radius: 12px;
           border: 1px solid var(--line); background: transparent; color: inherit;
-          font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 700;
+          font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 700;
           transition: border-color .18s, background .18s, color .18s, transform .18s, box-shadow .18s;
         }
         .sp-slot.free { cursor: pointer; }
@@ -196,7 +196,7 @@ export default function SlotPicker({
         .sp-legend .sw.free   { border: 1px solid var(--line); }
         .sp-legend .sw.taken  { background: rgba(95,117,109,.22); border: 1px solid rgba(95,117,109,.5); }
         .sp-legend .sw.picked { background: #006241; }
-        .sp-count { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: .55; }
+        .sp-count { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 11px; opacity: .55; }
 
         .sp-msg { display: flex; align-items: center; gap: 9px; font-size: 13.5px; opacity: .65; padding: 18px 0; }
         .sp-spin { animation: spspin 1s linear infinite; }

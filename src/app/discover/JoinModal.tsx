@@ -58,7 +58,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
           <div>
-            <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 21, fontWeight: 800, letterSpacing: "-0.5px" }}>
+            <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 21, fontWeight: 800, letterSpacing: "-0.5px" }}>
               {done ? "You're in!" : awaitingPayment ? "Complete payment" : "Join this game"}
             </div>
             <div style={{ fontSize: 13, color: "rgba(242,237,230,0.6)", marginTop: 2 }}>{event.sport} · {event.title}</div>
@@ -106,7 +106,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
               )}
               <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(242,237,230,0.1)" }}>
                 <span style={{ color: "rgba(242,237,230,0.6)" }}>Your share</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 20, fontWeight: 700, color: "#006241" }}>Rs {Number(event.fee) || 0}</span>
+                <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 20, fontWeight: 700, color: "#006241" }}>Rs {Number(event.fee) || 0}</span>
               </div>
             </div>
 

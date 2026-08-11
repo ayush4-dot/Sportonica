@@ -229,7 +229,7 @@ const PYMT_CSS = `
 .pymt { font-family: 'Inter', system-ui, sans-serif; color: var(--paper, #F2EDE6); }
 .pymt-amt { text-align: center; padding: 6px 0 18px; }
 .pymt-amt-lbl { display: block; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin-bottom: 6px; }
-.pymt-amt-val { font-family: 'JetBrains Mono', monospace; font-size: 34px; font-weight: 800; color: #006241; }
+.pymt-amt-val { font-family: 'Inter', sans-serif; font-size: 34px; font-weight: 800; color: #006241; }
 .pymt-hint { font-size: 13px; opacity: .65; margin: 0 0 10px; text-align: center; }
 .pymt-warn {
   display: flex; align-items: center; gap: 8px; font-size: 13px;
@@ -255,7 +255,7 @@ const PYMT_CSS = `
   background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
   border-radius: 16px; padding: 20px;
 }
-.pymt-panel h4 { margin: 0 0 14px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 16px; font-weight: 700; }
+.pymt-panel h4 { margin: 0 0 14px; font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 700; }
 .pymt-qr {
   display: block; width: 100%; max-width: 260px; aspect-ratio: 1; margin: 0 auto;
   border-radius: 14px; background: #fff; object-fit: contain; padding: 12px; box-sizing: border-box;
@@ -266,13 +266,13 @@ const PYMT_CSS = `
 }
 .pymt-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13.5px; }
 .pymt-row-l { opacity: .6; }
-.pymt-row-v { font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+.pymt-row-v { font-weight: 700; font-family: 'Inter', sans-serif; }
 .pymt-row-v.accent { color: #006241; }
 .pymt-steps { margin: 16px 0; padding-left: 20px; font-size: 12.5px; opacity: .75; line-height: 1.8; }
 .pymt-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; opacity: .6; margin: 16px 0 8px; }
 .pymt-in {
   width: 100%; box-sizing: border-box; background: rgba(0,0,0,.15); border: 1px solid rgba(242,237,230,.15);
-  border-radius: 10px; padding: 12px 14px; color: inherit; font-family: 'JetBrains Mono', monospace; font-size: 14px;
+  border-radius: 10px; padding: 12px 14px; color: inherit; font-family: 'Inter', sans-serif; font-size: 14px;
 }
 .pymt-in:focus { outline: none; border-color: #006241; }
 .pymt-in::placeholder { color: rgba(242,237,230,.35); }
@@ -301,7 +301,7 @@ const PYMT_CSS = `
   width: 60px; height: 60px; border-radius: 50%; background: #1e3932; display: grid; place-items: center;
   margin: 0 auto 16px;
 }
-.pymt-done h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 21px; margin: 0 0 16px; }
+.pymt-done h3 { font-family: 'Inter', sans-serif; font-size: 21px; margin: 0 0 16px; }
 .pymt-done-rows {
   text-align: left; background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
   border-radius: 12px; padding: 4px 16px; margin-bottom: 16px;

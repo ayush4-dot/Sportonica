@@ -87,7 +87,7 @@ export default function DateStrip({
           text-transform: uppercase; opacity: .42; margin: 0 0 6px;
         }
         .ds-big {
-          font-family: 'Bricolage Grotesque', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: clamp(22px, 3.2vw, 32px); font-weight: 800;
           letter-spacing: -1px; line-height: 1; margin: 0;
           background: linear-gradient(96deg, #d4e9e2, #006241 55%, #1e3932);
@@ -166,7 +166,7 @@ export default function DateStrip({
 
         .ds-dow { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; opacity: .55; }
         .ds-num {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: 'Inter', sans-serif;
           font-size: 22px; font-weight: 800; letter-spacing: -1px; line-height: 1;
         }
 

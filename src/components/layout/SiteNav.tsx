@@ -127,7 +127,7 @@ export default function SiteNav() {
         .snav-mob-menu.open { display: flex; }
         .snav-mob-menu a, .snav-mob-menu button {
           font-size: 32px; font-weight: 800; color: var(--chalk); text-decoration: none;
-          font-family: 'Bricolage Grotesque', sans-serif;
+          font-family: 'Inter', sans-serif;
           padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.08);
           display: block; line-height: 1.05; width: 100%; text-align: left;
           background: none; border-left: none; border-right: none; border-top: none;
@@ -192,8 +192,8 @@ export default function SiteNav() {
 
       <nav className={`snav${scrolled ? " scrolled" : ""}`}>
         <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: "2px" }}>
-          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Bricolage Grotesque',sans-serif" }}>Khelam</span>
-          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Bricolage Grotesque',sans-serif" }}>{" "}Na.</span>
+          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Inter',sans-serif" }}>Khelam</span>
+          <span style={{ fontSize: "20px", fontWeight: 800, color: "var(--chalk)", fontFamily: "'Inter',sans-serif" }}>{" "}Na.</span>
         </a>
 
         <div className="snav-links">

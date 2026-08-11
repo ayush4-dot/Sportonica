@@ -64,11 +64,11 @@ export default function RolePicker({ name, next }: { name: string; next: string 
         }
         .wc-card { width: 100%; max-width: 430px; }
         .wc-eyebrow {
-          font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+          font-family: 'Inter', sans-serif; font-size: 10.5px;
           letter-spacing: 0.2em; text-transform: uppercase; color: #006241; margin-bottom: 14px;
         }
         .wc-title {
-          font-family: 'Bricolage Grotesque', sans-serif;
+          font-family: 'Inter', sans-serif;
           font-size: clamp(30px, 6vw, 42px); font-weight: 800;
           letter-spacing: -1.5px; line-height: 1.05; margin: 0 0 10px;
         }
