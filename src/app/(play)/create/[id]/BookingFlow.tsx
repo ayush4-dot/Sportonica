@@ -71,6 +71,7 @@ export default function BookingFlow({
   const [skill, setSkill] = useState("any");
   const [bringGear, setBringGear] = useState(false);
   const [note, setNote] = useState("");
+  const [phone, setPhone] = useState("");
   const [done, setDone] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; price: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -91,6 +92,7 @@ export default function BookingFlow({
 
   function confirm() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
+    if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) { setErr("Enter a valid phone number."); return; }
     setErr(null);
     startTransition(async () => {
       try {
@@ -107,6 +109,7 @@ export default function BookingFlow({
           starts_at: ktmIso(dateStr, hour),
           ends_at: ktmIso(dateStr, hour + duration),
           source: "platform",
+          phone: phone.trim(),
           need_players: needPlayers,
           spots_needed: needPlayers ? spots : undefined,
           skill_level: needPlayers ? skill : undefined,
@@ -411,6 +414,18 @@ export default function BookingFlow({
             {needPlayers && (
               <div className="bk-split">The other Rs {price - perHead} is covered as {spots} players join.</div>
             )}
+
+            <div style={{ marginTop: 20 }}>
+              <p className="hint" style={{ marginBottom: 8 }}>Phone number</p>
+              <input
+                type="tel" inputMode="tel" className="bk-in" value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98XXXXXXXX"
+              />
+              <p className="hint" style={{ fontSize: 12, marginTop: 6, marginBottom: 0, opacity: 0.7 }}>
+                So the venue can reach you about this booking.
+              </p>
+            </div>
 
             <p className="hint" style={{ fontSize: 12.5, marginTop: 18, marginBottom: 0 }}>
               <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />

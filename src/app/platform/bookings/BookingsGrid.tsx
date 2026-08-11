@@ -7,8 +7,13 @@ interface BookingRow extends Record<string, unknown> {
   venue: string;
   starts_at: string;
   price: number | null;
-  status: string | null;
+  state: string | null;
+  payment_status: string | null;
   source: string | null;
+  customer_name: string | null;
+  phone: string | null;
+  payment_method: string | null;
+  transaction_id: string | null;
 }
 
 // 10% platform commission, shown per booking.
@@ -17,14 +22,39 @@ const COMMISSION = 0.10;
 const COLS: Column<BookingRow>[] = [
   { key: "venue", label: "Venue" },
   { key: "starts_at", label: "When", type: "date" },
+  {
+    key: "customer_name", label: "Customer", type: "custom",
+    render: (r) => (
+      <>
+        {r.customer_name ?? "Player"}
+        {r.phone && <div className="dt-dim" style={{ fontSize: 11 }}>{r.phone}</div>}
+      </>
+    ),
+  },
   { key: "price", label: "Amount", type: "money" },
   {
     key: "commission", label: "Our cut", type: "custom",
     render: (r) => <span className="dt-mono" style={{ color: "#006241" }}>Rs {Math.round((Number(r.price) || 0) * COMMISSION).toLocaleString("en-IN")}</span>,
   },
   {
-    key: "status", label: "Status", type: "badge",
-    badgeColors: { confirmed: "#2E7D5B", booked: "#2E7D5B", cancelled: "#ef4444", no_show: "#ef4444", played: "#3b82f6" },
+    key: "state", label: "Status", type: "badge",
+    badgeColors: {
+      reserved: "#F5A623", paid: "#2E7D5B", confirmed: "#2E7D5B", checked_in: "#2E7D5B",
+      played: "#3b82f6", dropped: "#8A95A3", no_show: "#ef4444", refunded: "#8A95A3", cancelled: "#ef4444",
+    },
+  },
+  {
+    key: "payment_status", label: "Payment", type: "badge",
+    badgeColors: {
+      unpaid: "#8A95A3", pending_verification: "#F5A623", paid: "#2E7D5B",
+      rejected: "#ef4444", partial: "#F5A623", refunded: "#8A95A3",
+    },
+  },
+  {
+    key: "transaction_id", label: "Approved via", type: "custom",
+    render: (r) => r.payment_method && r.transaction_id
+      ? <span className="dt-mono" style={{ fontSize: 12 }}>{String(r.payment_method).toUpperCase()} · {r.transaction_id}</span>
+      : <span className="dt-dim">—</span>,
   },
   {
     key: "source", label: "Source", type: "badge",

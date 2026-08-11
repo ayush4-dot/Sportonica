@@ -63,19 +63,49 @@ export async function allVenuesForPlatform() {
 // ── All bookings across every venue ─────────────────────────────
 export async function allBookingsForPlatform() {
   const { sb } = await requireSuperAdmin();
-  const { data } = await sb
+  // court_bookings has no `status` column (that was the bug making this
+  // page render empty — the query errored and the discarded error left
+  // `data` as null). The real columns are `state` and `payment_status`.
+  const { data, error } = await sb
     .from("court_bookings")
-    .select("id, starts_at, ends_at, price, status, source, venue_id, court_id")
+    .select("id, starts_at, ends_at, price, state, payment_status, source, customer_name, phone, venue_id, court_id")
     .order("starts_at", { ascending: false })
     .limit(500);
+  if (error) throw new Error(error.message);
 
+  const bookingIds = (data ?? []).map((b) => b.id);
   const venueIds = [...new Set((data ?? []).map((b) => b.venue_id).filter(Boolean))];
-  const { data: venues } = venueIds.length
-    ? await sb.from("venues").select("id, name").in("id", venueIds)
-    : { data: [] as { id: string; name: string }[] };
+  const [{ data: venues }, { data: payments }] = await Promise.all([
+    venueIds.length
+      ? sb.from("venues").select("id, name").in("id", venueIds)
+      : Promise.resolve({ data: [] as { id: string; name: string }[] }),
+    // Connect each booking to the payment that verified it — method +
+    // transaction id, for the super-admin's "who approved this and how".
+    bookingIds.length
+      ? sb.from("payments")
+          .select("court_booking_id, payment_method, transaction_id, status")
+          .eq("booking_type", "court_booking")
+          .in("court_booking_id", bookingIds)
+          .order("submitted_at", { ascending: false })
+      : Promise.resolve({ data: [] as { court_booking_id: string | null; payment_method: string; transaction_id: string; status: string }[] }),
+  ]);
   const vMap = new Map((venues ?? []).map((v) => [v.id, v.name]));
+  // A booking can have more than one payment attempt (rejected, then
+  // resubmitted) — rows are newest-first, so the first one seen per
+  // booking is the latest attempt.
+  const payMap = new Map<string, { payment_method: string; transaction_id: string; status: string }>();
+  for (const p of payments ?? []) {
+    if (p.court_booking_id && !payMap.has(p.court_booking_id)) {
+      payMap.set(p.court_booking_id, { payment_method: p.payment_method, transaction_id: p.transaction_id, status: p.status });
+    }
+  }
 
-  return (data ?? []).map((b) => ({ ...b, venue: vMap.get(b.venue_id) ?? "—" }));
+  return (data ?? []).map((b) => ({
+    ...b,
+    venue: vMap.get(b.venue_id) ?? "—",
+    payment_method: payMap.get(b.id)?.payment_method ?? null,
+    transaction_id: payMap.get(b.id)?.transaction_id ?? null,
+  }));
 }
 
 // ── All users on the platform ───────────────────────────────────

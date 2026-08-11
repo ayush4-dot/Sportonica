@@ -43,6 +43,21 @@ export function BookingBadge({ state }: { state: BookingState }) {
   return <span className={`adm-badge ${b.cls}`}>{b.label}</span>;
 }
 
+const PAYMENT_BADGE: Record<string, { cls: string; label: string }> = {
+  unpaid:                { cls: "neutral", label: "unpaid" },
+  pending_verification:  { cls: "warn",    label: "pending verification" },
+  paid:                  { cls: "ok",      label: "paid" },
+  rejected:              { cls: "danger",  label: "rejected" },
+  partial:               { cls: "warn",    label: "partial" },
+  refunded:              { cls: "neutral", label: "refunded" },
+};
+
+export function PaymentStatusBadge({ status }: { status: string | null | undefined }) {
+  if (!status) return <span className="adm-dim">—</span>;
+  const b = PAYMENT_BADGE[status] ?? { cls: "neutral", label: status };
+  return <span className={`adm-badge ${b.cls}`}>{b.label}</span>;
+}
+
 export function VerifyBadge({ status }: { status: VerificationStatus }) {
   const map = {
     verified:   { cls: "ok", label: "verified" },

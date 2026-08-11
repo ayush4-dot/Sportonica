@@ -276,6 +276,16 @@
 .bk-note:focus { outline: none; border-color: #006241; }
 .bk-note::placeholder { color: var(--faint); }
 
+/* Single-line inputs — phone number, etc. */
+.bk-in {
+  width: 100%; box-sizing: border-box;
+  background: transparent; border: 1px solid var(--line);
+  border-radius: 10px; padding: 11px 13px; color: inherit;
+  font-family: inherit; font-size: 14px;
+}
+.bk-in:focus { outline: none; border-color: #006241; }
+.bk-in::placeholder { color: var(--faint); }
+
 /* ── Venue hero: words sit under the photo, never on top of it ── */
 .bk-hero-info {
   position: static !important;

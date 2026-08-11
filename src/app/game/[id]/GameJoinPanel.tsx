@@ -20,12 +20,14 @@ export default function GameJoinPanel({
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; amount: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [phone, setPhone] = useState("");
 
   function join() {
+    if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) { setErr("Enter a valid phone number."); return; }
     setErr(null);
     startTransition(async () => {
       try {
-        const booking = await joinGame({ event_id: gameId, venue_id: venueId, sport });
+        const booking = await joinGame({ event_id: gameId, venue_id: venueId, sport, phone: phone.trim() });
         const amount = Number(booking?.amount) || 0;
         if (amount > 0) {
           setAwaitingPayment({ id: booking.id, amount });
@@ -84,9 +86,20 @@ export default function GameJoinPanel({
       ) : joined ? (
         <div className="gm-joined"><Check size={16} /> You&apos;re in</div>
       ) : (
-        <button className="gm-btn" onClick={join} disabled={pending || slotsLeft <= 0}>
-          {pending ? "Joining…" : slotsLeft <= 0 ? "Game full" : fee === 0 ? "Join game" : `Reserve spot · Rs ${fee}`}
-        </button>
+        <>
+          {slotsLeft > 0 && (
+            <input
+              type="tel" inputMode="tel" value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="Phone number"
+              className="gm-pay-b"
+              style={{ width: "100%", boxSizing: "border-box", textAlign: "left", fontWeight: 500, marginBottom: 10, cursor: "text" }}
+            />
+          )}
+          <button className="gm-btn" onClick={join} disabled={pending || slotsLeft <= 0}>
+            {pending ? "Joining…" : slotsLeft <= 0 ? "Game full" : fee === 0 ? "Join game" : `Reserve spot · Rs ${fee}`}
+          </button>
+        </>
       )}
 
       <div className="gm-join-actions">

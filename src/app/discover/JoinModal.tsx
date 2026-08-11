@@ -14,8 +14,10 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
   const [done, setDone] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; amount: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [phone, setPhone] = useState("");
 
   function confirm() {
+    if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) { setErr("Enter a valid phone number."); return; }
     setErr(null);
     startTransition(async () => {
       try {
@@ -23,6 +25,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
           event_id: event.id,
           venue_id: event.venue_id ?? null,
           sport: event.sport,
+          phone: phone.trim(),
         });
         const amount = Number(booking?.amount) || 0;
         if (amount > 0) {
@@ -108,6 +111,16 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
                 <span style={{ color: "rgba(242,237,230,0.6)" }}>Your share</span>
                 <span style={{ fontFamily: "'Inter',sans-serif", fontSize: 20, fontWeight: 700, color: "#006241" }}>Rs {Number(event.fee) || 0}</span>
               </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: "block", fontSize: 12.5, color: "rgba(242,237,230,0.6)", marginBottom: 7 }}>Phone number</label>
+              <input
+                type="tel" inputMode="tel" value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="98XXXXXXXX"
+                style={{ width: "100%", boxSizing: "border-box", background: "#0B0D11", border: "1px solid rgba(242,237,230,0.14)", borderRadius: 10, padding: "11px 13px", color: "#F2EDE6", fontFamily: "inherit", fontSize: 14 }}
+              />
             </div>
 
             {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}

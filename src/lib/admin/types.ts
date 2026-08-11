@@ -88,11 +88,12 @@ export interface CourtBooking {
   venue_id: string;
   user_id: string | null;
   customer_name: string | null;
+  phone: string | null;
   starts_at: string;
   ends_at: string;
   price: number;
   state: BookingState;
-  payment_status: "unpaid" | "paid" | "partial" | "refunded";
+  payment_status: "unpaid" | "paid" | "partial" | "refunded" | "pending_verification" | "rejected";
   source: "platform" | "walk_in" | "phone";
   created_at: string;
   updated_at: string;

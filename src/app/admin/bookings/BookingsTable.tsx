@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, UserX, LogIn } from "lucide-react";
 import { setBookingState } from "@/lib/admin/actions";
 import type { CourtBooking, Court } from "@/lib/admin/types";
-import { BookingBadge, money, timeRange, dayLabel } from "../ui";
+import { BookingBadge, PaymentStatusBadge, money, timeRange, dayLabel } from "../ui";
 
 export default function BookingsTable({ bookings, courts }: { bookings: CourtBooking[]; courts: Court[] }) {
   const router = useRouter();
@@ -44,7 +44,7 @@ export default function BookingsTable({ bookings, courts }: { bookings: CourtBoo
       ) : (
         <table className="adm-table">
           <thead>
-            <tr><th>When</th><th>Court</th><th>Customer</th><th>Amount</th><th>Status</th><th></th></tr>
+            <tr><th>When</th><th>Court</th><th>Customer</th><th>Amount</th><th>Status</th><th>Payment</th><th></th></tr>
           </thead>
           <tbody>
             {filtered.map((b) => {
@@ -58,9 +58,13 @@ export default function BookingsTable({ bookings, courts }: { bookings: CourtBoo
                     <div className="adm-num adm-dim" style={{ fontSize: 11 }}>{timeRange(b.starts_at, b.ends_at)}</div>
                   </td>
                   <td>{court?.name ?? "—"}<div className="adm-dim" style={{ fontSize: 11 }}>{court?.sport}</div></td>
-                  <td>{b.customer_name ?? "Player"}<div className="adm-dim" style={{ fontSize: 11 }}>{b.source}</div></td>
+                  <td>
+                    {b.customer_name ?? "Player"}<div className="adm-dim" style={{ fontSize: 11 }}>{b.source}</div>
+                    {b.phone && <div className="adm-num adm-dim" style={{ fontSize: 11 }}>{b.phone}</div>}
+                  </td>
                   <td className="adm-num">{money(Number(b.price))}</td>
                   <td><BookingBadge state={b.state} /></td>
+                  <td><PaymentStatusBadge status={b.payment_status} /></td>
                   <td>
                     <div className="adm-flex" style={{ gap: 6, justifyContent: "flex-end" }}>
                       {canCheckIn && (

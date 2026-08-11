@@ -165,6 +165,7 @@ export async function bookCourt(input: {
   starts_at: string;
   ends_at: string;
   customer_name?: string;
+  phone?: string;
   source?: "platform" | "walk_in" | "phone";
   // "Open this slot to other players" — captured here, not acted on
   // until payment is approved (see book_court()/maybe_publish_hosted_event()
@@ -187,6 +188,7 @@ export async function bookCourt(input: {
     p_host_skill_level: input.need_players ? input.skill_level ?? null : null,
     p_host_bring_gear: input.need_players ? input.bring_own_gear ?? null : null,
     p_host_notes: input.need_players ? input.notes ?? null : null,
+    p_phone: input.phone?.trim() || null,
   });
   if (error) {
     if (error.message.includes("SLOT_TAKEN")) throw new Error("That time is already booked.");

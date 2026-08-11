@@ -32,6 +32,7 @@ export async function joinGame(input: {
   sport: string;
   player_name?: string;
   position?: string;
+  phone?: string;
 }) {
   const { sb, user } = await requireUser();
 
@@ -70,6 +71,7 @@ export async function joinGame(input: {
     payment_status: amount > 0 ? "unpaid" : "paid",
     player_name: name,
     position: input.position ?? null,
+    phone: input.phone?.trim() || null,
   }).select().single();
   if (error) throw new Error(error.message);
 
