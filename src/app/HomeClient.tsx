@@ -174,7 +174,7 @@ const CSS = `
 
   /* ── sport slider (Playo-style clickable rail) ── */
   .p-sportbar { padding:56px clamp(24px,5vw,56px) 8px; }
-  .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:22px; gap:16px; flex-wrap:wrap; }
+  .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap; }
   .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Inter',sans-serif; line-height:0.95; color:#ffffff; }
   .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.5); display:flex; align-items:center; gap:6px; white-space:nowrap; }
@@ -264,11 +264,6 @@ const CSS = `
   .p-faq-item.on .p-faq-chev { transform:rotate(180deg); opacity:1; }
   .p-faq-a { padding:0 32px 24px 4px; font-size:15px; line-height:1.65; color:var(--muted); overflow:hidden; }
 
-  /* ── CTA section ── */
-  .p-cta-section { display:flex; align-items:center; justify-content:center; text-align:center; padding:64px 40px; }
-  .p-cta-h2 { font-size:clamp(28px,4.5vw,52px); font-weight:800; line-height:0.98; letter-spacing:-1.5px; font-family:'Inter',sans-serif; margin-bottom:24px; }
-  .p-cta-h2 em { font-style:normal; color:#006241; }
-
   /* ── footer ── */
   .p-footer { border-top:1px solid var(--border-line, rgba(255,255,255,0.08)); padding:40px clamp(24px,5vw,56px); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
 
@@ -288,7 +283,6 @@ const CSS = `
     .p-stat { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); }
     .p-stat:nth-child(odd) { border-right:1px solid rgba(255,255,255,0.08); }
     .p-stat:last-child { border-bottom:none; }
-    .p-cta-section { padding:48px 24px; }
     .p-faq-section { padding:64px 20px; }
     .p-faq-q { font-size:15.5px; padding:18px 2px; }
     .p-faq-a { padding:0 24px 20px 2px; font-size:14px; }
@@ -557,46 +551,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             }),
           }}
         />
-
-        {/* ══════════════════════════════════
-            FULL-BLEED CTA
-        ══════════════════════════════════ */}
-        <div style={{ position:"relative", overflow:"hidden", background:"#006241", borderTop:"1px solid rgba(255,255,255,0.08)" }}>
-          {/* noise texture overlay */}
-          <div style={{ position:"absolute", inset:0, backgroundImage:"url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E\")", backgroundSize:"200px", opacity:0.5, pointerEvents:"none" }} />
-          <div className="p-cta-section">
-            <div style={{ position:"relative", zIndex:1 }}>
-              <motion.p
-                initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                style={{ fontSize:"11px", fontWeight:700, letterSpacing:"0.2em", textTransform:"uppercase" as const, color:"rgba(255,255,255,0.6)", marginBottom:"20px" }}>
-                Join Khelamna
-              </motion.p>
-              <motion.h2 className="p-cta-h2"
-                initial={{ opacity:0, y:32 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                transition={{ duration:0.8, delay:0.1, ease:[0.22,1,0.36,1] }}
-                style={{ color:"#fff" }}>
-                Your next game<br />starts here.
-              </motion.h2>
-              <motion.div
-                initial={{ opacity:0, y:16 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }}
-                transition={{ delay:0.3 }}
-                style={{ display:"flex", gap:"14px", justifyContent:"center", flexWrap:"wrap" as const }}>
-                <a href="/discover">
-                  <motion.button className="btn-white" whileHover={{ scale:1.05, boxShadow:"0 16px 40px rgba(0,0,0,0.35)" }} whileTap={{ scale:0.97 }}
-                    style={{ padding:"16px 36px", fontSize:"16px" }}>
-                    Find a game <ArrowRight size={18} />
-                  </motion.button>
-                </a>
-                <a href="/create">
-                  <motion.button className="btn-ghost" whileHover={{ scale:1.05 }} whileTap={{ scale:0.97 }}
-                    style={{ padding:"16px 36px", fontSize:"16px", borderColor:"rgba(255,255,255,0.3)" }}>
-                    Host an event
-                  </motion.button>
-                </a>
-              </motion.div>
-            </div>
-          </div>
-        </div>
 
         {/* ══════════════════════════════════
             FOOTER

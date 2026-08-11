@@ -14,7 +14,11 @@
   background: var(--pf-bg);
   color: var(--pf-text);
   font-family: 'Inter', system-ui, sans-serif;
-  padding: 130px 24px 110px;
+  /* Was 130px — well past the 65px fixed-nav clearance used elsewhere
+     (.has-sitenav in globals.css), leaving a large empty gap before the
+     masthead. Trimmed while keeping some of this page's own extra
+     "editorial" breathing room. */
+  padding: 84px 24px 110px;
 }
 @media (max-width: 760px) { .pf { padding-top: 34px; } }
 [data-theme="paper"] .pf {

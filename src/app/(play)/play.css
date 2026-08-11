@@ -21,7 +21,14 @@
   font-family: 'Inter', system-ui, sans-serif;
 }
 
-.play-wrap { max-width: 1180px; margin: 0 auto; padding: 120px 24px 80px; }
+/* Top padding only needs to clear the fixed nav (65px elsewhere, see
+   .has-sitenav in globals.css) plus a little breathing room — this was
+   120px flat at every viewport, leaving a large empty gap before any
+   content, worst on mobile where it ate a third of the screen. */
+.play-wrap { max-width: 1180px; margin: 0 auto; padding: 76px 24px 80px; }
+@media (max-width: 780px) {
+  .play-wrap { padding-top: 56px; }
+}
 
 /* ── Hero ── */
 .play-hero { margin-bottom: 56px; max-width: 720px; }

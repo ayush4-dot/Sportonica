@@ -10,7 +10,9 @@
   --gm-bg: #0B0D11;
   min-height: 100vh; background: var(--gm-bg); color: var(--gm-text);
   font-family: 'Inter', system-ui, sans-serif;
-  padding: 110px 24px 90px;
+  /* Was 110px, well past the 65px fixed-nav clearance used elsewhere
+     (.has-sitenav in globals.css). */
+  padding: 72px 24px 90px;
 }
 @media (max-width: 760px) { .gm { padding-top: 28px; } }
 [data-theme="paper"] .gm {

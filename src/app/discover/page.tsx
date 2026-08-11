@@ -505,7 +505,11 @@ const CSS = `
   color: var(--chalk);
   font-family: 'Inter', system-ui, sans-serif;
   overflow-x: hidden;
-  padding-top: 88px;
+  /* Just clears the fixed nav (65px elsewhere, see .has-sitenav in
+     globals.css) plus a small buffer — was 88px, stacking with
+     .disc-hero's own top padding below into a much bigger gap than
+     either value alone suggests. */
+  padding-top: 68px;
 }
 [data-theme="paper"] .disc-root {
   --line: rgba(20,23,30,0.14);
@@ -514,7 +518,7 @@ const CSS = `
 }
 
 .disc-hero {
-  padding: 32px clamp(20px, 5vw, 56px) 8px;
+  padding: 18px clamp(20px, 5vw, 56px) 8px;
   max-width: 720px;
 }
 .disc-eyebrow {
