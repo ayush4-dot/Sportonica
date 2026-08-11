@@ -146,7 +146,7 @@ const CSS = `
 
 
   @media (max-width:900px) {
-    .p-hero-top { align-items:center; gap:14px; padding-bottom:16px; }
+    .p-hero-top { align-items:flex-end; gap:14px; padding-bottom:16px; }
   }
   .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Inter',sans-serif; margin:0; }
   .p-hero-h1 em { font-style:normal; color:#006241; }
