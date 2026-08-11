@@ -166,6 +166,148 @@ begin
 end $$;
 
 -- ================================================================
+-- HOSTING-ON-APPROVAL
+--
+-- Fixes a real bug: "host a game" used to create the public events row,
+-- enroll the host as a 'paid' player, and email "your game is live" all
+-- immediately at booking time — before the underlying court payment was
+-- ever submitted, let alone verified by an admin. The whole point of
+-- manual verification was being bypassed for this path.
+--
+-- Hosting intent is now captured on the court_booking at book_court()
+-- time (extended below with trailing default params — a safe in-place
+-- signature change, not a new overload), but the events/bookings rows
+-- are only actually created once payment is approved (review_payment())
+-- or immediately confirmed for a free court (confirm_free_booking()).
+-- ================================================================
+alter table public.court_bookings add column if not exists host_spots_needed int;
+alter table public.court_bookings add column if not exists host_skill_level text;
+alter table public.court_bookings add column if not exists host_bring_gear boolean;
+alter table public.court_bookings add column if not exists host_notes text;
+alter table public.court_bookings add column if not exists hosted_event_id uuid references public.events(id);
+
+create or replace function public.book_court(
+  p_court_id   uuid,
+  p_starts_at  timestamptz,
+  p_ends_at    timestamptz,
+  p_user_id    uuid default null,
+  p_customer   text default null,
+  p_source     text default 'platform',
+  p_host_spots_needed int default null,
+  p_host_skill_level text default null,
+  p_host_bring_gear boolean default null,
+  p_host_notes text default null
+)
+returns public.court_bookings
+language plpgsql security definer set search_path = public as $$
+declare
+  v_venue uuid;
+  v_price numeric(10,2);
+  v_row   public.court_bookings;
+begin
+  if p_ends_at <= p_starts_at then
+    raise exception 'End time must be after start time';
+  end if;
+
+  select venue_id into v_venue from public.courts where id = p_court_id;
+  if v_venue is null then
+    raise exception 'Court not found';
+  end if;
+
+  -- lock this court's rows to serialize concurrent bookers
+  perform 1 from public.courts where id = p_court_id for update;
+
+  -- conflict against active bookings
+  if exists (
+    select 1 from public.court_bookings
+    where court_id = p_court_id
+      and state not in ('dropped','no_show','refunded','cancelled')
+      and starts_at < p_ends_at and ends_at > p_starts_at
+  ) then
+    raise exception 'SLOT_TAKEN';
+  end if;
+
+  -- conflict against blocks
+  if exists (
+    select 1 from public.court_blocks
+    where court_id = p_court_id
+      and starts_at < p_ends_at and ends_at > p_starts_at
+  ) then
+    raise exception 'SLOT_BLOCKED';
+  end if;
+
+  v_price := public.quote_price(p_court_id, p_starts_at, p_ends_at);
+
+  insert into public.court_bookings
+    (court_id, venue_id, user_id, customer_name, starts_at, ends_at, price, source,
+     state, payment_status, host_spots_needed, host_skill_level, host_bring_gear, host_notes)
+  values
+    (p_court_id, v_venue, p_user_id, p_customer, p_starts_at, p_ends_at, v_price, p_source,
+     case when p_source = 'platform' then 'reserved' else 'confirmed' end,
+     'unpaid', p_host_spots_needed, p_host_skill_level, p_host_bring_gear, p_host_notes)
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+
+-- Creates the public event + enrolls the host as its first (paid)
+-- player — but only the first time it's called for a given booking, and
+-- only if hosting was actually requested. Called from review_payment()
+-- (on approval) and confirm_free_booking() (immediately, for free
+-- courts) — never from booking time. Returns the event id (existing or
+-- newly created), or null if this booking never requested hosting.
+create or replace function public.maybe_publish_hosted_event(p_court_booking_id uuid)
+returns uuid
+language plpgsql security definer set search_path = public as $$
+declare
+  v_b public.court_bookings;
+  v_court_name text;
+  v_sport text;
+  v_venue_name text;
+  v_venue_lat double precision;
+  v_venue_lng double precision;
+  v_max_players int;
+  v_per_head numeric(10,2);
+  v_host_name text;
+  v_new_event_id uuid;
+begin
+  select * into v_b from public.court_bookings where id = p_court_booking_id;
+  if v_b.id is null or v_b.host_spots_needed is null or v_b.hosted_event_id is not null then
+    return v_b.hosted_event_id;
+  end if;
+
+  select name, sport into v_court_name, v_sport from public.courts where id = v_b.court_id;
+  select name, lat, lng into v_venue_name, v_venue_lat, v_venue_lng from public.venues where id = v_b.venue_id;
+  select coalesce(full_name, 'Host') into v_host_name from public.profiles where id = v_b.user_id;
+
+  v_max_players := v_b.host_spots_needed + 1;
+  v_per_head := round(v_b.price / v_max_players, 2);
+
+  insert into public.events (
+    host_id, sport, title, venue, venue_id, venue_lat, venue_lng, skill_level, bring_own_gear, notes,
+    event_date, max_players, min_players, fee, description, status, flash
+  ) values (
+    v_b.user_id, v_sport, v_sport || ' at ' || coalesce(v_venue_name, 'the venue'),
+    coalesce(v_venue_name, ''), v_b.venue_id, v_venue_lat, v_venue_lng,
+    coalesce(v_b.host_skill_level, 'any'), coalesce(v_b.host_bring_gear, false), v_b.host_notes,
+    v_b.starts_at, v_max_players, 2, v_per_head,
+    coalesce(v_court_name, 'Court') || ' · Rs ' || v_per_head || '/head. Booked on Khelam Na.', 'open', false
+  ) returning id into v_new_event_id;
+
+  insert into public.bookings (
+    event_id, user_id, status, venue_id, sport, court, amount, payment_status, player_name
+  ) values (
+    v_new_event_id, v_b.user_id, 'confirmed', v_b.venue_id, v_sport, v_court_name, v_per_head, 'paid', v_host_name
+  );
+
+  update public.court_bookings set hosted_event_id = v_new_event_id where id = p_court_booking_id;
+
+  return v_new_event_id;
+end;
+$$;
+
+-- ================================================================
 -- submit_payment: the ONLY way a payments row is ever created.
 -- The expected amount is read from the booking row itself — never a
 -- parameter — so a client can never influence it, regardless of
@@ -298,6 +440,7 @@ begin
     if v_owner is null or v_owner <> auth.uid() then raise exception 'NOT_YOUR_BOOKING'; end if;
     if coalesce(v_amount, 0) <> 0 then raise exception 'BOOKING_NOT_FREE'; end if;
     update public.court_bookings set payment_status = 'paid', state = 'confirmed' where id = p_booking_id;
+    perform public.maybe_publish_hosted_event(p_booking_id);
   elsif p_booking_type = 'event_booking' then
     select amount, user_id into v_amount, v_owner from public.bookings where id = p_booking_id for update;
     if not found then raise exception 'BOOKING_NOT_FOUND'; end if;
@@ -366,6 +509,7 @@ begin
       where id = p_payment_id returning * into v_row;
     if v_row.booking_type = 'court_booking' then
       update public.court_bookings set payment_status = 'paid', state = 'confirmed' where id = v_row.court_booking_id;
+      perform public.maybe_publish_hosted_event(v_row.court_booking_id);
     else
       update public.bookings set payment_status = 'paid' where id = v_row.event_booking_id;
     end if;
