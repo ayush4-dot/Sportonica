@@ -34,6 +34,12 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
         router.refresh();
       } catch (e) {
         const m = e instanceof Error ? e.message : "Could not join.";
+        // Not logged in? Send them to sign in, then back here to finish —
+        // same pattern as BookingFlow/GameJoinPanel, not a raw error string.
+        if (m.includes("UNAUTHORIZED")) {
+          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+          return;
+        }
         if (m.includes("ALREADY_JOINED")) setErr("You're already in this game.");
         else if (m.includes("GAME_FULL")) setErr("This game just filled up.");
         else setErr(m);
