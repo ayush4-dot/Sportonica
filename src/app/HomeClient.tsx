@@ -145,24 +145,12 @@ const CSS = `
   @media (prefers-reduced-motion: reduce) { .p-book-sheen { display:none; } }
 
 
-  .p-live {
-    width:7px; height:7px; border-radius:999px; background:#4ADE80;
-    display:inline-block; margin-right:8px; vertical-align:1px;
-    box-shadow:0 0 0 0 rgba(74,222,128,.7); animation:pLive 2s infinite;
-  }
-  @keyframes pLive {
-    70%  { box-shadow:0 0 0 7px rgba(74,222,128,0); }
-    100% { box-shadow:0 0 0 0 rgba(74,222,128,0); }
-  }
-
   @media (max-width:900px) {
     .p-hero-top { flex-direction:column; align-items:flex-start; gap:22px; padding-bottom:18px; }
     .p-hero-aside { flex:1 1 auto; gap:16px; }
     }
-  .p-hero-eyebrow { display:flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:0.2em; color:rgba(255,255,255,0.6); text-transform:uppercase; margin-bottom:18px; }
   .p-hero-h1 { font-size:clamp(46px,6.4vw,86px); font-weight:800; line-height:0.9; letter-spacing:-3px; color:#fff; font-family:'Inter',sans-serif; margin:0; }
   .p-hero-h1 em { font-style:normal; color:#006241; }
-  [data-theme="paper"] .p-hero-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-hero-h1 { color:#14171E; }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
@@ -382,9 +370,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
           <div className="p-hero-content">
             <div className="p-hero-top">
               <div className="p-hero-lead">
-                <p className="p-hero-eyebrow">
-                  <i className="p-live" /> Kathmandu&apos;s sports platform
-                </p>
                 <h1 className="p-hero-h1">
                   Find.<br />Book.<br /><em>Play.</em>
                 </h1>
