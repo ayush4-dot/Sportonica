@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import NavWrapper from '@/components/NavWrapper'
 import PWARegister from '@/components/PWARegister'
@@ -47,9 +48,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Set the theme before first paint so the page never flashes
-            the wrong one while React hydrates. */}
-        <script
+        {/* Sets data-theme before first paint so body's CSS background
+            (var(--bg), near-black until this runs) never shows. Must be
+            next/script beforeInteractive, not a plain <script> JSX tag —
+            React warns it never executes a client-rendered <script>, so a
+            raw tag here only worked on renders that happened to go through
+            literal server HTML and silently no-op'd on others, which is
+            why the black background used to appear intermittently. */}
+        <Script
+          id="set-theme"
+          strategy="beforeInteractive"
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem("khelamna-theme-v2")||"paper";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="paper";}})();`,
