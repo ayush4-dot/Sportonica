@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
-import { hostGameFromBooking } from "@/lib/play/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "./SlotPicker";
@@ -97,29 +96,23 @@ export default function BookingFlow({
       try {
         // Real atomic booking — this is what actually reserves the slot
         // (book_court()'s row locking), before any payment is collected.
+        // "Need players" is captured here but NOT acted on yet — the game
+        // only actually goes live once this booking's payment is approved
+        // (or immediately below, for a free court) — see
+        // maybe_publish_hosted_event() in supabase/payments.sql. Publishing
+        // it now, before payment, is exactly the bug this was fixing.
         const booking = await bookCourt({
           court_id: court.id,
           venue_id: court.venue_id,
           starts_at: ktmIso(dateStr, hour),
           ends_at: ktmIso(dateStr, hour + duration),
           source: "platform",
+          need_players: needPlayers,
+          spots_needed: needPlayers ? spots : undefined,
+          skill_level: needPlayers ? skill : undefined,
+          bring_own_gear: needPlayers ? bringGear : undefined,
+          notes: needPlayers ? (note.trim() || undefined) : undefined,
         });
-
-        // If they want players, open it as a game on /discover too.
-        if (needPlayers) {
-          await hostGameFromBooking({
-            venue_id: court.venue_id,
-            venue_name: venueName,
-            sport: court.sport,
-            court_name: court.name,
-            starts_at: ktmIso(dateStr, hour),
-            total_price: price,
-            spots_needed: spots,
-            skill_level: skill,
-            bring_own_gear: bringGear,
-            notes: note.trim() || undefined,
-          });
-        }
 
         const bookedPrice = Number(booking?.price) || 0;
         if (bookedPrice > 0) {

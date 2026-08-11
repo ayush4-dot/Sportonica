@@ -99,6 +99,33 @@ export async function notifyGameHosted(input: {
   }));
 }
 
+// A court booking's "host a game" flag only actually creates the public
+// event once payment is approved (or immediately for a free court) —
+// see maybe_publish_hosted_event() in supabase/payments.sql. This is the
+// notification counterpart, called right after that RPC path succeeds so
+// "your game is live" only ever goes out once the event genuinely exists.
+export async function notifyHostedEventIfPublished(courtBookingId: string) {
+  const sb = await createClient();
+  const { data: booking } = await sb
+    .from("court_bookings").select("user_id, hosted_event_id").eq("id", courtBookingId).maybeSingle();
+  if (!booking?.hosted_event_id) return;
+
+  const { data: event } = await sb
+    .from("events").select("sport, venue, event_date, max_players, fee")
+    .eq("id", booking.hosted_event_id).maybeSingle();
+  if (!event) return;
+
+  await notifyGameHosted({
+    hostId: booking.user_id,
+    sport: event.sport,
+    venue: event.venue,
+    startsAt: event.event_date,
+    spots: Math.max((event.max_players ?? 1) - 1, 0),
+    perHead: Number(event.fee) || 0,
+    origin: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  });
+}
+
 // ── Someone joined a game ───────────────────────────────────────
 export async function notifyGameJoined(input: {
   joinerId: string;

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { friendlyPaymentError } from "./types";
 import type { BookingType, Payment, PaymentMethod, PaymentMethodConfig } from "./types";
-import { notifyPaymentSubmitted } from "@/lib/mail/notify";
+import { notifyPaymentSubmitted, notifyHostedEventIfPublished } from "@/lib/mail/notify";
 
 async function requireUser() {
   const sb = await createClient();
@@ -93,6 +93,12 @@ export async function confirmFreeBooking(bookingType: BookingType, bookingId: st
   });
   if (error) throw new Error(friendlyPaymentError(error.message));
   revalidatePath("/my-games");
+
+  // Free court, hosting requested: the RPC just published the event for
+  // the first time (maybe_publish_hosted_event() in supabase/payments.sql).
+  if (bookingType === "court_booking") {
+    await notifyHostedEventIfPublished(bookingId);
+  }
 }
 
 // Used by /my-games and by a checkout page revisited mid-flow to know

@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { friendlyPaymentError, bookingLabel } from "./types";
 import type { Payment, PaymentMethod, PaymentMethodConfig } from "./types";
-import { notifyPaymentReviewed } from "@/lib/mail/notify";
+import { notifyPaymentReviewed, notifyHostedEventIfPublished } from "@/lib/mail/notify";
 
 // Every platform action re-checks the role in the DATABASE — the UI gate
 // alone is not security. Mirrors the identical helper already used in
@@ -272,9 +272,18 @@ export async function reviewPayment(
 
   revalidatePath("/platform/payments");
 
+  const payment = data as Payment;
+  // If this booking asked to open its slot to other players, the RPC
+  // just published the event for the first time (see
+  // maybe_publish_hosted_event() in supabase/payments.sql) — the "game
+  // is live" email only makes sense now, not at booking time.
+  if (action === "APPROVE" && payment.booking_type === "court_booking" && payment.court_booking_id) {
+    await notifyHostedEventIfPublished(payment.court_booking_id);
+  }
+
   // Notify the customer after the write succeeds — never let a failed
   // email/notification undo a successful review.
   await notifyPaymentReviewed(paymentId);
 
-  return data as Payment;
+  return payment;
 }

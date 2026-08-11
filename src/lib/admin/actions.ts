@@ -166,6 +166,14 @@ export async function bookCourt(input: {
   ends_at: string;
   customer_name?: string;
   source?: "platform" | "walk_in" | "phone";
+  // "Open this slot to other players" — captured here, not acted on
+  // until payment is approved (see book_court()/maybe_publish_hosted_event()
+  // in supabase/payments.sql). Only meaningful for source:"platform".
+  need_players?: boolean;
+  spots_needed?: number;
+  skill_level?: string;
+  bring_own_gear?: boolean;
+  notes?: string;
 }) {
   const { sb, user } = await requireUser();
   const { data, error } = await sb.rpc("book_court", {
@@ -175,6 +183,10 @@ export async function bookCourt(input: {
     p_user_id: input.source && input.source !== "platform" ? null : user.id,
     p_customer: input.customer_name ?? null,
     p_source: input.source ?? "walk_in",
+    p_host_spots_needed: input.need_players ? input.spots_needed ?? null : null,
+    p_host_skill_level: input.need_players ? input.skill_level ?? null : null,
+    p_host_bring_gear: input.need_players ? input.bring_own_gear ?? null : null,
+    p_host_notes: input.need_players ? input.notes ?? null : null,
   });
   if (error) {
     if (error.message.includes("SLOT_TAKEN")) throw new Error("That time is already booked.");
@@ -183,18 +195,28 @@ export async function bookCourt(input: {
   }
   revalidatePath(`/admin/venues/${input.venue_id}/calendar`);
 
-  // Notify after the booking is safely written. Never let email failure
+  const price = Number(data?.price) || 0;
+  const isPendingPlatformPayment = (input.source ?? "walk_in") === "platform" && price > 0;
+
+  // Walk-in/phone bookings (staff-entered, already 'confirmed', no
+  // payment flow applies) and free platform bookings still get the
+  // immediate "booked" email. A paid platform booking isn't real until
+  // admin approves the payment — notifyPaymentReviewed() sends the
+  // "confirmed" email then; sending this one too would tell the
+  // customer it's already paid when it isn't. Never let email failure
   // undo a successful booking — notify() swallows its own errors.
-  const { data: court } = await sb.from("courts").select("name").eq("id", input.court_id).maybeSingle();
-  await notifyCourtBooked({
-    playerId: input.source === "platform" ? user.id : null,
-    venueId: input.venue_id,
-    courtName: court?.name ?? "Court",
-    startsAt: input.starts_at,
-    endsAt: input.ends_at,
-    price: Number(data?.price) || 0,
-    customerName: input.customer_name ?? null,
-  });
+  if (!isPendingPlatformPayment) {
+    const { data: court } = await sb.from("courts").select("name").eq("id", input.court_id).maybeSingle();
+    await notifyCourtBooked({
+      playerId: input.source === "platform" ? user.id : null,
+      venueId: input.venue_id,
+      courtName: court?.name ?? "Court",
+      startsAt: input.starts_at,
+      endsAt: input.ends_at,
+      price,
+      customerName: input.customer_name ?? null,
+    });
+  }
 
   return data;
 }
