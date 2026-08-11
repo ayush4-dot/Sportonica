@@ -5,6 +5,7 @@
 // ================================================================
 
 import type { Mail } from "./mailer";
+import { whatsappNotifyUrl } from "@/lib/payments/types";
 
 const KTM = "Asia/Kathmandu";
 
@@ -150,6 +151,9 @@ export function paymentSubmitted(p: {
   Transaction   ${p.transactionId}
 
 Review it in the Payment Verification Center: /platform/payments
+Notify on WhatsApp: ${whatsappNotifyUrl(
+  `New payment to verify — Rs ${Math.round(p.amount)} via ${p.method}, txn ${p.transactionId}. Review: /platform/payments`
+)}
 
 — Khelam Na`,
   };

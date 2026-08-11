@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import { X, ShieldCheck } from "lucide-react";
+import { X, ShieldCheck, MessageCircle } from "lucide-react";
 import {
   getSignedScreenshotUrl, getPaymentBookingDetails, reviewPayment,
 } from "@/lib/payments/adminActions";
-import { REJECTION_REASONS } from "@/lib/payments/types";
+import { REJECTION_REASONS, whatsappNotifyUrl } from "@/lib/payments/types";
 import type { Payment, RejectionReason } from "@/lib/payments/types";
 
 const money = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -51,7 +51,19 @@ export default function ReviewPaymentModal({
       <div className="rpm-card" onClick={(e) => e.stopPropagation()}>
         <div className="rpm-head">
           <h3>Review payment</h3>
-          <button className="rpm-x" onClick={onClose}><X size={18} /></button>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <a
+              className="rpm-wa"
+              href={whatsappNotifyUrl(
+                `Payment to verify — ${payment.booking_label} · ${payment.customer_name} · Rs ${Math.round(payment.expected_amount)} via ${payment.payment_method} · txn ${payment.transaction_id}`
+              )}
+              target="_blank" rel="noopener noreferrer"
+              title="Notify via WhatsApp"
+            >
+              <MessageCircle size={16} />
+            </a>
+            <button className="rpm-x" onClick={onClose}><X size={18} /></button>
+          </div>
         </div>
 
         <div className="rpm-sec-t">Booking Information</div>
@@ -129,6 +141,8 @@ export default function ReviewPaymentModal({
         .rpm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .rpm-head h3 { font-family: 'Bricolage Grotesque', sans-serif; font-size: 19px; font-weight: 800; margin: 0; }
         .rpm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer; }
+        .rpm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; }
+        .rpm-wa:hover { opacity: 1; }
         .rpm-sec-t { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
           opacity: .5; margin: 16px 0 6px; }
         .rpm-shot { margin-top: 14px; border-radius: 12px; overflow: hidden; background: #000;

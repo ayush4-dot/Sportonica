@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bell } from "lucide-react";
+import { Bell, MessageCircle } from "lucide-react";
 import DataTable, { type Column } from "@/components/DataTable";
 import { createClient } from "@/lib/supabase/client";
 import ReviewPaymentModal from "./ReviewPaymentModal";
+import { whatsappNotifyUrl } from "@/lib/payments/types";
 import type { Payment } from "@/lib/payments/types";
 
 interface Row extends Payment, Record<string, unknown> {
@@ -52,6 +53,7 @@ export default function PendingPaymentsTable({ initialPayments }: { initialPayme
   const router = useRouter();
   const [reviewing, setReviewing] = useState<Row | null>(null);
   const [newCount, setNewCount] = useState(0);
+  const [latest, setLatest] = useState<Payment | null>(null);
 
   useEffect(() => {
     const sb = createClient();
@@ -60,7 +62,10 @@ export default function PendingPaymentsTable({ initialPayments }: { initialPayme
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "payments" },
-        () => setNewCount((c) => c + 1)
+        (payload) => {
+          setNewCount((c) => c + 1);
+          setLatest(payload.new as Payment);
+        }
       )
       .subscribe();
     return () => { sb.removeChannel(channel); };
@@ -74,9 +79,25 @@ export default function PendingPaymentsTable({ initialPayments }: { initialPayme
   return (
     <>
       {newCount > 0 && (
-        <button className="ppt-new" onClick={refreshNow}>
-          <Bell size={13} /> {newCount} new payment{newCount !== 1 ? "s" : ""} submitted — click to refresh
-        </button>
+        <div className="ppt-new">
+          <button className="ppt-new-btn" onClick={refreshNow}>
+            <Bell size={13} /> {newCount} new payment{newCount !== 1 ? "s" : ""} submitted — click to refresh
+          </button>
+          {latest && (
+            // No WhatsApp Business/Twilio account is set up yet, so this
+            // is a click-to-chat link, not an automatic push — see
+            // whatsappNotifyUrl() in src/lib/payments/types.ts.
+            <a
+              className="ppt-new-wa"
+              href={whatsappNotifyUrl(
+                `New payment to verify — Rs ${Math.round(latest.expected_amount)} via ${latest.payment_method}, txn ${latest.transaction_id}. Review: /platform/payments`
+              )}
+              target="_blank" rel="noopener noreferrer"
+            >
+              <MessageCircle size={13} /> Notify via WhatsApp
+            </a>
+          )}
+        </div>
       )}
 
       <DataTable<Row>
@@ -99,11 +120,20 @@ export default function PendingPaymentsTable({ initialPayments }: { initialPayme
 
       <style>{`
         .ppt-new {
-          display: flex; align-items: center; gap: 8px; width: 100%; margin-bottom: 12px;
+          display: flex; align-items: center; gap: 10px; width: 100%; margin-bottom: 12px;
           background: rgba(0,98,65,0.12); border: 1px solid rgba(0,98,65,0.4); color: #2E7D5B;
-          border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700;
-          cursor: pointer; font-family: inherit;
+          border-radius: 10px; padding: 10px 14px; flex-wrap: wrap;
         }
+        .ppt-new-btn {
+          display: flex; align-items: center; gap: 8px; background: none; border: none;
+          color: inherit; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0;
+        }
+        .ppt-new-wa {
+          display: inline-flex; align-items: center; gap: 6px; margin-left: auto;
+          font-size: 12px; font-weight: 700; color: inherit; text-decoration: none;
+          border: 1px solid rgba(46,125,91,0.5); border-radius: 8px; padding: 5px 10px;
+        }
+        .ppt-new-wa:hover { background: rgba(46,125,91,0.15); }
       `}</style>
     </>
   );

@@ -108,6 +108,18 @@ export function bookingLabel(bookingType: BookingType, bookingId: string): strin
   return `${prefix}-${bookingId.slice(0, 8).toUpperCase()}`;
 }
 
+// No WhatsApp Business/Twilio account is configured, so there's no way to
+// push a message automatically yet — this is a click-to-chat link
+// (api.whatsapp.com's documented, no-auth "send" endpoint), not a live
+// send. It opens the admin's own WhatsApp with the message pre-filled;
+// they still tap Send. Swap for a real provider call later without
+// touching any call site — everything here just builds a URL.
+const ADMIN_WHATSAPP_NUMBER = "9779805672621"; // +977 (Nepal) 9805672621
+
+export function whatsappNotifyUrl(message: string): string {
+  return `https://api.whatsapp.com/send?phone=${ADMIN_WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
+}
+
 // 'payment-qr' is a public bucket, so this is a plain, stable URL — no
 // signed-URL round trip needed (unlike payment-proofs, which is private).
 export function paymentQrPublicUrl(qrPath: string | null): string | null {
