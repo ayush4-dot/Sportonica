@@ -2,8 +2,10 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, MapPin, Share2, Wallet } from "lucide-react";
+import { Check, MapPin, Share2 } from "lucide-react";
 import { joinGame } from "@/lib/play/actions";
+import { confirmFreeBooking } from "@/lib/payments/actions";
+import PaymentStep from "@/components/payments/PaymentStep";
 
 export default function GameJoinPanel({
   gameId, venueId, sport, fee, slotsLeft, alreadyIn, isHost, venue, mapsHref,
@@ -15,7 +17,7 @@ export default function GameJoinPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [joined, setJoined] = useState(alreadyIn);
-  const [pay, setPay] = useState<"khalti" | "esewa">("khalti");
+  const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; amount: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -23,8 +25,14 @@ export default function GameJoinPanel({
     setErr(null);
     startTransition(async () => {
       try {
-        await joinGame({ event_id: gameId, venue_id: venueId, sport, amount: fee });
-        setJoined(true);
+        const booking = await joinGame({ event_id: gameId, venue_id: venueId, sport });
+        const amount = Number(booking?.amount) || 0;
+        if (amount > 0) {
+          setAwaitingPayment({ id: booking.id, amount });
+        } else {
+          await confirmFreeBooking("event_booking", booking.id);
+          setJoined(true);
+        }
         router.refresh();
       } catch (e) {
         const m = e instanceof Error ? e.message : "Could not join.";
@@ -58,26 +66,17 @@ export default function GameJoinPanel({
         {slotsLeft > 0 ? `${slotsLeft} spot${slotsLeft !== 1 ? "s" : ""} left` : "Game full"}
       </div>
 
-      {!joined && !isHost && slotsLeft > 0 && (
-        <>
-          <div className="gm-pay-l"><Wallet size={12} /> Pay with <span className="gm-demo">demo</span></div>
-          <div className="gm-pay">
-            {(["khalti", "esewa"] as const).map((m) => (
-              <button key={m} className={`gm-pay-b ${pay === m ? "on" : ""}`} onClick={() => setPay(m)}>{m}</button>
-            ))}
-          </div>
-        </>
-      )}
-
       {err && <div className="gm-err">{err}</div>}
 
-      {isHost ? (
+      {awaitingPayment ? (
+        <PaymentStep bookingType="event_booking" bookingId={awaitingPayment.id} amount={awaitingPayment.amount} />
+      ) : isHost ? (
         <div className="gm-join-note">You&apos;re hosting this game.</div>
       ) : joined ? (
         <div className="gm-joined"><Check size={16} /> You&apos;re in</div>
       ) : (
         <button className="gm-btn" onClick={join} disabled={pending || slotsLeft <= 0}>
-          {pending ? "Joining…" : slotsLeft <= 0 ? "Game full" : fee === 0 ? "Join game" : `Pay Rs ${fee} & join`}
+          {pending ? "Joining…" : slotsLeft <= 0 ? "Game full" : fee === 0 ? "Join game" : `Reserve spot · Rs ${fee}`}
         </button>
       )}
 

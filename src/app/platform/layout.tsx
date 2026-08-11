@@ -25,6 +25,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
           <Link href="/platform">Overview</Link>
           <Link href="/platform/events">+ Event</Link>
           <Link href="/platform/revenue">Revenue</Link>
+          <Link href="/platform/payments">Payments</Link>
           <Link href="/platform/bookings">Bookings</Link>
           <Link href="/platform/users">Users</Link>
           <Link href="/platform/reports">Reports</Link>

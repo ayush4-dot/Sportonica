@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { hostGameFromBooking } from "@/lib/play/actions";
+import { confirmFreeBooking } from "@/lib/payments/actions";
+import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "./SlotPicker";
 import WeekStrip from "./WeekStrip";
 import type { PricingRule } from "@/lib/play/pricing";
@@ -70,8 +72,8 @@ export default function BookingFlow({
   const [skill, setSkill] = useState("any");
   const [bringGear, setBringGear] = useState(false);
   const [note, setNote] = useState("");
-  const [pay, setPay] = useState<"khalti" | "esewa">("khalti");
   const [done, setDone] = useState(false);
+  const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; price: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [step, setStep] = useState(0);   // 0 court · 1 when · 2 players · 3 confirm
 
@@ -93,8 +95,9 @@ export default function BookingFlow({
     setErr(null);
     startTransition(async () => {
       try {
-        // Real atomic booking.
-        await bookCourt({
+        // Real atomic booking — this is what actually reserves the slot
+        // (book_court()'s row locking), before any payment is collected.
+        const booking = await bookCourt({
           court_id: court.id,
           venue_id: court.venue_id,
           starts_at: ktmIso(dateStr, hour),
@@ -118,7 +121,16 @@ export default function BookingFlow({
           });
         }
 
-        setDone(true);
+        const bookedPrice = Number(booking?.price) || 0;
+        if (bookedPrice > 0) {
+          // Booking is reserved but unpaid — hand off to the QR payment step.
+          setAwaitingPayment({ id: booking.id, price: bookedPrice });
+        } else {
+          // Free court (base_price 0) — still re-verified server-side, never
+          // trusted just because the UI computed 0.
+          await confirmFreeBooking("court_booking", booking.id);
+          setDone(true);
+        }
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not book this slot.";
         // Not logged in? Send them to sign in, then back here to finish.
@@ -143,6 +155,26 @@ export default function BookingFlow({
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           <button className="play-btn gold" onClick={() => router.push("/discover")}>See my games</button>
           <button className="play-btn ghost" onClick={() => { setDone(false); setHour(null); }}>Book another</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (awaitingPayment) {
+    return (
+      <div className="bkw">
+        <div className="bk-panel">
+          <PaymentStep
+            bookingType="court_booking"
+            bookingId={awaitingPayment.id}
+            amount={awaitingPayment.price}
+            footer={
+              <>
+                <button className="play-btn gold" onClick={() => router.push("/discover")}>See my games</button>
+                <button className="play-btn ghost" onClick={() => { setAwaitingPayment(null); setDone(false); setHour(null); }}>Book another</button>
+              </>
+            }
+          />
         </div>
       </div>
     );
@@ -381,19 +413,9 @@ export default function BookingFlow({
               <div className="bk-split">The other Rs {price - perHead} is covered as {spots} players join.</div>
             )}
 
-            <div style={{ marginTop: 18 }}>
-              <p className="hint" style={{ marginBottom: 8 }}>
-                <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
-                Pay with<span className="bk-mock-tag">demo</span>
-              </p>
-              <div className="bk-pay-row">
-                <button className={`bk-pay ${pay === "khalti" ? "on" : ""}`} onClick={() => setPay("khalti")}>Khalti</button>
-                <button className={`bk-pay ${pay === "esewa" ? "on" : ""}`} onClick={() => setPay("esewa")}>eSewa</button>
-              </div>
-            </div>
-
-            <p className="hint" style={{ fontSize: 11.5, marginTop: 14, marginBottom: 0 }}>
-              Payment is simulated in this preview. Real Khalti/eSewa comes next.
+            <p className="hint" style={{ fontSize: 12.5, marginTop: 18, marginBottom: 0 }}>
+              <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+              Next you&apos;ll pay via eSewa or Khalti QR and submit your transaction ID for verification.
             </p>
           </div>
         )}
@@ -425,7 +447,7 @@ export default function BookingFlow({
             </button>
           ) : (
             <button className="play-btn gold" onClick={confirm} disabled={pending || hour === null}>
-              {pending ? "Booking…" : `Pay Rs ${needPlayers ? perHead : price} & book`}
+              {pending ? "Reserving…" : `Reserve · Rs ${needPlayers ? perHead : price}`}
             </button>
           )}
         </div>

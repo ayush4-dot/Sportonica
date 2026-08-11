@@ -109,13 +109,17 @@ export async function hostGameFromBooking(input: {
 
 // Join an existing game — inserts a confirmed booking row (the view counts
 // these for slots_remaining). Blocks double-joining and full games.
+//
+// `amount` is intentionally NOT an input here — a Server Action is reachable
+// by direct POST, so a client-supplied price could be tampered with (the
+// exact "customer changes a Rs 2,500 booking into Rs 100" scenario). The fee
+// is always read fresh from `events.fee`, never trusted from the caller.
 export async function joinGame(input: {
   event_id: string;
   venue_id: string | null;
   sport: string;
   player_name?: string;
   position?: string;
-  amount: number;
 }) {
   const { sb, user } = await requireUser();
 
@@ -128,13 +132,15 @@ export async function joinGame(input: {
     .maybeSingle();
   if (existing) throw new Error("ALREADY_JOINED");
 
-  // Full? Check the view's remaining count.
+  // Full? Check the view's remaining count. Also the source of truth for
+  // the fee — never trust a client-supplied amount.
   const { data: ev } = await sb
     .from("events_with_counts")
-    .select("slots_remaining")
+    .select("slots_remaining, fee")
     .eq("id", input.event_id)
     .single();
   if (ev && ev.slots_remaining <= 0) throw new Error("GAME_FULL");
+  const amount = Number(ev?.fee) || 0;
 
   const name =
     input.player_name ||
@@ -142,21 +148,23 @@ export async function joinGame(input: {
     user.email?.split("@")[0] ||
     "Player";
 
-  const { error } = await sb.from("bookings").insert({
+  const { data: booking, error } = await sb.from("bookings").insert({
     event_id: input.event_id,
     user_id: user.id,
     status: "confirmed",
     venue_id: input.venue_id,
     sport: input.sport,
-    amount: input.amount,
-    payment_status: "paid",
+    amount,
+    payment_status: amount > 0 ? "unpaid" : "paid",
     player_name: name,
     position: input.position ?? null,
-  });
+  }).select().single();
   if (error) throw new Error(error.message);
 
   revalidatePath("/discover");
 
   // Confirm to the joiner, and let the host know someone's in.
   await notifyGameJoined({ joinerId: user.id, eventId: input.event_id });
+
+  return booking;
 }

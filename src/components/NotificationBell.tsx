@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle } from "lucide-react";
+import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle, Receipt, ShieldCheck, ShieldX } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/hooks/useNotifications";
 
 function timeAgo(iso: string): string {
@@ -21,6 +21,9 @@ function iconFor(kind: Notification["kind"]) {
     case "event": return <Calendar size={16} />;
     case "friend_request": return <Users size={16} />;
     case "friend_accepted": return <MessageCircle size={16} />;
+    case "payment_submitted": return <Receipt size={16} />;
+    case "payment_approved": return <ShieldCheck size={16} />;
+    case "payment_rejected": return <ShieldX size={16} />;
     default: return <Bell size={16} />;
   }
 }

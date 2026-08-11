@@ -10,7 +10,9 @@ import { createClient } from "@/lib/supabase/server";
 import { sendMail } from "./mailer";
 import {
   playerBooked, venueNewBooking, hostGameLive, playerJoined, hostSomeoneJoined,
+  paymentSubmitted, paymentApproved, paymentRejected,
 } from "./templates";
+import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 
 // Emails live in auth.users, not profiles — so we need the admin API to
 // read them. Falls back to null rather than throwing: a missing email
@@ -131,4 +133,113 @@ export async function notifyGameJoined(input: {
     }));
   }
   if (mails.length) await sendMail(mails);
+}
+
+// ── Payment notifications ───────────────────────────────────────
+async function paymentContext(paymentId: string) {
+  const sb = await createClient();
+  const { data: payment } = await sb.from("payments").select("*").eq("id", paymentId).maybeSingle();
+  if (!payment) return null;
+
+  const label = bookingLabel(payment.booking_type, payment.court_booking_id ?? payment.event_booking_id);
+  const customerName = await nameFor(payment.user_id);
+
+  if (payment.booking_type === "court_booking") {
+    const { data: booking } = await sb
+      .from("court_bookings")
+      .select("starts_at, ends_at, venue_id")
+      .eq("id", payment.court_booking_id)
+      .maybeSingle();
+    const { data: venue } = booking?.venue_id
+      ? await sb.from("venues").select("name").eq("id", booking.venue_id).maybeSingle()
+      : { data: null };
+    return {
+      payment, label, customerName,
+      venueName: venue?.name ?? "the venue",
+      startsAt: booking?.starts_at ?? new Date().toISOString(),
+      endsAt: booking?.ends_at ?? new Date().toISOString(),
+    };
+  }
+
+  const { data: booking } = await sb
+    .from("bookings")
+    .select("event_id")
+    .eq("id", payment.event_booking_id)
+    .maybeSingle();
+  const { data: event } = booking?.event_id
+    ? await sb.from("events").select("venue, event_date, duration_mins").eq("id", booking.event_id).maybeSingle()
+    : { data: null };
+  const startsAt = event?.event_date ?? new Date().toISOString();
+  const endsAt = new Date(new Date(startsAt).getTime() + (event?.duration_mins ?? 60) * 60000).toISOString();
+  return {
+    payment, label, customerName,
+    venueName: event?.venue ?? "the venue",
+    startsAt, endsAt,
+  };
+}
+
+// A customer submitted proof of payment — tell every super-admin, both by
+// email and via the in-app notifications table (NotificationBell renders
+// it whenever they're not already on /platform, which hides its own bell).
+export async function notifyPaymentSubmitted(paymentId: string) {
+  const sb = await createClient();
+  const ctx = await paymentContext(paymentId);
+  if (!ctx) return;
+
+  const { data: admins } = await sb.from("profiles").select("id").eq("role", "super_admin");
+  if (!admins?.length) return;
+
+  const adminEmails = await Promise.all(admins.map((a) => emailFor(a.id)));
+  const mails = adminEmails
+    .filter((e): e is string => !!e)
+    .map((to) => paymentSubmitted({
+      to, bookingLabel: ctx.label, customerName: ctx.customerName,
+      amount: ctx.payment.expected_amount, method: ctx.payment.payment_method,
+      transactionId: ctx.payment.transaction_id,
+    }));
+  if (mails.length) await sendMail(mails);
+
+  await sb.from("notifications").insert(
+    admins.map((a) => ({
+      user_id: a.id,
+      kind: "payment_submitted",
+      title: `New payment to verify — ${ctx.label}`,
+      body: `${ctx.customerName} · ${ctx.payment.payment_method} · Rs ${Math.round(ctx.payment.expected_amount)}`,
+    }))
+  );
+}
+
+// Admin approved or rejected — tell the customer both ways, never silently.
+export async function notifyPaymentReviewed(paymentId: string) {
+  const sb = await createClient();
+  const ctx = await paymentContext(paymentId);
+  if (!ctx) return;
+
+  const [to, playerName] = await Promise.all([emailFor(ctx.payment.user_id), Promise.resolve(ctx.customerName)]);
+
+  if (ctx.payment.status === "APPROVED") {
+    if (to) {
+      await sendMail(paymentApproved({
+        to, playerName, bookingLabel: ctx.label, amount: ctx.payment.expected_amount,
+        venue: ctx.venueName, startsAt: ctx.startsAt, endsAt: ctx.endsAt,
+      }));
+    }
+    await sb.from("notifications").insert({
+      user_id: ctx.payment.user_id,
+      kind: "payment_approved",
+      title: "Booking confirmed",
+      body: `Your payment of Rs ${Math.round(ctx.payment.expected_amount)} for ${ctx.label} has been verified.`,
+    });
+  } else if (ctx.payment.status === "REJECTED") {
+    const reason = REJECTION_REASONS[ctx.payment.rejection_reason ?? "other"] ?? "Payment could not be verified";
+    if (to) {
+      await sendMail(paymentRejected({ to, playerName, bookingLabel: ctx.label, reason }));
+    }
+    await sb.from("notifications").insert({
+      user_id: ctx.payment.user_id,
+      kind: "payment_rejected",
+      title: "Payment verification failed",
+      body: `${ctx.label}: ${reason}. Please submit a valid payment or contact support.`,
+    });
+  }
 }

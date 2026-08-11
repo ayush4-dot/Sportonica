@@ -132,3 +132,66 @@ ${full
 — Khelam Na`,
   };
 }
+
+// ── 6. Admin: a customer submitted a payment for verification ────
+export function paymentSubmitted(p: {
+  to: string; bookingLabel: string; customerName: string;
+  amount: number; method: string; transactionId: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `New payment to verify — ${p.bookingLabel}`,
+    body: `🔔 New Payment Verification
+
+  Booking       ${p.bookingLabel}
+  Customer      ${p.customerName}
+  Amount        ${rs(p.amount)}
+  Method        ${p.method}
+  Transaction   ${p.transactionId}
+
+Review it in the Payment Verification Center: /platform/payments
+
+— Khelam Na`,
+  };
+}
+
+// ── 7. Customer: payment approved, booking confirmed ─────────────
+export function paymentApproved(p: {
+  to: string; playerName: string; bookingLabel: string; amount: number;
+  venue: string; startsAt: string; endsAt: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Booking confirmed — ${p.bookingLabel}`,
+    body: `Hi ${p.playerName},
+
+Your payment of ${rs(p.amount)} has been verified. Your booking is confirmed.
+
+  Booking   ${p.bookingLabel}
+  Venue     ${p.venue}
+  When      ${fmtWhen(p.startsAt)} – ${fmtWhen(p.endsAt).split(", ").pop()}
+
+See you on the pitch.
+
+— Khelam Na`,
+  };
+}
+
+// ── 8. Customer: payment rejected ─────────────────────────────────
+export function paymentRejected(p: {
+  to: string; playerName: string; bookingLabel: string; reason: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Payment verification failed — ${p.bookingLabel}`,
+    body: `Hi ${p.playerName},
+
+Your payment for ${p.bookingLabel} could not be verified.
+
+  Reason   ${p.reason}
+
+Please submit a valid payment or contact support.
+
+— Khelam Na`,
+  };
+}

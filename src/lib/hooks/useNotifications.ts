@@ -6,7 +6,8 @@ import { getCachedUser } from "@/lib/supabase/authCache";
 
 export type Notification = {
   id: string;
-  kind: "joined" | "left" | "spots_needed" | "hosted" | "event" | "friend_request" | "friend_accepted";
+  kind: "joined" | "left" | "spots_needed" | "hosted" | "event" | "friend_request" | "friend_accepted"
+      | "payment_submitted" | "payment_approved" | "payment_rejected";
   title: string;
   body: string | null;
   event_id: string | null;

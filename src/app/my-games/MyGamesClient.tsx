@@ -4,20 +4,37 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2,
+  Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2, AlertCircle, Clock3,
 } from "lucide-react";
 import { updateHostedGame, invitePlayers, cancelInvite } from "@/lib/play/hostActions";
+import PaymentStep from "@/components/payments/PaymentStep";
+import type { BookingType } from "@/lib/payments/types";
+import type { CourtBookingRow } from "./page";
 
 type Game = {
   id: string; title: string; venue: string; sport: string;
   event_date: string; fee: number; max_players: number;
   confirmed_count: number; slots_remaining: number;
   skill_level?: string | null; notes?: string | null;
+  paymentStatus?: string; bookingId?: string | null;
 };
 type Invite = {
   id: string; event_id: string; email: string;
   paid_by_host: boolean; status: string;
 };
+
+// Small pill for a booking whose payment still needs attention. "paid" (or
+// unset, for free games) renders nothing — no need to announce the happy path.
+function PaymentBadge({ status }: { status?: string }) {
+  if (!status || status === "paid") return null;
+  if (status === "pending_verification") {
+    return <span className="mg-pay-badge pending"><Clock3 size={11} /> Payment awaiting verification</span>;
+  }
+  if (status === "rejected") {
+    return <span className="mg-pay-badge rejected"><AlertCircle size={11} /> Payment rejected — resubmit</span>;
+  }
+  return null;
+}
 
 const KTM = "Asia/Kathmandu";
 const when = (iso: string) =>
@@ -33,12 +50,15 @@ const toLocalInput = (iso: string) => {
 };
 
 export default function MyGamesClient({
-  hosted, joined, invites,
-}: { hosted: Game[]; joined: Game[]; invites: Invite[] }) {
+  hosted, joined, invites, courtBookings,
+}: { hosted: Game[]; joined: Game[]; invites: Invite[]; courtBookings: CourtBookingRow[] }) {
   const router = useRouter();
-  const [tab, setTab] = useState<"hosting" | "playing">("hosting");
+  const [tab, setTab] = useState<"hosting" | "playing" | "bookings">("hosting");
   const [editing, setEditing] = useState<Game | null>(null);
   const [inviting, setInviting] = useState<Game | null>(null);
+  const [resubmit, setResubmit] = useState<
+    { bookingType: BookingType; bookingId: string; amount: number } | null
+  >(null);
 
   return (
     <main className="mg">
@@ -57,6 +77,9 @@ export default function MyGamesClient({
         </button>
         <button className={tab === "playing" ? "on" : ""} onClick={() => setTab("playing")}>
           Playing <span>{joined.length}</span>
+        </button>
+        <button className={tab === "bookings" ? "on" : ""} onClick={() => setTab("bookings")}>
+          Bookings <span>{courtBookings.length}</span>
         </button>
       </div>
 
@@ -116,26 +139,69 @@ export default function MyGamesClient({
             })}
           </div>
         )
-      ) : joined.length === 0 ? (
+      ) : tab === "playing" ? (
+        joined.length === 0 ? (
+          <Empty
+            title="You haven't joined a game yet"
+            body="Find a game near you and grab a spot."
+            cta="Find a game" href="/discover"
+          />
+        ) : (
+          <div className="mg-grid">
+            {joined.map((g) => (
+              <article key={g.id} className="mg-card">
+                <div className="mg-card-top">
+                  <span className="mg-sport">{g.sport}</span>
+                  <span className="mg-going"><Users size={12} /> {g.confirmed_count}/{g.max_players}</span>
+                </div>
+                <h3 className="mg-title">{g.title}</h3>
+                <p className="mg-meta"><MapPin size={12} /> {g.venue}</p>
+                <p className="mg-meta"><Calendar size={12} /> {when(g.event_date)}</p>
+                <PaymentBadge status={g.paymentStatus} />
+                <div className="mg-actions">
+                  <Link className="mg-btn ghost" href={`/game/${g.id}`}>View game</Link>
+                  {g.paymentStatus === "rejected" && g.bookingId && (
+                    <button
+                      className="mg-btn"
+                      onClick={() => setResubmit({ bookingType: "event_booking", bookingId: g.bookingId!, amount: g.fee })}
+                    >
+                      Resubmit payment
+                    </button>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        )
+      ) : courtBookings.length === 0 ? (
         <Empty
-          title="You haven't joined a game yet"
-          body="Find a game near you and grab a spot."
-          cta="Find a game" href="/discover"
+          title="You haven't booked a court yet"
+          body="Pick a venue, date and time, and lock it in."
+          cta="Book a court" href="/create"
         />
       ) : (
         <div className="mg-grid">
-          {joined.map((g) => (
-            <article key={g.id} className="mg-card">
+          {courtBookings.map((b) => (
+            <article key={b.id} className="mg-card">
               <div className="mg-card-top">
-                <span className="mg-sport">{g.sport}</span>
-                <span className="mg-going"><Users size={12} /> {g.confirmed_count}/{g.max_players}</span>
+                <span className="mg-sport">{b.courts?.sport ?? "—"}</span>
+                <span className="mg-going">{b.state === "confirmed" ? "Confirmed" : b.state === "reserved" ? "Reserved" : b.state}</span>
               </div>
-              <h3 className="mg-title">{g.title}</h3>
-              <p className="mg-meta"><MapPin size={12} /> {g.venue}</p>
-              <p className="mg-meta"><Calendar size={12} /> {when(g.event_date)}</p>
-              <div className="mg-actions">
-                <Link className="mg-btn ghost" href={`/game/${g.id}`}>View game</Link>
-              </div>
+              <h3 className="mg-title">{b.courts?.name ?? "Court"}</h3>
+              <p className="mg-meta"><MapPin size={12} /> {b.venues?.name ?? "—"}</p>
+              <p className="mg-meta"><Calendar size={12} /> {when(b.starts_at)}</p>
+              <p className="mg-meta"><Wallet size={12} /> {Number(b.price) === 0 ? "Free" : `Rs ${b.price}`}</p>
+              <PaymentBadge status={b.payment_status} />
+              {b.payment_status === "rejected" && (
+                <div className="mg-actions">
+                  <button
+                    className="mg-btn"
+                    onClick={() => setResubmit({ bookingType: "court_booking", bookingId: b.id, amount: Number(b.price) })}
+                  >
+                    Resubmit payment
+                  </button>
+                </div>
+              )}
             </article>
           ))}
         </div>
@@ -143,6 +209,18 @@ export default function MyGamesClient({
 
       {editing && <EditSheet game={editing} onClose={() => { setEditing(null); router.refresh(); }} />}
       {inviting && <InviteSheet game={inviting} onClose={() => { setInviting(null); router.refresh(); }} />}
+      {resubmit && (
+        <div className="mg-scrim" onClick={() => setResubmit(null)}>
+          <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
+            <PaymentStep
+              bookingType={resubmit.bookingType}
+              bookingId={resubmit.bookingId}
+              amount={resubmit.amount}
+              footer={<button className="mg-btn" onClick={() => { setResubmit(null); router.refresh(); }}>Done</button>}
+            />
+          </div>
+        </div>
+      )}
 
       <style>{`
         .mg { max-width: 1100px; margin: 0 auto; padding: 36px 24px 80px; }
@@ -179,6 +257,11 @@ export default function MyGamesClient({
           font-weight: 700; margin: 0 0 8px; letter-spacing: -.3px; }
         .mg-meta { display: flex; align-items: center; gap: 6px; font-size: 12.5px;
           opacity: .62; margin: 0 0 5px; }
+
+        .mg-pay-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+          font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+        .mg-pay-badge.pending { background: rgba(217,119,6,.12); border: 1px solid rgba(217,119,6,.3); color: #d97706; }
+        .mg-pay-badge.rejected { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); color: #ef4444; }
 
         .mg-invites { margin: 12px 0 0; padding-top: 11px; border-top: 1px solid var(--line, rgba(242,237,230,.1)); }
         .mg-invites-t { font-size: 10px; font-weight: 700; letter-spacing: .12em;

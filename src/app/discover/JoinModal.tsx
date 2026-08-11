@@ -2,28 +2,35 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { X, Check, MapPin, Users, Wallet } from "lucide-react";
+import { X, Check, MapPin, Users } from "lucide-react";
 import { joinGame } from "@/lib/play/actions";
+import { confirmFreeBooking } from "@/lib/payments/actions";
+import PaymentStep from "@/components/payments/PaymentStep";
 import type { EventRow } from "@/lib/hooks/useEvents";
 
 export default function JoinModal({ event, onClose }: { event: EventRow; onClose: () => void }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [pay, setPay] = useState<"khalti" | "esewa">("khalti");
   const [done, setDone] = useState(false);
+  const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; amount: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   function confirm() {
     setErr(null);
     startTransition(async () => {
       try {
-        await joinGame({
+        const booking = await joinGame({
           event_id: event.id,
           venue_id: event.venue_id ?? null,
           sport: event.sport,
-          amount: Number(event.fee) || 0,
         });
-        setDone(true);
+        const amount = Number(booking?.amount) || 0;
+        if (amount > 0) {
+          setAwaitingPayment({ id: booking.id, amount });
+        } else {
+          await confirmFreeBooking("event_booking", booking.id);
+          setDone(true);
+        }
         router.refresh();
       } catch (e) {
         const m = e instanceof Error ? e.message : "Could not join.";
@@ -46,7 +53,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 18 }}>
           <div>
             <div style={{ fontFamily: "'Bricolage Grotesque',sans-serif", fontSize: 21, fontWeight: 800, letterSpacing: "-0.5px" }}>
-              {done ? "You're in!" : "Join this game"}
+              {done ? "You're in!" : awaitingPayment ? "Complete payment" : "Join this game"}
             </div>
             <div style={{ fontSize: 13, color: "rgba(242,237,230,0.6)", marginTop: 2 }}>{event.sport} · {event.title}</div>
           </div>
@@ -63,6 +70,15 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             </p>
             <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
           </div>
+        ) : awaitingPayment ? (
+          <PaymentStep
+            bookingType="event_booking"
+            bookingId={awaitingPayment.id}
+            amount={awaitingPayment.amount}
+            footer={
+              <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
+            }
+          />
         ) : (
           <>
             <div style={{ background: "#0B0D11", borderRadius: 12, padding: 16, marginBottom: 18, fontSize: 13.5 }}>
@@ -83,28 +99,17 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
               </div>
             </div>
 
-            <div style={{ marginBottom: 8, fontSize: 12.5, color: "rgba(242,237,230,0.6)" }}>
-              <Wallet size={13} style={{ verticalAlign: -2, marginRight: 5 }} />Pay with
-              <span style={{ marginLeft: 8, fontFamily: "'JetBrains Mono',monospace", fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: "#006241", background: "rgba(0,98,65,0.1)", border: "1px solid rgba(0,98,65,0.3)", padding: "3px 8px", borderRadius: 6 }}>demo</span>
-            </div>
-            <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-              {(["khalti", "esewa"] as const).map((m) => (
-                <button key={m} onClick={() => setPay(m)}
-                  style={{ flex: 1, padding: 12, borderRadius: 11, border: `1px solid ${pay === m ? "#006241" : "rgba(242,237,230,0.15)"}`, background: pay === m ? "rgba(0,98,65,0.1)" : "#0B0D11", color: "#F2EDE6", cursor: "pointer", fontWeight: 700, fontSize: 13, textTransform: "capitalize" }}>
-                  {m}
-                </button>
-              ))}
-            </div>
-
             {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
             <button onClick={confirm} disabled={pending || event.slots_remaining === 0}
               style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 15, cursor: "pointer", opacity: pending || event.slots_remaining === 0 ? 0.6 : 1 }}>
-              {pending ? "Joining…" : event.slots_remaining === 0 ? "Game full" : `Pay Rs ${Number(event.fee) || 0} & join`}
+              {pending ? "Joining…" : event.slots_remaining === 0 ? "Game full" : Number(event.fee) > 0 ? `Reserve spot · Rs ${Number(event.fee)}` : "Join for free"}
             </button>
-            <p style={{ fontSize: 11.5, textAlign: "center", color: "rgba(242,237,230,0.45)", marginTop: 10, marginBottom: 0 }}>
-              Payment is simulated in this preview.
-            </p>
+            {Number(event.fee) > 0 && (
+              <p style={{ fontSize: 11.5, textAlign: "center", color: "rgba(242,237,230,0.45)", marginTop: 10, marginBottom: 0 }}>
+                You&apos;ll pay via eSewa or Khalti QR on the next step.
+              </p>
+            )}
           </>
         )}
       </div>
