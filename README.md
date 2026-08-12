@@ -48,10 +48,9 @@ khelumna/
 │   └── hero.mp4                        ← Sports video for home page hero
 │
 ├── supabase/
-│   ├── add_columns.sql                 ← RUN THIS — profiles, RLS, events_with_counts view
-│   ├── schema_patch.sql                ← venues, court_slots, flash_matches, payouts tables
-│   ├── schema_full.sql                 ← Full reference
-│   └── schema.sql                      ← Original
+│   ├── admin_schema.sql                 ← venues, courts, bookings, payouts (current schema)
+│   ├── add_columns.sql                  ← profiles, RLS, events_with_counts view
+│   └── schema_full.sql                  ← Full reference
 │
 ├── src/
 │   ├── app/
@@ -193,7 +192,7 @@ Three.js morphing sculpture. Vertex shader morphs between 5 sport shapes (footba
 ## SQL — Run in Supabase
 
 ```sql
--- 1. Run supabase/schema_patch.sql
+-- 1. Run supabase/admin_schema.sql
 -- 2. Run supabase/add_columns.sql
 -- 3. Then run these:
 
