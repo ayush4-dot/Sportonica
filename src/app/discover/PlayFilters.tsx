@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import {
   SlidersHorizontal, X, Clock, Banknote, Navigation, Trophy, Volleyball, Check,
-  ChevronDown, Search,
+  ChevronDown, Search, Minus, Plus,
 } from "lucide-react";
 import {
-  formatsFor, SKILLS, TIMES, FEES, DISTANCES, activeCount,
+  formatsFor, SKILLS, FEES, DISTANCES, activeCount,
   type PlayQuery, NO_FILTERS,
 } from "@/lib/playFilters";
+import { TIME_MIN, TIME_MAX, TIME_STEP, timeLabel } from "@/lib/timeOfDay";
 import LocationPicker from "@/components/shared/LocationPicker";
 
 /**
@@ -54,10 +55,21 @@ export default function PlayFilters({
   const set = <K extends keyof PlayQuery>(k: K, v: PlayQuery[K]) =>
     onChange({ ...value, [k]: value[k] === v ? (typeof v === "boolean" ? false : null) as PlayQuery[K] : v });
 
+  function bumpTime(d: 1 | -1) {
+    const cur = value.time;
+    if (cur == null) {
+      if (d > 0) onChange({ ...value, time: TIME_MIN });
+      return;
+    }
+    const next = cur + d * TIME_STEP;
+    if (next < TIME_MIN) onChange({ ...value, time: null });
+    else if (next > TIME_MAX) return;
+    else onChange({ ...value, time: next });
+  }
+
   const chips = [
     value.format && { k: "format", label: formats.find((f) => f.key === value.format)?.label ?? "", on: () => set("format", null) },
     value.skill  && { k: "skill",  label: SKILLS.find((s) => s.key === value.skill)?.label ?? "",  on: () => set("skill", null) },
-    value.time   && { k: "time",   label: TIMES.find((t) => t.key === value.time)?.label ?? "",    on: () => set("time", null) },
     value.fee    && { k: "fee",    label: FEES.find((f) => f.key === value.fee)?.label ?? "",      on: () => set("fee", null) },
     value.dist   && { k: "dist",   label: DISTANCES.find((d) => d.key === value.dist)?.label ?? "", on: () => set("dist", null) },
     value.openOnly && { k: "open", label: "Has spots", on: () => onChange({ ...value, openOnly: false }) },
@@ -101,6 +113,23 @@ export default function PlayFilters({
           <LocationPicker />
         </div>
 
+        <div className="pf-seg time">
+          <div className="pf-time">
+            <Clock size={15} className="pf-time-icon" />
+            <div className="pf-step-box">
+              <button onClick={() => bumpTime(-1)} disabled={value.time == null} aria-label="Earlier time">
+                <Minus size={13} />
+              </button>
+              <span className={`pf-step-v ${value.time == null ? "ph" : ""}`}>
+                {value.time == null ? "Any time" : timeLabel(value.time)}
+              </span>
+              <button onClick={() => bumpTime(1)} disabled={value.time != null && value.time >= TIME_MAX} aria-label="Later time">
+                <Plus size={13} />
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div className="pf-seg">
           <button onClick={() => { setOpen((v) => !v); setSportOpen(false); }}
             className={n ? "lit" : ""}>
@@ -141,13 +170,6 @@ export default function PlayFilters({
             {SKILLS.map((s) => (
               <button key={s.key} className={value.skill === s.key ? "on" : ""}
                 onClick={() => set("skill", s.key)}>{s.label}</button>
-            ))}
-          </Group>
-
-          <Group icon={<Clock size={13} />} title="When">
-            {TIMES.map((t) => (
-              <button key={t.key} className={value.time === t.key ? "on" : ""}
-                onClick={() => set("time", t.key)}>{t.label}</button>
             ))}
           </Group>
 
@@ -199,6 +221,29 @@ export default function PlayFilters({
         .pf-seg > button span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .pf-seg > button svg:last-child { opacity:.45; transition:transform .25s; }
         .pf-seg > button svg.flip { transform:rotate(180deg); }
+
+        .pf-time { flex:1; min-width:0; display:flex; align-items:center; gap:9px; padding:8px 14px; }
+        .pf-time-icon { opacity:.55; flex-shrink:0; }
+        .pf-time .pf-step-box { flex:1; min-width:0; background:transparent; border:none; padding:0; }
+        [data-theme="paper"] .pf-time .pf-step-box { background:transparent; }
+        .pf-step-box {
+          display:flex; align-items:center; justify-content:space-between; gap:4px;
+          border:1px solid var(--line, rgba(242,237,230,.16)); border-radius:11px;
+          padding:4px; background:rgba(255,255,255,.04);
+        }
+        .pf-step-box button {
+          width:28px; height:28px; flex-shrink:0; border-radius:8px; cursor:pointer;
+          display:inline-flex; align-items:center; justify-content:center;
+          border:none; background:transparent; color:#006241;
+          transition:background .18s;
+        }
+        .pf-step-box button:hover:not(:disabled) { background:rgba(0,98,65,.16); }
+        .pf-step-box button:disabled { opacity:.25; cursor:not-allowed; }
+        .pf-step-v {
+          flex:1; text-align:center; font-family:'Inter',sans-serif;
+          font-size:13px; font-weight:700; white-space:nowrap;
+        }
+        .pf-step-v.ph { opacity:.35; font-weight:500; }
 
         .pf-find {
           display:inline-flex; align-items:center; gap:7px; flex-shrink:0;

@@ -6,16 +6,9 @@ import {
   ChevronDown, Search, Minus, Plus, Clock,
 } from "lucide-react";
 import LocationPicker from "@/components/shared/LocationPicker";
+import { TIME_MIN, TIME_MAX, TIME_STEP, timeLabel } from "@/lib/timeOfDay";
 
-// Minutes-from-midnight, 30-min steps — same grid availability.ts books on.
-export const TIME_MIN = 6 * 60;
-export const TIME_MAX = 23 * 60 + 30;
-export const TIME_STEP = 30;
-
-export function timeLabel(mins: number): string {
-  const h = Math.floor(mins / 60), m = mins % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
+export { TIME_MIN, TIME_MAX, TIME_STEP, timeLabel };
 
 export type BookQuery = {
   text: string;

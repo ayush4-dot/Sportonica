@@ -66,13 +66,6 @@ export const SKILLS = [
   { key: "advanced",     label: "Advanced" },
 ];
 
-export const TIMES = [
-  { key: "morning",   label: "Morning",   from: 5,  to: 12 },
-  { key: "afternoon", label: "Afternoon", from: 12, to: 17 },
-  { key: "evening",   label: "Evening",   from: 17, to: 21 },
-  { key: "night",     label: "Night",     from: 21, to: 29 },   // wraps past midnight
-];
-
 export const FEES = [
   { key: "free",  label: "Free",        min: 0,   max: 0 },
   { key: "low",   label: "Under Rs 300", min: 1,   max: 300 },
@@ -86,21 +79,22 @@ export const DISTANCES = [
   { key: "10", label: "Within 10 km", km: 10 },
 ];
 
-/** Hour of day in Kathmandu, 0–23. */
-export function hourOf(iso: string): number {
-  return Number(
-    new Date(iso).toLocaleString("en-GB", {
-      hour: "2-digit", hour12: false, timeZone: "Asia/Kathmandu",
-    })
-  );
+/** Minutes from midnight, in Kathmandu. */
+export function minsOf(iso: string): number {
+  const t = new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu",
+  });
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
 }
 
-export function inTimeBand(iso: string, key: string): boolean {
-  const band = TIMES.find((t) => t.key === key);
-  if (!band) return true;
-  const h = hourOf(iso);
-  const hh = h < 5 ? h + 24 : h;          // 1am counts as night, not morning
-  return hh >= band.from && hh < band.to;
+// Games have arbitrary start times (unlike court slots, which sit on a
+// fixed grid), so "search by time" means "starts around here" rather
+// than an exact match — an hour-wide window centered on the pick.
+const TIME_TOLERANCE_MINS = 60;
+
+export function nearTime(iso: string, targetMins: number): boolean {
+  return Math.abs(minsOf(iso) - targetMins) <= TIME_TOLERANCE_MINS;
 }
 
 export function inFeeBand(fee: number, key: string): boolean {
@@ -112,7 +106,7 @@ export function inFeeBand(fee: number, key: string): boolean {
 export type PlayQuery = {
   format: string | null;
   skill: string | null;
-  time: string | null;
+  time: number | null;   // minutes from midnight — set from the bar's time stepper
   fee: string | null;
   dist: string | null;
   openOnly: boolean;
@@ -122,9 +116,11 @@ export const NO_FILTERS: PlayQuery = {
   format: null, skill: null, time: null, fee: null, dist: null, openOnly: false,
 };
 
+// `time` lives in the bar itself (like sport/area), not the Filters panel,
+// so it isn't counted toward the panel's "Filters · n" badge.
 export function activeCount(q: PlayQuery): number {
   return (
-    (q.format ? 1 : 0) + (q.skill ? 1 : 0) + (q.time ? 1 : 0) +
+    (q.format ? 1 : 0) + (q.skill ? 1 : 0) +
     (q.fee ? 1 : 0) + (q.dist ? 1 : 0) + (q.openOnly ? 1 : 0)
   );
 }

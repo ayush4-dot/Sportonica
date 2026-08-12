@@ -19,7 +19,7 @@ import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
 import { SPORT_NAMES, sportColor, normalizeSport } from "@/lib/sports";
 import DateStrip from "@/components/shared/DateStrip";
-import { NO_FILTERS, type PlayQuery, formatOf, inTimeBand, inFeeBand, DISTANCES } from "@/lib/playFilters";
+import { NO_FILTERS, type PlayQuery, formatOf, nearTime, inFeeBand, DISTANCES } from "@/lib/playFilters";
 
 
 function getSportIcon(sport: string, size = 14) {
@@ -98,7 +98,7 @@ function DiscoverInner() {
     if (pq.format && formatOf(ev.sport, ev.max_players) !== pq.format) return false;
 
     if (pq.skill && (ev.skill_level ?? "").toLowerCase() !== pq.skill) return false;
-    if (pq.time && !inTimeBand(ev.event_date, pq.time)) return false;
+    if (pq.time != null && !nearTime(ev.event_date, pq.time)) return false;
     if (pq.fee && !inFeeBand(Number(ev.fee) || 0, pq.fee)) return false;
     if (pq.openOnly && ev.slots_remaining <= 0) return false;
 
