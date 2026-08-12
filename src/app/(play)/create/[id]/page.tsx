@@ -11,10 +11,11 @@ export default async function VenueBookingPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; time?: string }>;
 }) {
   const { id } = await params;
-  const { date } = await searchParams;
+  const { date, time } = await searchParams;
+  const timeMins = time != null && /^\d+$/.test(time) ? Number(time) : undefined;
   const { venue, courts, hoursByCourt } = await getVenueForBooking(id);
   if (!venue) notFound();
 
@@ -59,6 +60,7 @@ export default async function VenueBookingPage({
           courts={courts}
           hoursByCourt={hoursByCourt}
           initialDate={date}
+          initialHour={timeMins != null ? timeMins / 60 : undefined}
           rules={pricingRules}
         />
       </div>

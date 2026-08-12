@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus, Tag } from "lucide-react";
+import { ArrowUpRight, ImageIcon, Check, MapPin, CalendarPlus, Tag, Loader2 } from "lucide-react";
 
 // Eight accent pairs, cycled so a wall of grounds never looks flat.
 const HUES = [
@@ -15,11 +15,12 @@ const HUES = [
   { a: "#FB923C", b: "#EA580C" },  // orange
   { a: "#F87171", b: "#DC2626" },  // red
 ];
-import BookFilters, { NO_BOOK_FILTERS, type BookQuery } from "./BookFilters";
+import BookFilters, { NO_BOOK_FILTERS, timeLabel, type BookQuery } from "./BookFilters";
 import DateStrip from "@/components/shared/DateStrip";
 import { useCity, inCity } from "@/lib/city";
 import { normalizeSport, SPORT_NAMES } from "@/lib/sports";
 import { useTheme } from "@/lib/useTheme";
+import { getDaySlots } from "@/lib/play/availability";
 import type { Venue, Court } from "@/lib/admin/types";
 
 type VenueWithCourts = Venue & { courts: Court[] };
@@ -45,7 +46,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
   };
 
   const needle = q.text.trim().toLowerCase();
-  const shown = venues.filter((v) => {
+  const preShown = venues.filter((v) => {
     // The header already asked which city — don't make them say it twice.
     if (!inCity(v.lat, v.lng, city, area)) return false;
     if (needle) {
@@ -70,6 +71,48 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
     }
     return true;
   });
+
+  // "Search by time" needs live availability, unlike the other filters
+  // above — so it runs as a separate async pass over whatever the
+  // synchronous filters already narrowed down, instead of blocking them.
+  const preShownIds = preShown.map((v) => v.id).join(",");
+  const [availAt, setAvailAt] = useState<{ key: string; ids: Set<string> } | null>(null);
+  const [checkingTime, setCheckingTime] = useState(false);
+
+  useEffect(() => {
+    if (q.time == null) { setAvailAt(null); setCheckingTime(false); return; }
+    const key = `${q.time}|${pickDate}|${preShownIds}`;
+    if (availAt?.key === key) return;
+
+    let cancelled = false;
+    setCheckingTime(true);
+    // The stepper fires on every click — wait for the user to settle on a
+    // time instead of firing a full round of court queries per click.
+    const timer = setTimeout(() => {
+      (async () => {
+        const hits = await Promise.all(
+          preShown.map(async (v) => {
+            for (const c of v.courts) {
+              try {
+                const slots = await getDaySlots(c.id, pickDate, 60);
+                if (slots.some((s) => s.mins === q.time && s.available)) return v.id;
+              } catch { /* one court failing shouldn't sink the whole venue */ }
+            }
+            return null;
+          })
+        );
+        if (cancelled) return;
+        setAvailAt({ key, ids: new Set(hits.filter((x): x is string => x != null)) });
+        setCheckingTime(false);
+      })();
+    }, 350);
+    return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q.time, pickDate, preShownIds]);
+
+  const shown = q.time == null
+    ? preShown
+    : preShown.filter((v) => availAt?.ids.has(v.id));
 
   const cells: { kind: "venue"; v: VenueWithCourts }[] =
     shown.map((v) => ({ kind: "venue" as const, v }));
@@ -150,15 +193,22 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
           }}
         />
 
-        {shown.length === 0 ? (
+        {checkingTime && q.time != null ? (
+          <div style={{ textAlign: "center", padding: "80px 20px", opacity: 0.65 }}>
+            <Loader2 size={20} style={{ animation: "spin-slow 1s linear infinite" }} />
+            <p style={{ fontSize: 14, marginTop: 12 }}>Checking what&apos;s free at {timeLabel(q.time)}…</p>
+          </div>
+        ) : shown.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", opacity: 0.65 }}>
             <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 22 }}>
-              {venues.length > 0 ? "No grounds match that" : "No venues listed yet"}
+              {venues.length === 0 ? "No venues listed yet" : q.time != null ? "Nothing free at that time" : "No grounds match that"}
             </h3>
             <p style={{ fontSize: 14 }}>
-              {venues.length > 0
-                ? "Try another sport, or widen the distance."
-                : "Once owners list their grounds, they'll appear here ready to book."}
+              {venues.length === 0
+                ? "Once owners list their grounds, they'll appear here ready to book."
+                : q.time != null
+                  ? "Try a different time, or another day."
+                  : "Try another sport, or widen the distance."}
             </p>
             {venues.length > 0 && (
               <button onClick={() => { setQ(NO_BOOK_FILTERS); setMyCoords(null); }}
@@ -181,7 +231,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
               const shown = sports.slice(0, 3);
               const extra = sports.length - shown.length;
               const km = myCoords && v.lat != null && v.lng != null ? kmTo(v.lat, v.lng) : null;
-              const href = `/create/${v.id}?date=${pickDate}`;
+              const href = `/create/${v.id}?date=${pickDate}${q.time ? `&time=${q.time}` : ""}`;
               // Cards cycle through three skins so a row never looks flat.
               const skin = ["indigo", "chalk", "ink"][i % 3];
               const maps = v.lat != null && v.lng != null

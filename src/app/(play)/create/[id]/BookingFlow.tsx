@@ -51,12 +51,13 @@ const SQUAD: Record<string, { label: string; total: number; positions: string[] 
 };
 
 export default function BookingFlow({
-  venueName, courts, hoursByCourt, initialDate, rules = [],
+  venueName, courts, hoursByCourt, initialDate, initialHour, rules = [],
 }: {
   venueName: string;
   courts: Court[];
   hoursByCourt: Record<string, CourtHours[]>;
   initialDate?: string;
+  initialHour?: number;
   rules?: PricingRule[];
 }) {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function BookingFlow({
 
   const [courtId, setCourtId] = useState(courts[0]?.id ?? "");
   const [dateStr, setDateStr] = useState(initialDate || todayKtm());
-  const [hour, setHour] = useState<number | null>(null);
+  const [hour, setHour] = useState<number | null>(initialHour ?? null);
   const [duration, setDuration] = useState(1); // hours; 1, 1.5, 2, 3
   const [needPlayers, setNeedPlayers] = useState(false);
   const [spots, setSpots] = useState(4);

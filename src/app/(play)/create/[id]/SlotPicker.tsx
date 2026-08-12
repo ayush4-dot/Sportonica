@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, useMemo } from "react";
 import { Loader2, CalendarX } from "lucide-react";
 import { getDaySlots, type Slot } from "@/lib/play/availability";
 
-const BANDS = [
+const BANDS: { key: "morning" | "afternoon" | "evening"; label: string; from: number; to: number }[] = [
   { key: "morning",   label: "Morning",   from: 0,       to: 12 * 60 },
   { key: "afternoon", label: "Afternoon", from: 12 * 60, to: 17 * 60 },
   { key: "evening",   label: "Evening",   from: 17 * 60, to: 24 * 60 },
@@ -26,7 +26,13 @@ export default function SlotPicker({
   onPick: (mins: number | null) => void;
 }) {
   const [slots, setSlots] = useState<Slot[] | null>(null);
-  const [band, setBand] = useState("evening");
+  const [band, setBand] = useState(() => {
+    if (value != null) {
+      const b = BANDS.find((b) => value >= b.from && value < b.to);
+      if (b) return b.key;
+    }
+    return "evening";
+  });
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {

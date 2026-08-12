@@ -3,9 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import {
   SlidersHorizontal, X, Banknote, Navigation, Building2, Volleyball,
-  ChevronDown, Search, Minus, Plus,
+  ChevronDown, Search, Minus, Plus, Clock,
 } from "lucide-react";
 import LocationPicker from "@/components/shared/LocationPicker";
+
+// Minutes-from-midnight, 30-min steps — same grid availability.ts books on.
+export const TIME_MIN = 6 * 60;
+export const TIME_MAX = 23 * 60 + 30;
+export const TIME_STEP = 30;
+
+export function timeLabel(mins: number): string {
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
 
 export type BookQuery = {
   text: string;
@@ -14,10 +24,11 @@ export type BookQuery = {
   minPrice: number | null;
   maxPrice: number | null;
   maxKm: number | null;
+  time: number | null;
 };
 
 export const NO_BOOK_FILTERS: BookQuery = {
-  text: "", sport: null, venueType: null, minPrice: null, maxPrice: null, maxKm: null,
+  text: "", sport: null, venueType: null, minPrice: null, maxPrice: null, maxKm: null, time: null,
 };
 
 export function bookActiveCount(q: BookQuery): number {
@@ -91,6 +102,18 @@ export default function BookFilters({
     return () => document.removeEventListener("mousedown", onDoc);
   }, []);
 
+  function bumpTime(d: 1 | -1) {
+    const cur = value.time;
+    if (cur == null) {
+      if (d > 0) onChange({ ...value, time: TIME_MIN });
+      return;
+    }
+    const next = cur + d * TIME_STEP;
+    if (next < TIME_MIN) onChange({ ...value, time: null });
+    else if (next > TIME_MAX) return;
+    else onChange({ ...value, time: next });
+  }
+
   function Group({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
     return (
       <div className="bf-g">
@@ -143,6 +166,23 @@ export default function BookFilters({
 
         <div className="bf-seg area">
           <LocationPicker />
+        </div>
+
+        <div className="bf-seg time">
+          <div className="bf-time">
+            <Clock size={15} className="bf-time-icon" />
+            <div className="bf-step-box">
+              <button onClick={() => bumpTime(-1)} disabled={value.time == null} aria-label="Earlier time">
+                <Minus size={13} />
+              </button>
+              <span className={`bf-step-v ${value.time == null ? "ph" : ""}`}>
+                {value.time == null ? "Any time" : timeLabel(value.time)}
+              </span>
+              <button onClick={() => bumpTime(1)} disabled={value.time != null && value.time >= TIME_MAX} aria-label="Later time">
+                <Plus size={13} />
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="bf-seg">
@@ -240,6 +280,11 @@ export default function BookFilters({
         .bf-seg > button span { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
         .bf-seg > button svg:last-child { opacity:.45; transition:transform .25s; }
         .bf-seg > button svg.flip { transform:rotate(180deg); }
+
+        .bf-time { flex:1; min-width:0; display:flex; align-items:center; gap:9px; padding:8px 14px; }
+        .bf-time-icon { opacity:.55; flex-shrink:0; }
+        .bf-time .bf-step-box { flex:1; min-width:0; background:transparent; border:none; padding:0; }
+        [data-theme="paper"] .bf-time .bf-step-box { background:transparent; }
 
         .bf-find {
           display:inline-flex; align-items:center; gap:7px; flex-shrink:0;
