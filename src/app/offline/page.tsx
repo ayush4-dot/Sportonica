@@ -4,7 +4,7 @@ export default function OfflinePage() {
   return (
     <div style={{
       minHeight: "100vh", display: "grid", placeItems: "center",
-      background: "#0B0D11", color: "#F2EDE6", padding: 24,
+      background: "var(--bg)", color: "var(--paper)", padding: 24,
       fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center",
     }}>
       <div style={{ maxWidth: 380 }}>
