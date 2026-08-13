@@ -11,6 +11,8 @@ import { sendMail } from "./mailer";
 import {
   playerBooked, venueNewBooking, hostGameLive, playerJoined, hostSomeoneJoined,
   paymentSubmitted, paymentApproved, paymentRejected,
+  playTogetherGamePublished, playTogetherPlayerJoined, playTogetherHostRosterChanged,
+  playTogetherGameCancelled,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 
@@ -160,6 +162,169 @@ export async function notifyGameJoined(input: {
     }));
   }
   if (mails.length) await sendMail(mails);
+}
+
+// ── Play Together ────────────────────────────────────────────────
+async function playTogetherContext(gameId: string) {
+  const sb = await createClient();
+  const { data: game } = await sb
+    .from("games")
+    .select("id, host_id, sport, starts_at, max_players, contribution_amount, venue_id")
+    .eq("id", gameId)
+    .maybeSingle();
+  if (!game) return null;
+
+  const [{ data: venue }, { count: joinedCount }] = await Promise.all([
+    sb.from("venues").select("name").eq("id", game.venue_id).maybeSingle(),
+    sb.from("game_players").select("id", { count: "exact", head: true })
+      .eq("game_id", gameId).eq("status", "joined"),
+  ]);
+
+  return {
+    game,
+    venueName: venue?.name ?? "the venue",
+    spotsLeft: Math.max(game.max_players - 1 - (joinedCount ?? 0), 0),
+  };
+}
+
+// A court booking's Play Together game only actually goes live once the
+// host's venue payment is confirmed (finalize_play_together_game() in
+// supabase/play_together.sql). Called right after that RPC path succeeds,
+// mirroring notifyHostedEventIfPublished().
+export async function notifyPlayTogetherGamePublishedIfAny(courtBookingId: string) {
+  const sb = await createClient();
+  const { data: game } = await sb
+    .from("games")
+    .select("id, host_id, sport, starts_at, max_players, contribution_amount, venue_id, status")
+    .eq("court_booking_id", courtBookingId)
+    .maybeSingle();
+  if (!game || game.status !== "published") return;
+
+  const { data: venue } = await sb.from("venues").select("name").eq("id", game.venue_id).maybeSingle();
+  const [to, hostName] = await Promise.all([emailFor(game.host_id), nameFor(game.host_id)]);
+
+  if (to) {
+    await sendMail(playTogetherGamePublished({
+      to, hostName, sport: game.sport, venue: venue?.name ?? "the venue",
+      startsAt: game.starts_at, spots: Math.max(game.max_players - 1, 0),
+      contribution: Number(game.contribution_amount) || 0,
+      link: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/play-together`,
+    }));
+  }
+
+  await sb.from("notifications").insert({
+    user_id: game.host_id,
+    kind: "game_published",
+    title: "Your venue is confirmed",
+    body: `Your ${game.sport} game is now live on Play Together.`,
+    game_id: game.id,
+  });
+}
+
+// ── Someone joined a Play Together game ─────────────────────────
+export async function notifyPlayTogetherJoined(input: { joinerId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName, spotsLeft } = ctx;
+
+  const [joinerEmail, joinerName, hostEmail, hostName] = await Promise.all([
+    emailFor(input.joinerId), nameFor(input.joinerId),
+    emailFor(game.host_id), nameFor(game.host_id),
+  ]);
+
+  const mails = [];
+  if (joinerEmail) {
+    mails.push(playTogetherPlayerJoined({
+      to: joinerEmail, playerName: joinerName, sport: game.sport, venue: venueName,
+      startsAt: game.starts_at, contribution: Number(game.contribution_amount) || 0,
+    }));
+  }
+  // Don't email the host about their own join (join_play_together_game()
+  // blocks the host from joining their own game anyway, but stay defensive).
+  if (hostEmail && game.host_id !== input.joinerId) {
+    mails.push(playTogetherHostRosterChanged({
+      to: hostEmail, hostName, playerName: joinerName, sport: game.sport,
+      startsAt: game.starts_at, joined: true, spotsLeft,
+    }));
+  }
+  if (mails.length) await sendMail(mails);
+
+  const sb = await createClient();
+  await sb.from("notifications").insert({
+    user_id: game.host_id,
+    kind: "game_joined",
+    title: "New player joined!",
+    body: `${joinerName} joined your ${game.sport} game.`,
+    game_id: game.id,
+    actor_id: input.joinerId,
+  });
+}
+
+// ── Someone left a Play Together game ───────────────────────────
+export async function notifyPlayTogetherLeft(input: { leaverId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, spotsLeft } = ctx;
+  if (game.host_id === input.leaverId) return;
+
+  const [hostEmail, hostName, leaverName] = await Promise.all([
+    emailFor(game.host_id), nameFor(game.host_id), nameFor(input.leaverId),
+  ]);
+  if (hostEmail) {
+    await sendMail(playTogetherHostRosterChanged({
+      to: hostEmail, hostName, playerName: leaverName, sport: game.sport,
+      startsAt: game.starts_at, joined: false, spotsLeft,
+    }));
+  }
+
+  const sb = await createClient();
+  await sb.from("notifications").insert({
+    user_id: game.host_id,
+    kind: "game_left",
+    title: "Player left",
+    body: `${leaverName} left your ${game.sport} game.`,
+    game_id: game.id,
+    actor_id: input.leaverId,
+  });
+}
+
+// ── Host cancelled a Play Together game — tell every joined player ──
+export async function notifyPlayTogetherCancelled(input: { hostId: string; gameId: string }) {
+  const sb = await createClient();
+  const { data: game } = await sb
+    .from("games").select("id, sport, starts_at, venue_id").eq("id", input.gameId).maybeSingle();
+  if (!game) return;
+  const { data: venue } = await sb.from("venues").select("name").eq("id", game.venue_id).maybeSingle();
+  const venueName = venue?.name ?? "the venue";
+
+  const { data: players } = await sb
+    .from("game_players").select("user_id").eq("game_id", input.gameId).eq("status", "joined");
+  if (!players?.length) return;
+
+  const details = await Promise.all(
+    players.map(async (p) => ({
+      userId: p.user_id,
+      email: await emailFor(p.user_id),
+      name: await nameFor(p.user_id),
+    }))
+  );
+
+  const mails = details
+    .filter((d): d is typeof d & { email: string } => !!d.email)
+    .map((d) => playTogetherGameCancelled({
+      to: d.email, playerName: d.name, sport: game.sport, venue: venueName, startsAt: game.starts_at,
+    }));
+  if (mails.length) await sendMail(mails);
+
+  await sb.from("notifications").insert(
+    details.map((d) => ({
+      user_id: d.userId,
+      kind: "game_cancelled",
+      title: "Game cancelled",
+      body: `The host cancelled your ${game.sport} game.`,
+      game_id: game.id,
+    }))
+  );
 }
 
 // ── Payment notifications ───────────────────────────────────────

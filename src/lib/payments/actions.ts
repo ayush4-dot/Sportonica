@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { friendlyPaymentError } from "./types";
 import type { BookingType, Payment, PaymentMethod, PaymentMethodConfig } from "./types";
-import { notifyPaymentSubmitted, notifyHostedEventIfPublished } from "@/lib/mail/notify";
+import { notifyPaymentSubmitted, notifyHostedEventIfPublished, notifyPlayTogetherGamePublishedIfAny } from "@/lib/mail/notify";
 
 async function requireUser() {
   const sb = await createClient();
@@ -96,8 +96,11 @@ export async function confirmFreeBooking(bookingType: BookingType, bookingId: st
 
   // Free court, hosting requested: the RPC just published the event for
   // the first time (maybe_publish_hosted_event() in supabase/payments.sql).
+  // A Play Together game is a separate, mutually-exclusive path — one of
+  // these two is always a no-op.
   if (bookingType === "court_booking") {
     await notifyHostedEventIfPublished(bookingId);
+    await notifyPlayTogetherGamePublishedIfAny(bookingId);
   }
 }
 

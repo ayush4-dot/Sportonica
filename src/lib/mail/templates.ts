@@ -201,3 +201,95 @@ Please submit a valid payment or contact support.
 — Khelam Na`,
   };
 }
+
+// ── Play Together: host's venue payment is confirmed, game is live ──
+export function playTogetherGamePublished(p: {
+  to: string; hostName: string; sport: string; venue: string;
+  startsAt: string; spots: number; contribution: number; link: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Your venue is confirmed — ${p.sport} game is live`,
+    body: `Hi ${p.hostName},
+
+Your venue payment is confirmed. Your ${p.sport} game is now live on Play Together.
+
+  Venue         ${p.venue}
+  When          ${fmtWhen(p.startsAt)}
+  Open spots    ${p.spots}
+  Contribution  ${rs(p.contribution)} per player, paid to you in cash at the venue
+
+Players don't pay Khelam Na to join — you collect their contributions
+yourself when they show up.
+
+Share it around: ${p.link}
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: a player joined the host's game ──────────────────
+export function playTogetherPlayerJoined(p: {
+  to: string; playerName: string; sport: string; venue: string;
+  startsAt: string; contribution: number;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `You're in: ${p.sport} at ${p.venue}, ${fmtWhen(p.startsAt)}`,
+    body: `Hi ${p.playerName},
+
+You're in for the game.
+
+  Sport          ${p.sport}
+  Venue          ${p.venue}
+  When           ${fmtWhen(p.startsAt)}
+  Contribution   ${rs(p.contribution)} — pay the host directly at the venue
+
+No payment is required to Khelam Na for joining this game.
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: host — someone joined/left your game ─────────────
+export function playTogetherHostRosterChanged(p: {
+  to: string; hostName: string; playerName: string; sport: string;
+  startsAt: string; joined: boolean; spotsLeft: number;
+}): Mail {
+  return {
+    to: p.to,
+    subject: p.joined
+      ? `${p.playerName} joined your ${p.sport} game`
+      : `${p.playerName} left your ${p.sport} game`,
+    body: `Hi ${p.hostName},
+
+${p.playerName} just ${p.joined ? "joined" : "left"} your ${p.sport} game on ${fmtWhen(p.startsAt)}.
+
+${p.spotsLeft > 0 ? `${p.spotsLeft} spot${p.spotsLeft !== 1 ? "s" : ""} still open.` : "That's a full side."}
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: game cancelled by the host ────────────────────────
+export function playTogetherGameCancelled(p: {
+  to: string; playerName: string; sport: string; venue: string; startsAt: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Cancelled: ${p.sport} at ${p.venue}, ${fmtWhen(p.startsAt)}`,
+    body: `Hi ${p.playerName},
+
+The host cancelled this game.
+
+  Sport   ${p.sport}
+  Venue   ${p.venue}
+  When    ${fmtWhen(p.startsAt)}
+
+You never paid Khelam Na for this game, so there's nothing to refund from
+our side. If you'd already paid the host in cash, that's between you and
+them.
+
+— Khelam Na`,
+  };
+}
