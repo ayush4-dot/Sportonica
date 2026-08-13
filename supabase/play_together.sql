@@ -40,6 +40,10 @@ create table if not exists public.games (
   joining_deadline      timestamptz not null,
   notes                 text,
   cancel_reason         text,
+  -- The host's OWN eSewa/Khalti QR + phone, captured at creation time —
+  -- players pay the host directly with these, never a KhelamNa QR.
+  host_qr_path          text,
+  host_phone            text,
   status                text not null default 'awaiting_payment',
   created_at            timestamptz not null default now(),
   updated_at            timestamptz not null default now(),
@@ -54,16 +58,26 @@ create table if not exists public.games (
 create index if not exists idx_games_status_starts on public.games (status, starts_at);
 create index if not exists idx_games_host on public.games (host_id);
 
+-- Re-run safety: the table may already exist from an earlier run of this
+-- file without these two columns.
+alter table public.games add column if not exists host_qr_path text;
+alter table public.games add column if not exists host_phone text;
+
 drop trigger if exists games_touch on public.games;
 create trigger games_touch before update on public.games
   for each row execute function public.set_updated_at();  -- defined in schema_full.sql, already live
 
 -- ── GAME PLAYERS ───────────────────────────────────────────────
+-- status is a join-request lifecycle, not an instant join: a player
+-- tapping "Join" only ever creates a 'requested' row. The host must
+-- explicitly approve it (approve_join_request() below) before the
+-- player is actually in — that's the only point a player is notified
+-- or counted toward capacity.
 create table if not exists public.game_players (
   id                    uuid primary key default gen_random_uuid(),
   game_id               uuid not null references public.games(id) on delete cascade,
   user_id               uuid not null references public.profiles(id),
-  status                text not null default 'joined',
+  status                text not null default 'requested',
   -- Snapshot of games.contribution_amount at join time, so a later host
   -- edit to the amount can never silently change what an already-joined
   -- player owes.
@@ -72,12 +86,41 @@ create table if not exists public.game_players (
   collected_at          timestamptz,
   joined_at             timestamptz not null default now(),
   left_at               timestamptz,
-  check (status in ('joined','left')),
+  check (status in ('requested','joined','left','rejected')),
   check (contribution_status in ('pending','collected')),
   unique (game_id, user_id)
 );
 create index if not exists idx_game_players_game on public.game_players (game_id);
 create index if not exists idx_game_players_user on public.game_players (user_id);
+
+-- ── Re-run safety: widen an already-existing status check/default ──
+-- (mirrors the pg_temp helper payments.sql already established, for the
+-- exact same reason: these tables were never created via a name-tracked
+-- constraint, so find-and-drop rather than assume a name).
+create or replace function pg_temp.drop_check_constraints(p_table text, p_column text)
+returns void language plpgsql as $$
+declare r record;
+begin
+  for r in
+    select con.conname
+    from pg_constraint con
+    join pg_class rel on rel.oid = con.conrelid
+    join pg_namespace nsp on nsp.oid = rel.relnamespace
+    join pg_attribute att on att.attrelid = rel.oid and att.attnum = any(con.conkey)
+    where nsp.nspname = 'public' and rel.relname = p_table
+      and con.contype = 'c' and att.attname = p_column
+  loop
+    execute format('alter table public.%I drop constraint %I', p_table, r.conname);
+  end loop;
+end;
+$$;
+
+select pg_temp.drop_check_constraints('game_players', 'status');
+alter table public.game_players add constraint game_players_status_check
+  check (status in ('requested','joined','left','rejected'));
+alter table public.game_players alter column status set default 'requested';
+
+drop function pg_temp.drop_check_constraints(text, text);
 
 -- ── ROW LEVEL SECURITY ─────────────────────────────────────────
 -- Deliberately minimal, same style as payments.sql: only SELECT
@@ -105,8 +148,11 @@ create policy game_players_read_super on public.game_players for select using (p
 -- The roster of a published game is public (mirrors the legacy
 -- event_players view) — this is what lets the discovery list and game
 -- detail page show real join counts to a visitor who hasn't joined yet.
+-- Deliberately scoped to status = 'joined' only — a pending request is
+-- between the requester and the host, not visible to other visitors.
 create policy game_players_read_published on public.game_players for select using (
-  exists (select 1 from public.games g where g.id = game_players.game_id and g.status = 'published')
+  status = 'joined'
+  and exists (select 1 from public.games g where g.id = game_players.game_id and g.status = 'published')
 );
 
 -- ================================================================
@@ -126,6 +172,8 @@ create or replace function public.create_play_together_game(
   p_min_players       int,
   p_max_players       int,
   p_joining_deadline  timestamptz,
+  p_host_qr_path      text,
+  p_host_phone        text,
   p_notes             text default null,
   p_ack_risk          boolean default false
 ) returns public.games
@@ -146,6 +194,12 @@ begin
   if p_joining_deadline is null or p_joining_deadline >= p_starts_at then
     raise exception 'DEADLINE_AFTER_START';
   end if;
+  if p_host_qr_path is null or length(trim(p_host_qr_path)) = 0 then
+    raise exception 'HOST_QR_REQUIRED';
+  end if;
+  if p_host_phone is null or length(trim(p_host_phone)) = 0 then
+    raise exception 'HOST_PHONE_REQUIRED';
+  end if;
 
   -- Atomic slot reservation — same locking/conflict-check every other
   -- court booking on the platform goes through.
@@ -154,19 +208,19 @@ begin
   insert into public.games (
     host_id, court_booking_id, venue_id, court_id, sport, game_format,
     starts_at, ends_at, min_players, max_players, contribution_amount,
-    joining_deadline, notes, status
+    joining_deadline, host_qr_path, host_phone, notes, status
   ) values (
     auth.uid(), v_booking.id, v_booking.venue_id, p_court_id, p_sport, p_game_format,
     p_starts_at, p_ends_at, p_min_players, p_max_players,
     round(v_booking.price / p_max_players, 2),
-    p_joining_deadline, p_notes, 'awaiting_payment'
+    p_joining_deadline, trim(p_host_qr_path), trim(p_host_phone), p_notes, 'awaiting_payment'
   ) returning * into v_game;
 
   return v_game;
 end;
 $$;
 grant execute on function public.create_play_together_game
-  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,boolean) to authenticated;
+  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,text,text,boolean) to authenticated;
 
 -- ================================================================
 -- finalize_play_together_game: idempotent, mirrors
@@ -193,10 +247,10 @@ end;
 $$;
 
 -- ================================================================
--- join_play_together_game: no money changes hands here — purely a
--- "count me in" record. The player's contribution is reimbursed to
--- the host in cash at the venue, tracked separately via
--- mark_contribution_collected() below.
+-- join_play_together_game: NOT an instant join — creates a pending
+-- request. No money changes hands here either way. The host must
+-- explicitly approve_join_request() before the player is actually in;
+-- that's the only point they're notified or counted toward capacity.
 -- ================================================================
 create or replace function public.join_play_together_game(p_game_id uuid)
 returns public.game_players
@@ -214,11 +268,14 @@ begin
 
   if exists (
     select 1 from public.game_players
-    where game_id = p_game_id and user_id = auth.uid() and status = 'joined'
+    where game_id = p_game_id and user_id = auth.uid() and status in ('requested','joined')
   ) then
     raise exception 'ALREADY_JOINED';
   end if;
 
+  -- Pending requests don't reserve a spot — only approved players count
+  -- toward capacity — but there's no point accepting a request into an
+  -- already-full game.
   select count(*) into v_joined_count
     from public.game_players where game_id = p_game_id and status = 'joined';
   if v_joined_count >= v_game.max_players - 1 then
@@ -226,9 +283,9 @@ begin
   end if;
 
   insert into public.game_players (game_id, user_id, status, contribution_amount, contribution_status)
-  values (p_game_id, auth.uid(), 'joined', v_game.contribution_amount, 'pending')
+  values (p_game_id, auth.uid(), 'requested', v_game.contribution_amount, 'pending')
   on conflict (game_id, user_id) do update
-    set status = 'joined',
+    set status = 'requested',
         contribution_amount = excluded.contribution_amount,
         contribution_status = 'pending',
         collected_at = null,
@@ -241,7 +298,47 @@ end;
 $$;
 grant execute on function public.join_play_together_game(uuid) to authenticated;
 
--- ── leave_play_together_game: player can leave before the deadline ──
+-- ================================================================
+-- approve_join_request: host-only. Flips a pending request to
+-- 'joined' (or 'rejected'). This is the ONLY point a player is
+-- notified or counted toward capacity — see
+-- notifyPlayTogetherJoined()/notifyPlayTogetherJoinRejected() in
+-- src/lib/mail/notify.ts, called right after this succeeds.
+-- ================================================================
+create or replace function public.approve_join_request(p_game_player_id uuid, p_approve boolean)
+returns public.game_players
+language plpgsql security definer set search_path = public as $$
+declare
+  v_row          public.game_players;
+  v_host         uuid;
+  v_max_players  int;
+  v_joined_count int;
+begin
+  select gp.*, g.host_id, g.max_players into v_row, v_host, v_max_players
+    from public.game_players gp join public.games g on g.id = gp.game_id
+    where gp.id = p_game_player_id for update of gp;
+  if v_row.id is null then raise exception 'NOT_FOUND'; end if;
+  if v_host <> auth.uid() then raise exception 'FORBIDDEN'; end if;
+  if v_row.status <> 'requested' then raise exception 'ALREADY_REVIEWED'; end if;
+
+  if p_approve then
+    select count(*) into v_joined_count
+      from public.game_players where game_id = v_row.game_id and status = 'joined';
+    if v_joined_count >= v_max_players - 1 then
+      raise exception 'GAME_FULL';
+    end if;
+    update public.game_players set status = 'joined' where id = p_game_player_id returning * into v_row;
+  else
+    update public.game_players set status = 'rejected' where id = p_game_player_id returning * into v_row;
+  end if;
+
+  return v_row;
+end;
+$$;
+grant execute on function public.approve_join_request(uuid,boolean) to authenticated;
+
+-- ── leave_play_together_game: withdraw a request, or leave after being
+-- approved — either way, before the joining deadline. ──
 create or replace function public.leave_play_together_game(p_game_id uuid)
 returns public.game_players
 language plpgsql security definer set search_path = public as $$
@@ -254,7 +351,7 @@ begin
   if now() >= v_game.joining_deadline then raise exception 'JOINING_CLOSED'; end if;
 
   update public.game_players set status = 'left', left_at = now()
-    where game_id = p_game_id and user_id = auth.uid() and status = 'joined'
+    where game_id = p_game_id and user_id = auth.uid() and status in ('requested','joined')
     returning * into v_row;
 
   if v_row.id is null then raise exception 'NOT_JOINED'; end if;
@@ -321,7 +418,23 @@ alter table public.notifications add constraint notifications_kind_check
   check (kind in ('joined','left','spots_needed','hosted','event',
                    'friend_request','friend_accepted',
                    'payment_submitted','payment_approved','payment_rejected',
-                   'game_published','game_joined','game_left','game_cancelled'));
+                   'game_published','game_joined','game_left','game_cancelled',
+                   'game_join_requested','game_join_rejected'));
+
+-- ── STORAGE: host's own payment QR (public — players need to see it to
+-- pay the host; owner-write-only, same shape as the 'payment-qr' bucket
+-- in payments.sql but per-host instead of platform-wide) ──────────
+insert into storage.buckets (id, name, public)
+  values ('host-qr', 'host-qr', true)
+  on conflict (id) do nothing;
+
+drop policy if exists host_qr_read        on storage.objects;
+drop policy if exists host_qr_owner_write on storage.objects;
+create policy host_qr_read on storage.objects for select
+  using (bucket_id = 'host-qr');
+-- path convention: '{host_id}/{timestamp}.{ext}'
+create policy host_qr_owner_write on storage.objects for insert
+  with check (bucket_id = 'host-qr' and (storage.foldername(name))[1] = auth.uid()::text);
 
 -- ================================================================
 -- Payments integration: confirm_free_booking() and review_payment()
