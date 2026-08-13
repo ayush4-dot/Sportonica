@@ -52,6 +52,28 @@ export async function getGamePlayers(gameId: string): Promise<GamePlayerWithProf
   return (data as GamePlayerWithProfile[]) ?? [];
 }
 
+// Host-only (RLS: game_players_read_host) — the queue the host reviews on
+// their dashboard.
+export async function getPendingRequests(gameId: string): Promise<GamePlayerWithProfile[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("game_players")
+    .select("*, profiles(full_name, name, avatar_url)")
+    .eq("game_id", gameId)
+    .eq("status", "requested")
+    .order("joined_at", { ascending: true });
+  return (data as GamePlayerWithProfile[]) ?? [];
+}
+
+// A player's own request/membership row for a game — drives the "Request
+// sent, waiting for approval" vs "You're in" vs nothing-yet UI state.
+export async function getMyGamePlayerStatus(gameId: string, userId: string): Promise<GamePlayer | null> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("game_players").select("*").eq("game_id", gameId).eq("user_id", userId).maybeSingle();
+  return data as GamePlayer | null;
+}
+
 // For the host dashboard's "venue payment" status line. RLS on
 // court_bookings scopes select to the owning user (the host, here).
 export async function getGameCourtBookingStatus(courtBookingId: string): Promise<{

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Wallet, Clock, ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
-import { createGame } from "@/lib/playTogether/actions";
+import { Check, Wallet, Clock, ChevronLeft, ChevronRight, AlertTriangle, Upload } from "lucide-react";
+import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "../../../(play)/create/[id]/SlotPicker";
@@ -44,7 +44,7 @@ const DEADLINE_OPTS = [
   { label: "24 hours before", hours: 24 },
 ];
 
-const STEPS = ["Court", "Format", "When", "Capacity", "Confirm"];
+const STEPS = ["Court", "Format", "When", "Capacity", "Payment details", "Confirm"];
 
 export default function PlayTogetherWizard({
   venueName, courts,
@@ -69,9 +69,36 @@ export default function PlayTogetherWizard({
   const [notes, setNotes] = useState("");
   const [ackRisk, setAckRisk] = useState(false);
 
+  const [hostPhone, setHostPhone] = useState("");
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
+  const [qrPath, setQrPath] = useState<string | null>(null);
+  const [qrUploading, setQrUploading] = useState(false);
+  const qrFileRef = useRef<HTMLInputElement>(null);
+
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; price: number } | null>(null);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => { if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl); };
+  }, [qrPreviewUrl]);
+
+  function pickQrFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const okTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!okTypes.includes(f.type)) { setErr("Upload a JPG, PNG or WebP image."); return; }
+    if (f.size > 5 * 1024 * 1024) { setErr("Image must be under 5 MB."); return; }
+    setErr(null);
+    if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl);
+    setQrPreviewUrl(URL.createObjectURL(f));
+    setQrPath(null);
+    setQrUploading(true);
+    uploadHostQr(f)
+      .then((path) => setQrPath(path))
+      .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload your QR."))
+      .finally(() => setQrUploading(false));
+  }
 
   const court = courts.find((c) => c.id === courtId);
   const hourly = court ? Number(court.base_price) : 0;
@@ -85,6 +112,7 @@ export default function PlayTogetherWizard({
     step === 1 ? true :
     step === 2 ? hour !== null :
     step === 3 ? minPlayers >= 1 && maxPlayers >= minPlayers :
+    step === 4 ? hostPhone.trim().length > 0 && !!qrPath && !qrUploading :
     true;
 
   function next() {
@@ -92,7 +120,9 @@ export default function PlayTogetherWizard({
       setErr(
         step === 0 ? "Pick a court to continue." :
         step === 2 ? "Pick a time to continue." :
-        "Minimum players can't be more than the maximum."
+        step === 3 ? "Minimum players can't be more than the maximum." :
+        step === 4 ? "Add your phone number and upload your payment QR to continue." :
+        null
       );
       return;
     }
@@ -103,6 +133,7 @@ export default function PlayTogetherWizard({
 
   function submit() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
+    if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
     if (!ackRisk) { setErr("Please confirm you understand the venue payment terms."); return; }
     setErr(null);
     startTransition(async () => {
@@ -117,6 +148,8 @@ export default function PlayTogetherWizard({
           min_players: minPlayers,
           max_players: maxPlayers,
           joining_deadline: new Date(new Date(startsAt).getTime() - deadlineHours * 3600_000).toISOString(),
+          host_qr_path: qrPath,
+          host_phone: hostPhone.trim(),
           notes: notes.trim() || undefined,
           ack_risk: ackRisk,
         });
@@ -144,8 +177,8 @@ export default function PlayTogetherWizard({
         <div className="bk-success-mark"><Check size={30} color="#fff" /></div>
         <h3 style={{ fontSize: 22 }}>Your game is live!</h3>
         <p className="hint" style={{ maxWidth: 380, margin: "8px auto 20px" }}>
-          {court?.name} at {venueName}. Players can now join and will reimburse you
-          Rs {contribution} each, in cash, at the venue.
+          {court?.name} at {venueName}. Players can now request to join — approve them from
+          your Manage page, and each pays you Rs {contribution} in cash at the venue.
         </p>
         <button className="play-btn gold" onClick={() => router.push("/play-together")}>See Play Together games</button>
       </div>
@@ -328,8 +361,44 @@ export default function PlayTogetherWizard({
           </div>
         )}
 
-        {/* ── 5. Confirm ───────────────────────────────────────── */}
+        {/* ── 5. Payment details ───────────────────────────────── */}
         {step === 4 && (
+          <div className="bk-panel">
+            <h3>How players pay you</h3>
+            <p className="hint">
+              Khelam Na never holds player contributions — this is shown directly to approved
+              players so they can pay you.
+            </p>
+
+            <p className="hint" style={{ marginBottom: 8 }}>Your phone number</p>
+            <input
+              type="tel" inputMode="tel" className="bk-in" style={{ marginBottom: 20 }}
+              value={hostPhone} onChange={(e) => setHostPhone(e.target.value)}
+              placeholder="98XXXXXXXX"
+            />
+
+            <p className="hint" style={{ marginBottom: 8 }}>Your eSewa or Khalti QR code</p>
+            <input
+              ref={qrFileRef} type="file" accept="image/jpeg,image/png,image/webp"
+              onChange={pickQrFile} style={{ display: "none" }}
+            />
+            {qrPreviewUrl ? (
+              <div className="pymt-shot" onClick={() => qrFileRef.current?.click()}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrPreviewUrl} alt="Your payment QR preview" />
+                <span className="pymt-shot-replace">{qrUploading ? "Uploading…" : "Replace"}</span>
+              </div>
+            ) : (
+              <button className="pymt-upload" onClick={() => qrFileRef.current?.click()} type="button">
+                <Upload size={15} /> Upload your QR code
+              </button>
+            )}
+            <style>{`.pymt-shot{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--line);max-height:220px}.pymt-shot img{width:100%;max-height:220px;object-fit:contain;background:#000;display:block}.pymt-shot-replace{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px}.pymt-upload{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:11px;border:1px dashed var(--line);background:transparent;color:inherit;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer}`}</style>
+          </div>
+        )}
+
+        {/* ── 6. Confirm ───────────────────────────────────────── */}
+        {step === 5 && (
           <div className="bk-panel">
             <h3>Confirm your game</h3>
             <p className="hint">{venueName}</p>
@@ -341,6 +410,7 @@ export default function PlayTogetherWizard({
             </span></div>
             <div className="bk-sum-row"><span className="lbl">Time</span><span className="val">{hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—"}</span></div>
             <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{maxPlayers} max, {minPlayers} min</span></div>
+            <div className="bk-sum-row"><span className="lbl">Your contact</span><span className="val">{hostPhone || "—"}</span></div>
             <div className="bk-sum-row"><span className="lbl">Venue booking</span><span className="val">Rs {estimatedPrice}</span></div>
             <div className="bk-sum-row bk-sum-total">
               <span className="lbl">Total payable now</span>
@@ -369,7 +439,8 @@ export default function PlayTogetherWizard({
 
             <p className="hint" style={{ fontSize: 12.5, marginTop: 18, marginBottom: 0 }}>
               <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
-              Next you&apos;ll pay via eSewa or Khalti QR (or confirm instantly if this court is free).
+              Next you&apos;ll pay the venue via eSewa or Khalti QR (or confirm instantly if it&apos;s free).
+              Players who request to join won&apos;t be in until you approve them.
             </p>
           </div>
         )}

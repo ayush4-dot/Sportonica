@@ -2,21 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
-import { markContributionCollected, cancelGame } from "@/lib/playTogether/actions";
+import { Check, X } from "lucide-react";
+import { markContributionCollected, cancelGame, approveJoinRequest } from "@/lib/playTogether/actions";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 import type { GameStatus } from "@/lib/playTogether/types";
 
 export default function PlayTogetherManageClient({
-  gameId, players, gameStatus,
+  gameId, players, requests, gameStatus,
 }: {
   gameId: string;
   players: GamePlayerWithProfile[];
+  requests: GamePlayerWithProfile[];
   gameStatus: GameStatus;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState(players);
+  const [pendingRows, setPendingRows] = useState(requests);
   const [err, setErr] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
@@ -31,6 +33,19 @@ export default function PlayTogetherManageClient({
           : r));
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not update this player.");
+      }
+    });
+  }
+
+  function review(row: GamePlayerWithProfile, approve: boolean) {
+    setErr(null);
+    startTransition(async () => {
+      try {
+        await approveJoinRequest(row.id, gameId, approve);
+        setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
+        if (approve) setRows((rs) => [...rs, { ...row, status: "joined" }]);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : "Could not review this request.");
       }
     });
   }
@@ -51,8 +66,35 @@ export default function PlayTogetherManageClient({
     <div>
       {err && <div className="bkw-err" style={{ marginTop: 10 }}>{err}</div>}
 
+      {pendingRows.length > 0 && (
+        <>
+          <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>
+            Pending requests ({pendingRows.length})
+          </p>
+          <div className="pt-players-list">
+            {pendingRows.map((p) => (
+              <div key={p.id} className="pt-player-row">
+                <div>
+                  <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
+                  <div className="pt-player-sub">Wants to join</div>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="pt-collect-btn on" onClick={() => review(p, true)} disabled={pending}>
+                    <Check size={12} style={{ verticalAlign: -2 }} /> Approve
+                  </button>
+                  <button className="pt-collect-btn" onClick={() => review(p, false)} disabled={pending}>
+                    <X size={12} style={{ verticalAlign: -2 }} /> Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>Players ({rows.length})</p>
       {rows.length === 0 ? (
-        <p className="hint" style={{ marginTop: 16 }}>No one has joined yet.</p>
+        <p className="hint">No one has been approved yet.</p>
       ) : (
         <div className="pt-players-list">
           {rows.map((p) => (
@@ -80,9 +122,9 @@ export default function PlayTogetherManageClient({
           ) : (
             <>
               <p>
-                Cancelling notifies every joined player. Khelam Na doesn&apos;t automatically refund your
-                venue payment — any refund follows the venue&apos;s cancellation policy and must currently be
-                handled by an admin.
+                Cancelling notifies every approved and pending player. Khelam Na doesn&apos;t automatically
+                refund your venue payment — any refund follows the venue&apos;s cancellation policy and must
+                currently be handled by an admin.
               </p>
               <input
                 className="bk-in" style={{ marginBottom: 10 }}

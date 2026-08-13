@@ -293,3 +293,40 @@ them.
 — Khelam Na`,
   };
 }
+
+// ── Play Together: host — a new join request is waiting for review ──
+export function playTogetherJoinRequested(p: {
+  to: string; hostName: string; requesterName: string; sport: string; startsAt: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `${p.requesterName} wants to join your ${p.sport} game`,
+    body: `Hi ${p.hostName},
+
+${p.requesterName} requested to join your ${p.sport} game on ${fmtWhen(p.startsAt)}.
+
+They won't be counted in or notified until you approve them — review it
+from your game's Manage page.
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: player — host didn't approve the request ─────────
+export function playTogetherJoinRejected(p: {
+  to: string; playerName: string; sport: string; venue: string; startsAt: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Request not approved: ${p.sport} at ${p.venue}`,
+    body: `Hi ${p.playerName},
+
+The host didn't approve your request to join this game.
+
+  Sport   ${p.sport}
+  Venue   ${p.venue}
+  When    ${fmtWhen(p.startsAt)}
+
+— Khelam Na`,
+  };
+}

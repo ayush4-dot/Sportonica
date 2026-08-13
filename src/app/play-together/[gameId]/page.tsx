@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, MapPin, Users, Wallet, Clock } from "lucide-react";
-import { getGame, getGamePlayers } from "@/lib/playTogether/queries";
+import { getGame, getGamePlayers, getMyGamePlayerStatus } from "@/lib/playTogether/queries";
 import { createClient } from "@/lib/supabase/server";
 import { availablePlayerSpots } from "@/lib/playTogether/types";
 import PlayTogetherJoinPanel from "./PlayTogetherJoinPanel";
@@ -34,7 +34,8 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
 
   const players = await getGamePlayers(gameId);
   const isHost = user?.id === game.host_id;
-  const alreadyJoined = players.some((p) => p.user_id === user?.id);
+  const myPlayer = user && !isHost ? await getMyGamePlayerStatus(gameId, user.id) : null;
+  const myStatus = myPlayer?.status ?? null;
 
   const spots = availablePlayerSpots(game);
   const spotsLeft = Math.max(spots - players.length, 0);
@@ -90,7 +91,7 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
                   {players.map((p) => (
                     <div key={p.id} className="pt-player-row">
                       <span className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</span>
-                      <span className="pt-player-sub">Joined</span>
+                      <span className="pt-player-sub">Approved</span>
                     </div>
                   ))}
                 </div>
@@ -114,11 +115,14 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
               <PlayTogetherJoinPanel
                 gameId={game.id}
                 isHost={isHost}
-                alreadyJoined={alreadyJoined}
+                myStatus={myStatus}
                 isPublished={game.status === "published"}
                 joiningOpen={joiningOpen}
                 spotsLeft={spotsLeft}
                 loggedIn={!!user}
+                contribution={game.contribution_amount}
+                hostQrPath={myStatus === "joined" ? game.host_qr_path : null}
+                hostPhone={myStatus === "joined" ? game.host_phone : null}
               />
             </div>
           </div>

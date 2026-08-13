@@ -12,7 +12,7 @@ import {
   playerBooked, venueNewBooking, hostGameLive, playerJoined, hostSomeoneJoined,
   paymentSubmitted, paymentApproved, paymentRejected,
   playTogetherGamePublished, playTogetherPlayerJoined, playTogetherHostRosterChanged,
-  playTogetherGameCancelled,
+  playTogetherGameCancelled, playTogetherJoinRequested, playTogetherJoinRejected,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 
@@ -221,46 +221,85 @@ export async function notifyPlayTogetherGamePublishedIfAny(courtBookingId: strin
   });
 }
 
-// ── Someone joined a Play Together game ─────────────────────────
-export async function notifyPlayTogetherJoined(input: { joinerId: string; gameId: string }) {
+// ── A player requested to join — tell the HOST only. The player hears
+// nothing until the host actually reviews it (see notifyPlayTogetherJoined
+// / notifyPlayTogetherJoinRejected below, fired from approveJoinRequest()).
+export async function notifyPlayTogetherJoinRequested(input: { requesterId: string; gameId: string }) {
   const ctx = await playTogetherContext(input.gameId);
   if (!ctx) return;
-  const { game, venueName, spotsLeft } = ctx;
+  const { game } = ctx;
+  if (game.host_id === input.requesterId) return;
 
-  const [joinerEmail, joinerName, hostEmail, hostName] = await Promise.all([
-    emailFor(input.joinerId), nameFor(input.joinerId),
-    emailFor(game.host_id), nameFor(game.host_id),
+  const [hostEmail, hostName, requesterName] = await Promise.all([
+    emailFor(game.host_id), nameFor(game.host_id), nameFor(input.requesterId),
   ]);
-
-  const mails = [];
-  if (joinerEmail) {
-    mails.push(playTogetherPlayerJoined({
-      to: joinerEmail, playerName: joinerName, sport: game.sport, venue: venueName,
-      startsAt: game.starts_at, contribution: Number(game.contribution_amount) || 0,
+  if (hostEmail) {
+    await sendMail(playTogetherJoinRequested({
+      to: hostEmail, hostName, requesterName, sport: game.sport, startsAt: game.starts_at,
     }));
   }
-  // Don't email the host about their own join (join_play_together_game()
-  // blocks the host from joining their own game anyway, but stay defensive).
-  if (hostEmail && game.host_id !== input.joinerId) {
-    mails.push(playTogetherHostRosterChanged({
-      to: hostEmail, hostName, playerName: joinerName, sport: game.sport,
-      startsAt: game.starts_at, joined: true, spotsLeft,
-    }));
-  }
-  if (mails.length) await sendMail(mails);
 
   const sb = await createClient();
   await sb.from("notifications").insert({
     user_id: game.host_id,
-    kind: "game_joined",
-    title: "New player joined!",
-    body: `${joinerName} joined your ${game.sport} game.`,
+    kind: "game_join_requested",
+    title: "New join request",
+    body: `${requesterName} wants to join your ${game.sport} game.`,
     game_id: game.id,
-    actor_id: input.joinerId,
+    actor_id: input.requesterId,
   });
 }
 
-// ── Someone left a Play Together game ───────────────────────────
+// ── Host approved a join request — this is the ONLY point the player
+// hears anything about their join, by design (per product decision: no
+// notification before the host reviews it). ──────────────────────────
+export async function notifyPlayTogetherJoined(input: { playerId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName } = ctx;
+
+  const [playerEmail, playerName] = await Promise.all([emailFor(input.playerId), nameFor(input.playerId)]);
+  if (playerEmail) {
+    await sendMail(playTogetherPlayerJoined({
+      to: playerEmail, playerName, sport: game.sport, venue: venueName,
+      startsAt: game.starts_at, contribution: Number(game.contribution_amount) || 0,
+    }));
+  }
+
+  const sb = await createClient();
+  await sb.from("notifications").insert({
+    user_id: input.playerId,
+    kind: "game_joined",
+    title: "You're in!",
+    body: `The host approved your request to join their ${game.sport} game.`,
+    game_id: game.id,
+  });
+}
+
+// ── Host rejected a join request ──────────────────────────────────
+export async function notifyPlayTogetherJoinRejected(input: { playerId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName } = ctx;
+
+  const [playerEmail, playerName] = await Promise.all([emailFor(input.playerId), nameFor(input.playerId)]);
+  if (playerEmail) {
+    await sendMail(playTogetherJoinRejected({
+      to: playerEmail, playerName, sport: game.sport, venue: venueName, startsAt: game.starts_at,
+    }));
+  }
+
+  const sb = await createClient();
+  await sb.from("notifications").insert({
+    user_id: input.playerId,
+    kind: "game_join_rejected",
+    title: "Request not approved",
+    body: `The host didn't approve your request to join their ${game.sport} game.`,
+    game_id: game.id,
+  });
+}
+
+// ── Someone withdrew a request or left after being approved ──────
 export async function notifyPlayTogetherLeft(input: { leaverId: string; gameId: string }) {
   const ctx = await playTogetherContext(input.gameId);
   if (!ctx) return;
@@ -288,7 +327,7 @@ export async function notifyPlayTogetherLeft(input: { leaverId: string; gameId: 
   });
 }
 
-// ── Host cancelled a Play Together game — tell every joined player ──
+// ── Host cancelled a Play Together game — tell every joined/pending player ──
 export async function notifyPlayTogetherCancelled(input: { hostId: string; gameId: string }) {
   const sb = await createClient();
   const { data: game } = await sb
@@ -298,7 +337,7 @@ export async function notifyPlayTogetherCancelled(input: { hostId: string; gameI
   const venueName = venue?.name ?? "the venue";
 
   const { data: players } = await sb
-    .from("game_players").select("user_id").eq("game_id", input.gameId).eq("status", "joined");
+    .from("game_players").select("user_id").eq("game_id", input.gameId).in("status", ["joined", "requested"]);
   if (!players?.length) return;
 
   const details = await Promise.all(
