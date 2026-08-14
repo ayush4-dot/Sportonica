@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   MapPin, Clock, Zap, CircleDot,
-  Trophy, Activity, Wind, Target, Waves, ShieldCheck,
+  Trophy, Activity, Wind, Target, Waves, ShieldCheck, Wallet,
   ChevronRight, X,
   Loader2, AlertCircle,
 } from "lucide-react";
@@ -13,9 +13,9 @@ import NepalMap from "@/components/NepalMap";
 import { useCity, inCity } from "@/lib/city";
 import KhelamnaMap from "@/components/KhelamnaMap";
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
+import { usePlayTogetherEvents } from "@/lib/hooks/usePlayTogetherEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
 import JoinModal from "./JoinModal";
-import PlayTogetherRail from "./PlayTogetherRail";
 import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
 import { SPORT_NAMES, sportColor, normalizeSport } from "@/lib/sports";
@@ -78,7 +78,14 @@ function DiscoverInner() {
   const [showMap, setShowMap] = useState(false);
 
   const sportFilter = activeSport === "All sports" ? undefined : activeSport;
-  const { events, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
+  const { events: bookedEvents, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
+  const playTogetherEvents = usePlayTogetherEvents();
+  // Play Together games are just another kind of game to browse — they
+  // flow through the same filter/sort/card pipeline as everything else,
+  // not a separate section.
+  const events = [...bookedEvents, ...playTogetherEvents].filter(
+    (ev) => !sportFilter || ev.sport === sportFilter
+  );
 
   // ── Apply the filter bar to the fetched events ──────────────────
   const KTM = "Asia/Kathmandu";
@@ -138,11 +145,14 @@ function DiscoverInner() {
     }
   }, [events]);
 
+  const eventHref = (ev: EventRow) =>
+    ev.event_type === "play_together" ? `/play-together/${ev.id}` : `/game/${ev.id}`;
+
   const handleBook = (ev: EventRow, e?: React.MouseEvent) => {
     e?.stopPropagation();
     // Open the full game page — who's playing, skill level, directions,
     // then join from there. Login is handled on that page.
-    router.push(`/game/${ev.id}`);
+    router.push(eventHref(ev));
   };
 
   return (
@@ -177,10 +187,6 @@ function DiscoverInner() {
           <a href="/create">host your own</a>.
         </motion.p>
       </header>
-
-      <div style={{ padding: "0 clamp(20px, 5vw, 56px)" }}>
-        <PlayTogetherRail />
-      </div>
 
       <section className="disc-section">
         <DateStrip value={day} onPick={setDay} />
@@ -258,7 +264,7 @@ function DiscoverInner() {
                     initial={{ opacity: 0, y: 24 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(i, 8) * 0.05, duration: 0.45 }}
-                    onClick={() => router.push(`/game/${ev.id}`)}
+                    onClick={() => router.push(eventHref(ev))}
                     style={{ cursor: "pointer" }}
                   >
                     <div className="disc-card-top">
@@ -273,6 +279,10 @@ function DiscoverInner() {
                       ) : ev.event_type === "venue_event" ? (
                         <span className="disc-official-badge" style={{ color: "#2E7D5B", borderColor: "rgba(46,125,91,0.4)", background: "rgba(46,125,91,0.12)" }}>
                           ✓ Official
+                        </span>
+                      ) : ev.event_type === "play_together" ? (
+                        <span className="disc-official-badge" style={{ color: "#2E7D5B", borderColor: "rgba(46,125,91,0.4)", background: "rgba(46,125,91,0.12)" }}>
+                          <Wallet size={10} /> Play Together
                         </span>
                       ) : ev.flash ? (
                         <span className="disc-flash-badge">
@@ -370,6 +380,8 @@ function DiscoverInner() {
                           <>
                             <Zap size={11} /> Join
                           </>
+                        ) : ev.event_type === "play_together" ? (
+                          "Join"
                         ) : (
                           "Book"
                         )}
