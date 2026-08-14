@@ -40,6 +40,10 @@ export default function MagnetDock() {
   const firstName =
     profile?.full_name?.trim().split(" ")[0] ??
     user?.email?.split("@")[0] ?? "Account";
+  // Venue owners/admins land on their console here, same as the old
+  // account dropdown's "Venue console" entry — /admin was always their
+  // real destination, /profile was never it.
+  const isOwner = profile?.role === "venue_owner" || profile?.role === "admin";
 
   // "Chat" covers all three social tabs (Messages/Players/Groups), not just its own href.
   const CHAT_PREFIXES = ["/messages", "/players", "/league"];
@@ -179,15 +183,16 @@ export default function MagnetDock() {
         })}
 
         {/* Profile — the single account entry point. Logged out, it goes
-            straight to login rather than through /profile's own redirect. */}
+            straight to login rather than through /profile's own redirect.
+            Owners/admins go straight to their console, same as before. */}
         <a
-          href={user ? "/profile" : "/login"}
+          href={!user ? "/login" : isOwner ? "/admin" : "/profile"}
           className={`dock-item ${profileActive ? "active" : ""}`}
           style={{ transform: `scale(${hoverIdx === null ? 1 : magnify(profileIdx - hoverIdx)})`, width: 46 }}
           onMouseEnter={() => setHoverIdx(profileIdx)}
         >
           {user ? <div className="dock-avatar">{firstName.charAt(0).toUpperCase()}</div> : <LogIn size={20} />}
-          <span className="dock-label">{user ? "Profile" : "Sign in"}</span>
+          <span className="dock-label">{user ? (isOwner ? "Console" : "Profile") : "Sign in"}</span>
         </a>
       </div>
     </>
