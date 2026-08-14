@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ExternalLink, ChevronRight, Pencil, Wallet, KeyRound, Bell, SlidersHorizontal,
-  ShieldQuestion, LifeBuoy, ScrollText, LogOut, Users,
+  ShieldQuestion, LifeBuoy, ScrollText, LogOut, Users, LayoutDashboard,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ShareButton from "@/app/p/[username]/ShareButton";
@@ -27,6 +27,8 @@ export default function ProfileHub({
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   const activeSportRow = sports.find((s) => s.sport === activeSport);
+  const isOwner = profile.role === "venue_owner" || profile.role === "admin";
+  const isSuperAdmin = profile.role === "super_admin";
 
   async function logout() {
     setLoggingOut(true);
@@ -144,6 +146,12 @@ export default function ProfileHub({
           <h2 className="pf-sec-t">Account &amp; Settings</h2>
         </div>
         <div className="pf-hub-list">
+          {isSuperAdmin && (
+            <Row href="/platform" icon={<LayoutDashboard size={16} />} label="Platform console" />
+          )}
+          {isOwner && (
+            <Row href="/admin" icon={<LayoutDashboard size={16} />} label="Venue console" />
+          )}
           <Row href="/profile/edit" icon={<Pencil size={16} />} label="Edit Profile" />
           <Row href="/profile/payments" icon={<Wallet size={16} />} label="Payments" />
           <Row href="/profile/coming-soon?section=security" icon={<KeyRound size={16} />} label="Login &amp; Security" />

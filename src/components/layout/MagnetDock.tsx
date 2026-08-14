@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
-import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn, LogOut, LayoutDashboard, User } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { usePathname } from "next/navigation";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn } from "lucide-react";
 import { useProfile } from "@/lib/hooks/useProfile";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
@@ -13,7 +12,6 @@ const LINKS: Item[] = [
   { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
   { label: "Chat", href: "/messages", icon: <MessagesSquare size={20} /> },
-  { label: "Profile", href: "/profile", icon: <User size={20} /> },
 ];
 
 // Magnify curve: how much a dock item scales based on distance (in item
@@ -28,30 +26,20 @@ function magnify(distance: number) {
 
 export default function MagnetDock() {
   const pathname = usePathname();
-  const router = useRouter();
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [menuOpen, setMenuOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
   // Shared with the header/nav instead of each firing its own auth +
   // profile round-trip on mount — noticeable savings on mobile.
   const { user, profile } = useProfile();
-  const dbRole = profile?.role ?? null;
 
   // Hide dock on admin console, auth pages (they have their own chrome).
   const hidden = pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/login") || pathname.startsWith("/signup");
   if (hidden) return null;
 
-  const isOwner = dbRole === "venue_owner" || dbRole === "admin";
   const firstName =
     profile?.full_name?.trim().split(" ")[0] ??
     user?.email?.split("@")[0] ?? "Account";
-
-  async function logout() {
-    await createClient().auth.signOut();
-    setMenuOpen(false);
-    window.location.href = "/";
-  }
 
   // "Chat" covers all three social tabs (Messages/Players/Groups), not just its own href.
   const CHAT_PREFIXES = ["/messages", "/players", "/league"];
@@ -61,8 +49,12 @@ export default function MagnetDock() {
     return pathname.startsWith(href);
   };
 
-  // account item lives at index = LINKS.length for magnify math
-  const accountIdx = LINKS.length;
+  // Profile is the single account entry point now (holds settings, console
+  // links for owners/admins, and logout — see src/app/profile/ProfileHub.tsx)
+  // — no separate account item/dropdown here any more. Lives at index =
+  // LINKS.length for the magnify math.
+  const profileIdx = LINKS.length;
+  const profileActive = pathname.startsWith("/profile");
 
   return (
     <>
@@ -96,7 +88,6 @@ export default function MagnetDock() {
           color: #006241; background: rgba(0,98,65,0.14);
           border-color: rgba(0,98,65,0.3);
         }
-        .dock-item.account { background: rgba(0,98,65,0.16); border-color: rgba(0,98,65,0.3); color: #F2EDE6; }
         /* label that slides in from the right-hand side */
         .dock-label {
           position: absolute; right: calc(100% + 14px); top: 50%;
@@ -118,23 +109,6 @@ export default function MagnetDock() {
           width: 26px; height: 26px; border-radius: 50%; background: #006241;
           display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff;
         }
-        .dock-menu {
-          position: absolute; right: calc(100% + 14px); bottom: 0;
-          background: #14171E; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 13px; padding: 7px; min-width: 190px;
-          box-shadow: 0 20px 50px -12px rgba(0,0,0,0.6);
-        }
-        .dock-menu a, .dock-menu button {
-          display: flex; align-items: center; gap: 10px; width: 100%;
-          background: none; border: none; cursor: pointer; text-align: left;
-          color: color-mix(in srgb, var(--chalk,#F2EDE6) 82%, transparent);
-          font-family: 'Inter',sans-serif; font-size: 13.5px; font-weight: 500;
-          padding: 10px 11px; border-radius: 8px; text-decoration: none;
-          transition: background 0.15s, color 0.15s;
-        }
-        .dock-menu a:hover, .dock-menu button:hover { background: rgba(255,255,255,0.06); color: var(--chalk,#F2EDE6); }
-        .dock-menu .sep { height: 1px; background: rgba(255,255,255,0.08); margin: 5px 0; }
-
         /* ── Paper theme ── */
         [data-theme="paper"] .dock {
           background: rgba(255,255,255,0.7);
@@ -146,10 +120,6 @@ export default function MagnetDock() {
         [data-theme="paper"] .dock-item.active { color: #006241; background: rgba(0,98,65,0.16); border-color: rgba(0,98,65,0.4); }
         [data-theme="paper"] .dock-label { background: #14171E; color: #F2EDE6; border-color: rgba(20,23,30,0.2); }
         [data-theme="paper"] .dock-label::after { border-left-color: #14171E; }
-        [data-theme="paper"] .dock-menu { background: #FFFFFF; border-color: rgba(20,23,30,0.12); box-shadow: 0 20px 50px -12px rgba(20,23,30,0.25); }
-        [data-theme="paper"] .dock-menu a, [data-theme="paper"] .dock-menu button { color: rgba(20,23,30,0.85); }
-        [data-theme="paper"] .dock-menu a:hover, [data-theme="paper"] .dock-menu button:hover { background: rgba(20,23,30,0.06); color: #14171E; }
-        [data-theme="paper"] .dock-menu .sep { background: rgba(20,23,30,0.1); }
 
         /* ── Mobile: horizontal bar at the bottom, labels always visible ── */
         @media (max-width: 780px) {
@@ -181,7 +151,6 @@ export default function MagnetDock() {
             color: inherit; letter-spacing: -0.2px;
           }
           .dock-label::after { display: none; }
-          .dock-menu { right: 0; left: auto; bottom: calc(100% + 10px); min-width: 180px; }
         }
         @media (max-width: 360px) {
           .dock-label { font-size: 8.5px; }
@@ -209,32 +178,17 @@ export default function MagnetDock() {
           );
         })}
 
-        {/* Account item — auth aware */}
-        <div style={{ position: "relative", width: 46 }}>
-          <button
-            className={`dock-item account`}
-            style={{ transform: `scale(${hoverIdx === null ? 1 : magnify(accountIdx - hoverIdx)})`, width: 46 }}
-            onMouseEnter={() => setHoverIdx(accountIdx)}
-            onClick={() => (user ? setMenuOpen((v) => !v) : router.push("/login"))}
-          >
-            {user ? <div className="dock-avatar">{firstName.charAt(0).toUpperCase()}</div> : <LogIn size={20} />}
-            <span className="dock-label">{user ? firstName : "Sign in"}</span>
-          </button>
-
-          {menuOpen && user && (
-            <div className="dock-menu" onMouseLeave={() => setMenuOpen(false)}>
-              {dbRole === "super_admin" && (
-                <a href="/platform"><LayoutDashboard size={15} /> Platform console</a>
-              )}
-              <a href={isOwner ? "/admin" : "/profile"}>
-                {isOwner ? <LayoutDashboard size={15} /> : <User size={15} />}
-                {isOwner ? "Venue console" : "My profile"}
-              </a>
-              <div className="sep" />
-              <button onClick={logout}><LogOut size={15} /> Log out</button>
-            </div>
-          )}
-        </div>
+        {/* Profile — the single account entry point. Logged out, it goes
+            straight to login rather than through /profile's own redirect. */}
+        <a
+          href={user ? "/profile" : "/login"}
+          className={`dock-item ${profileActive ? "active" : ""}`}
+          style={{ transform: `scale(${hoverIdx === null ? 1 : magnify(profileIdx - hoverIdx)})`, width: 46 }}
+          onMouseEnter={() => setHoverIdx(profileIdx)}
+        >
+          {user ? <div className="dock-avatar">{firstName.charAt(0).toUpperCase()}</div> : <LogIn size={20} />}
+          <span className="dock-label">{user ? "Profile" : "Sign in"}</span>
+        </a>
       </div>
     </>
   );

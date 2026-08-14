@@ -12,6 +12,7 @@ export interface PlayerProfile {
   trust_score: number;
   is_public: boolean;
   created_at: string;
+  role: string | null;
 }
 
 export interface PlayerStats {
