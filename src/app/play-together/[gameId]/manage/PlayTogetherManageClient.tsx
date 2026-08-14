@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ShieldCheck } from "lucide-react";
 import { markContributionCollected, cancelGame, approveJoinRequest, verifyPlayTogetherPayment } from "@/lib/playTogether/actions";
@@ -34,6 +34,19 @@ export default function PlayTogetherManageClient({
   const [err, setErr] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Every action on this page used to change state silently — a host had
+  // no confirmation their tap actually did anything. This surfaces a brief
+  // toast after each one; it always clears the previous timer first so
+  // back-to-back actions don't cut the popup short.
+  function notify(message: string) {
+    setToast(message);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2800);
+  }
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   function toggle(playerId: string, collected: boolean) {
     setErr(null);
@@ -44,6 +57,7 @@ export default function PlayTogetherManageClient({
         setRows((rs) => rs.map((r) => r.id === playerId
           ? { ...r, contribution_status: collected ? "collected" : "pending", collected_at: collected ? new Date().toISOString() : null }
           : r));
+        notify(collected ? "Marked as collected" : "Marked as not collected");
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not update this player.");
       }
@@ -60,6 +74,7 @@ export default function PlayTogetherManageClient({
       setHistoricalRows((rs) => [{ ...row, status: "rejected" }, ...rs]);
     }
     setReviewing(null);
+    notify(approve ? "Request approved — waiting on their payment" : "Request rejected");
   }
 
   // The ONLY action that actually adds a player to the group — see
@@ -74,6 +89,7 @@ export default function PlayTogetherManageClient({
       setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_rejected", payment_rejection_reason: rejectReason ?? null }]);
     }
     setReviewingPayment(null);
+    notify(approve ? "Payment verified — player confirmed" : "Payment rejected");
   }
 
   function doCancel() {
@@ -82,6 +98,7 @@ export default function PlayTogetherManageClient({
       try {
         const res = await cancelGame(gameId, reason);
         if (isActionError(res)) { setErr(res.message); return; }
+        notify("Game cancelled");
         router.refresh();
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not cancel this game.");
@@ -247,6 +264,25 @@ export default function PlayTogetherManageClient({
           )}
         </div>
       )}
+
+      {toast && (
+        <div className="pt-toast" role="status">
+          <Check size={14} /> {toast}
+        </div>
+      )}
+      <style>{`
+        .pt-toast {
+          position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+          display: flex; align-items: center; gap: 8px;
+          background: #14171E; color: #fff; border: 1px solid rgba(242,237,230,.14);
+          border-radius: 999px; padding: 11px 18px; font-size: 13.5px; font-weight: 700;
+          box-shadow: 0 16px 40px -12px rgba(0,0,0,.5); z-index: 700;
+          animation: pt-toast-in .2s ease-out;
+        }
+        .pt-toast svg { color: #4ADE80; flex-shrink: 0; }
+        [data-theme="paper"] .pt-toast { background: #14171E; color: #fff; }
+        @keyframes pt-toast-in { from { opacity: 0; transform: translate(-50%, 8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+      `}</style>
     </div>
   );
 }
