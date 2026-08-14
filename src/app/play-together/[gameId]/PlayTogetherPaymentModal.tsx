@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Upload, Phone } from "lucide-react";
 import { uploadGamePaymentProof, submitPlayTogetherPayment } from "@/lib/playTogether/actions";
 import { hostQrPublicUrl, friendlyPlayTogetherError } from "@/lib/playTogether/types";
+import { isActionError } from "@/lib/actionError";
 import { PYMT_CSS } from "@/components/payments/PaymentStep";
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -71,9 +72,11 @@ export default function PlayTogetherPaymentModal({
     startTransition(async () => {
       try {
         const path = await uploadGamePaymentProof(gamePlayerId, file);
-        await submitPlayTogetherPayment({
+        if (isActionError(path)) { setErr(path.message); return; }
+        const submitted = await submitPlayTogetherPayment({
           gamePlayerId, gameId, method: "host_qr", transactionId: transactionId.trim(), proofPath: path,
         });
+        if (isActionError(submitted)) { setErr(submitted.message); return; }
         onSubmitted();
       } catch (e) {
         setErr(e instanceof Error ? e.message : friendlyPlayTogetherError("Could not submit your payment. Try again."));

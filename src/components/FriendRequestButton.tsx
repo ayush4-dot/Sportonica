@@ -6,6 +6,7 @@ import { UserPlus, Clock, Check, X, MessageCircle, Loader2 } from "lucide-react"
 import { sendFriendRequest, respondToRequest, cancelRequest } from "@/lib/friends/actions";
 import { startConversation } from "@/lib/dm/actions";
 import { getCachedUser } from "@/lib/supabase/authCache";
+import { isActionError } from "@/lib/actionError";
 import type { Relationship } from "@/lib/friends/queries";
 
 export default function FriendRequestButton({
@@ -35,27 +36,30 @@ export default function FriendRequestButton({
     startTransition(async () => {
       if (!(await requireLoggedIn())) return;
       try { await action(); }
-      catch { setError("Something went wrong. Try again."); }
+      catch (e) { setError(e instanceof Error ? e.message : "Something went wrong. Try again."); }
     });
   }
 
   function send() {
     run(async () => {
       const id = await sendFriendRequest(profileId);
+      if (isActionError(id)) throw new Error(id.message);
       setRel({ status: "pending_sent", requestId: id });
     });
   }
 
   function cancel(requestId: string) {
     run(async () => {
-      await cancelRequest(requestId);
+      const res = await cancelRequest(requestId);
+      if (isActionError(res)) throw new Error(res.message);
       setRel({ status: "none" });
     });
   }
 
   function respond(requestId: string, decision: "accepted" | "declined") {
     run(async () => {
-      await respondToRequest(requestId, decision);
+      const res = await respondToRequest(requestId, decision);
+      if (isActionError(res)) throw new Error(res.message);
       setRel(decision === "accepted" ? { status: "friends" } : { status: "none" });
     });
   }
@@ -63,6 +67,7 @@ export default function FriendRequestButton({
   function message() {
     run(async () => {
       const id = await startConversation(profileId);
+      if (isActionError(id)) throw new Error(id.message);
       router.push(`/messages/${id}`);
     });
   }

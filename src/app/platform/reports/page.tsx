@@ -1,10 +1,12 @@
 import { allReports } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 import ReportsGrid from "./ReportsGrid";
 
 export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const reports = await allReports();
+  if (isActionError(reports)) throw new Error(reports.message);
   const open = reports.filter((r) => r.status === "open").length;
 
   return (

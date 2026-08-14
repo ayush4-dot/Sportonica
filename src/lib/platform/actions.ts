@@ -2,16 +2,22 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionError, type ActionError } from "@/lib/actionError";
+import type { User } from "@supabase/supabase-js";
+
+type SuperAdminAuth =
+  | { error: ActionError; sb?: undefined; user?: undefined }
+  | { error?: undefined; sb: Awaited<ReturnType<typeof createClient>>; user: User };
 
 // Every platform action re-checks the role in the DATABASE — the UI gate
 // alone is not security. is_super_admin() runs as the definer, so it can
 // read the role even under RLS.
-async function requireSuperAdmin() {
+async function requireSuperAdmin(): Promise<SuperAdminAuth> {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
+  if (!user) return { error: actionError("UNAUTHORIZED") };
   const { data } = await sb.rpc("is_super_admin");
-  if (!data) throw new Error("FORBIDDEN");
+  if (!data) return { error: actionError("FORBIDDEN") };
   return { sb, user };
 }
 
@@ -25,7 +31,9 @@ export async function getPlatformRole(): Promise<string | null> {
 
 // ── Overview data ───────────────────────────────────────────────
 export async function platformOverview() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
 
   const [venues, pending, users, bookings] = await Promise.all([
     sb.from("venues").select("id", { count: "exact", head: true }),
@@ -43,7 +51,9 @@ export async function platformOverview() {
 }
 
 export async function allVenuesForPlatform() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data } = await sb
     .from("venues")
     .select("id, name, venue_type, address, verification_status, status, created_at, owner_id")
@@ -62,7 +72,9 @@ export async function allVenuesForPlatform() {
 // ── Venue approval (the trust gate) ─────────────────────────────
 // ── All bookings across every venue ─────────────────────────────
 export async function allBookingsForPlatform() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   // court_bookings has no `status` column (that was the bug making this
   // page render empty — the query errored and the discarded error left
   // `data` as null). The real columns are `state` and `payment_status`.
@@ -71,7 +83,7 @@ export async function allBookingsForPlatform() {
     .select("id, starts_at, ends_at, price, state, payment_status, source, customer_name, phone, venue_id, court_id")
     .order("starts_at", { ascending: false })
     .limit(500);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   const bookingIds = (data ?? []).map((b) => b.id);
   const venueIds = [...new Set((data ?? []).map((b) => b.venue_id).filter(Boolean))];
@@ -110,7 +122,9 @@ export async function allBookingsForPlatform() {
 
 // ── All users on the platform ───────────────────────────────────
 export async function allUsersForPlatform() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data } = await sb
     .from("profiles")
     .select("id, full_name, name, username, role, trust_score, city, is_public")
@@ -123,15 +137,18 @@ export async function allUsersForPlatform() {
 
 // ── Change a user's role (promote to venue_owner, etc.) ─────────
 export async function setUserRole(userId: string, role: "player" | "venue_owner" | "super_admin") {
-  const { sb } = await requireSuperAdmin();
-  const { error } = await sb.from("profiles").update({ role }).eq("id", userId);
-  if (error) throw new Error(error.message);
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb.from("profiles").update({ role }).eq("id", userId);
+  if (error) return actionError(error.message);
   revalidatePath("/platform/users");
 }
 
 // ── Revenue: totals + per-venue payouts (Step 4) ────────────────
 export async function platformRevenue() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
 
   const { data: totals } = await sb
     .from("commission_ledger")
@@ -161,19 +178,22 @@ export async function platformRevenue() {
 
 // Mark a venue's pending payouts as paid (real payment wired later).
 export async function markVenuePaid(venueId: string) {
-  const { sb } = await requireSuperAdmin();
-  const { error } = await sb
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb
     .from("commission_ledger")
     .update({ payout_status: "paid" })
     .eq("venue_id", venueId)
     .eq("payout_status", "pending");
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/platform/revenue");
 }
 
 // ── Moderation: reports queue ───────────────────────────────────
 export async function allReports() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data } = await sb
     .from("reports")
     .select("id, reporter_id, target_type, target_id, reason, details, status, created_at")
@@ -190,18 +210,20 @@ export async function allReports() {
 }
 
 export async function setReportStatus(reportId: string, status: "reviewed" | "dismissed" | "open") {
-  const { sb } = await requireSuperAdmin();
-  const { error } = await sb.from("reports").update({ status }).eq("id", reportId);
-  if (error) throw new Error(error.message);
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb.from("reports").update({ status }).eq("id", reportId);
+  if (error) return actionError(error.message);
   revalidatePath("/platform/reports");
 }
 
 export async function setVenueVerification(venueId: string, status: "verified" | "rejected" | "pending") {
-  const { sb } = await requireSuperAdmin();
-  const { error } = await sb
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb
     .from("venues")
     .update({ verification_status: status })
     .eq("id", venueId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/platform");
 }

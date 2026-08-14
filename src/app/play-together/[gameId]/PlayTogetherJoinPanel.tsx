@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Check, Clock3, Phone, AlertTriangle, XCircle } from "lucide-react";
 import { joinGame, leaveGame } from "@/lib/playTogether/actions";
 import { hostQrPublicUrl, effectivePlayerStatus } from "@/lib/playTogether/types";
+import { isActionError } from "@/lib/actionError";
 import type { GamePlayer } from "@/lib/playTogether/types";
 import PlayTogetherPaymentModal from "./PlayTogetherPaymentModal";
 
@@ -68,6 +69,7 @@ export default function PlayTogetherJoinPanel({
     startTransition(async () => {
       try {
         const row = await joinGame(gameId, ackTerms);
+        if (isActionError(row)) { setErr(row.message); return; }
         setPlayer(row);
         setShowTerms(false);
       } catch (e) {
@@ -81,6 +83,7 @@ export default function PlayTogetherJoinPanel({
     startTransition(async () => {
       try {
         const row = await leaveGame(gameId);
+        if (isActionError(row)) { setErr(row.message); return; }
         setPlayer(row);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not leave this game.");

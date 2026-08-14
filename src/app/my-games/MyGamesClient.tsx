@@ -7,6 +7,7 @@ import {
   Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2, AlertCircle, Clock3,
 } from "lucide-react";
 import { updateHostedGame, invitePlayers, cancelInvite } from "@/lib/play/hostActions";
+import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import type { BookingType } from "@/lib/payments/types";
 import type { CourtBookingRow } from "./page";
@@ -117,7 +118,11 @@ export default function MyGamesClient({
                           {i.email}
                           {i.paid_by_host && <b title="You're covering this spot"> · paid</b>}
                           <button
-                            onClick={async () => { await cancelInvite(i.id, g.id); router.refresh(); }}
+                            onClick={async () => {
+                              const res = await cancelInvite(i.id, g.id);
+                              if (isActionError(res)) return;
+                              router.refresh();
+                            }}
                             aria-label={`Remove ${i.email}`}
                           ><X size={10} /></button>
                         </span>
@@ -359,7 +364,7 @@ function EditSheet({ game, onClose }: { game: Game; onClose: () => void }) {
   async function save() {
     setBusy(true); setErr(null);
     try {
-      await updateHostedGame({
+      const res = await updateHostedGame({
         eventId: game.id,
         title,
         event_date: new Date(date).toISOString(),
@@ -367,6 +372,7 @@ function EditSheet({ game, onClose }: { game: Game; onClose: () => void }) {
         max_players: Number(max) || game.max_players,
         notes: notes || null,
       });
+      if (isActionError(res)) { setErr(res.message); setBusy(false); return; }
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't save changes.");
@@ -430,7 +436,8 @@ function InviteSheet({ game, onClose }: { game: Game; onClose: () => void }) {
     setBusy(true); setErr(null);
     try {
       const emails = raw.split(/[\s,;]+/).map((s) => s.trim()).filter(Boolean);
-      await invitePlayers({ eventId: game.id, emails, hostPays });
+      const res = await invitePlayers({ eventId: game.id, emails, hostPays });
+      if (isActionError(res)) { setErr(res.message); setBusy(false); return; }
       onClose();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Couldn't send invites.");

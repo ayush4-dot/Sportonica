@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Ban, UserPlus, Wrench } from "lucide-react";
 import { createBlock, bookCourt, deleteBlock } from "@/lib/admin/actions";
+import { isActionError } from "@/lib/actionError";
 import type { Court, CourtBooking, CourtBlock, CourtHours } from "@/lib/admin/types";
 
 const KTM_TZ = "Asia/Kathmandu";
@@ -89,6 +90,8 @@ export default function DayCalendar({
         </select>
       </div>
 
+      {err && !modal && <div className="adm-badge danger" style={{ marginBottom: 12 }}>{err}</div>}
+
       <div className="adm-card">
         {!court ? (
           <div className="adm-dim" style={{ fontSize: 13 }}>No courts to show. Add a court first.</div>
@@ -131,7 +134,11 @@ export default function DayCalendar({
                 {dayBlocks.map((bl) => (
                   <div key={bl.id} className="adm-cal-block block"
                     style={{ top: pxTop(bl.starts_at), height: pxHeight(bl.starts_at, bl.ends_at) }}
-                    onClick={() => startTransition(async () => { await deleteBlock(bl.id, court.venue_id); router.refresh(); })}
+                    onClick={() => startTransition(async () => {
+                      const res = await deleteBlock(bl.id, court.venue_id);
+                      if (isActionError(res)) { setErr(res.message); return; }
+                      router.refresh();
+                    })}
                     title="Click to remove block">
                     <b><Wrench size={9} style={{ verticalAlign: -1 }} /> {bl.reason.replace("_", " ")}</b>
                     <span>{hhmm(bl.starts_at)}–{hhmm(bl.ends_at)}</span>
@@ -156,19 +163,18 @@ export default function DayCalendar({
             setErr(null);
             startTransition(async () => {
               try {
-                if (modal.kind === "block") {
-                  await createBlock({
-                    court_id: court.id, venue_id: court.venue_id,
-                    starts_at: ktmIso(dateStr, payload.start), ends_at: ktmIso(dateStr, payload.end),
-                    reason: payload.reason, note: payload.note,
-                  });
-                } else {
-                  await bookCourt({
-                    court_id: court.id, venue_id: court.venue_id,
-                    starts_at: ktmIso(dateStr, payload.start), ends_at: ktmIso(dateStr, payload.end),
-                    customer_name: payload.note || "Walk-in", source: "walk_in",
-                  });
-                }
+                const res = modal.kind === "block"
+                  ? await createBlock({
+                      court_id: court.id, venue_id: court.venue_id,
+                      starts_at: ktmIso(dateStr, payload.start), ends_at: ktmIso(dateStr, payload.end),
+                      reason: payload.reason, note: payload.note,
+                    })
+                  : await bookCourt({
+                      court_id: court.id, venue_id: court.venue_id,
+                      starts_at: ktmIso(dateStr, payload.start), ends_at: ktmIso(dateStr, payload.end),
+                      customer_name: payload.note || "Walk-in", source: "walk_in",
+                    });
+                if (isActionError(res)) { setErr(res.message); return; }
                 setModal(null);
                 router.refresh();
               } catch (e) {

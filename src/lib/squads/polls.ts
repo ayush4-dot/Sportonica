@@ -2,11 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionError, type ActionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -30,11 +30,12 @@ export async function createPoll(input: {
   question: string;
   options: string[];
   multi?: boolean;
-}) {
+}): Promise<Poll | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const clean = input.options.map((o) => o.trim()).filter(Boolean);
-  if (!input.question.trim()) throw new Error("Add a question.");
-  if (clean.length < 2) throw new Error("Add at least two options.");
+  if (!input.question.trim()) return actionError("Add a question.");
+  if (clean.length < 2) return actionError("Add at least two options.");
 
   const { data: poll, error } = await sb.from("squad_polls").insert({
     squad_id: input.squadId,
@@ -42,12 +43,12 @@ export async function createPoll(input: {
     question: input.question.trim(),
     multi: input.multi ?? false,
   }).select().single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   const { error: optErr } = await sb.from("squad_poll_options").insert(
     clean.map((label, i) => ({ poll_id: poll.id, label, position: i }))
   );
-  if (optErr) throw new Error(optErr.message);
+  if (optErr) return actionError(optErr.message);
 
   revalidatePath(`/league/${input.squadId}`);
   return poll;
@@ -56,11 +57,12 @@ export async function createPoll(input: {
 // Vote (or change your vote).
 export async function castVote(pollId: string, optionId: string, squadId: string) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   const { data: poll } = await sb
     .from("squad_polls").select("multi, closed").eq("id", pollId).maybeSingle();
-  if (!poll) throw new Error("Poll not found.");
-  if (poll.closed) throw new Error("This poll is closed.");
+  if (!poll) return actionError("Poll not found.");
+  if (poll.closed) return actionError("This poll is closed.");
 
   // Single-choice: clear previous vote first. Multi: toggle this option.
   const { data: existing } = await sb
@@ -79,15 +81,16 @@ export async function castVote(pollId: string, optionId: string, squadId: string
     const { error } = await sb.from("squad_poll_votes").insert({
       poll_id: pollId, option_id: optionId, user_id: user.id,
     });
-    if (error && !error.message.includes("duplicate")) throw new Error(error.message);
+    if (error && !error.message.includes("duplicate")) return actionError(error.message);
   }
 
   revalidatePath(`/league/${squadId}`);
 }
 
 export async function closePoll(pollId: string, squadId: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("squad_polls").update({ closed: true }).eq("id", pollId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/league/${squadId}`);
 }

@@ -4,24 +4,31 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendMail } from "@/lib/mail/mailer";
 import { fmtWhen } from "@/lib/mail/templates";
+import { actionError, type ActionError } from "@/lib/actionError";
+import type { User } from "@supabase/supabase-js";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("You need to be signed in.");
   return { sb, user };
 }
 
+type HostEvent = { id: string; host_id: string; title: string; event_date: string; venue: string };
+type RequireHostAuth =
+  | { error: ActionError; sb?: undefined; user?: undefined; ev?: undefined }
+  | { error?: undefined; sb: Awaited<ReturnType<typeof createClient>>; user: User; ev: HostEvent };
+
 // ── Guard: only the host of an event may change it ────────────────
-async function requireHost(eventId: string) {
+async function requireHost(eventId: string): Promise<RequireHostAuth> {
   const { sb, user } = await requireUser();
+  if (!user) return { error: actionError("You need to be signed in.") };
   const { data: ev } = await sb
     .from("events")
     .select("id, host_id, title, event_date, venue")
     .eq("id", eventId)
     .single();
-  if (!ev) throw new Error("Game not found.");
-  if (ev.host_id !== user.id) throw new Error("Only the host can change this game.");
+  if (!ev) return { error: actionError("Game not found.") };
+  if (ev.host_id !== user.id) return { error: actionError("Only the host can change this game.") };
   return { sb, user, ev };
 }
 
@@ -37,7 +44,9 @@ export async function updateHostedGame(input: {
   skill_level?: string | null;
   notes?: string | null;
 }) {
-  const { sb, ev } = await requireHost(input.eventId);
+  const auth = await requireHost(input.eventId);
+  if (auth.error) return auth.error;
+  const { sb, ev } = auth;
 
   // Never shrink capacity below the people already confirmed.
   if (input.max_players != null) {
@@ -47,7 +56,7 @@ export async function updateHostedGame(input: {
       .eq("event_id", input.eventId)
       .eq("status", "confirmed");
     if ((count ?? 0) > input.max_players) {
-      throw new Error(`${count} players already joined — capacity can't go below that.`);
+      return actionError(`${count} players already joined — capacity can't go below that.`);
     }
   }
 
@@ -60,7 +69,7 @@ export async function updateHostedGame(input: {
   if (input.notes !== undefined) patch.notes = input.notes;
 
   const { error } = await sb.from("events").update(patch).eq("id", input.eventId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   // Tell everyone who joined that the details moved.
   const timeChanged = input.event_date != null && input.event_date !== ev.event_date;
@@ -99,13 +108,15 @@ export async function invitePlayers(input: {
   /** true = the host is paying for these spots (the usual case) */
   hostPays?: boolean;
 }) {
-  const { sb, user, ev } = await requireHost(input.eventId);
+  const auth = await requireHost(input.eventId);
+  if (auth.error) return auth.error;
+  const { sb, user, ev } = auth;
   const hostPays = input.hostPays ?? true;
 
   const emails = input.emails
     .map((e) => e.trim().toLowerCase())
     .filter((e) => e.includes("@"));
-  if (!emails.length) throw new Error("Add at least one email address.");
+  if (!emails.length) return actionError("Add at least one email address.");
 
   // Capacity check before inviting.
   const { data: evFull } = await sb
@@ -115,7 +126,7 @@ export async function invitePlayers(input: {
     .single();
   const left = Number(evFull?.slots_remaining ?? 0);
   if (emails.length > left) {
-    throw new Error(`Only ${left} spot${left === 1 ? "" : "s"} left — you invited ${emails.length}.`);
+    return actionError(`Only ${left} spot${left === 1 ? "" : "s"} left — you invited ${emails.length}.`);
   }
 
   const { data: hostProfile } = await sb
@@ -131,7 +142,7 @@ export async function invitePlayers(input: {
       paid_by_host: hostPays,
     }))
   );
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://khelumna.vercel.app"}/game/${input.eventId}`;
   await sendMail(
@@ -163,8 +174,9 @@ export async function invitePlayers(input: {
 // Remove an invite
 // ================================================================
 export async function cancelInvite(inviteId: string, eventId: string) {
-  const { sb } = await requireHost(eventId);
-  const { error } = await sb.from("invites").delete().eq("id", inviteId);
-  if (error) throw new Error(error.message);
+  const auth = await requireHost(eventId);
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb.from("invites").delete().eq("id", inviteId);
+  if (error) return actionError(error.message);
   revalidatePath("/my-games");
 }

@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Check, CalendarPlus, MapPin } from "lucide-react";
 import { createOfficialEvent } from "@/lib/events/actions";
 import { parseMapsUrl } from "@/lib/admin/location";
+import { isActionError } from "@/lib/actionError";
 
 
 
@@ -46,6 +47,7 @@ export default function EventForm({
     startTransition(async () => {
       try {
         const res = await parseMapsUrl(mapsUrl);
+        if (isActionError(res)) { setLocMsg(res.message); return; }
         setCoords({ lat: res.lat, lng: res.lng });
         setMapsUrl(res.url);
         setLocMsg("Location pinned ✓");
@@ -63,7 +65,7 @@ export default function EventForm({
     const iso = `${date}T${time}:00+05:45`;
     startTransition(async () => {
       try {
-        await createOfficialEvent({
+        const created = await createOfficialEvent({
           kind, title: title.trim(), sport,
           venue_name: kind === "venue_event" ? venueName : (venueName || "Multiple venues"),
           venue_id: kind === "venue_event" ? venueId : null,
@@ -73,6 +75,7 @@ export default function EventForm({
           venue_lat: coords?.lat ?? null,
           venue_lng: coords?.lng ?? null,
         });
+        if (isActionError(created)) { setErr(created.message); return; }
         setDone(true);
         setTimeout(() => { setDone(false); router.push("/discover"); }, 1200);
       } catch (e) {

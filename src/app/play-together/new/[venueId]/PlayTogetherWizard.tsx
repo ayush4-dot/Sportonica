@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Wallet, Clock, ChevronLeft, ChevronRight, AlertTriangle, Upload } from "lucide-react";
 import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
+import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "../../../(play)/create/[id]/SlotPicker";
 import WeekStrip from "../../../(play)/create/[id]/WeekStrip";
@@ -95,7 +96,10 @@ export default function PlayTogetherWizard({
     setQrPath(null);
     setQrUploading(true);
     uploadHostQr(f)
-      .then((path) => setQrPath(path))
+      .then((path) => {
+        if (isActionError(path)) { setErr(path.message); return; }
+        setQrPath(path);
+      })
       .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload your QR."))
       .finally(() => setQrUploading(false));
   }
@@ -139,7 +143,7 @@ export default function PlayTogetherWizard({
     startTransition(async () => {
       try {
         const startsAt = ktmIso(dateStr, hour);
-        const { game, price } = await createGame({
+        const created = await createGame({
           court_id: court.id,
           starts_at: startsAt,
           ends_at: ktmIso(dateStr, hour + duration),
@@ -153,20 +157,25 @@ export default function PlayTogetherWizard({
           notes: notes.trim() || undefined,
           ack_risk: ackRisk,
         });
+        if (isActionError(created)) {
+          if (created.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(created.message);
+          return;
+        }
+        const { game, price } = created;
 
         if (price > 0) {
           setAwaitingPayment({ id: game.court_booking_id, price });
         } else {
-          await confirmFreeBooking("court_booking", game.court_booking_id);
+          const confirmed = await confirmFreeBooking("court_booking", game.court_booking_id);
+          if (isActionError(confirmed)) { setErr(confirmed.message); return; }
           setDone(true);
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Could not create this game.";
-        if (msg.includes("UNAUTHORIZED")) {
-          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-          return;
-        }
-        setErr(msg);
+        setErr(e instanceof Error ? e.message : "Could not create this game.");
       }
     });
   }

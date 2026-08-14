@@ -3,11 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { notifyGameJoined } from "@/lib/mail/notify";
+import { actionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -35,6 +35,7 @@ export async function joinGame(input: {
   phone?: string;
 }) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   // Already joined?
   const { data: existing } = await sb
@@ -43,7 +44,7 @@ export async function joinGame(input: {
     .eq("event_id", input.event_id)
     .eq("user_id", user.id)
     .maybeSingle();
-  if (existing) throw new Error("ALREADY_JOINED");
+  if (existing) return actionError("ALREADY_JOINED");
 
   // Full? Check the view's remaining count. Also the source of truth for
   // the fee — never trust a client-supplied amount.
@@ -52,7 +53,7 @@ export async function joinGame(input: {
     .select("slots_remaining, fee")
     .eq("id", input.event_id)
     .single();
-  if (ev && ev.slots_remaining <= 0) throw new Error("GAME_FULL");
+  if (ev && ev.slots_remaining <= 0) return actionError("GAME_FULL");
   const amount = Number(ev?.fee) || 0;
 
   const name =
@@ -73,7 +74,7 @@ export async function joinGame(input: {
     position: input.position ?? null,
     phone: input.phone?.trim() || null,
   }).select().single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath("/discover");
 

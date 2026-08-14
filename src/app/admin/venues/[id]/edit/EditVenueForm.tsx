@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Upload, Link2, X, Check, Trash2, Star, MapPin, ExternalLink } from "lucide-react";
 import { updateVenue, uploadVenuePhoto, addVenuePhotoUrl, removeVenuePhoto } from "@/lib/admin/actions";
 import { saveVenueLocation } from "@/lib/admin/location";
+import { isActionError } from "@/lib/actionError";
 import type { Venue } from "@/lib/admin/types";
 
 
@@ -46,6 +47,7 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
     startTransition(async () => {
       try {
         const res = await saveVenueLocation(venue.id, mapsUrl);
+        if (isActionError(res)) { setLocErr(res.message); return; }
         setCoords({ lat: res.lat, lng: res.lng });
         setMapsUrl(res.url);
         router.refresh();
@@ -68,6 +70,7 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
     startTransition(async () => {
       try {
         const url = await uploadVenuePhoto(venue.id, file);
+        if (isActionError(url)) { setMsg(url.message); return; }
         setPhotos((p) => [...p, url]);
       } catch (err) {
         setMsg(err instanceof Error ? err.message : "Upload failed. Is the storage bucket set up?");
@@ -83,7 +86,8 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
     const url = urlInput.trim();
     startTransition(async () => {
       try {
-        await addVenuePhotoUrl(venue.id, url);
+        const res = await addVenuePhotoUrl(venue.id, url);
+        if (isActionError(res)) { setMsg(res.message); return; }
         setPhotos((p) => [...p, url]);
         setUrlInput(""); setShowUrl(false);
       } catch (err) {
@@ -94,7 +98,8 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
 
   function removePhoto(url: string) {
     startTransition(async () => {
-      await removeVenuePhoto(venue.id, url);
+      const res = await removeVenuePhoto(venue.id, url);
+      if (isActionError(res)) { setMsg(res.message); return; }
       setPhotos((p) => p.filter((x) => x !== url));
     });
   }
@@ -110,11 +115,12 @@ export default function EditVenueForm({ venue }: { venue: Venue }) {
     setMsg(null);
     startTransition(async () => {
       try {
-        await updateVenue(venue.id, {
+        const res = await updateVenue(venue.id, {
           name: name.trim(), venue_type: type, address: address.trim() || null,
           phone: phone.trim() || null, description: description.trim() || null,
           sports, amenities,
         });
+        if (isActionError(res)) { setMsg(res.message); return; }
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
         router.refresh();

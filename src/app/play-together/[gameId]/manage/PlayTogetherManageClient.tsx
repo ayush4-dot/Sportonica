@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ShieldCheck } from "lucide-react";
 import { markContributionCollected, cancelGame, approveJoinRequest, verifyPlayTogetherPayment } from "@/lib/playTogether/actions";
+import { isActionError } from "@/lib/actionError";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 import type { GameStatus } from "@/lib/playTogether/types";
 import PlayTogetherReviewModal from "./PlayTogetherReviewModal";
@@ -38,7 +39,8 @@ export default function PlayTogetherManageClient({
     setErr(null);
     startTransition(async () => {
       try {
-        await markContributionCollected(playerId, gameId, collected);
+        const res = await markContributionCollected(playerId, gameId, collected);
+        if (isActionError(res)) { setErr(res.message); return; }
         setRows((rs) => rs.map((r) => r.id === playerId
           ? { ...r, contribution_status: collected ? "collected" : "pending", collected_at: collected ? new Date().toISOString() : null }
           : r));
@@ -49,7 +51,8 @@ export default function PlayTogetherManageClient({
   }
 
   async function review(row: GamePlayerWithProfile, approve: boolean) {
-    await approveJoinRequest(row.id, gameId, approve);
+    const res = await approveJoinRequest(row.id, gameId, approve);
+    if (isActionError(res)) throw new Error(res.message);
     setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
     if (approve) {
       setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_pending" }]);
@@ -62,7 +65,8 @@ export default function PlayTogetherManageClient({
   // The ONLY action that actually adds a player to the group — see
   // verify_play_together_payment() in supabase/play_together_payments.sql.
   async function reviewPayment(row: GamePlayerWithProfile, approve: boolean, rejectReason?: string) {
-    await verifyPlayTogetherPayment(row.id, gameId, approve, rejectReason);
+    const res = await verifyPlayTogetherPayment(row.id, gameId, approve, rejectReason);
+    if (isActionError(res)) throw new Error(res.message);
     setPaymentReviewRows((rs) => rs.filter((r) => r.id !== row.id));
     if (approve) {
       setRows((rs) => [...rs, { ...row, status: "joined", contribution_status: "collected" }]);
@@ -76,7 +80,8 @@ export default function PlayTogetherManageClient({
     setErr(null);
     startTransition(async () => {
       try {
-        await cancelGame(gameId, reason);
+        const res = await cancelGame(gameId, reason);
+        if (isActionError(res)) { setErr(res.message); return; }
         router.refresh();
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not cancel this game.");

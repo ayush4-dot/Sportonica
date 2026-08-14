@@ -2,21 +2,22 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionError, type ActionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
 // Set your own role once, from the welcome step after a Google sign-in.
 // Deliberately cannot grant super_admin — only the platform console does that.
-export async function setMyRole(role: "player" | "venue_owner") {
+export async function setMyRole(role: "player" | "venue_owner"): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   const { error } = await sb.from("profiles").update({ role }).eq("id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   // Middleware gates /admin on user_metadata, so keep the two in step.
   // If this fails the role is still saved — don't block the user on it.
@@ -36,43 +37,46 @@ export async function updateProfile(patch: {
   city?: string;
   sports?: string[];
   is_public?: boolean;
-}) {
+}): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("profiles").update(patch).eq("id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/profile");
 }
 
 // Claim a custom username. Lowercase, letters/numbers/hyphens, must be free.
-export async function claimUsername(raw: string) {
+export async function claimUsername(raw: string): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const username = raw.trim().toLowerCase();
 
   if (!/^[a-z0-9][a-z0-9-]{2,23}$/.test(username)) {
-    throw new Error("3–24 characters, letters, numbers and hyphens only.");
+    return actionError("3–24 characters, letters, numbers and hyphens only.");
   }
   const reserved = ["admin", "api", "login", "signup", "discover", "create", "league", "profile", "p", "settings"];
-  if (reserved.includes(username)) throw new Error("That name is reserved. Try another.");
+  if (reserved.includes(username)) return actionError("That name is reserved. Try another.");
 
   const { data: taken } = await sb
     .from("profiles").select("id").ilike("username", username).neq("id", user.id).maybeSingle();
-  if (taken) throw new Error("That username is already taken.");
+  if (taken) return actionError("That username is already taken.");
 
   const { error } = await sb.from("profiles").update({ username }).eq("id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath("/profile");
   return username;
 }
 
-export async function uploadAvatar(file: File) {
+export async function uploadAvatar(file: File): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   // Only formats that render everywhere (incl. the shareable card image).
   // AVIF/HEIC/SVG break Satori, so we reject them at the door.
   const okTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   if (!okTypes.includes(file.type)) {
-    throw new Error("Use a JPG, PNG or WebP image (AVIF and HEIC aren't supported).");
+    return actionError("Use a JPG, PNG or WebP image (AVIF and HEIC aren't supported).");
   }
 
   const extMap: Record<string, string> = {
@@ -82,11 +86,11 @@ export async function uploadAvatar(file: File) {
   const path = `${user.id}/${Date.now()}.${ext}`;
 
   const { error: upErr } = await sb.storage.from("avatars").upload(path, file, { upsert: false });
-  if (upErr) throw new Error(upErr.message);
+  if (upErr) return actionError(upErr.message);
 
   const { data: pub } = sb.storage.from("avatars").getPublicUrl(path);
   const { error } = await sb.from("profiles").update({ avatar_url: pub.publicUrl }).eq("id", user.id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath("/profile");
   return pub.publicUrl;

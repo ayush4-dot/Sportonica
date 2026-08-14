@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Check } from "lucide-react";
 import Link from "next/link";
 import { createVenue } from "@/lib/admin/actions";
+import { isActionError } from "@/lib/actionError";
 
 
 const AMENITIES = ["Floodlights", "Parking", "Changing room", "Water", "Showers", "Seating", "Equipment rental"];
@@ -43,6 +44,7 @@ export default function VenueForm() {
           sports,
           amenities,
         });
+        if (isActionError(v)) { setErr(v.message); return; }
         router.push(`/admin/venues/${v.id}`);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Something went wrong.");

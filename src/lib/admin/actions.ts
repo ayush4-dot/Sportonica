@@ -3,13 +3,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { notifyCourtBooked } from "@/lib/mail/notify";
+import { actionError, type ActionError } from "@/lib/actionError";
 
 // Every server action re-checks auth. Server Functions are reachable by
 // direct POST, so we never trust the client (per Next.js data-security guide).
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -26,20 +26,22 @@ export async function createVenue(input: {
   description?: string;
 }) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb
     .from("venues")
     .insert({ ...input, owner_id: user.id })
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/admin/venues");
   return data;
 }
 
 export async function updateVenue(id: string, patch: Record<string, unknown>) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.from("venues").update(patch).eq("id", id).select().single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${id}`);
   revalidatePath("/admin/venues");
   return data;
@@ -47,8 +49,9 @@ export async function updateVenue(id: string, patch: Record<string, unknown>) {
 
 // Upload a venue photo to Supabase Storage and append its public URL to the
 // venue's photos array. Expects a 'venue-photos' storage bucket (public).
-export async function uploadVenuePhoto(venueId: string, file: File) {
-  const { sb } = await requireUser();
+export async function uploadVenuePhoto(venueId: string, file: File): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const ext = file.name.split(".").pop() ?? "jpg";
   const path = `${venueId}/${Date.now()}.${ext}`;
 
@@ -56,7 +59,7 @@ export async function uploadVenuePhoto(venueId: string, file: File) {
     cacheControl: "3600",
     upsert: false,
   });
-  if (upErr) throw new Error(upErr.message);
+  if (upErr) return actionError(upErr.message);
 
   const { data: pub } = sb.storage.from("venue-photos").getPublicUrl(path);
   const url = pub.publicUrl;
@@ -65,7 +68,7 @@ export async function uploadVenuePhoto(venueId: string, file: File) {
   const { data: venue } = await sb.from("venues").select("photos").eq("id", venueId).single();
   const photos = [...(venue?.photos ?? []), url];
   const { error } = await sb.from("venues").update({ photos }).eq("id", venueId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath(`/admin/venues/${venueId}`);
   return url;
@@ -73,21 +76,23 @@ export async function uploadVenuePhoto(venueId: string, file: File) {
 
 // Add a photo by URL (fallback when not uploading a file).
 export async function addVenuePhotoUrl(venueId: string, url: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data: venue } = await sb.from("venues").select("photos").eq("id", venueId).single();
   const photos = [...(venue?.photos ?? []), url];
   const { error } = await sb.from("venues").update({ photos }).eq("id", venueId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venueId}`);
 }
 
 // Remove a photo from the venue's array.
 export async function removeVenuePhoto(venueId: string, url: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data: venue } = await sb.from("venues").select("photos").eq("id", venueId).single();
   const photos = (venue?.photos ?? []).filter((p: string) => p !== url);
   const { error } = await sb.from("venues").update({ photos }).eq("id", venueId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venueId}`);
 }
 
@@ -100,17 +105,19 @@ export async function createCourt(input: {
   capacity?: number;
   base_price?: number;
 }) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.from("courts").insert(input).select().single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${input.venue_id}`);
   return data;
 }
 
 export async function updateCourt(id: string, venue_id: string, patch: Record<string, unknown>) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("courts").update(patch).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venue_id}`);
 }
 
@@ -121,11 +128,12 @@ export async function setCourtHours(
   venue_id: string,
   rows: { dow: number; open_time: string; close_time: string }[]
 ) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   await sb.from("court_hours").delete().eq("court_id", court_id);
   if (rows.length) {
     const { error } = await sb.from("court_hours").insert(rows.map((r) => ({ ...r, court_id })));
-    if (error) throw new Error(error.message);
+    if (error) return actionError(error.message);
   }
   revalidatePath(`/admin/venues/${venue_id}/courts/${court_id}`);
 }
@@ -140,21 +148,23 @@ export async function createBlock(input: {
   note?: string;
 }) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { court_id, starts_at, ends_at, reason = "manual", note } = input;
   const { data, error } = await sb
     .from("court_blocks")
     .insert({ court_id, starts_at, ends_at, reason, note, created_by: user.id })
     .select()
     .single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${input.venue_id}/calendar`);
   return data;
 }
 
 export async function deleteBlock(id: string, venue_id: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("court_blocks").delete().eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venue_id}/calendar`);
 }
 
@@ -177,6 +187,7 @@ export async function bookCourt(input: {
   notes?: string;
 }) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("book_court", {
     p_court_id: input.court_id,
     p_starts_at: input.starts_at,
@@ -191,9 +202,9 @@ export async function bookCourt(input: {
     p_phone: input.phone?.trim() || null,
   });
   if (error) {
-    if (error.message.includes("SLOT_TAKEN")) throw new Error("That time is already booked.");
-    if (error.message.includes("SLOT_BLOCKED")) throw new Error("That time is blocked.");
-    throw new Error(error.message);
+    if (error.message.includes("SLOT_TAKEN")) return actionError("That time is already booked.");
+    if (error.message.includes("SLOT_BLOCKED")) return actionError("That time is blocked.");
+    return actionError(error.message);
   }
   revalidatePath(`/admin/venues/${input.venue_id}/calendar`);
 
@@ -224,9 +235,10 @@ export async function bookCourt(input: {
 }
 
 export async function setBookingState(id: string, venue_id: string, state: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("court_bookings").update({ state }).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venue_id}/bookings`);
 }
 
@@ -242,25 +254,28 @@ export async function createPricingRule(input: {
   end_time?: string | null;
   priority?: number;
 }) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { venue_id, ...row } = input;
   const { data, error } = await sb.from("pricing_rules").insert(row).select().single();
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venue_id}/pricing`);
   return data;
 }
 
 export async function togglePricingRule(id: string, venue_id: string, active: boolean) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("pricing_rules").update({ active }).eq("id", id);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${venue_id}/pricing`);
 }
 
 // ── STAFF ────────────────────────────────────────────────────────
 export async function addStaff(input: { venue_id: string; user_id: string; role: string }) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("venue_staff").insert(input);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${input.venue_id}/staff`);
 }

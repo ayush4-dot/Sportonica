@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import DataTable, { type Column } from "@/components/DataTable";
 import { setReportStatus } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 
 interface ReportRow extends Record<string, unknown> {
   id: string;
@@ -38,7 +39,8 @@ export default function ReportsGrid({ reports }: { reports: ReportRow[] }) {
 
   function resolve(id: string, status: "reviewed" | "dismissed") {
     startTransition(async () => {
-      await setReportStatus(id, status);
+      const res = await setReportStatus(id, status);
+      if (isActionError(res)) { alert(res.message); return; }
       router.refresh();
     });
   }

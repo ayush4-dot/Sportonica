@@ -7,6 +7,7 @@ import {
   uploadPaymentQr, removePaymentQr, setPaymentMethodConfig,
 } from "@/lib/payments/adminActions";
 import { paymentQrPublicUrl } from "@/lib/payments/types";
+import { isActionError } from "@/lib/actionError";
 import type { PaymentMethodConfig } from "@/lib/payments/types";
 
 type Row = PaymentMethodConfig & { updated_by_name: string | null };
@@ -36,7 +37,8 @@ function MethodCard({ method }: { method: Row }) {
     setErr(null);
     startTransition(async () => {
       try {
-        await uploadPaymentQr(method.method, file);
+        const res = await uploadPaymentQr(method.method, file);
+        if (isActionError(res)) { setErr(res.message); return; }
         router.refresh();
       } catch (e2) {
         setErr(e2 instanceof Error ? e2.message : "Upload failed.");
@@ -48,14 +50,22 @@ function MethodCard({ method }: { method: Row }) {
 
   function removeQr() {
     startTransition(async () => {
-      try { await removePaymentQr(method.method); router.refresh(); }
+      try {
+        const res = await removePaymentQr(method.method);
+        if (isActionError(res)) { setErr(res.message); return; }
+        router.refresh();
+      }
       catch (e2) { setErr(e2 instanceof Error ? e2.message : "Couldn't remove QR."); }
     });
   }
 
   function toggleEnabled() {
     startTransition(async () => {
-      try { await setPaymentMethodConfig(method.method, { enabled: !method.enabled }); router.refresh(); }
+      try {
+        const res = await setPaymentMethodConfig(method.method, { enabled: !method.enabled });
+        if (isActionError(res)) { setErr(res.message); return; }
+        router.refresh();
+      }
       catch (e2) { setErr(e2 instanceof Error ? e2.message : "Couldn't update status."); }
     });
   }
@@ -63,7 +73,8 @@ function MethodCard({ method }: { method: Row }) {
   function saveDetails() {
     startTransition(async () => {
       try {
-        await setPaymentMethodConfig(method.method, { merchant_name: merchantName, account_identifier: account });
+        const res = await setPaymentMethodConfig(method.method, { merchant_name: merchantName, account_identifier: account });
+        if (isActionError(res)) { setErr(res.message); return; }
         setEditing(false);
         router.refresh();
       } catch (e2) { setErr(e2 instanceof Error ? e2.message : "Couldn't save."); }

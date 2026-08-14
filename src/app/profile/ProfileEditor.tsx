@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Upload, Check, ExternalLink, Globe, Lock } from "lucide-react";
 import { updateProfile, claimUsername, uploadAvatar } from "@/lib/profile/actions";
+import { isActionError } from "@/lib/actionError";
 import type { PlayerProfile } from "@/lib/profile/queries";
 
 
@@ -39,6 +40,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
     startTransition(async () => {
       try {
         const url = await uploadAvatar(file);
+        if (isActionError(url)) { setMsg(url.message); return; }
         setAvatar(url);
         router.refresh();
       } catch (err) {
@@ -52,6 +54,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
     startTransition(async () => {
       try {
         const u = await claimUsername(unInput);
+        if (isActionError(u)) { setMsg(u.message); return; }
         setUsername(u);
         setEditingUn(false);
         router.refresh();
@@ -65,7 +68,8 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
     setMsg(null);
     startTransition(async () => {
       try {
-        await updateProfile({ full_name: name.trim(), bio: bio.trim(), city: city.trim(), sports, is_public: isPublic });
+        const res = await updateProfile({ full_name: name.trim(), bio: bio.trim(), city: city.trim(), sports, is_public: isPublic });
+        if (isActionError(res)) { setMsg(res.message); return; }
         setOk(true);
         setTimeout(() => setOk(false), 1800);
         router.refresh();

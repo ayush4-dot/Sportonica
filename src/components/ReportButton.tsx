@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Flag, X, Check } from "lucide-react";
 import { fileReport } from "@/lib/squads/actions";
+import { isActionError } from "@/lib/actionError";
 
 const REASONS = [
   "Harassment or abuse",
@@ -24,7 +25,11 @@ export default function ReportButton({
   function submit() {
     startTransition(async () => {
       try {
-        await fileReport({ target_type: targetType, target_id: targetId, reason, details });
+        const res = await fileReport({ target_type: targetType, target_id: targetId, reason, details });
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") window.location.href = "/login";
+          return;
+        }
         setSent(true);
         setTimeout(() => { setOpen(false); setSent(false); setDetails(""); }, 1600);
       } catch (e) {

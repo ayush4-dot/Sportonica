@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { User, Store, ArrowRight } from "lucide-react";
 import { setMyRole } from "@/lib/profile/actions";
+import { isActionError } from "@/lib/actionError";
 
 export default function RolePicker({ name, next }: { name: string; next: string }) {
   const router = useRouter();
@@ -15,12 +16,15 @@ export default function RolePicker({ name, next }: { name: string; next: string 
     setErr(null);
     startTransition(async () => {
       try {
-        await setMyRole(role);
+        const res = await setMyRole(role);
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") { router.push("/login?redirect=/welcome"); return; }
+          setErr(res.message);
+          return;
+        }
         router.push(role === "venue_owner" ? "/admin" : next);
       } catch (e) {
-        const m = e instanceof Error ? e.message : "Couldn't save that.";
-        if (m.includes("UNAUTHORIZED")) { router.push("/login?redirect=/welcome"); return; }
-        setErr(m);
+        setErr(e instanceof Error ? e.message : "Couldn't save that.");
         console.error("[welcome] setMyRole failed:", e);
       }
     });

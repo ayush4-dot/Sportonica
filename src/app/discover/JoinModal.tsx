@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, Check, MapPin, Users } from "lucide-react";
 import { joinGame } from "@/lib/play/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
+import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import type { EventRow } from "@/lib/hooks/useEvents";
 
@@ -27,25 +28,29 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
           sport: event.sport,
           phone: phone.trim(),
         });
+        if (isActionError(booking)) {
+          // Not logged in? Send them to sign in, then back here to finish —
+          // same pattern as BookingFlow/GameJoinPanel, not a raw error string.
+          if (booking.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          if (booking.message.includes("ALREADY_JOINED")) setErr("You're already in this game.");
+          else if (booking.message.includes("GAME_FULL")) setErr("This game just filled up.");
+          else setErr(booking.message);
+          return;
+        }
         const amount = Number(booking?.amount) || 0;
         if (amount > 0) {
           setAwaitingPayment({ id: booking.id, amount });
         } else {
-          await confirmFreeBooking("event_booking", booking.id);
+          const confirmed = await confirmFreeBooking("event_booking", booking.id);
+          if (isActionError(confirmed)) { setErr(confirmed.message); return; }
           setDone(true);
         }
         router.refresh();
       } catch (e) {
-        const m = e instanceof Error ? e.message : "Could not join.";
-        // Not logged in? Send them to sign in, then back here to finish —
-        // same pattern as BookingFlow/GameJoinPanel, not a raw error string.
-        if (m.includes("UNAUTHORIZED")) {
-          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-          return;
-        }
-        if (m.includes("ALREADY_JOINED")) setErr("You're already in this game.");
-        else if (m.includes("GAME_FULL")) setErr("This game just filled up.");
-        else setErr(m);
+        setErr(e instanceof Error ? e.message : "Could not join.");
       }
     });
   }

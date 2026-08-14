@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Store, User as UserIcon } from "lucide-react";
 import DataTable, { type Column } from "@/components/DataTable";
 import { setUserRole } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 
 interface UserRow extends Record<string, unknown> {
   id: string;
@@ -32,7 +33,8 @@ export default function UsersGrid({ users }: { users: UserRow[] }) {
 
   function changeRole(id: string, role: "player" | "venue_owner") {
     startTransition(async () => {
-      await setUserRole(id, role);
+      const res = await setUserRole(id, role);
+      if (isActionError(res)) { alert(res.message); return; }
       router.refresh();
     });
   }

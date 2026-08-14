@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import DataTable, { type Column } from "@/components/DataTable";
 import { markVenuePaid } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 
 interface PayoutRow extends Record<string, unknown> {
   venue_id: string;
@@ -32,7 +33,8 @@ export default function PayoutsGrid({ venues }: { venues: PayoutRow[] }) {
 
   function pay(venueId: string) {
     startTransition(async () => {
-      await markVenuePaid(venueId);
+      const res = await markVenuePaid(venueId);
+      if (isActionError(res)) { alert(res.message); return; }
       router.refresh();
     });
   }

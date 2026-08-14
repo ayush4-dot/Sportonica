@@ -1,4 +1,5 @@
 import { getPaymentMethodsAdmin, getPaymentOverviewStats, listPendingPayments } from "@/lib/payments/adminActions";
+import { isActionError } from "@/lib/actionError";
 import PaymentSettingsCards from "./PaymentSettingsCards";
 import PendingPaymentsTable from "./PendingPaymentsTable";
 
@@ -12,6 +13,13 @@ export default async function PlatformPaymentsPage() {
     getPaymentOverviewStats(),
     listPendingPayments(),
   ]);
+  if (isActionError(methods) || isActionError(stats) || isActionError(pending)) {
+    throw new Error(
+      (isActionError(methods) && methods.message) ||
+      (isActionError(stats) && stats.message) ||
+      (isActionError(pending) && pending.message) || "Failed to load payments."
+    );
+  }
 
   return (
     <>

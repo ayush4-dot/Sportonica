@@ -6,6 +6,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Clock, X } from "lucide-react";
 import { createCourt, setCourtHours } from "@/lib/admin/actions";
+import { isActionError } from "@/lib/actionError";
 import type { Court, CourtHours } from "@/lib/admin/types";
 import { DOW_LABELS } from "@/lib/admin/types";
 
@@ -23,6 +24,7 @@ export default function CourtManager({
   const [pending, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
   const [editingHours, setEditingHours] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
 
   const sportOpts = venueSports.length ? venueSports : SPORTS;
   const [name, setName] = useState("Court 1");
@@ -30,8 +32,10 @@ export default function CourtManager({
   const [price, setPrice] = useState("1500");
 
   function addCourt() {
+    setErr(null);
     startTransition(async () => {
-      await createCourt({ venue_id: venueId, name: name.trim(), sport, base_price: Number(price) || 0 });
+      const res = await createCourt({ venue_id: venueId, name: name.trim(), sport, base_price: Number(price) || 0 });
+      if (isActionError(res)) { setErr(res.message); return; }
       setAdding(false);
       setName(`Court ${courts.length + 2}`);
       router.refresh();
@@ -68,6 +72,7 @@ export default function CourtManager({
             <label className="adm-label">Base price (Rs / hour)</label>
             <input className="adm-input mono" value={price} onChange={(e) => setPrice(e.target.value.replace(/[^0-9]/g, ""))} />
           </div>
+          {err && <div className="adm-badge danger" style={{ marginBottom: 10 }}>{err}</div>}
           <div className="adm-flex">
             <button className="adm-btn primary sm" onClick={addCourt} disabled={pending}>{pending ? "Saving…" : "Save court"}</button>
             <button className="adm-btn ghost sm" onClick={() => setAdding(false)}>Cancel</button>
@@ -114,6 +119,7 @@ function HoursEditor({
   courtId, venueId, existing, onDone,
 }: { courtId: string; venueId: string; existing: CourtHours[]; onDone: () => void }) {
   const [pending, startTransition] = useTransition();
+  const [err, setErr] = useState<string | null>(null);
   // day -> {open, close} | null(closed)
   const init: Record<number, { open: string; close: string } | null> = {};
   for (let d = 0; d < 7; d++) {
@@ -126,11 +132,13 @@ function HoursEditor({
     setDays((prev) => ({ ...prev, [d]: val }));
 
   function save() {
+    setErr(null);
     const rows = Object.entries(days)
       .filter(([, v]) => v)
       .map(([d, v]) => ({ dow: Number(d), open_time: v!.open, close_time: v!.close }));
     startTransition(async () => {
-      await setCourtHours(courtId, venueId, rows);
+      const res = await setCourtHours(courtId, venueId, rows);
+      if (isActionError(res)) { setErr(res.message); return; }
       onDone();
     });
   }
@@ -160,6 +168,7 @@ function HoursEditor({
           </div>
         );
       })}
+      {err && <div className="adm-badge danger" style={{ marginBottom: 10 }}>{err}</div>}
       <div className="adm-flex" style={{ marginTop: 12 }}>
         <button className="adm-btn primary sm" onClick={save} disabled={pending}>{pending ? "Saving…" : "Save hours"}</button>
         <button className="adm-btn ghost sm" onClick={onDone}>Close</button>

@@ -6,6 +6,7 @@ import {
   getSignedScreenshotUrl, getPaymentBookingDetails, reviewPayment,
 } from "@/lib/payments/adminActions";
 import { REJECTION_REASONS, whatsappNotifyUrl } from "@/lib/payments/types";
+import { isActionError } from "@/lib/actionError";
 import type { Payment, RejectionReason } from "@/lib/payments/types";
 
 const money = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -25,14 +26,22 @@ export default function ReviewPaymentModal({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    getSignedScreenshotUrl(payment.id).then(setScreenshotUrl).catch(() => setScreenshotUrl(null));
-    getPaymentBookingDetails(payment.id).then(setDetails).catch(() => setDetails(null));
+    getSignedScreenshotUrl(payment.id)
+      .then((url) => setScreenshotUrl(isActionError(url) ? null : url))
+      .catch(() => setScreenshotUrl(null));
+    getPaymentBookingDetails(payment.id)
+      .then((d) => setDetails(isActionError(d) ? null : d))
+      .catch(() => setDetails(null));
   }, [payment.id]);
 
   function approve() {
     setErr(null);
     startTransition(async () => {
-      try { await reviewPayment(payment.id, "APPROVE"); onReviewed(); }
+      try {
+        const res = await reviewPayment(payment.id, "APPROVE");
+        if (isActionError(res)) { setErr(res.message); return; }
+        onReviewed();
+      }
       catch (e) { setErr(e instanceof Error ? e.message : "Could not approve this payment."); }
     });
   }
@@ -41,7 +50,11 @@ export default function ReviewPaymentModal({
     if (!reason) { setErr("Pick a rejection reason first."); return; }
     setErr(null);
     startTransition(async () => {
-      try { await reviewPayment(payment.id, "REJECT", reason, note.trim() || undefined); onReviewed(); }
+      try {
+        const res = await reviewPayment(payment.id, "REJECT", reason, note.trim() || undefined);
+        if (isActionError(res)) { setErr(res.message); return; }
+        onReviewed();
+      }
       catch (e) { setErr(e instanceof Error ? e.message : "Could not reject this payment."); }
     });
   }

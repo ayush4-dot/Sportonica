@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Send, Lock } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { sendSquadMessage } from "@/lib/squads/actions";
+import { isActionError } from "@/lib/actionError";
 import ReportButton from "@/components/ReportButton";
 import type { ChatMessage } from "@/lib/squads/queries";
 
@@ -68,12 +69,17 @@ export default function SquadChat({
     if (!body) return;
     setText("");
     startTransition(async () => {
-      try { await sendSquadMessage(squadId, body); }
-      catch (e) {
-        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) {
-          window.location.href = `/login?redirect=/league/${squadId}`;
-          return;
+      try {
+        const res = await sendSquadMessage(squadId, body);
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") {
+            window.location.href = `/login?redirect=/league/${squadId}`;
+            return;
+          }
+          setText(body); // restore on other failures
         }
+      }
+      catch {
         setText(body); // restore on other failures
       }
     });

@@ -3,11 +3,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { sportColor, normalizeSport } from "@/lib/sports";
+import { actionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -29,11 +29,12 @@ export async function createOfficialEvent(input: {
   skill_level?: string;
 }) {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   // If a platform event, verify caller is super admin
   if (input.kind === "platform_event") {
     const { data: ok } = await sb.rpc("is_super_admin");
-    if (!ok) throw new Error("FORBIDDEN");
+    if (!ok) return actionError("FORBIDDEN");
   }
 
   // Venue events inherit the venue's saved location automatically.
@@ -66,15 +67,16 @@ export async function createOfficialEvent(input: {
     skill_level: input.skill_level ?? "any",
   }).select().single();
 
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/discover");
   return data;
 }
 
 // Delete/cancel an event (moderation — super admin, or the host).
 export async function cancelEvent(eventId: string) {
-  const { sb } = await requireUser();
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.from("events").update({ status: "cancelled" }).eq("id", eventId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   revalidatePath("/discover");
 }

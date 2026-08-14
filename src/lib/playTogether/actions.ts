@@ -14,11 +14,11 @@ import {
   notifyPlayTogetherPaymentVerified,
   notifyPlayTogetherPaymentRejected,
 } from "@/lib/mail/notify";
+import { actionError, type ActionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -26,22 +26,23 @@ async function requireUser() {
 // host directly, never a KhelamNa QR. Mirrors uploadPaymentProof() in
 // src/lib/payments/actions.ts (same size/type limits), targeting the
 // public 'host-qr' bucket instead of the private 'payment-proofs' one.
-export async function uploadHostQr(file: File): Promise<string> {
+export async function uploadHostQr(file: File): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   const okTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!okTypes.includes(file.type)) {
-    throw new Error("Upload a JPG, PNG or WebP image.");
+    return actionError("Upload a JPG, PNG or WebP image.");
   }
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Image must be under 5 MB.");
+    return actionError("Image must be under 5 MB.");
   }
   const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
   const ext = extMap[file.type];
   const path = `${user.id}/${Date.now()}.${ext}`;
 
   const { error } = await sb.storage.from("host-qr").upload(path, file, { upsert: false });
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   return path;
 }
@@ -64,8 +65,9 @@ export async function createGame(input: {
   host_phone: string;
   notes?: string;
   ack_risk: boolean;
-}): Promise<{ game: Game; price: number }> {
-  const { sb } = await requireUser();
+}): Promise<{ game: Game; price: number } | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("create_play_together_game", {
     p_court_id: input.court_id,
     p_starts_at: input.starts_at,
@@ -80,7 +82,7 @@ export async function createGame(input: {
     p_notes: input.notes?.trim() || null,
     p_ack_risk: input.ack_risk,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
   const game = data as Game;
 
   // The wizard's payment step needs the total venue price (what the host
@@ -97,10 +99,11 @@ export async function createGame(input: {
 // the host approves it (approveJoinRequest() below). ackTerms is checked
 // server-side inside join_play_together_game() — a client can't bypass it
 // by just not showing the checkbox.
-export async function joinGame(gameId: string, ackTerms: boolean): Promise<GamePlayer> {
+export async function joinGame(gameId: string, ackTerms: boolean): Promise<GamePlayer | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("join_play_together_game", { p_game_id: gameId, p_ack_terms: ackTerms });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}`);
   revalidatePath(`/play-together/${gameId}/manage`);
@@ -118,13 +121,14 @@ export async function approveJoinRequest(
   gamePlayerId: string,
   gameId: string,
   approve: boolean
-): Promise<GamePlayer> {
-  const { sb } = await requireUser();
+): Promise<GamePlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("approve_join_request", {
     p_game_player_id: gamePlayerId,
     p_approve: approve,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}`);
   revalidatePath(`/play-together/${gameId}/manage`);
@@ -144,22 +148,23 @@ export async function approveJoinRequest(
 // private 'game-payment-proofs' bucket instead. Path convention:
 // '{user_id}/{game_player_id}_{timestamp}.{ext}' — see
 // supabase/play_together_payments.sql for why the separator is '_' not '-'.
-export async function uploadGamePaymentProof(gamePlayerId: string, file: File): Promise<string> {
+export async function uploadGamePaymentProof(gamePlayerId: string, file: File): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
 
   const okTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!okTypes.includes(file.type)) {
-    throw new Error("Upload a JPG, PNG or WebP screenshot.");
+    return actionError("Upload a JPG, PNG or WebP screenshot.");
   }
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("Screenshot must be under 5 MB.");
+    return actionError("Screenshot must be under 5 MB.");
   }
   const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
   const ext = extMap[file.type];
   const path = `${user.id}/${gamePlayerId}_${Date.now()}.${ext}`;
 
   const { error } = await sb.storage.from("game-payment-proofs").upload(path, file, { upsert: false });
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   return path;
 }
@@ -176,22 +181,23 @@ export async function submitPlayTogetherPayment(input: {
   method: PlayTogetherPaymentMethod;
   transactionId: string;
   proofPath: string;
-}): Promise<GamePlayer> {
-  const { sb } = await requireUser();
+}): Promise<GamePlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("submit_play_together_payment", {
     p_game_player_id: input.gamePlayerId,
     p_payment_method: input.method,
     p_transaction_id: input.transactionId.trim(),
     p_payment_proof_path: input.proofPath,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
   const row = data as GamePlayer;
 
   revalidatePath(`/play-together/${input.gameId}`);
   revalidatePath(`/play-together/${input.gameId}/manage`);
 
   if (row.status === "expired") {
-    throw new Error(friendlyPlayTogetherError("PAYMENT_DEADLINE_EXPIRED"));
+    return actionError(friendlyPlayTogetherError("PAYMENT_DEADLINE_EXPIRED"));
   }
 
   await notifyPlayTogetherPaymentSubmitted({ gamePlayerId: input.gamePlayerId, gameId: input.gameId });
@@ -208,14 +214,15 @@ export async function verifyPlayTogetherPayment(
   gameId: string,
   approve: boolean,
   reason?: string
-): Promise<GamePlayer> {
-  const { sb } = await requireUser();
+): Promise<GamePlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("verify_play_together_payment", {
     p_game_player_id: gamePlayerId,
     p_approve: approve,
     p_reason: reason ?? null,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
   const row = data as GamePlayer;
 
   revalidatePath(`/play-together/${gameId}`);
@@ -237,25 +244,27 @@ export async function verifyPlayTogetherPayment(
 // supabase/play_together_payments.sql) independently enforces that only
 // the uploading player or that game's host can ever read the object, so
 // this never needs its own ownership check beyond "row is visible to me".
-export async function getSignedGamePaymentProofUrl(gamePlayerId: string): Promise<string> {
-  const { sb } = await requireUser();
+export async function getSignedGamePaymentProofUrl(gamePlayerId: string): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data: row, error: rowErr } = await sb
     .from("game_players").select("payment_proof_path").eq("id", gamePlayerId).maybeSingle();
-  if (rowErr) throw new Error(rowErr.message);
-  if (!row?.payment_proof_path) throw new Error("No payment proof on file for this request.");
+  if (rowErr) return actionError(rowErr.message);
+  if (!row?.payment_proof_path) return actionError("No payment proof on file for this request.");
 
   const { data, error } = await sb.storage
     .from("game-payment-proofs").createSignedUrl(row.payment_proof_path, 300);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   return data.signedUrl;
 }
 
 // Withdraw a pending request, or leave after being approved — either way,
 // before the joining deadline.
-export async function leaveGame(gameId: string): Promise<GamePlayer> {
+export async function leaveGame(gameId: string): Promise<GamePlayer | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("leave_play_together_game", { p_game_id: gameId });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}`);
   revalidatePath(`/play-together/${gameId}/manage`);
@@ -272,13 +281,14 @@ export async function markContributionCollected(
   gamePlayerId: string,
   gameId: string,
   collected: boolean
-): Promise<GamePlayer> {
-  const { sb } = await requireUser();
+): Promise<GamePlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("mark_contribution_collected", {
     p_game_player_id: gamePlayerId,
     p_collected: collected,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}/manage`);
 
@@ -289,13 +299,14 @@ export async function markContributionCollected(
 // venue/KhelamNa policy, which isn't implemented yet (see
 // supabase/play_together.sql). Any refund must currently be handled
 // manually by an admin.
-export async function cancelGame(gameId: string, reason?: string): Promise<Game> {
+export async function cancelGame(gameId: string, reason?: string): Promise<Game | ActionError> {
   const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("cancel_play_together_game", {
     p_game_id: gameId,
     p_reason: reason?.trim() || null,
   });
-  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}`);
   revalidatePath(`/play-together/${gameId}/manage`);

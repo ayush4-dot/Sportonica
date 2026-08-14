@@ -5,25 +5,33 @@ import { revalidatePath } from "next/cache";
 import { friendlyPaymentError, bookingLabel } from "./types";
 import type { Payment, PaymentMethod, PaymentMethodConfig } from "./types";
 import { notifyPaymentReviewed, notifyHostedEventIfPublished, notifyPlayTogetherGamePublishedIfAny } from "@/lib/mail/notify";
+import { actionError, type ActionError } from "@/lib/actionError";
+import type { User } from "@supabase/supabase-js";
+
+type SuperAdminAuth =
+  | { error: ActionError; sb?: undefined; user?: undefined }
+  | { error?: undefined; sb: Awaited<ReturnType<typeof createClient>>; user: User };
 
 // Every platform action re-checks the role in the DATABASE — the UI gate
 // alone is not security. Mirrors the identical helper already used in
 // src/lib/platform/actions.ts (each domain file keeps its own copy, the
 // established convention in this codebase rather than a shared import).
-async function requireSuperAdmin() {
+async function requireSuperAdmin(): Promise<SuperAdminAuth> {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
+  if (!user) return { error: actionError("UNAUTHORIZED") };
   const { data } = await sb.rpc("is_super_admin");
-  if (!data) throw new Error("FORBIDDEN");
+  if (!data) return { error: actionError("FORBIDDEN") };
   return { sb, user };
 }
 
 // ── Payment Settings (QR management) ──────────────────────────────
-export async function getPaymentMethodsAdmin(): Promise<(PaymentMethodConfig & { updated_by_name: string | null })[]> {
-  const { sb } = await requireSuperAdmin();
+export async function getPaymentMethodsAdmin(): Promise<(PaymentMethodConfig & { updated_by_name: string | null })[] | ActionError> {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data, error } = await sb.from("payment_methods").select("*").order("method");
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   const methods = (data ?? []) as PaymentMethodConfig[];
 
   const updaterIds = [...new Set(methods.map((m) => m.updated_by).filter((id): id is string => !!id))];
@@ -39,44 +47,49 @@ export async function setPaymentMethodConfig(
   method: PaymentMethod,
   patch: { enabled?: boolean; merchant_name?: string; account_identifier?: string }
 ) {
-  const { sb } = await requireSuperAdmin();
-  const { error } = await sb.from("payment_methods").update(patch).eq("method", method);
-  if (error) throw new Error(error.message);
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { error } = await auth.sb.from("payment_methods").update(patch).eq("method", method);
+  if (error) return actionError(error.message);
   revalidatePath("/platform/payments");
 }
 
 // Single-image replace (not an array append like venue photos) — mirrors
 // uploadVenuePhoto()'s upload shape but for a one-QR-per-method field.
-export async function uploadPaymentQr(method: PaymentMethod, file: File) {
-  const { sb } = await requireSuperAdmin();
+export async function uploadPaymentQr(method: PaymentMethod, file: File): Promise<string | ActionError> {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
 
   const okTypes = ["image/jpeg", "image/png", "image/webp"];
   if (!okTypes.includes(file.type)) {
-    throw new Error("Upload a JPG, PNG or WebP image.");
+    return actionError("Upload a JPG, PNG or WebP image.");
   }
   if (file.size > 5 * 1024 * 1024) {
-    throw new Error("QR image must be under 5 MB.");
+    return actionError("QR image must be under 5 MB.");
   }
   const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
   const ext = extMap[file.type];
   const path = `${method}/${Date.now()}.${ext}`;
 
   const { error: upErr } = await sb.storage.from("payment-qr").upload(path, file, { upsert: false });
-  if (upErr) throw new Error(upErr.message);
+  if (upErr) return actionError(upErr.message);
 
   const { error } = await sb.from("payment_methods").update({ qr_path: path }).eq("method", method);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath("/platform/payments");
   return path;
 }
 
 export async function removePaymentQr(method: PaymentMethod) {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data: current } = await sb.from("payment_methods").select("qr_path").eq("method", method).maybeSingle();
 
   const { error } = await sb.from("payment_methods").update({ qr_path: null }).eq("method", method);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   // Best-effort cleanup — the config change (above) is what actually
   // matters; a leftover orphaned file in storage isn't a correctness bug.
@@ -88,26 +101,30 @@ export async function removePaymentQr(method: PaymentMethod) {
 
 // ── Payment Verification Center ───────────────────────────────────
 export async function listPendingPayments() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data, error } = await sb
     .from("payments")
     .select("*")
     .eq("status", "PENDING_VERIFICATION")
     .order("submitted_at", { ascending: true });
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   const payments = (data ?? []) as Payment[];
   return attachDisplayInfo(sb, payments);
 }
 
 export async function listAllPayments(limit = 200) {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data, error } = await sb
     .from("payments")
     .select("*")
     .order("submitted_at", { ascending: false })
     .limit(limit);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   return attachDisplayInfo(sb, (data ?? []) as Payment[]);
 }
 
@@ -173,11 +190,13 @@ async function attachDisplayInfo(
 // venue/date details.
 export async function getPaymentBookingDetails(paymentId: string): Promise<{
   venue: string; date: string; time: string;
-}> {
-  const { sb } = await requireSuperAdmin();
+} | ActionError> {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data: payment, error } = await sb.from("payments").select("*").eq("id", paymentId).maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!payment) throw new Error("Payment not found.");
+  if (error) return actionError(error.message);
+  if (!payment) return actionError("Payment not found.");
 
   const fmt = (iso: string) => new Date(iso).toLocaleString("en-GB", {
     weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
@@ -211,7 +230,9 @@ export async function getPaymentBookingDetails(paymentId: string): Promise<{
 }
 
 export async function getPaymentOverviewStats() {
-  const { sb } = await requireSuperAdmin();
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayIso = todayStart.toISOString();
@@ -240,15 +261,17 @@ export async function getPaymentOverviewStats() {
 // Screenshots live in a private bucket — always view via a short-lived
 // signed URL, never a public one (spec: a customer must not be able to
 // guess another customer's screenshot URL).
-export async function getSignedScreenshotUrl(paymentId: string): Promise<string> {
-  const { sb } = await requireSuperAdmin();
+export async function getSignedScreenshotUrl(paymentId: string): Promise<string | ActionError> {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data: payment, error: pErr } = await sb
     .from("payments").select("screenshot_path").eq("id", paymentId).maybeSingle();
-  if (pErr) throw new Error(pErr.message);
-  if (!payment) throw new Error("Payment not found.");
+  if (pErr) return actionError(pErr.message);
+  if (!payment) return actionError("Payment not found.");
 
   const { data, error } = await sb.storage.from("payment-proofs").createSignedUrl(payment.screenshot_path, 300);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
   return data.signedUrl;
 }
 
@@ -260,15 +283,17 @@ export async function reviewPayment(
   action: "APPROVE" | "REJECT",
   reason?: string,
   note?: string
-): Promise<Payment> {
-  const { sb } = await requireSuperAdmin();
+): Promise<Payment | ActionError> {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
   const { data, error } = await sb.rpc("review_payment", {
     p_payment_id: paymentId,
     p_action: action,
     p_reason: reason ?? null,
     p_note: note ?? null,
   });
-  if (error) throw new Error(friendlyPaymentError(error.message));
+  if (error) return actionError(friendlyPaymentError(error.message));
 
   revalidatePath("/platform/payments");
 

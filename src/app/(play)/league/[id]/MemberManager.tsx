@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { UserPlus, UserMinus, Search, X } from "lucide-react";
 import { removeMember, addMember, searchPlayers } from "@/lib/squads/actions";
+import { isActionError } from "@/lib/actionError";
 import type { SquadMember } from "@/lib/squads/queries";
 
 // Rendered on the squad page. Creators get invite + remove buttons;
@@ -94,7 +95,10 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
     setQ(value);
     if (value.trim().length < 2) { setResults([]); return; }
     startTransition(async () => {
-      try { setResults(await searchPlayers(value, squadId)); }
+      try {
+        const res = await searchPlayers(value, squadId);
+        setResults(isActionError(res) ? [] : res);
+      }
       catch { setResults([]); }
     });
   }

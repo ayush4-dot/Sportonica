@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { Check, Upload, AlertCircle } from "lucide-react";
 import { getPaymentMethods, uploadPaymentProof, submitPayment } from "@/lib/payments/actions";
 import { bookingLabel, paymentQrPublicUrl } from "@/lib/payments/types";
+import { isActionError } from "@/lib/actionError";
 import type { BookingType, Payment, PaymentMethod, PaymentMethodConfig } from "@/lib/payments/types";
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -47,6 +48,7 @@ export default function PaymentStep({
     getPaymentMethods()
       .then((rows) => {
         if (cancelled) return;
+        if (isActionError(rows)) { setMethods([]); return; }
         setMethods(rows);
         const firstEnabled = rows.find((m) => m.enabled);
         if (firstEnabled) setMethod(firstEnabled.method);
@@ -81,7 +83,9 @@ export default function PaymentStep({
     startTransition(async () => {
       try {
         const path = await uploadPaymentProof(bookingType, bookingId, file);
+        if (isActionError(path)) { setErr(path.message); return; }
         const payment = await submitPayment(bookingType, bookingId, method, transactionId.trim(), path);
+        if (isActionError(payment)) { setErr(payment.message); return; }
         setSubmitted(payment);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not submit your payment. Try again.");

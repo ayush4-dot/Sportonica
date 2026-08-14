@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, UserPlus } from "lucide-react";
 import { joinSquad, leaveSquad } from "@/lib/squads/actions";
+import { isActionError } from "@/lib/actionError";
 
 export default function SquadJoinButton({ squadId, initialJoined }: { squadId: string; initialJoined: boolean }) {
   const router = useRouter();
@@ -14,20 +15,31 @@ export default function SquadJoinButton({ squadId, initialJoined }: { squadId: s
   function toggle() {
     startTransition(async () => {
       try {
-        if (joined) { await leaveSquad(squadId); setJoined(false); }
-        else { await joinSquad(squadId); setJoined(true); }
+        if (joined) {
+          const res = await leaveSquad(squadId);
+          if (isActionError(res)) { handleErr(res.message); return; }
+          setJoined(false);
+        } else {
+          const res = await joinSquad(squadId);
+          if (isActionError(res)) { handleErr(res.message); return; }
+          setJoined(true);
+        }
         router.refresh();
       } catch (e) {
-        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) {
-          router.push(`/login?redirect=/league/${squadId}`);
-          return;
-        }
-        if (e instanceof Error && e.message.includes("SQUAD_LOCKED")) {
-          setMsg("This squad is locked — no new members.");
-          return;
-        }
+        if (e instanceof Error) handleErr(e.message);
       }
     });
+
+    function handleErr(message: string) {
+      if (message.includes("UNAUTHORIZED")) {
+        router.push(`/login?redirect=/league/${squadId}`);
+        return;
+      }
+      if (message.includes("SQUAD_LOCKED") || message.includes("SQUAD_FULL")) {
+        setMsg("This squad is locked — no new members.");
+        return;
+      }
+    }
   }
 
   return (

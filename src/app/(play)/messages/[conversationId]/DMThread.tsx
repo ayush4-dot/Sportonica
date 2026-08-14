@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Send, ShieldCheck, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { sendEncryptedMessage, markConversationRead } from "@/lib/dm/actions";
+import { isActionError } from "@/lib/actionError";
 import { getOrCreateKeyPair } from "@/lib/crypto/keyStore";
 import { deriveConversationKey, encryptText, decryptText } from "@/lib/crypto/e2e";
 import type { EncryptedMessage } from "@/lib/dm/queries";
@@ -102,7 +103,10 @@ export default function DMThread({
     setSendError(null);
     startTransition(async () => {
       const { ciphertext, iv } = await encryptText(key, body);
-      try { await sendEncryptedMessage(conversationId, ciphertext, iv); }
+      try {
+        const res = await sendEncryptedMessage(conversationId, ciphertext, iv);
+        if (isActionError(res)) { setText(body); setSendError(res.message); }
+      }
       catch { setText(body); setSendError("Couldn't send — try again."); }
     });
   }

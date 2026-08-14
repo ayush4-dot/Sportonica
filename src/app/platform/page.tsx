@@ -1,10 +1,17 @@
 import { platformOverview, allVenuesForPlatform } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 import VenuesGrid from "./VenuesGrid";
 
 export const dynamic = "force-dynamic";
 
 export default async function PlatformPage() {
   const [stats, venues] = await Promise.all([platformOverview(), allVenuesForPlatform()]);
+  if (isActionError(stats) || isActionError(venues)) {
+    throw new Error(
+      (isActionError(stats) && stats.message) ||
+      (isActionError(venues) && venues.message) || "Failed to load platform overview."
+    );
+  }
 
   return (
     <>

@@ -6,6 +6,7 @@ import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, Al
 import { bookCourt } from "@/lib/admin/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
+import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "./SlotPicker";
 import WeekStrip from "./WeekStrip";
@@ -95,7 +96,10 @@ export default function BookingFlow({
     setQrPath(null);
     setQrUploading(true);
     uploadHostQr(f)
-      .then((path) => setQrPath(path))
+      .then((path) => {
+        if (isActionError(path)) { setErr(path.message); return; }
+        setQrPath(path);
+      })
       .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload your QR."))
       .finally(() => setQrUploading(false));
   }
@@ -174,7 +178,7 @@ export default function BookingFlow({
         const endsAt = ktmIso(dateStr, hour + duration);
 
         if (needPlayers) {
-          const { game, price: gamePrice } = await createGame({
+          const created = await createGame({
             court_id: court.id,
             starts_at: startsAt,
             ends_at: endsAt,
@@ -187,11 +191,21 @@ export default function BookingFlow({
             notes: note.trim() || undefined,
             ack_risk: ackRisk,
           });
+          if (isActionError(created)) {
+            if (created.message === "UNAUTHORIZED") {
+              router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+              return;
+            }
+            setErr(created.message);
+            return;
+          }
+          const { game, price: gamePrice } = created;
           const bookedPrice = Number(gamePrice) || 0;
           if (bookedPrice > 0) {
             setAwaitingPayment({ id: game.court_booking_id, price: bookedPrice });
           } else {
-            await confirmFreeBooking("court_booking", game.court_booking_id);
+            const confirmed = await confirmFreeBooking("court_booking", game.court_booking_id);
+            if (isActionError(confirmed)) { setErr(confirmed.message); return; }
             setDone(true);
           }
           return;
@@ -208,21 +222,25 @@ export default function BookingFlow({
           phone: phone.trim(),
           need_players: false,
         });
+        if (isActionError(booking)) {
+          if (booking.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(booking.message);
+          return;
+        }
 
         const bookedPrice = Number(booking?.price) || 0;
         if (bookedPrice > 0) {
           setAwaitingPayment({ id: booking.id, price: bookedPrice });
         } else {
-          await confirmFreeBooking("court_booking", booking.id);
+          const confirmed = await confirmFreeBooking("court_booking", booking.id);
+          if (isActionError(confirmed)) { setErr(confirmed.message); return; }
           setDone(true);
         }
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Could not book this slot.";
-        if (msg.includes("UNAUTHORIZED")) {
-          router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
-          return;
-        }
-        setErr(msg);
+        setErr(e instanceof Error ? e.message : "Could not book this slot.");
       }
     });
   }

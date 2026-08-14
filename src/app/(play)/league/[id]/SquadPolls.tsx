@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { BarChart3, Plus, X, Check, Lock } from "lucide-react";
 import { createPoll, castVote, closePoll } from "@/lib/squads/polls";
+import { isActionError } from "@/lib/actionError";
 import type { PollRow } from "@/lib/squads/queries";
 
 export default function SquadPolls({
@@ -15,7 +16,14 @@ export default function SquadPolls({
 
   function vote(pollId: string, optionId: string) {
     startTransition(async () => {
-      try { await castVote(pollId, optionId, squadId); router.refresh(); }
+      try {
+        const res = await castVote(pollId, optionId, squadId);
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") window.location.href = "/login";
+          return;
+        }
+        router.refresh();
+      }
       catch (e) {
         if (e instanceof Error && e.message.includes("UNAUTHORIZED")) window.location.href = "/login";
       }
@@ -124,7 +132,12 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
     setErr(null);
     startTransition(async () => {
       try {
-        await createPoll({ squadId, question, options, multi });
+        const res = await createPoll({ squadId, question, options, multi });
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") { window.location.href = "/login"; return; }
+          setErr(res.message);
+          return;
+        }
         onClose();
       } catch (e) {
         if (e instanceof Error && e.message.includes("UNAUTHORIZED")) { window.location.href = "/login"; return; }

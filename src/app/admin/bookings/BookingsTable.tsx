@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, UserX, LogIn } from "lucide-react";
 import { setBookingState } from "@/lib/admin/actions";
+import { isActionError } from "@/lib/actionError";
 import type { CourtBooking, Court } from "@/lib/admin/types";
 import { BookingBadge, PaymentStatusBadge, money, timeRange, dayLabel } from "../ui";
 
@@ -12,12 +13,15 @@ export default function BookingsTable({ bookings, courts }: { bookings: CourtBoo
   const [pending, startTransition] = useTransition();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "upcoming" | "checked_in" | "no_show">("all");
+  const [err, setErr] = useState<string | null>(null);
 
   function act(b: CourtBooking, state: string) {
     setBusyId(b.id);
+    setErr(null);
     startTransition(async () => {
-      await setBookingState(b.id, b.venue_id, state);
+      const res = await setBookingState(b.id, b.venue_id, state);
       setBusyId(null);
+      if (isActionError(res)) { setErr(res.message); return; }
       router.refresh();
     });
   }
@@ -31,6 +35,7 @@ export default function BookingsTable({ bookings, courts }: { bookings: CourtBoo
 
   return (
     <div className="adm-card">
+      {err && <div className="adm-badge danger" style={{ marginBottom: 12 }}>{err}</div>}
       <div className="adm-flex" style={{ gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
         {(["all", "upcoming", "checked_in", "no_show"] as const).map((f) => (
           <div key={f} className={`adm-chip ${filter === f ? "on" : ""}`} onClick={() => setFilter(f)}>

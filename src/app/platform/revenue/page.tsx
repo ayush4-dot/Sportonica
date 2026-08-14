@@ -1,4 +1,5 @@
 import { platformRevenue } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 import PayoutsGrid from "./PayoutsGrid";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
 
 export default async function RevenuePage() {
   const r = await platformRevenue();
+  if (isActionError(r)) throw new Error(r.message);
 
   return (
     <>

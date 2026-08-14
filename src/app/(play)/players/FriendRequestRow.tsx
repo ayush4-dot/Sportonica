@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Check, X } from "lucide-react";
 import { respondToRequest } from "@/lib/friends/actions";
+import { isActionError } from "@/lib/actionError";
 import type { PendingRequest } from "@/lib/friends/queries";
 
 export default function FriendRequestRow({ request }: { request: PendingRequest }) {
@@ -17,7 +18,8 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
     setError(null);
     startTransition(async () => {
       try {
-        await respondToRequest(request.id, decision);
+        const res = await respondToRequest(request.id, decision);
+        if (isActionError(res)) { setError(res.message); return; }
         setGone(true);
       } catch { setError("Couldn't update — try again."); }
     });

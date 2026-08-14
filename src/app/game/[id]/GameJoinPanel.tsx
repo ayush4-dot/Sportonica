@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, MapPin, Share2 } from "lucide-react";
 import { joinGame } from "@/lib/play/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
+import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 
 export default function GameJoinPanel({
@@ -28,20 +29,24 @@ export default function GameJoinPanel({
     startTransition(async () => {
       try {
         const booking = await joinGame({ event_id: gameId, venue_id: venueId, sport, phone: phone.trim() });
+        if (isActionError(booking)) {
+          if (booking.message === "UNAUTHORIZED") { router.push(`/login?redirect=/game/${gameId}`); return; }
+          if (booking.message.includes("ALREADY_JOINED")) { setJoined(true); return; }
+          if (booking.message.includes("GAME_FULL")) { setErr("This game just filled up."); return; }
+          setErr(booking.message);
+          return;
+        }
         const amount = Number(booking?.amount) || 0;
         if (amount > 0) {
           setAwaitingPayment({ id: booking.id, amount });
         } else {
-          await confirmFreeBooking("event_booking", booking.id);
+          const confirmed = await confirmFreeBooking("event_booking", booking.id);
+          if (isActionError(confirmed)) { setErr(confirmed.message); return; }
           setJoined(true);
         }
         router.refresh();
       } catch (e) {
-        const m = e instanceof Error ? e.message : "Could not join.";
-        if (m.includes("UNAUTHORIZED")) { router.push(`/login?redirect=/game/${gameId}`); return; }
-        if (m.includes("ALREADY_JOINED")) { setJoined(true); return; }
-        if (m.includes("GAME_FULL")) { setErr("This game just filled up."); return; }
-        setErr(m);
+        setErr(e instanceof Error ? e.message : "Could not join.");
       }
     });
   }

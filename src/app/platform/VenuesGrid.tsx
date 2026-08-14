@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, X } from "lucide-react";
 import DataTable, { type Column } from "@/components/DataTable";
 import { setVenueVerification } from "@/lib/platform/actions";
+import { isActionError } from "@/lib/actionError";
 
 interface VenueRow extends Record<string, unknown> {
   id: string;
@@ -34,7 +35,8 @@ export default function VenuesGrid({ venues }: { venues: VenueRow[] }) {
 
   function setStatus(id: string, status: "verified" | "rejected") {
     startTransition(async () => {
-      await setVenueVerification(id, status);
+      const res = await setVenueVerification(id, status);
+      if (isActionError(res)) { alert(res.message); return; }
       router.refresh();
     });
   }

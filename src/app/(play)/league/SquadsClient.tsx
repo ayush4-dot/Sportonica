@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Users, ArrowRight, MapPin, Calendar, Plus, X, Check } from "lucide-react";
 import { createSquad, joinSquad, leaveSquad } from "@/lib/squads/actions";
+import { isActionError } from "@/lib/actionError";
 import type { Squad } from "@/lib/squads/queries";
 
 
@@ -24,8 +25,21 @@ export default function SquadsClient({
     const isIn = joined.has(sq.id);
     startTransition(async () => {
       try {
-        if (isIn) { await leaveSquad(sq.id); joined.delete(sq.id); }
-        else { await joinSquad(sq.id); joined.add(sq.id); }
+        if (isIn) {
+          const res = await leaveSquad(sq.id);
+          if (isActionError(res)) {
+            if (res.message === "UNAUTHORIZED") { router.push(`/login?redirect=/league`); return; }
+            return;
+          }
+          joined.delete(sq.id);
+        } else {
+          const res = await joinSquad(sq.id);
+          if (isActionError(res)) {
+            if (res.message === "UNAUTHORIZED") { router.push(`/login?redirect=/league`); return; }
+            return;
+          }
+          joined.add(sq.id);
+        }
         setJoined(new Set(joined));
         router.refresh();
       } catch (e) {
@@ -132,7 +146,12 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
     setErr(null);
     startTransition(async () => {
       try {
-        await createSquad({ name, sport, area, schedule, description, color: SPORT_COLOR[sport] });
+        const res = await createSquad({ name, sport, area, schedule, description, color: SPORT_COLOR[sport] });
+        if (isActionError(res)) {
+          if (res.message === "UNAUTHORIZED") { router.push("/login?redirect=/league"); return; }
+          setErr(res.message);
+          return;
+        }
         onCreated();
       } catch (e) {
         if (e instanceof Error && e.message.includes("UNAUTHORIZED")) {

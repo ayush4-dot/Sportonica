@@ -2,11 +2,11 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionError, isActionError, type ActionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) throw new Error("UNAUTHORIZED");
   return { sb, user };
 }
 
@@ -45,9 +45,9 @@ async function expandShortLink(url: string): Promise<string> {
 // canonical URL to store (used for the "open in Google Maps" tap-through).
 export async function parseMapsUrl(rawUrl: string): Promise<{
   lat: number; lng: number; url: string;
-}> {
+} | ActionError> {
   const url = rawUrl.trim();
-  if (!/^https?:\/\//.test(url)) throw new Error("Paste a full Google Maps link (starting with https://).");
+  if (!/^https?:\/\//.test(url)) return actionError("Paste a full Google Maps link (starting with https://).");
 
   let coords = extractCoords(url);
   let finalUrl = url;
@@ -59,24 +59,27 @@ export async function parseMapsUrl(rawUrl: string): Promise<{
   }
 
   if (!coords) {
-    throw new Error("Couldn't find a location in that link. On Google Maps, tap Share → Copy link, or use a link that shows the place.");
+    return actionError("Couldn't find a location in that link. On Google Maps, tap Share → Copy link, or use a link that shows the place.");
   }
   if (Math.abs(coords.lat) > 90 || Math.abs(coords.lng) > 180) {
-    throw new Error("That link's coordinates look off. Try copying the link again.");
+    return actionError("That link's coordinates look off. Try copying the link again.");
   }
   return { ...coords, url: finalUrl };
 }
 
 // Save a venue's location from a pasted Google Maps link.
 export async function saveVenueLocation(venueId: string, rawUrl: string) {
-  const { sb } = await requireUser();
-  const { lat, lng, url } = await parseMapsUrl(rawUrl);
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const parsed = await parseMapsUrl(rawUrl);
+  if (isActionError(parsed)) return parsed;
+  const { lat, lng, url } = parsed;
 
   const { error } = await sb
     .from("venues")
     .update({ lat, lng, maps_url: url })
     .eq("id", venueId);
-  if (error) throw new Error(error.message);
+  if (error) return actionError(error.message);
 
   revalidatePath(`/admin/venues/${venueId}`);
   return { lat, lng, url };

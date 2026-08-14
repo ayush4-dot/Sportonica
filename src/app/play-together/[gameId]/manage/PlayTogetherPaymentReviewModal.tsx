@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { X, ShieldCheck, MessageCircle } from "lucide-react";
 import { getSignedGamePaymentProofUrl } from "@/lib/playTogether/actions";
 import { playerWhatsappUrl, PLAY_TOGETHER_PAYMENT_REJECTION_REASONS } from "@/lib/playTogether/types";
+import { isActionError } from "@/lib/actionError";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -27,7 +28,9 @@ export default function PlayTogetherPaymentReviewModal({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    getSignedGamePaymentProofUrl(request.id).then(setScreenshotUrl).catch(() => setScreenshotUrl(null));
+    getSignedGamePaymentProofUrl(request.id)
+      .then((url) => setScreenshotUrl(isActionError(url) ? null : url))
+      .catch(() => setScreenshotUrl(null));
   }, [request.id]);
 
   const name = request.profiles?.full_name ?? request.profiles?.name ?? "Player";

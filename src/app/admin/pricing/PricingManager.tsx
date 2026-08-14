@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Sparkles } from "lucide-react";
 import { createPricingRule, togglePricingRule } from "@/lib/admin/actions";
+import { isActionError } from "@/lib/actionError";
 import type { Court, PricingRule } from "@/lib/admin/types";
 import { DOW_LABELS } from "@/lib/admin/types";
 
@@ -13,6 +14,7 @@ export default function PricingManager({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [adding, setAdding] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   const [courtId, setCourtId] = useState(courts[0]?.id ?? "");
   const [label, setLabel] = useState("");
@@ -26,13 +28,15 @@ export default function PricingManager({
 
   function save() {
     if (!label.trim() || !courtId) return;
+    setErr(null);
     startTransition(async () => {
-      await createPricingRule({
+      const res = await createPricingRule({
         court_id: courtId, venue_id: venueId, label: label.trim(), kind,
         amount: Number(amount), days,
         start_time: startTime || null, end_time: endTime || null,
         priority: kind === "discount_pct" ? 5 : 10,
       });
+      if (isActionError(res)) { setErr(res.message); return; }
       setAdding(false); setLabel("");
       router.refresh();
     });
@@ -119,12 +123,15 @@ export default function PricingManager({
                 <input type="time" className="adm-input mono" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               </div>
             </div>
+            {err && <div className="adm-badge danger" style={{ marginBottom: 10 }}>{err}</div>}
             <div className="adm-flex">
               <button className="adm-btn primary sm" onClick={save} disabled={pending}>{pending ? "Saving…" : "Save rule"}</button>
               <button className="adm-btn ghost sm" onClick={() => setAdding(false)}>Cancel</button>
             </div>
           </div>
         )}
+
+        {err && !adding && <div className="adm-badge danger" style={{ marginBottom: 12 }}>{err}</div>}
 
         {courts.length === 0 ? (
           <div className="adm-dim" style={{ fontSize: 13 }}>Add a court first to create pricing rules.</div>
@@ -154,7 +161,11 @@ export default function PricingManager({
                       <button
                         className={`adm-badge ${r.active ? "ok" : "neutral"}`}
                         style={{ cursor: "pointer", border: "none" }}
-                        onClick={() => startTransition(async () => { await togglePricingRule(r.id, venueId, !r.active); router.refresh(); })}
+                        onClick={() => startTransition(async () => {
+                          const res = await togglePricingRule(r.id, venueId, !r.active);
+                          if (isActionError(res)) { setErr(res.message); return; }
+                          router.refresh();
+                        })}
                       >
                         {r.active ? "on" : "off"}
                       </button>
