@@ -15,6 +15,7 @@ import KhelamnaMap from "@/components/KhelamnaMap";
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
 import JoinModal from "./JoinModal";
+import PlayTogetherRail from "./PlayTogetherRail";
 import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
 import { SPORT_NAMES, sportColor, normalizeSport } from "@/lib/sports";
@@ -173,10 +174,13 @@ function DiscoverInner() {
           transition={{ duration: 0.6, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
         >
           Pick a sport, scan the map, and join the game — or{" "}
-          <a href="/create">host your own</a>. Prefer a peer-organized game where you pay the
-          host directly? Try <a href="/play-together">Play Together</a>.
+          <a href="/create">host your own</a>.
         </motion.p>
       </header>
+
+      <div style={{ padding: "0 clamp(20px, 5vw, 56px)" }}>
+        <PlayTogetherRail />
+      </div>
 
       <section className="disc-section">
         <DateStrip value={day} onPick={setDay} />

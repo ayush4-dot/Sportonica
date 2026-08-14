@@ -30,25 +30,6 @@ function fmtHM(hour: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
-// Suggested squad sizes by sport — helps players fill their game.
-// What kind of players the host wants. Plain language beats jargon —
-// "anyone's welcome" tells a nervous beginner more than "Level 1".
-const SKILL_OPTS = [
-  { k: "any",          label: "Anyone",       hint: "All levels welcome — turn up and play." },
-  { k: "beginner",     label: "Beginners",    hint: "New players welcome. Relaxed, no pressure." },
-  { k: "intermediate", label: "Intermediate", hint: "You've played a fair bit. Competitive but friendly." },
-  { k: "advanced",     label: "Advanced",     hint: "Strong players only. Fast, serious games." },
-];
-
-const SQUAD: Record<string, { label: string; total: number; positions: string[] }> = {
-  Futsal:     { label: "5-a-side", total: 5, positions: ["Goalkeeper", "Defender", "Winger", "Pivot"] },
-  Football:   { label: "7-a-side", total: 7, positions: ["Goalkeeper", "Defender", "Midfielder", "Striker"] },
-  Basketball: { label: "5-a-side", total: 5, positions: ["Guard", "Forward", "Center"] },
-  Cricket:    { label: "Team", total: 11, positions: ["Batter", "Bowler", "All-rounder", "Keeper"] },
-  Volleyball: { label: "6-a-side", total: 6, positions: ["Setter", "Hitter", "Blocker", "Libero"] },
-  Badminton:  { label: "Doubles", total: 2, positions: ["Partner"] },
-  Tennis:     { label: "Doubles", total: 2, positions: ["Partner"] },
-};
 
 export default function BookingFlow({
   venueName, courts, hoursByCourt, initialDate, initialHour, rules = [],
@@ -79,7 +60,6 @@ export default function BookingFlow({
   const [step, setStep] = useState(0);   // 0 court · 1 when · 2 players · 3 confirm
 
   const court = courts.find((c) => c.id === courtId);
-  const squad = court ? SQUAD[court.sport] : undefined;
 
   // Build the day's bookable hours from this court's opening hours.
 
@@ -324,55 +304,23 @@ export default function BookingFlow({
               </p>
             )}
 
-            {needPlayers && (
+            {/* Hosting-with-players now runs through Play Together's own
+                flow (host-approved requests, 2-hour payment window, the
+                host's own QR shown to players) instead of duplicating that
+                state machine here — see supabase/play_together_payments.sql.
+                This venue's courts are the same ones listed there. */}
+            {needPlayers && court && (
               <div style={{ marginTop: 18 }}>
-                {squad && (
-                  <p className="hint" style={{ marginBottom: 12 }}>
-                    {court?.sport} is usually <b style={{ color: "var(--paper)" }}>{squad.label}</b>. How many are you missing?
-                  </p>
-                )}
-                <div className="bk-chips">
-                  {[1, 2, 3, 4, 5, 6, 8].map((n) => (
-                    <button key={n} className={`bk-chip ${spots === n ? "on" : ""}`} onClick={() => setSpots(n)}>
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <div className="bk-split" style={{ marginTop: 16 }}>
-                  Split between you + {spots} others → <b>Rs {perHead}</b> each instead of Rs {price}.
-                </div>
-
-                <div style={{ marginTop: 22, paddingTop: 20, borderTop: "1px solid var(--line)" }}>
-                  <p className="hint" style={{ marginBottom: 10 }}>Who are you looking for?</p>
-                  <div className="bk-chips">
-                    {SKILL_OPTS.map((sk) => (
-                      <button key={sk.k} className={`bk-chip ${skill === sk.k ? "on" : ""}`}
-                        onClick={() => setSkill(sk.k)} title={sk.hint}>
-                        {sk.label}
-                      </button>
-                    ))}
-                  </div>
-                  <p className="hint" style={{ marginTop: 8, fontSize: 12, opacity: 0.6 }}>
-                    {SKILL_OPTS.find((sk) => sk.k === skill)?.hint}
-                  </p>
-
-                  <div className="bk-toggle" style={{ marginTop: 18 }} onClick={() => setBringGear((v) => !v)}>
-                    <div className={`bk-switch ${bringGear ? "on" : ""}`} />
-                    <div>
-                      <b>Bring your own gear</b>
-                      <p className="hint" style={{ margin: "2px 0 0" }}>
-                        {bringGear ? "Players bring their own kit." : "Gear is provided or shared."}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 18 }}>
-                    <p className="hint" style={{ marginBottom: 8 }}>Anything they should know? (optional)</p>
-                    <textarea className="bk-note" rows={2} value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Turf shoes only · 40-min halves · park on the side street" />
-                  </div>
-                </div>
+                <p className="hint" style={{ marginBottom: 16 }}>
+                  Opening your game to other players uses Play Together — you approve who joins,
+                  and each player pays you directly (with your own QR) once you accept them.
+                </p>
+                <button
+                  className="play-btn gold"
+                  onClick={() => router.push(`/play-together/new/${court.venue_id}`)}
+                >
+                  Continue to Play Together <ChevronRight size={15} />
+                </button>
               </div>
             )}
           </div>
