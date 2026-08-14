@@ -314,10 +314,13 @@ declare
   v_max_players  int;
   v_joined_count int;
 begin
-  select gp.*, g.host_id, g.max_players into v_row, v_host, v_max_players
-    from public.game_players gp join public.games g on g.id = gp.game_id
+  select gp.* into v_row
+    from public.game_players gp
     where gp.id = p_game_player_id for update of gp;
   if v_row.id is null then raise exception 'NOT_FOUND'; end if;
+
+  select g.host_id, g.max_players into v_host, v_max_players
+    from public.games g where g.id = v_row.game_id;
   if v_host <> auth.uid() then raise exception 'FORBIDDEN'; end if;
   if v_row.status <> 'requested' then raise exception 'ALREADY_REVIEWED'; end if;
 
