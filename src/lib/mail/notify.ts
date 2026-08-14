@@ -13,6 +13,7 @@ import {
   paymentSubmitted, paymentApproved, paymentRejected,
   playTogetherGamePublished, playTogetherPlayerJoined, playTogetherHostRosterChanged,
   playTogetherGameCancelled, playTogetherJoinRequested, playTogetherJoinRejected,
+  playTogetherPaymentRequired, playTogetherPaymentSubmitted, playTogetherPaymentRejected,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 
@@ -250,6 +251,117 @@ export async function notifyPlayTogetherJoinRequested(input: { requesterId: stri
   });
 }
 
+// ── Host approved the request — the player must now pay within the
+// 2-hour window. Deliberately NOT a "you're in" notification — the
+// player isn't a confirmed member yet, only the host's payment
+// verification (notifyPlayTogetherPaymentVerified, fired from
+// verifyPlayTogetherPayment()) sends that. ────────────────────────────
+export async function notifyPlayTogetherPaymentRequired(input: { playerId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName } = ctx;
+
+  const sb = await createClient();
+  const { data: row } = await sb
+    .from("game_players").select("payment_deadline, contribution_amount")
+    .eq("game_id", input.gameId).eq("user_id", input.playerId).maybeSingle();
+  if (!row?.payment_deadline) return;
+
+  const [playerEmail, playerName] = await Promise.all([emailFor(input.playerId), nameFor(input.playerId)]);
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/play-together/${input.gameId}`;
+  if (playerEmail) {
+    await sendMail(playTogetherPaymentRequired({
+      to: playerEmail, playerName, sport: game.sport, venue: venueName,
+      startsAt: game.starts_at, contribution: Number(row.contribution_amount) || 0,
+      deadline: row.payment_deadline, link,
+    }));
+  }
+
+  await sb.from("notifications").insert({
+    user_id: input.playerId,
+    kind: "game_payment_required",
+    title: "Payment required",
+    body: `Complete your Rs ${Math.round(Number(row.contribution_amount) || 0)} payment within 2 hours to secure your spot in the ${game.sport} game.`,
+    game_id: game.id,
+  });
+}
+
+// ── Player submitted payment proof — tell the HOST it needs review, and
+// tell the player their proof went in. Neither means they're in yet. ──
+export async function notifyPlayTogetherPaymentSubmitted(input: { gamePlayerId: string; gameId: string }) {
+  const sb = await createClient();
+  const { data: row } = await sb
+    .from("game_players")
+    .select("user_id, contribution_amount, payment_method, transaction_id")
+    .eq("id", input.gamePlayerId).maybeSingle();
+  if (!row) return;
+
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game } = ctx;
+
+  const [hostEmail, hostName, playerName] = await Promise.all([
+    emailFor(game.host_id), nameFor(game.host_id), nameFor(row.user_id),
+  ]);
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/play-together/${input.gameId}/manage`;
+  if (hostEmail) {
+    await sendMail(playTogetherPaymentSubmitted({
+      to: hostEmail, hostName, playerName, sport: game.sport,
+      amount: Number(row.contribution_amount) || 0,
+      method: row.payment_method ?? "host_qr", transactionId: row.transaction_id ?? "—", link,
+    }));
+  }
+
+  await sb.from("notifications").insert([
+    {
+      user_id: game.host_id, kind: "game_host_payment_submitted", title: "Payment verification required",
+      body: `${playerName} submitted payment proof for your ${game.sport} game — review it.`,
+      game_id: game.id, actor_id: row.user_id,
+    },
+    {
+      user_id: row.user_id, kind: "game_payment_submitted", title: "Payment submitted",
+      body: `Your payment proof for the ${game.sport} game was submitted. Waiting on the host to verify it.`,
+      game_id: game.id,
+    },
+  ]);
+}
+
+// ── Host rejected the payment proof — player may resubmit if their
+// window hasn't closed. ────────────────────────────────────────────
+export async function notifyPlayTogetherPaymentRejected(input: { playerId: string; gameId: string }) {
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName } = ctx;
+
+  const sb = await createClient();
+  const { data: row } = await sb
+    .from("game_players").select("payment_deadline")
+    .eq("game_id", input.gameId).eq("user_id", input.playerId).maybeSingle();
+
+  const [playerEmail, playerName] = await Promise.all([emailFor(input.playerId), nameFor(input.playerId)]);
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/play-together/${input.gameId}`;
+  if (playerEmail && row?.payment_deadline) {
+    await sendMail(playTogetherPaymentRejected({
+      to: playerEmail, playerName, sport: game.sport, venue: venueName,
+      deadline: row.payment_deadline, link,
+    }));
+  }
+
+  await sb.from("notifications").insert({
+    user_id: input.playerId,
+    kind: "game_payment_rejected",
+    title: "Payment couldn't be verified",
+    body: `Your payment for the ${game.sport} game couldn't be verified by the host.`,
+    game_id: game.id,
+  });
+}
+
+// ── Host verified the payment — this is the ONLY point the player is
+// actually added to the group. ─────────────────────────────────────
+export async function notifyPlayTogetherPaymentVerified(input: { playerId: string; gameId: string }) {
+  return notifyPlayTogetherJoined(input);
+}
+
 // ── Host approved a join request — this is the ONLY point the player
 // hears anything about their join, by design (per product decision: no
 // notification before the host reviews it). ──────────────────────────
@@ -337,7 +449,8 @@ export async function notifyPlayTogetherCancelled(input: { hostId: string; gameI
   const venueName = venue?.name ?? "the venue";
 
   const { data: players } = await sb
-    .from("game_players").select("user_id").eq("game_id", input.gameId).in("status", ["joined", "requested"]);
+    .from("game_players").select("user_id").eq("game_id", input.gameId)
+    .in("status", ["joined", "requested", "payment_pending", "payment_verification_pending"]);
   if (!players?.length) return;
 
   const details = await Promise.all(

@@ -2,26 +2,32 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
-import { markContributionCollected, cancelGame, approveJoinRequest } from "@/lib/playTogether/actions";
+import { Check, ShieldCheck } from "lucide-react";
+import { markContributionCollected, cancelGame, approveJoinRequest, verifyPlayTogetherPayment } from "@/lib/playTogether/actions";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 import type { GameStatus } from "@/lib/playTogether/types";
 import PlayTogetherReviewModal from "./PlayTogetherReviewModal";
+import PlayTogetherPaymentReviewModal from "./PlayTogetherPaymentReviewModal";
 
 export default function PlayTogetherManageClient({
-  gameId, sport, players, requests, gameStatus,
+  gameId, sport, players, requests, paymentsToReview, paymentPending, gameStatus,
 }: {
   gameId: string;
   sport: string;
   players: GamePlayerWithProfile[];
   requests: GamePlayerWithProfile[];
+  paymentsToReview: GamePlayerWithProfile[];
+  paymentPending: GamePlayerWithProfile[];
   gameStatus: GameStatus;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState(players);
   const [pendingRows, setPendingRows] = useState(requests);
+  const [paymentReviewRows, setPaymentReviewRows] = useState(paymentsToReview);
+  const [awaitingPaymentRows, setAwaitingPaymentRows] = useState(paymentPending);
   const [reviewing, setReviewing] = useState<GamePlayerWithProfile | null>(null);
+  const [reviewingPayment, setReviewingPayment] = useState<GamePlayerWithProfile | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
@@ -43,8 +49,21 @@ export default function PlayTogetherManageClient({
   async function review(row: GamePlayerWithProfile, approve: boolean) {
     await approveJoinRequest(row.id, gameId, approve);
     setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
-    if (approve) setRows((rs) => [...rs, { ...row, status: "joined" }]);
+    if (approve) setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_pending" }]);
     setReviewing(null);
+  }
+
+  // The ONLY action that actually adds a player to the group — see
+  // verify_play_together_payment() in supabase/play_together_payments.sql.
+  async function reviewPayment(row: GamePlayerWithProfile, approve: boolean) {
+    await verifyPlayTogetherPayment(row.id, gameId, approve);
+    setPaymentReviewRows((rs) => rs.filter((r) => r.id !== row.id));
+    if (approve) {
+      setRows((rs) => [...rs, { ...row, status: "joined", contribution_status: "collected" }]);
+    } else {
+      setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_rejected" }]);
+    }
+    setReviewingPayment(null);
   }
 
   function doCancel() {
@@ -93,9 +112,64 @@ export default function PlayTogetherManageClient({
         />
       )}
 
+      {/* Manage Payments — players who've submitted proof and need a
+          verify/reject decision. This is the queue that actually decides
+          group membership; approving a request above only opens the
+          payment window, it never lands anyone here automatically. */}
+      {paymentReviewRows.length > 0 && (
+        <>
+          <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>
+            <ShieldCheck size={12} style={{ verticalAlign: -2 }} /> Payments to verify ({paymentReviewRows.length})
+          </p>
+          <div className="pt-players-list">
+            {paymentReviewRows.map((p) => (
+              <div key={p.id} className="pt-player-row">
+                <div>
+                  <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
+                  <div className="pt-player-sub">Rs {p.contribution_amount} · {p.transaction_id || "no txn id"}</div>
+                </div>
+                <button className="pt-collect-btn on" onClick={() => setReviewingPayment(p)} disabled={pending}>
+                  Verify
+                </button>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {reviewingPayment && (
+        <PlayTogetherPaymentReviewModal
+          request={reviewingPayment}
+          sport={sport}
+          onClose={() => setReviewingPayment(null)}
+          onReview={(approve) => reviewPayment(reviewingPayment, approve)}
+        />
+      )}
+
+      {awaitingPaymentRows.length > 0 && (
+        <>
+          <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>
+            Awaiting payment ({awaitingPaymentRows.length})
+          </p>
+          <div className="pt-players-list">
+            {awaitingPaymentRows.map((p) => (
+              <div key={p.id} className="pt-player-row">
+                <div>
+                  <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
+                  <div className="pt-player-sub">
+                    {p.status === "payment_rejected" ? "Payment rejected — may resubmit" : "Hasn't paid yet"}
+                    {p.payment_deadline ? ` · due ${new Date(p.payment_deadline).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : ""}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
       <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>Players ({rows.length})</p>
       {rows.length === 0 ? (
-        <p className="hint">No one has been approved yet.</p>
+        <p className="hint">No one has been confirmed yet.</p>
       ) : (
         <div className="pt-players-list">
           {rows.map((p) => (

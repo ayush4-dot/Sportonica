@@ -35,7 +35,10 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
   const players = await getGamePlayers(gameId);
   const isHost = user?.id === game.host_id;
   const myPlayer = user && !isHost ? await getMyGamePlayerStatus(gameId, user.id) : null;
-  const myStatus = myPlayer?.status ?? null;
+  // The player needs to see the host's QR/phone for the whole payment
+  // window, not only once fully confirmed — otherwise they'd have no way
+  // to actually pay during 'payment_pending'/'payment_verification_pending'.
+  const paymentInfoVisible = !!myPlayer && ["payment_pending", "payment_verification_pending", "joined", "payment_rejected"].includes(myPlayer.status);
 
   const spots = availablePlayerSpots(game);
   const spotsLeft = Math.max(spots - players.length, 0);
@@ -115,14 +118,16 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
               <PlayTogetherJoinPanel
                 gameId={game.id}
                 isHost={isHost}
-                myStatus={myStatus}
+                myPlayer={myPlayer}
                 isPublished={game.status === "published"}
                 joiningOpen={joiningOpen}
                 spotsLeft={spotsLeft}
                 loggedIn={!!user}
                 contribution={game.contribution_amount}
-                hostQrPath={myStatus === "joined" ? game.host_qr_path : null}
-                hostPhone={myStatus === "joined" ? game.host_phone : null}
+                sport={game.sport}
+                venueName={game.venues?.name ?? "the venue"}
+                hostQrPath={paymentInfoVisible ? game.host_qr_path : null}
+                hostPhone={paymentInfoVisible ? game.host_phone : null}
               />
             </div>
           </div>

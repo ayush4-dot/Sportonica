@@ -53,7 +53,9 @@ export async function getGamePlayers(gameId: string): Promise<GamePlayerWithProf
 }
 
 // Host-only (RLS: game_players_read_host) — the queue the host reviews on
-// their dashboard.
+// their dashboard. PENDING_HOST_APPROVAL only — a player who's already
+// been approved and is mid-payment shows up in getAwaitingPaymentReview()
+// / getPaymentPendingPlayers() instead, never here again.
 export async function getPendingRequests(gameId: string): Promise<GamePlayerWithProfile[]> {
   const sb = await createClient();
   const { data } = await sb
@@ -62,6 +64,35 @@ export async function getPendingRequests(gameId: string): Promise<GamePlayerWith
     .eq("game_id", gameId)
     .eq("status", "requested")
     .order("joined_at", { ascending: true });
+  return (data as GamePlayerWithProfile[]) ?? [];
+}
+
+// Host-only — the "Manage Payments" queue: players who've submitted proof
+// and are waiting on the host's verify/reject call. This is the ONLY
+// action that actually adds a player to the group (see
+// verify_play_together_payment() in play_together_payments.sql).
+export async function getAwaitingPaymentReview(gameId: string): Promise<GamePlayerWithProfile[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("game_players")
+    .select("*, profiles(full_name, name, avatar_url, phone)")
+    .eq("game_id", gameId)
+    .eq("status", "payment_verification_pending")
+    .order("payment_submitted_at", { ascending: true });
+  return (data as GamePlayerWithProfile[]) ?? [];
+}
+
+// Host-only — approved players still inside their 2-hour payment window
+// (or whose proof was rejected and can still resubmit). Shown on the
+// manage page purely as visibility, not actionable until they submit.
+export async function getPaymentPendingPlayers(gameId: string): Promise<GamePlayerWithProfile[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("game_players")
+    .select("*, profiles(full_name, name, avatar_url, phone)")
+    .eq("game_id", gameId)
+    .in("status", ["payment_pending", "payment_rejected"])
+    .order("payment_deadline", { ascending: true });
   return (data as GamePlayerWithProfile[]) ?? [];
 }
 

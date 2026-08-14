@@ -3,13 +3,16 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { friendlyPlayTogetherError } from "./types";
-import type { Game, GamePlayer } from "./types";
+import type { Game, GamePlayer, PlayTogetherPaymentMethod } from "./types";
 import {
   notifyPlayTogetherJoinRequested,
-  notifyPlayTogetherJoined,
   notifyPlayTogetherJoinRejected,
   notifyPlayTogetherLeft,
   notifyPlayTogetherCancelled,
+  notifyPlayTogetherPaymentRequired,
+  notifyPlayTogetherPaymentSubmitted,
+  notifyPlayTogetherPaymentVerified,
+  notifyPlayTogetherPaymentRejected,
 } from "@/lib/mail/notify";
 
 async function requireUser() {
@@ -105,8 +108,10 @@ export async function joinGame(gameId: string): Promise<GamePlayer> {
   return data as GamePlayer;
 }
 
-// Host-only. This is the only point a player is actually in the game,
-// notified, and counted toward capacity.
+// Host-only. Approving does NOT add the player to the game — it opens a
+// 2-hour payment window (status -> 'payment_pending'). The player only
+// becomes a confirmed member once the host separately verifies their
+// payment proof — see verifyPlayTogetherPayment() below.
 export async function approveJoinRequest(
   gamePlayerId: string,
   gameId: string,
@@ -124,12 +129,119 @@ export async function approveJoinRequest(
   revalidatePath("/play-together");
 
   if (approve) {
-    await notifyPlayTogetherJoined({ playerId: (data as GamePlayer).user_id, gameId });
+    await notifyPlayTogetherPaymentRequired({ playerId: (data as GamePlayer).user_id, gameId });
   } else {
     await notifyPlayTogetherJoinRejected({ playerId: (data as GamePlayer).user_id, gameId });
   }
 
   return data as GamePlayer;
+}
+
+// Upload proof of payment to the HOST (transaction screenshot). Mirrors
+// uploadPaymentProof() in src/lib/payments/actions.ts, targeting the
+// private 'game-payment-proofs' bucket instead. Path convention:
+// '{user_id}/{game_player_id}_{timestamp}.{ext}' — see
+// supabase/play_together_payments.sql for why the separator is '_' not '-'.
+export async function uploadGamePaymentProof(gamePlayerId: string, file: File): Promise<string> {
+  const { sb, user } = await requireUser();
+
+  const okTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!okTypes.includes(file.type)) {
+    throw new Error("Upload a JPG, PNG or WebP screenshot.");
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    throw new Error("Screenshot must be under 5 MB.");
+  }
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const ext = extMap[file.type];
+  const path = `${user.id}/${gamePlayerId}_${Date.now()}.${ext}`;
+
+  const { error } = await sb.storage.from("game-payment-proofs").upload(path, file, { upsert: false });
+  if (error) throw new Error(error.message);
+
+  return path;
+}
+
+// Player-only. The 2-hour deadline is re-checked server-side inside
+// submit_play_together_payment() — never trust the client's countdown. If
+// the window already lapsed, the RPC expires the row in place (rather than
+// throwing, which would roll back the expiry — see the SQL comment) and
+// returns it with status 'expired'; we detect that here and surface the
+// friendly message instead of treating the call as a successful submission.
+export async function submitPlayTogetherPayment(input: {
+  gamePlayerId: string;
+  gameId: string;
+  method: PlayTogetherPaymentMethod;
+  transactionId: string;
+  proofPath: string;
+}): Promise<GamePlayer> {
+  const { sb } = await requireUser();
+  const { data, error } = await sb.rpc("submit_play_together_payment", {
+    p_game_player_id: input.gamePlayerId,
+    p_payment_method: input.method,
+    p_transaction_id: input.transactionId.trim(),
+    p_payment_proof_path: input.proofPath,
+  });
+  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  const row = data as GamePlayer;
+
+  revalidatePath(`/play-together/${input.gameId}`);
+  revalidatePath(`/play-together/${input.gameId}/manage`);
+
+  if (row.status === "expired") {
+    throw new Error(friendlyPlayTogetherError("PAYMENT_DEADLINE_EXPIRED"));
+  }
+
+  await notifyPlayTogetherPaymentSubmitted({ gamePlayerId: input.gamePlayerId, gameId: input.gameId });
+
+  return row;
+}
+
+// Host-only. This is the ONLY point a player is actually added to the
+// group — approving the original request never does this on its own.
+export async function verifyPlayTogetherPayment(
+  gamePlayerId: string,
+  gameId: string,
+  approve: boolean
+): Promise<GamePlayer> {
+  const { sb } = await requireUser();
+  const { data, error } = await sb.rpc("verify_play_together_payment", {
+    p_game_player_id: gamePlayerId,
+    p_approve: approve,
+  });
+  if (error) throw new Error(friendlyPlayTogetherError(error.message));
+  const row = data as GamePlayer;
+
+  revalidatePath(`/play-together/${gameId}`);
+  revalidatePath(`/play-together/${gameId}/manage`);
+  revalidatePath("/play-together");
+
+  if (approve) {
+    await notifyPlayTogetherPaymentVerified({ playerId: row.user_id, gameId });
+  } else {
+    await notifyPlayTogetherPaymentRejected({ playerId: row.user_id, gameId });
+  }
+
+  return row;
+}
+
+// Host-only — a short-lived signed URL to view a submitted proof
+// screenshot. Mirrors getSignedScreenshotUrl() in
+// src/lib/payments/adminActions.ts; storage RLS (game_proof_read in
+// supabase/play_together_payments.sql) independently enforces that only
+// the uploading player or that game's host can ever read the object, so
+// this never needs its own ownership check beyond "row is visible to me".
+export async function getSignedGamePaymentProofUrl(gamePlayerId: string): Promise<string> {
+  const { sb } = await requireUser();
+  const { data: row, error: rowErr } = await sb
+    .from("game_players").select("payment_proof_path").eq("id", gamePlayerId).maybeSingle();
+  if (rowErr) throw new Error(rowErr.message);
+  if (!row?.payment_proof_path) throw new Error("No payment proof on file for this request.");
+
+  const { data, error } = await sb.storage
+    .from("game-payment-proofs").createSignedUrl(row.payment_proof_path, 300);
+  if (error) throw new Error(error.message);
+  return data.signedUrl;
 }
 
 // Withdraw a pending request, or leave after being approved — either way,

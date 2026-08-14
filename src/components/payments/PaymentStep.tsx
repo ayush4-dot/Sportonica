@@ -225,7 +225,7 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 // so the same component works inside BookingFlow's themed wizard AND
 // JoinModal's dark, non-theme-aware modal. Colors match the app's
 // existing green/cream/ink palette — no new colors introduced.
-const PYMT_CSS = `
+export const PYMT_CSS = `
 .pymt { font-family: 'Inter', system-ui, sans-serif; color: var(--paper, #F2EDE6); }
 .pymt-amt { text-align: center; padding: 6px 0 18px; }
 .pymt-amt-lbl { display: block; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin-bottom: 6px; }

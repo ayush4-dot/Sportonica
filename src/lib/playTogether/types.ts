@@ -11,11 +11,35 @@ export const GAME_STATUS = {
 } as const;
 export type GameStatus = (typeof GAME_STATUS)[keyof typeof GAME_STATUS];
 
-// A "Join" tap only ever creates a 'requested' row — the host must
-// explicitly approve it before the player is actually in. That's the
-// only point the player is notified or counted toward capacity.
-export type GamePlayerStatus = "requested" | "joined" | "left" | "rejected";
+// A "Join" tap only ever creates a 'requested' row (PENDING_HOST_APPROVAL).
+// A player is NEVER a confirmed member just because the host approved the
+// request — approval only opens a 2-hour payment window ('payment_pending').
+// The player becomes 'joined' (CONFIRMED, added to the group) only once the
+// host verifies their submitted payment proof. See supabase/
+// play_together_payments.sql for the full state machine and backend
+// enforcement of the deadline.
+//
+//   requested -> [host approves] -> payment_pending -> [player submits proof]
+//     -> payment_verification_pending -> [host verifies] -> joined
+//                                      -> [host rejects]  -> payment_rejected (may resubmit before deadline)
+//   payment_pending / payment_rejected -> [deadline passes] -> expired
+//   requested -> [host rejects] -> rejected
+export type GamePlayerStatus =
+  | "requested"
+  | "payment_pending"
+  | "payment_verification_pending"
+  | "joined"
+  | "left"
+  | "rejected"
+  | "payment_rejected"
+  | "expired";
 export type ContributionStatus = "pending" | "collected";
+export type PlayTogetherPaymentMethod = "host_qr" | "esewa" | "khalti" | "bank_transfer" | "cash";
+
+// The 2-hour window is set server-side (approve_join_request() in
+// play_together_payments.sql) — this is only for client-side display math,
+// never trusted to compute or extend an actual deadline.
+export const PAYMENT_WINDOW_MINUTES = 120;
 
 export interface Game {
   id: string;
@@ -53,6 +77,32 @@ export interface GamePlayer {
   collected_at: string | null;
   joined_at: string;
   left_at: string | null;
+  approved_at: string | null;
+  payment_deadline: string | null;
+  payment_submitted_at: string | null;
+  payment_verified_at: string | null;
+  payment_rejected_at: string | null;
+  expired_at: string | null;
+  payment_method: PlayTogetherPaymentMethod | null;
+  transaction_id: string | null;
+  payment_proof_path: string | null;
+  payment_reminder_count: number;
+  last_payment_reminder_at: string | null;
+}
+
+// The backend (submit/verify RPCs + the pg_cron sweep) is the real source
+// of truth for expiry — this is only so the UI never shows a stale
+// "payment pending, X remaining" for a row that's actually past its
+// deadline just because nobody's re-fetched it since the cron last ran.
+export function effectivePlayerStatus(row: Pick<GamePlayer, "status" | "payment_deadline">): GamePlayerStatus {
+  if (
+    (row.status === "payment_pending" || row.status === "payment_rejected") &&
+    row.payment_deadline &&
+    new Date(row.payment_deadline).getTime() <= Date.now()
+  ) {
+    return "expired";
+  }
+  return row.status;
 }
 
 // A joined-and-active player available spot count — the host occupies one
@@ -102,6 +152,12 @@ export const PLAY_TOGETHER_ERROR_MESSAGES: Record<string, string> = {
   ALREADY_CANCELLED: "This game has already been cancelled.",
   SLOT_TAKEN: "That time is already booked.",
   SLOT_BLOCKED: "That time is blocked.",
+  INVALID_PAYMENT_STATE: "This request isn't awaiting payment right now.",
+  PAYMENT_DEADLINE_EXPIRED: "Your payment window has expired. This request has been cancelled.",
+  INVALID_PAYMENT_METHOD: "Pick a payment method.",
+  TRANSACTION_ID_REQUIRED: "Enter the transaction ID from your payment.",
+  PAYMENT_PROOF_REQUIRED: "Upload a screenshot of your payment.",
+  NOT_AWAITING_VERIFICATION: "This payment isn't awaiting verification right now.",
 };
 
 export function friendlyPlayTogetherError(message: string): string {

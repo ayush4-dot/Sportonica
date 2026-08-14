@@ -228,7 +228,9 @@ Share it around: ${p.link}
   };
 }
 
-// ── Play Together: a player joined the host's game ──────────────────
+// ── Play Together: the host verified the player's payment — they're
+// actually in the group now. This is the ONLY "you're in" email; approval
+// alone (playTogetherPaymentRequired below) never sends this. ───────────
 export function playTogetherPlayerJoined(p: {
   to: string; playerName: string; sport: string; venue: string;
   startsAt: string; contribution: number;
@@ -238,14 +240,82 @@ export function playTogetherPlayerJoined(p: {
     subject: `You're in: ${p.sport} at ${p.venue}, ${fmtWhen(p.startsAt)}`,
     body: `Hi ${p.playerName},
 
-You're in for the game.
+Payment verified. You're officially in the game!
 
   Sport          ${p.sport}
   Venue          ${p.venue}
   When           ${fmtWhen(p.startsAt)}
-  Contribution   ${rs(p.contribution)} — pay the host directly at the venue
+  Paid           ${rs(p.contribution)}, direct to the host
 
-No payment is required to Khelam Na for joining this game.
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: host approved the request — payment now required
+// within a 2-hour window before the spot is released. NOT a "you're in"
+// email — that only goes out once the host verifies the payment. ───────
+export function playTogetherPaymentRequired(p: {
+  to: string; playerName: string; sport: string; venue: string;
+  startsAt: string; contribution: number; deadline: string; link: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Payment required — ${p.sport} at ${p.venue}`,
+    body: `Hi ${p.playerName},
+
+The host approved your request to join. Complete your payment within
+2 hours to secure your spot — you're not confirmed until they verify it.
+
+  Sport          ${p.sport}
+  Venue          ${p.venue}
+  When           ${fmtWhen(p.startsAt)}
+  Amount         ${rs(p.contribution)}, paid directly to the host
+  Deadline       ${fmtWhen(p.deadline)}
+
+Pay now: ${p.link}
+
+If payment isn't completed by the deadline, this request is automatically
+cancelled and your spot is released.
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: host — a player submitted payment proof, needs review ──
+export function playTogetherPaymentSubmitted(p: {
+  to: string; hostName: string; playerName: string; sport: string;
+  amount: number; method: string; transactionId: string; link: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `${p.playerName} submitted payment for your ${p.sport} game`,
+    body: `Hi ${p.hostName},
+
+${p.playerName} says they've paid you ${rs(p.amount)} via ${p.method} (txn
+${p.transactionId}) for your ${p.sport} game. They're not in the group
+until you verify it.
+
+Review it from your game's Manage Payments page: ${p.link}
+
+— Khelam Na`,
+  };
+}
+
+// ── Play Together: host rejected the payment proof — player may resubmit
+// before the deadline. ───────────────────────────────────────────────
+export function playTogetherPaymentRejected(p: {
+  to: string; playerName: string; sport: string; venue: string;
+  deadline: string; link: string;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `Payment couldn't be verified — ${p.sport} at ${p.venue}`,
+    body: `Hi ${p.playerName},
+
+Your payment could not be verified by the host.
+
+If your payment window hasn't closed yet (deadline: ${fmtWhen(p.deadline)}),
+you can submit valid payment proof again: ${p.link}
 
 — Khelam Na`,
   };

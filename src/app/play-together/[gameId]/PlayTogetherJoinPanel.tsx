@@ -1,31 +1,53 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, Clock3, Phone } from "lucide-react";
+import { Check, Clock3, Phone, AlertTriangle, XCircle } from "lucide-react";
 import { joinGame, leaveGame } from "@/lib/playTogether/actions";
-import { hostQrPublicUrl } from "@/lib/playTogether/types";
-import type { GamePlayerStatus } from "@/lib/playTogether/types";
+import { hostQrPublicUrl, effectivePlayerStatus } from "@/lib/playTogether/types";
+import type { GamePlayer } from "@/lib/playTogether/types";
+import PlayTogetherPaymentModal from "./PlayTogetherPaymentModal";
 
 export default function PlayTogetherJoinPanel({
-  gameId, isHost, myStatus, isPublished, joiningOpen, spotsLeft, loggedIn, contribution, hostQrPath, hostPhone,
+  gameId, isHost, myPlayer, isPublished, joiningOpen, spotsLeft, loggedIn, contribution,
+  sport, venueName, hostQrPath, hostPhone,
 }: {
   gameId: string;
   isHost: boolean;
-  myStatus: GamePlayerStatus | null;
+  myPlayer: GamePlayer | null;
   isPublished: boolean;
   joiningOpen: boolean;
   spotsLeft: number;
   loggedIn: boolean;
   contribution: number;
+  sport: string;
+  venueName: string;
   hostQrPath: string | null;
   hostPhone: string | null;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [status, setStatus] = useState(myStatus);
+  const [player, setPlayer] = useState(myPlayer);
   const [err, setErr] = useState<string | null>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const autoOpenedRef = useRef(false);
+
+  const status = player ? effectivePlayerStatus(player) : null;
+
+  // The "payment popup" auto-surfaces once when a player lands on (or
+  // returns to) a payment_pending/payment_rejected request — closing it
+  // ("I'll Pay Later") never cancels the request; the reminder
+  // notifications (see send_due_play_together_reminders() in
+  // supabase/play_together_payments.sql) are what nudge them the rest of
+  // the way through the 2-hour window when they're not on this page.
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    if (status === "payment_pending" || status === "payment_rejected") {
+      autoOpenedRef.current = true;
+      setShowPaymentModal(true);
+    }
+  }, [status]);
 
   function handleRequest() {
     if (!loggedIn) {
@@ -35,8 +57,8 @@ export default function PlayTogetherJoinPanel({
     setErr(null);
     startTransition(async () => {
       try {
-        await joinGame(gameId);
-        setStatus("requested");
+        const row = await joinGame(gameId);
+        setPlayer(row);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not send your request.");
       }
@@ -47,8 +69,8 @@ export default function PlayTogetherJoinPanel({
     setErr(null);
     startTransition(async () => {
       try {
-        await leaveGame(gameId);
-        setStatus("left");
+        const row = await leaveGame(gameId);
+        setPlayer(row);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not leave this game.");
       }
@@ -105,12 +127,63 @@ export default function PlayTogetherJoinPanel({
       ) : status === "requested" ? (
         <>
           <div className="pt-badge" style={{ marginBottom: 10, color: "#d97706", background: "rgba(217,119,6,.1)", borderColor: "rgba(217,119,6,.3)" }}>
-            <Clock3 size={13} /> Request sent
+            <Clock3 size={13} /> Pending Host Approval
           </div>
-          <p className="hint">Waiting for the host to approve you. You&apos;ll be notified either way.</p>
+          <p className="hint">Waiting for the host to approve your request.</p>
           {joiningOpen && (
             <button className="play-btn ghost" style={{ width: "100%", marginTop: 8 }} onClick={handleLeave} disabled={pending}>
               {pending ? "Withdrawing…" : "Withdraw request"}
+            </button>
+          )}
+        </>
+      ) : status === "payment_pending" || status === "payment_rejected" ? (
+        <>
+          <div className="pt-badge" style={{ marginBottom: 10, color: "#d97706", background: "rgba(217,119,6,.1)", borderColor: "rgba(217,119,6,.3)" }}>
+            <AlertTriangle size={13} /> {status === "payment_rejected" ? "Payment Not Verified" : "Payment Required"}
+          </div>
+          <p className="hint">
+            {status === "payment_rejected"
+              ? "The host couldn't verify your last payment. Submit valid proof again before your window closes."
+              : "The host approved your request. Complete payment within 2 hours to secure your spot."}
+          </p>
+          <button className="play-btn gold" style={{ width: "100%", marginTop: 8 }} onClick={() => setShowPaymentModal(true)}>
+            Pay Now
+          </button>
+          {player?.payment_deadline && showPaymentModal && (
+            <PlayTogetherPaymentModal
+              gamePlayerId={player.id}
+              gameId={gameId}
+              sport={sport}
+              venueName={venueName}
+              contribution={contribution}
+              paymentDeadline={player.payment_deadline}
+              hostQrPath={hostQrPath}
+              hostPhone={hostPhone}
+              resubmit={status === "payment_rejected"}
+              onClose={() => setShowPaymentModal(false)}
+              onSubmitted={() => {
+                setShowPaymentModal(false);
+                setPlayer((p) => (p ? { ...p, status: "payment_verification_pending" } : p));
+              }}
+            />
+          )}
+        </>
+      ) : status === "payment_verification_pending" ? (
+        <>
+          <div className="pt-badge" style={{ marginBottom: 10 }}>
+            <Clock3 size={13} /> Payment Verification Pending
+          </div>
+          <p className="hint">Your payment proof has been submitted. Waiting for host verification.</p>
+        </>
+      ) : status === "expired" ? (
+        <>
+          <div className="pt-badge" style={{ marginBottom: 10, color: "#ef4444", background: "rgba(239,68,68,.1)", borderColor: "rgba(239,68,68,.3)" }}>
+            <XCircle size={13} /> Request Expired
+          </div>
+          <p className="hint">The payment deadline has passed. You can send a new request if spots are still open.</p>
+          {joiningOpen && spotsLeft > 0 && (
+            <button className="play-btn gold" style={{ width: "100%", marginTop: 8 }} onClick={handleRequest} disabled={pending}>
+              {pending ? "Sending…" : "Request to Join"}
             </button>
           )}
         </>

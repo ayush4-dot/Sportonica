@@ -2,7 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { ArrowLeft, MapPin, Clock } from "lucide-react";
-import { getGame, getGamePlayers, getGameCourtBookingStatus, getPendingRequests } from "@/lib/playTogether/queries";
+import {
+  getGame, getGamePlayers, getGameCourtBookingStatus, getPendingRequests,
+  getAwaitingPaymentReview, getPaymentPendingPlayers,
+} from "@/lib/playTogether/queries";
 import { createClient } from "@/lib/supabase/server";
 import { availablePlayerSpots } from "@/lib/playTogether/types";
 import PlayTogetherManageClient from "./PlayTogetherManageClient";
@@ -23,9 +26,11 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
   if (!user) redirect(`/login?redirect=${encodeURIComponent(`/play-together/${gameId}/manage`)}`);
   if (game.host_id !== user.id) notFound();
 
-  const [players, requests, booking] = await Promise.all([
+  const [players, requests, paymentsToReview, paymentPending, booking] = await Promise.all([
     getGamePlayers(gameId),
     getPendingRequests(gameId),
+    getAwaitingPaymentReview(gameId),
+    getPaymentPendingPlayers(gameId),
     getGameCourtBookingStatus(game.court_booking_id),
   ]);
 
@@ -62,7 +67,11 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
           <div className="bk-sum-row"><span className="lbl">Player contribution</span><span className="val">Rs {game.contribution_amount}/player</span></div>
           <div className="bk-sum-row bk-sum-total"><span className="lbl">Expected collection</span><span className="val">Rs {expectedCollection}</span></div>
 
-          <PlayTogetherManageClient gameId={gameId} sport={game.sport} players={players} requests={requests} gameStatus={game.status} />
+          <PlayTogetherManageClient
+            gameId={gameId} sport={game.sport} players={players} requests={requests}
+            paymentsToReview={paymentsToReview} paymentPending={paymentPending}
+            gameStatus={game.status}
+          />
         </div>
       </div>
     </div>
