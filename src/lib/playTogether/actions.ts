@@ -94,10 +94,12 @@ export async function createGame(input: {
 
 // Not an instant join — creates a pending request. The player isn't
 // notified, isn't in the group, and doesn't see the host's QR/phone until
-// the host approves it (approveJoinRequest() below).
-export async function joinGame(gameId: string): Promise<GamePlayer> {
+// the host approves it (approveJoinRequest() below). ackTerms is checked
+// server-side inside join_play_together_game() — a client can't bypass it
+// by just not showing the checkbox.
+export async function joinGame(gameId: string, ackTerms: boolean): Promise<GamePlayer> {
   const { sb, user } = await requireUser();
-  const { data, error } = await sb.rpc("join_play_together_game", { p_game_id: gameId });
+  const { data, error } = await sb.rpc("join_play_together_game", { p_game_id: gameId, p_ack_terms: ackTerms });
   if (error) throw new Error(friendlyPlayTogetherError(error.message));
 
   revalidatePath(`/play-together/${gameId}`);
@@ -198,16 +200,20 @@ export async function submitPlayTogetherPayment(input: {
 }
 
 // Host-only. This is the ONLY point a player is actually added to the
-// group — approving the original request never does this on its own.
+// group — approving the original request never does this on its own. A
+// reason is required to reject (enforced server-side too) so the player
+// always gets a concrete "why", same UX as the admin's REJECTION_REASONS.
 export async function verifyPlayTogetherPayment(
   gamePlayerId: string,
   gameId: string,
-  approve: boolean
+  approve: boolean,
+  reason?: string
 ): Promise<GamePlayer> {
   const { sb } = await requireUser();
   const { data, error } = await sb.rpc("verify_play_together_payment", {
     p_game_player_id: gamePlayerId,
     p_approve: approve,
+    p_reason: reason ?? null,
   });
   if (error) throw new Error(friendlyPlayTogetherError(error.message));
   const row = data as GamePlayer;
@@ -219,7 +225,7 @@ export async function verifyPlayTogetherPayment(
   if (approve) {
     await notifyPlayTogetherPaymentVerified({ playerId: row.user_id, gameId });
   } else {
-    await notifyPlayTogetherPaymentRejected({ playerId: row.user_id, gameId });
+    await notifyPlayTogetherPaymentRejected({ playerId: row.user_id, gameId, reason: reason ?? null });
   }
 
   return row;

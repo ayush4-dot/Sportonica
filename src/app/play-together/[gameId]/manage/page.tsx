@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { ArrowLeft, MapPin, Clock } from "lucide-react";
 import {
   getGame, getGamePlayers, getGameCourtBookingStatus, getPendingRequests,
-  getAwaitingPaymentReview, getPaymentPendingPlayers,
+  getAwaitingPaymentReview, getPaymentPendingPlayers, getHistoricalRequests,
 } from "@/lib/playTogether/queries";
 import { createClient } from "@/lib/supabase/server";
 import { availablePlayerSpots } from "@/lib/playTogether/types";
@@ -26,11 +26,12 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
   if (!user) redirect(`/login?redirect=${encodeURIComponent(`/play-together/${gameId}/manage`)}`);
   if (game.host_id !== user.id) notFound();
 
-  const [players, requests, paymentsToReview, paymentPending, booking] = await Promise.all([
+  const [players, requests, paymentsToReview, paymentPending, historical, booking] = await Promise.all([
     getGamePlayers(gameId),
     getPendingRequests(gameId),
     getAwaitingPaymentReview(gameId),
     getPaymentPendingPlayers(gameId),
+    getHistoricalRequests(gameId),
     getGameCourtBookingStatus(game.court_booking_id),
   ]);
 
@@ -69,7 +70,7 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
 
           <PlayTogetherManageClient
             gameId={gameId} sport={game.sport} players={players} requests={requests}
-            paymentsToReview={paymentsToReview} paymentPending={paymentPending}
+            paymentsToReview={paymentsToReview} paymentPending={paymentPending} historical={historical}
             gameStatus={game.status}
           />
         </div>

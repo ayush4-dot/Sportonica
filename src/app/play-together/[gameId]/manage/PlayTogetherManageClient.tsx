@@ -10,7 +10,7 @@ import PlayTogetherReviewModal from "./PlayTogetherReviewModal";
 import PlayTogetherPaymentReviewModal from "./PlayTogetherPaymentReviewModal";
 
 export default function PlayTogetherManageClient({
-  gameId, sport, players, requests, paymentsToReview, paymentPending, gameStatus,
+  gameId, sport, players, requests, paymentsToReview, paymentPending, historical, gameStatus,
 }: {
   gameId: string;
   sport: string;
@@ -18,6 +18,7 @@ export default function PlayTogetherManageClient({
   requests: GamePlayerWithProfile[];
   paymentsToReview: GamePlayerWithProfile[];
   paymentPending: GamePlayerWithProfile[];
+  historical: GamePlayerWithProfile[];
   gameStatus: GameStatus;
 }) {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function PlayTogetherManageClient({
   const [pendingRows, setPendingRows] = useState(requests);
   const [paymentReviewRows, setPaymentReviewRows] = useState(paymentsToReview);
   const [awaitingPaymentRows, setAwaitingPaymentRows] = useState(paymentPending);
+  const [historicalRows, setHistoricalRows] = useState(historical);
   const [reviewing, setReviewing] = useState<GamePlayerWithProfile | null>(null);
   const [reviewingPayment, setReviewingPayment] = useState<GamePlayerWithProfile | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -49,19 +51,23 @@ export default function PlayTogetherManageClient({
   async function review(row: GamePlayerWithProfile, approve: boolean) {
     await approveJoinRequest(row.id, gameId, approve);
     setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
-    if (approve) setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_pending" }]);
+    if (approve) {
+      setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_pending" }]);
+    } else {
+      setHistoricalRows((rs) => [{ ...row, status: "rejected" }, ...rs]);
+    }
     setReviewing(null);
   }
 
   // The ONLY action that actually adds a player to the group — see
   // verify_play_together_payment() in supabase/play_together_payments.sql.
-  async function reviewPayment(row: GamePlayerWithProfile, approve: boolean) {
-    await verifyPlayTogetherPayment(row.id, gameId, approve);
+  async function reviewPayment(row: GamePlayerWithProfile, approve: boolean, rejectReason?: string) {
+    await verifyPlayTogetherPayment(row.id, gameId, approve, rejectReason);
     setPaymentReviewRows((rs) => rs.filter((r) => r.id !== row.id));
     if (approve) {
       setRows((rs) => [...rs, { ...row, status: "joined", contribution_status: "collected" }]);
     } else {
-      setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_rejected" }]);
+      setAwaitingPaymentRows((rs) => [...rs, { ...row, status: "payment_rejected", payment_rejection_reason: rejectReason ?? null }]);
     }
     setReviewingPayment(null);
   }
@@ -142,7 +148,7 @@ export default function PlayTogetherManageClient({
           request={reviewingPayment}
           sport={sport}
           onClose={() => setReviewingPayment(null)}
-          onReview={(approve) => reviewPayment(reviewingPayment, approve)}
+          onReview={(approve, rejectReason) => reviewPayment(reviewingPayment, approve, rejectReason)}
         />
       )}
 
@@ -165,6 +171,26 @@ export default function PlayTogetherManageClient({
             ))}
           </div>
         </>
+      )}
+
+      {historicalRows.length > 0 && (
+        <details style={{ marginTop: 20 }}>
+          <summary className="hint" style={{ cursor: "pointer" }}>
+            Expired / rejected ({historicalRows.length})
+          </summary>
+          <div className="pt-players-list" style={{ marginTop: 10 }}>
+            {historicalRows.map((p) => (
+              <div key={p.id} className="pt-player-row">
+                <div>
+                  <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
+                  <div className="pt-player-sub">
+                    {p.status === "expired" ? "Payment window expired" : "Request rejected"}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
 
       <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>Players ({rows.length})</p>

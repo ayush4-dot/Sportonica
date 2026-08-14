@@ -127,6 +127,11 @@ export default function PlayTogetherPaymentModal({
               </div>
             )}
 
+            <p className="ptpm-warn" style={{ marginTop: 12 }}>
+              Your payment is not confirmed immediately. The host must verify it before you become a
+              confirmed participant.
+            </p>
+
             <label className="pymt-label">Transaction / Reference ID</label>
             <input
               className="pymt-in"

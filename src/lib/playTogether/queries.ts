@@ -96,6 +96,21 @@ export async function getPaymentPendingPlayers(gameId: string): Promise<GamePlay
   return (data as GamePlayerWithProfile[]) ?? [];
 }
 
+// Host-only — historical requests that never became members: the host
+// rejected the original request, or the payment window expired. Purely
+// for visibility (spec: "Expired / Rejected" bucket on the manage page) —
+// nothing here is actionable.
+export async function getHistoricalRequests(gameId: string): Promise<GamePlayerWithProfile[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("game_players")
+    .select("*, profiles(full_name, name, avatar_url, phone)")
+    .eq("game_id", gameId)
+    .in("status", ["rejected", "expired"])
+    .order("joined_at", { ascending: false });
+  return (data as GamePlayerWithProfile[]) ?? [];
+}
+
 // A player's own request/membership row for a game — drives the "Request
 // sent, waiting for approval" vs "You're in" vs nothing-yet UI state.
 export async function getMyGamePlayerStatus(gameId: string, userId: string): Promise<GamePlayer | null> {

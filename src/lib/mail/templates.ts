@@ -305,14 +305,14 @@ Review it from your game's Manage Payments page: ${p.link}
 // before the deadline. ───────────────────────────────────────────────
 export function playTogetherPaymentRejected(p: {
   to: string; playerName: string; sport: string; venue: string;
-  deadline: string; link: string;
+  deadline: string; link: string; reason: string | null;
 }): Mail {
   return {
     to: p.to,
     subject: `Payment couldn't be verified — ${p.sport} at ${p.venue}`,
     body: `Hi ${p.playerName},
 
-Your payment could not be verified by the host.
+Your payment could not be verified by the host.${p.reason ? `\n\n  Reason   ${p.reason}` : ""}
 
 If your payment window hasn't closed yet (deadline: ${fmtWhen(p.deadline)}),
 you can submit valid payment proof again: ${p.link}

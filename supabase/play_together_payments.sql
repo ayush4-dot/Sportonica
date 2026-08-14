@@ -31,6 +31,7 @@ alter table public.game_players add column if not exists payment_deadline       
 alter table public.game_players add column if not exists payment_submitted_at   timestamptz;
 alter table public.game_players add column if not exists payment_verified_at    timestamptz;
 alter table public.game_players add column if not exists payment_rejected_at    timestamptz;
+alter table public.game_players add column if not exists payment_rejection_reason text;
 alter table public.game_players add column if not exists expired_at             timestamptz;
 alter table public.game_players add column if not exists payment_method         text;
 alter table public.game_players add column if not exists transaction_id        text;
@@ -83,6 +84,71 @@ create index if not exists idx_game_players_payment_deadline
   where status in ('payment_pending','payment_rejected');
 
 -- ================================================================
+-- join_play_together_game: REPLACES the play_together.sql version.
+-- Adds p_ack_terms — the player must explicitly acknowledge the
+-- PlayTogether Terms & Conditions (host approval, the 2-hour payment
+-- window, and that they're not confirmed until verified) before a
+-- request can even be created. Mirrors p_ack_risk on
+-- create_play_together_game(), same enforcement style: checked
+-- server-side, never trusted from the client alone.
+-- ================================================================
+drop function if exists public.join_play_together_game(uuid);
+
+create or replace function public.join_play_together_game(p_game_id uuid, p_ack_terms boolean default false)
+returns public.game_players
+language plpgsql security definer set search_path = public as $$
+declare
+  v_game         public.games;
+  v_joined_count int;
+  v_row          public.game_players;
+begin
+  if p_ack_terms is not true then
+    raise exception 'TERMS_NOT_ACKNOWLEDGED';
+  end if;
+
+  select * into v_game from public.games where id = p_game_id for update;
+  if v_game.id is null then raise exception 'GAME_NOT_FOUND'; end if;
+  if v_game.status <> 'published' then raise exception 'JOINING_CLOSED'; end if;
+  if now() >= v_game.joining_deadline then raise exception 'JOINING_CLOSED'; end if;
+  if v_game.host_id = auth.uid() then raise exception 'HOST_CANNOT_JOIN'; end if;
+
+  if exists (
+    select 1 from public.game_players
+    where game_id = p_game_id and user_id = auth.uid() and status in ('requested','joined','payment_pending','payment_verification_pending')
+  ) then
+    raise exception 'ALREADY_JOINED';
+  end if;
+
+  -- Pending requests don't reserve a spot — only approved players count
+  -- toward capacity — but there's no point accepting a request into an
+  -- already-full game.
+  select count(*) into v_joined_count
+    from public.game_players where game_id = p_game_id and status = 'joined';
+  if v_joined_count >= v_game.max_players - 1 then
+    raise exception 'GAME_FULL';
+  end if;
+
+  insert into public.game_players (game_id, user_id, status, contribution_amount, contribution_status)
+  values (p_game_id, auth.uid(), 'requested', v_game.contribution_amount, 'pending')
+  on conflict (game_id, user_id) do update
+    set status = 'requested',
+        contribution_amount = excluded.contribution_amount,
+        contribution_status = 'pending',
+        collected_at = null,
+        joined_at = now(),
+        left_at = null,
+        approved_at = null, payment_deadline = null, payment_submitted_at = null,
+        payment_verified_at = null, payment_rejected_at = null, expired_at = null,
+        payment_method = null, transaction_id = null, payment_proof_path = null,
+        payment_rejection_reason = null, payment_reminder_count = 0, last_payment_reminder_at = null
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+grant execute on function public.join_play_together_game(uuid,boolean) to authenticated;
+
+-- ================================================================
 -- approve_join_request: REPLACES the play_together.sql version.
 -- Approving no longer flips straight to 'joined' — it opens a 2-hour
 -- payment window. Rejecting the original request is unchanged.
@@ -94,6 +160,7 @@ declare
   v_row           public.game_players;
   v_host          uuid;
   v_max_players   int;
+  v_game_status   text;
   v_reserved      int;
 begin
   select gp.* into v_row
@@ -101,10 +168,11 @@ begin
     where gp.id = p_game_player_id for update of gp;
   if v_row.id is null then raise exception 'NOT_FOUND'; end if;
 
-  select g.host_id, g.max_players into v_host, v_max_players
+  select g.host_id, g.max_players, g.status into v_host, v_max_players, v_game_status
     from public.games g where g.id = v_row.game_id;
   if v_host <> auth.uid() then raise exception 'FORBIDDEN'; end if;
   if v_row.status <> 'requested' then raise exception 'ALREADY_REVIEWED'; end if;
+  if v_game_status <> 'published' then raise exception 'GAME_CANCELLED'; end if;
 
   if p_approve then
     -- Every player already in the pipeline (confirmed, or mid-payment)
@@ -148,7 +216,9 @@ create or replace function public.submit_play_together_payment(
   p_payment_proof_path text
 ) returns public.game_players
 language plpgsql security definer set search_path = public as $$
-declare v_row public.game_players;
+declare
+  v_row public.game_players;
+  v_game_status text;
 begin
   select gp.* into v_row from public.game_players gp where gp.id = p_game_player_id for update of gp;
   if v_row.id is null then raise exception 'NOT_FOUND'; end if;
@@ -157,6 +227,9 @@ begin
   if v_row.status not in ('payment_pending', 'payment_rejected') then
     raise exception 'INVALID_PAYMENT_STATE';
   end if;
+
+  select g.status into v_game_status from public.games g where g.id = v_row.game_id;
+  if v_game_status <> 'published' then raise exception 'GAME_CANCELLED'; end if;
 
   -- Deliberately does NOT raise after this update — raising here would
   -- roll back the very expiry we just wrote, since a PL/pgSQL exception
@@ -216,24 +289,37 @@ grant execute on function public.submit_play_together_payment(uuid,text,text,tex
 -- expired row can never reach this function because expiry moves the
 -- row out of 'payment_verification_pending'.
 -- ================================================================
-create or replace function public.verify_play_together_payment(p_game_player_id uuid, p_approve boolean)
+-- Signature gained a third param (p_reason) after the first release of
+-- this file — CREATE OR REPLACE does NOT replace a function whose
+-- parameter list changed, it just adds a second overload, which then
+-- makes every call ambiguous. Drop the old 2-arg version explicitly.
+drop function if exists public.verify_play_together_payment(uuid, boolean);
+
+create or replace function public.verify_play_together_payment(
+  p_game_player_id uuid, p_approve boolean, p_reason text default null
+)
 returns public.game_players
 language plpgsql security definer set search_path = public as $$
 declare
   v_row          public.game_players;
   v_host         uuid;
   v_max_players  int;
+  v_game_status  text;
   v_joined_count int;
 begin
   select gp.* into v_row from public.game_players gp where gp.id = p_game_player_id for update of gp;
   if v_row.id is null then raise exception 'NOT_FOUND'; end if;
 
-  select g.host_id, g.max_players into v_host, v_max_players
+  select g.host_id, g.max_players, g.status into v_host, v_max_players, v_game_status
     from public.games g where g.id = v_row.game_id;
   if v_host <> auth.uid() then raise exception 'FORBIDDEN'; end if;
   if v_row.status <> 'payment_verification_pending' then raise exception 'NOT_AWAITING_VERIFICATION'; end if;
 
   if p_approve then
+    -- A payment can still be rejected on a cancelled game (harmless
+    -- record-keeping), but never approved into a group that no longer
+    -- exists as a live game.
+    if v_game_status <> 'published' then raise exception 'GAME_CANCELLED'; end if;
     select count(*) into v_joined_count
       from public.game_players where game_id = v_row.game_id and status = 'joined';
     if v_joined_count >= v_max_players - 1 then
@@ -244,15 +330,18 @@ begin
           contribution_status = 'collected', collected_at = now()
       where id = p_game_player_id returning * into v_row;
   else
+    if p_reason is null or length(trim(p_reason)) = 0 then
+      raise exception 'REJECTION_REASON_REQUIRED';
+    end if;
     update public.game_players
-      set status = 'payment_rejected', payment_rejected_at = now()
+      set status = 'payment_rejected', payment_rejected_at = now(), payment_rejection_reason = p_reason
       where id = p_game_player_id returning * into v_row;
   end if;
 
   return v_row;
 end;
 $$;
-grant execute on function public.verify_play_together_payment(uuid,boolean) to authenticated;
+grant execute on function public.verify_play_together_payment(uuid,boolean,text) to authenticated;
 
 -- ================================================================
 -- expire_stale_play_together_requests: bulk sweep. This is the backend

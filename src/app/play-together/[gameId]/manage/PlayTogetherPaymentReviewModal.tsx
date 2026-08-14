@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { X, ShieldCheck, MessageCircle } from "lucide-react";
 import { getSignedGamePaymentProofUrl } from "@/lib/playTogether/actions";
-import { playerWhatsappUrl } from "@/lib/playTogether/types";
+import { playerWhatsappUrl, PLAY_TOGETHER_PAYMENT_REJECTION_REASONS } from "@/lib/playTogether/types";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
@@ -17,12 +17,13 @@ export default function PlayTogetherPaymentReviewModal({
   request: GamePlayerWithProfile;
   sport: string;
   onClose: () => void;
-  onReview: (approve: boolean) => Promise<void>;
+  onReview: (approve: boolean, reason?: string) => Promise<void>;
 }) {
   const [pending, startTransition] = useTransition();
   const [screenshotUrl, setScreenshotUrl] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [rejecting, setRejecting] = useState(false);
+  const [reason, setReason] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -42,9 +43,10 @@ export default function PlayTogetherPaymentReviewModal({
   }
 
   function reject() {
+    if (!reason) { setErr("Pick a reason first."); return; }
     setErr(null);
     startTransition(async () => {
-      try { await onReview(false); }
+      try { await onReview(false, reason); }
       catch (e) { setErr(e instanceof Error ? e.message : "Could not reject this payment."); }
     });
   }
@@ -62,6 +64,16 @@ export default function PlayTogetherPaymentReviewModal({
             )}
             <button className="ptrm-x" onClick={onClose}><X size={18} /></button>
           </div>
+        </div>
+
+        <div className="ptrm-player">
+          {request.profiles?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="ptrm-avatar" src={request.profiles.avatar_url} alt={name} />
+          ) : (
+            <div className="ptrm-avatar ptrm-avatar-fallback">{name.charAt(0).toUpperCase()}</div>
+          )}
+          <span className="ptrm-player-name">{name}</span>
         </div>
 
         <div className="ptrm-sec-t">Player</div>
@@ -108,8 +120,13 @@ export default function PlayTogetherPaymentReviewModal({
         {rejecting && (
           <div className="ptrm-confirm">
             <p>{name} will be notified and can resubmit valid proof if their payment window hasn&apos;t closed.</p>
+            <label className="ptrm-label">Reason</label>
+            <select className="ptrm-select" value={reason} onChange={(e) => setReason(e.target.value)}>
+              <option value="">Pick a reason…</option>
+              {Object.entries(PLAY_TOGETHER_PAYMENT_REJECTION_REASONS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
             <div className="ptrm-actions">
-              <button className="ptrm-btn bad" disabled={pending} onClick={reject}>{pending ? "Rejecting…" : "Confirm reject"}</button>
+              <button className="ptrm-btn bad" disabled={pending || !reason} onClick={reject}>{pending ? "Rejecting…" : "Confirm reject"}</button>
               <button className="ptrm-btn" disabled={pending} onClick={() => setRejecting(false)}>Cancel</button>
             </div>
           </div>
@@ -126,8 +143,20 @@ export default function PlayTogetherPaymentReviewModal({
         .ptrm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer; }
         .ptrm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; }
         .ptrm-wa:hover { opacity: 1; }
+        .ptrm-player { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .ptrm-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .ptrm-avatar-fallback { display: grid; place-items: center; background: var(--turf, #006241);
+          color: #fff; font-weight: 800; font-size: 15px; }
+        .ptrm-player-name { font-weight: 700; font-size: 15px; }
         .ptrm-sec-t { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
           opacity: .5; margin: 16px 0 6px; }
+        .ptrm-label { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .08em;
+          text-transform: uppercase; opacity: .55; margin: 10px 0 6px; }
+        .ptrm-select {
+          width: 100%; box-sizing: border-box; padding: 9px 11px; border-radius: 8px;
+          border: 1px solid var(--line); background: transparent; color: inherit;
+          font-family: inherit; font-size: 13.5px;
+        }
         .ptrm-shot { margin-top: 14px; border-radius: 12px; overflow: hidden; background: #000;
           display: grid; place-items: center; min-height: 120px; border: 1px solid rgba(128,128,128,.2); }
         .ptrm-shot img { width: 100%; max-height: 320px; object-fit: contain; }

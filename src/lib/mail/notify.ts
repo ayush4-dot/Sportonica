@@ -16,6 +16,7 @@ import {
   playTogetherPaymentRequired, playTogetherPaymentSubmitted, playTogetherPaymentRejected,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
+import { PLAY_TOGETHER_PAYMENT_REJECTION_REASONS } from "@/lib/playTogether/types";
 
 // Emails live in auth.users, not profiles — so we need the admin API to
 // read them. Falls back to null rather than throwing: a missing email
@@ -328,10 +329,13 @@ export async function notifyPlayTogetherPaymentSubmitted(input: { gamePlayerId: 
 
 // ── Host rejected the payment proof — player may resubmit if their
 // window hasn't closed. ────────────────────────────────────────────
-export async function notifyPlayTogetherPaymentRejected(input: { playerId: string; gameId: string }) {
+export async function notifyPlayTogetherPaymentRejected(input: { playerId: string; gameId: string; reason: string | null }) {
   const ctx = await playTogetherContext(input.gameId);
   if (!ctx) return;
   const { game, venueName } = ctx;
+  const reasonLabel = input.reason
+    ? PLAY_TOGETHER_PAYMENT_REJECTION_REASONS[input.reason] ?? input.reason
+    : null;
 
   const sb = await createClient();
   const { data: row } = await sb
@@ -343,7 +347,7 @@ export async function notifyPlayTogetherPaymentRejected(input: { playerId: strin
   if (playerEmail && row?.payment_deadline) {
     await sendMail(playTogetherPaymentRejected({
       to: playerEmail, playerName, sport: game.sport, venue: venueName,
-      deadline: row.payment_deadline, link,
+      deadline: row.payment_deadline, link, reason: reasonLabel,
     }));
   }
 
@@ -351,7 +355,9 @@ export async function notifyPlayTogetherPaymentRejected(input: { playerId: strin
     user_id: input.playerId,
     kind: "game_payment_rejected",
     title: "Payment couldn't be verified",
-    body: `Your payment for the ${game.sport} game couldn't be verified by the host.`,
+    body: reasonLabel
+      ? `Your payment for the ${game.sport} game couldn't be verified: ${reasonLabel}.`
+      : `Your payment for the ${game.sport} game couldn't be verified by the host.`,
     game_id: game.id,
   });
 }

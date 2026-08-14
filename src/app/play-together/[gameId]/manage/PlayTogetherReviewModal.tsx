@@ -61,6 +61,16 @@ export default function PlayTogetherReviewModal({
           </div>
         </div>
 
+        <div className="ptrm-player">
+          {request.profiles?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img className="ptrm-avatar" src={request.profiles.avatar_url} alt={name} />
+          ) : (
+            <div className="ptrm-avatar ptrm-avatar-fallback">{name.charAt(0).toUpperCase()}</div>
+          )}
+          <span className="ptrm-player-name">{name}</span>
+        </div>
+
         <div className="ptrm-sec-t">Player</div>
         <Row label="Name" value={name} />
         <Row label="Phone" value={phone || "Not provided"} />
@@ -110,6 +120,11 @@ export default function PlayTogetherReviewModal({
         .ptrm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer; }
         .ptrm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; }
         .ptrm-wa:hover { opacity: 1; }
+        .ptrm-player { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+        .ptrm-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .ptrm-avatar-fallback { display: grid; place-items: center; background: var(--turf, #006241);
+          color: #fff; font-weight: 800; font-size: 15px; }
+        .ptrm-player-name { font-weight: 700; font-size: 15px; }
         .ptrm-sec-t { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
           opacity: .5; margin: 16px 0 6px; }
         .ptrm-note { font-size: 12px; color: var(--faint); line-height: 1.5; margin: 8px 0 0; }

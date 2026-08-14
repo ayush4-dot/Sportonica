@@ -86,9 +86,21 @@ export interface GamePlayer {
   payment_method: PlayTogetherPaymentMethod | null;
   transaction_id: string | null;
   payment_proof_path: string | null;
+  payment_rejection_reason: string | null;
   payment_reminder_count: number;
   last_payment_reminder_at: string | null;
 }
+
+// Mirrors REJECTION_REASONS in src/lib/payments/types.ts — same pattern,
+// scoped to a host rejecting a player's payment proof instead of an admin
+// rejecting a booking payment.
+export const PLAY_TOGETHER_PAYMENT_REJECTION_REASONS: Record<string, string> = {
+  incorrect_amount: "Incorrect amount",
+  invalid_transaction: "Invalid transaction ID",
+  cannot_verify: "Payment cannot be verified",
+  duplicate_proof: "Duplicate payment proof",
+  other: "Other",
+};
 
 // The backend (submit/verify RPCs + the pg_cron sweep) is the real source
 // of truth for expiry — this is only so the UI never shows a stale
@@ -158,6 +170,9 @@ export const PLAY_TOGETHER_ERROR_MESSAGES: Record<string, string> = {
   TRANSACTION_ID_REQUIRED: "Enter the transaction ID from your payment.",
   PAYMENT_PROOF_REQUIRED: "Upload a screenshot of your payment.",
   NOT_AWAITING_VERIFICATION: "This payment isn't awaiting verification right now.",
+  GAME_CANCELLED: "This game has been cancelled by the host.",
+  TERMS_NOT_ACKNOWLEDGED: "Please agree to the Play Together Terms & Conditions to continue.",
+  REJECTION_REASON_REQUIRED: "Pick a reason for rejecting this payment.",
 };
 
 export function friendlyPlayTogetherError(message: string): string {

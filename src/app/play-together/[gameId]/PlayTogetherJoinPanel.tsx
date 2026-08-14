@@ -31,6 +31,8 @@ export default function PlayTogetherJoinPanel({
   const [player, setPlayer] = useState(myPlayer);
   const [err, setErr] = useState<string | null>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const [ackTerms, setAckTerms] = useState(false);
   const autoOpenedRef = useRef(false);
 
   const status = player ? effectivePlayerStatus(player) : null;
@@ -49,16 +51,25 @@ export default function PlayTogetherJoinPanel({
     }
   }, [status]);
 
-  function handleRequest() {
+  // Request to Join always routes through the Terms & Conditions gate below
+  // — clicking it never sends the request directly, it just opens the
+  // confirm card (or sends to login first).
+  function startRequestFlow() {
     if (!loggedIn) {
       router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
       return;
     }
     setErr(null);
+    setShowTerms(true);
+  }
+
+  function handleRequest() {
+    setErr(null);
     startTransition(async () => {
       try {
-        const row = await joinGame(gameId);
+        const row = await joinGame(gameId, ackTerms);
         setPlayer(row);
+        setShowTerms(false);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not send your request.");
       }
@@ -182,25 +193,71 @@ export default function PlayTogetherJoinPanel({
           </div>
           <p className="hint">The payment deadline has passed. You can send a new request if spots are still open.</p>
           {joiningOpen && spotsLeft > 0 && (
-            <button className="play-btn gold" style={{ width: "100%", marginTop: 8 }} onClick={handleRequest} disabled={pending}>
-              {pending ? "Sending…" : "Request to Join"}
-            </button>
+            showTerms ? (
+              <TermsCard ackTerms={ackTerms} setAckTerms={setAckTerms} onCancel={() => setShowTerms(false)} onConfirm={handleRequest} pending={pending} />
+            ) : (
+              <button className="play-btn gold" style={{ width: "100%", marginTop: 8 }} onClick={startRequestFlow} disabled={pending}>
+                Request to Join
+              </button>
+            )
           )}
         </>
       ) : !joiningOpen ? (
         <p className="hint">Joining has closed for this game.</p>
       ) : spotsLeft <= 0 ? (
         <button className="play-btn ghost" style={{ width: "100%" }} disabled>Game full</button>
+      ) : showTerms ? (
+        <TermsCard ackTerms={ackTerms} setAckTerms={setAckTerms} onCancel={() => setShowTerms(false)} onConfirm={handleRequest} pending={pending} />
       ) : (
         <>
-          <button className="play-btn gold" style={{ width: "100%" }} onClick={handleRequest} disabled={pending}>
-            {pending ? "Sending…" : "Request to Join"}
+          <button className="play-btn gold" style={{ width: "100%" }} onClick={startRequestFlow} disabled={pending}>
+            Request to Join
           </button>
           <p className="hint" style={{ marginTop: 8 }}>
             The host reviews every request — you&apos;ll only be notified once they approve it.
           </p>
         </>
       )}
+    </div>
+  );
+}
+
+// "Request to Join" always routes through here first — the checkbox must
+// be checked before the button is enabled, and join_play_together_game()
+// independently re-checks p_ack_terms server-side (see
+// supabase/play_together_payments.sql), so this can't be bypassed by
+// skipping the UI.
+function TermsCard({
+  ackTerms, setAckTerms, onCancel, onConfirm, pending,
+}: {
+  ackTerms: boolean;
+  setAckTerms: (v: boolean) => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+  pending: boolean;
+}) {
+  return (
+    <div className="pt-risk-box" style={{ marginTop: 8 }}>
+      <div>
+        <h4>Request to Join</h4>
+        <p>
+          By requesting to join this game, you understand that your request must first be approved
+          by the host. After host approval, you will have 2 hours to complete the required payment.
+          Your place is not confirmed until your payment has been successfully verified. If payment
+          isn&apos;t completed within that window, your request may expire automatically. You agree to
+          follow the host&apos;s and venue&apos;s rules and the Play Together Terms &amp; Conditions.
+        </p>
+        <label className="pt-risk-check" style={{ marginTop: 12 }}>
+          <input type="checkbox" checked={ackTerms} onChange={(e) => setAckTerms(e.target.checked)} />
+          I have read and agree to the Play Together Terms &amp; Conditions.
+        </label>
+      </div>
+      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <button className="play-btn gold" onClick={onConfirm} disabled={!ackTerms || pending}>
+          {pending ? "Sending…" : "Confirm & Send Request"}
+        </button>
+        <button className="play-btn ghost" onClick={onCancel} disabled={pending}>Never mind</button>
+      </div>
     </div>
   );
 }
