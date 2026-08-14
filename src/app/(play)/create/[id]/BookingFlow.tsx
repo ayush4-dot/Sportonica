@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag } from "lucide-react";
+import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, AlertTriangle } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
+import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "./SlotPicker";
 import WeekStrip from "./WeekStrip";
@@ -30,6 +31,13 @@ function fmtHM(hour: number) {
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 }
 
+const DEADLINE_OPTS = [
+  { label: "1 hour before", hours: 1 },
+  { label: "2 hours before", hours: 2 },
+  { label: "4 hours before", hours: 4 },
+  { label: "12 hours before", hours: 12 },
+  { label: "24 hours before", hours: 24 },
+];
 
 export default function BookingFlow({
   venueName, courts, hoursByCourt, initialDate, initialHour, rules = [],
@@ -49,19 +57,50 @@ export default function BookingFlow({
   const [hour, setHour] = useState<number | null>(initialHour ?? null);
   const [duration, setDuration] = useState(1); // hours; 1, 1.5, 2, 3
   const [needPlayers, setNeedPlayers] = useState(false);
-  const [spots, setSpots] = useState(4);
-  const [skill, setSkill] = useState("any");
-  const [bringGear, setBringGear] = useState(false);
   const [note, setNote] = useState("");
   const [phone, setPhone] = useState("");
   const [done, setDone] = useState(false);
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; price: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [step, setStep] = useState(0);   // 0 court · 1 when · 2 players · 3 confirm
+  const [step, setStep] = useState(0);
+
+  // ── "Need players?" -> Play Together fields (host-approved requests,
+  // 2-hour payment window, host's own QR shown to players — see
+  // supabase/play_together_payments.sql). Same wizard, same submit, no
+  // separate page — createGame() below replaces bookCourt() entirely
+  // when this is on. ──────────────────────────────────────────────
+  const [maxPlayers, setMaxPlayers] = useState(10);
+  const [minPlayers, setMinPlayers] = useState(8);
+  const [deadlineHours, setDeadlineHours] = useState(2);
+  const [ackRisk, setAckRisk] = useState(false);
+  const [hostPhone, setHostPhone] = useState("");
+  const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
+  const [qrPath, setQrPath] = useState<string | null>(null);
+  const [qrUploading, setQrUploading] = useState(false);
+  const qrFileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    return () => { if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl); };
+  }, [qrPreviewUrl]);
+
+  function pickQrFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const okTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!okTypes.includes(f.type)) { setErr("Upload a JPG, PNG or WebP image."); return; }
+    if (f.size > 5 * 1024 * 1024) { setErr("Image must be under 5 MB."); return; }
+    setErr(null);
+    if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl);
+    setQrPreviewUrl(URL.createObjectURL(f));
+    setQrPath(null);
+    setQrUploading(true);
+    uploadHostQr(f)
+      .then((path) => setQrPath(path))
+      .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload your QR."))
+      .finally(() => setQrUploading(false));
+  }
 
   const court = courts.find((c) => c.id === courtId);
-
-  // Build the day's bookable hours from this court's opening hours.
 
   const hourly = court ? Number(court.base_price) : 0;
   const priced = priceFor(
@@ -69,48 +108,100 @@ export default function BookingFlow({
     hour === null ? 0 : Math.round(hour * 60)
   );
   const price = priced.price;
-  const perHead = needPlayers && spots > 0 ? Math.round(price / (spots + 1)) : price;
+  // Play Together model: the host pays the FULL price upfront, and each of
+  // up to (max_players - 1) players reimburses this much directly — not a
+  // "your share" split, matching create_play_together_game()'s
+  // round(price / max_players) exactly.
+  const contribution = needPlayers && maxPlayers > 0 ? Math.round(price / maxPlayers) : price;
+
+  const STEPS = needPlayers
+    ? ["Court", "When", "Players", "Payment details", "Confirm"]
+    : ["Court", "When", "Players", "Confirm"];
+  const lastStep = STEPS.length - 1;
+
+  const canNext =
+    step === 0 ? !!court :
+    step === 1 ? hour !== null :
+    step === 2 ? (needPlayers ? minPlayers >= 1 && maxPlayers >= minPlayers : true) :
+    step === 3 && needPlayers ? (hostPhone.trim().length > 0 && !!qrPath && !qrUploading) :
+    true;
+
+  function next() {
+    if (!canNext) {
+      setErr(
+        step === 0 ? "Pick a court to continue." :
+        step === 1 ? "Pick a time to continue." :
+        step === 2 ? "Minimum players can't be more than the maximum." :
+        step === 3 ? "Add your phone number and upload your payment QR to continue." :
+        null
+      );
+      return;
+    }
+    setErr(null);
+    setStep((v) => Math.min(lastStep, v + 1));
+  }
+  function back() { setErr(null); setStep((v) => Math.max(0, v - 1)); }
 
   function confirm() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
-    if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) { setErr("Enter a valid phone number."); return; }
+    if (needPlayers) {
+      if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
+      if (!ackRisk) { setErr("Please confirm you understand the venue payment terms."); return; }
+    } else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) {
+      setErr("Enter a valid phone number.");
+      return;
+    }
     setErr(null);
     startTransition(async () => {
       try {
+        const startsAt = ktmIso(dateStr, hour);
+        const endsAt = ktmIso(dateStr, hour + duration);
+
+        if (needPlayers) {
+          const { game, price: gamePrice } = await createGame({
+            court_id: court.id,
+            starts_at: startsAt,
+            ends_at: endsAt,
+            sport: court.sport,
+            min_players: minPlayers,
+            max_players: maxPlayers,
+            joining_deadline: new Date(new Date(startsAt).getTime() - deadlineHours * 3600_000).toISOString(),
+            host_qr_path: qrPath!,
+            host_phone: hostPhone.trim(),
+            notes: note.trim() || undefined,
+            ack_risk: ackRisk,
+          });
+          const bookedPrice = Number(gamePrice) || 0;
+          if (bookedPrice > 0) {
+            setAwaitingPayment({ id: game.court_booking_id, price: bookedPrice });
+          } else {
+            await confirmFreeBooking("court_booking", game.court_booking_id);
+            setDone(true);
+          }
+          return;
+        }
+
         // Real atomic booking — this is what actually reserves the slot
         // (book_court()'s row locking), before any payment is collected.
-        // "Need players" is captured here but NOT acted on yet — the game
-        // only actually goes live once this booking's payment is approved
-        // (or immediately below, for a free court) — see
-        // maybe_publish_hosted_event() in supabase/payments.sql. Publishing
-        // it now, before payment, is exactly the bug this was fixing.
         const booking = await bookCourt({
           court_id: court.id,
           venue_id: court.venue_id,
-          starts_at: ktmIso(dateStr, hour),
-          ends_at: ktmIso(dateStr, hour + duration),
+          starts_at: startsAt,
+          ends_at: endsAt,
           source: "platform",
           phone: phone.trim(),
-          need_players: needPlayers,
-          spots_needed: needPlayers ? spots : undefined,
-          skill_level: needPlayers ? skill : undefined,
-          bring_own_gear: needPlayers ? bringGear : undefined,
-          notes: needPlayers ? (note.trim() || undefined) : undefined,
+          need_players: false,
         });
 
         const bookedPrice = Number(booking?.price) || 0;
         if (bookedPrice > 0) {
-          // Booking is reserved but unpaid — hand off to the QR payment step.
           setAwaitingPayment({ id: booking.id, price: bookedPrice });
         } else {
-          // Free court (base_price 0) — still re-verified server-side, never
-          // trusted just because the UI computed 0.
           await confirmFreeBooking("court_booking", booking.id);
           setDone(true);
         }
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Could not book this slot.";
-        // Not logged in? Send them to sign in, then back here to finish.
         if (msg.includes("UNAUTHORIZED")) {
           router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
           return;
@@ -124,13 +215,16 @@ export default function BookingFlow({
     return (
       <div className="bk-panel bk-success">
         <div className="bk-success-mark"><Check size={30} color="#fff" /></div>
-        <h3 style={{ fontSize: 22 }}>You&apos;re booked!</h3>
-        <p className="hint" style={{ maxWidth: 360, margin: "8px auto 20px" }}>
-          {court?.name} at {venueName}, {new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM_TZ })} at {fmtHM(hour ?? 0)} for {duration === 1 ? "1 hour" : `${duration} hours`}.
-          {needPlayers && ` Your game is open — ${spots} spots for others to join.`}
+        <h3 style={{ fontSize: 22 }}>{needPlayers ? "Your game is live!" : "You're booked!"}</h3>
+        <p className="hint" style={{ maxWidth: 380, margin: "8px auto 20px" }}>
+          {needPlayers
+            ? `${court?.name} at ${venueName}. Players can now request to join — approve them from your Manage page, and each pays you Rs ${contribution} directly.`
+            : `${court?.name} at ${venueName}, ${new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM_TZ })} at ${fmtHM(hour ?? 0)} for ${duration === 1 ? "1 hour" : `${duration} hours`}.`}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-          <button className="play-btn gold" onClick={() => router.push("/discover")}>See my games</button>
+          <button className="play-btn gold" onClick={() => router.push(needPlayers ? "/play-together" : "/discover")}>
+            {needPlayers ? "See Play Together games" : "See my games"}
+          </button>
           <button className="play-btn ghost" onClick={() => { setDone(false); setHour(null); }}>Book another</button>
         </div>
       </div>
@@ -153,7 +247,9 @@ export default function BookingFlow({
             ]}
             footer={
               <>
-                <button className="play-btn gold" onClick={() => router.push("/discover")}>See my games</button>
+                <button className="play-btn gold" onClick={() => router.push(needPlayers ? "/my-games" : "/discover")}>
+                  {needPlayers ? "Go to My Games" : "See my games"}
+                </button>
                 <button className="play-btn ghost" onClick={() => { setAwaitingPayment(null); setDone(false); setHour(null); }}>Book another</button>
               </>
             }
@@ -171,23 +267,6 @@ export default function BookingFlow({
       </div>
     );
   }
-
-  // ── Step gating ────────────────────────────────────────────────
-  const STEPS = ["Court", "When", "Players", "Confirm"];
-  const canNext =
-    step === 0 ? !!court :
-    step === 1 ? hour !== null :
-    true;
-
-  function next() {
-    if (!canNext) {
-      setErr(step === 0 ? "Pick a court to continue." : "Pick a time to continue.");
-      return;
-    }
-    setErr(null);
-    setStep((v) => Math.min(3, v + 1));
-  }
-  function back() { setErr(null); setStep((v) => Math.max(0, v - 1)); }
 
   // Discounts a player can actually use, newest-best first.
   const offers = rules.filter(
@@ -304,30 +383,98 @@ export default function BookingFlow({
               </p>
             )}
 
-            {/* Hosting-with-players now runs through Play Together's own
-                flow (host-approved requests, 2-hour payment window, the
-                host's own QR shown to players) instead of duplicating that
-                state machine here — see supabase/play_together_payments.sql.
-                This venue's courts are the same ones listed there. */}
-            {needPlayers && court && (
+            {/* Same wizard, same submit — this just collects Play
+                Together's capacity fields (host-approved requests, 2-hour
+                payment window, host's own QR — see
+                supabase/play_together_payments.sql) instead of a separate
+                page. The next step asks for your phone/QR. */}
+            {needPlayers && (
               <div style={{ marginTop: 18 }}>
-                <p className="hint" style={{ marginBottom: 16 }}>
-                  Opening your game to other players uses Play Together — you approve who joins,
-                  and each player pays you directly (with your own QR) once you accept them.
+                <p className="hint" style={{ marginBottom: 8, marginTop: 4 }}>Maximum players</p>
+                <div className="bk-chips" style={{ marginBottom: 18 }}>
+                  {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map((n) => (
+                    <button key={n} className={`bk-chip ${maxPlayers === n ? "on" : ""}`}
+                      onClick={() => { setMaxPlayers(n); setMinPlayers(Math.max(1, Math.min(n, Math.round(n * 0.8)))); }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className="pt-min-note">Player slots available: {Math.max(maxPlayers - 1, 0)} (you&apos;re the host)</p>
+
+                <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Minimum players required</p>
+                <div className="bk-chips" style={{ marginBottom: 8 }}>
+                  {Array.from({ length: maxPlayers }, (_, i) => i + 1).map((n) => (
+                    <button key={n} className={`bk-chip ${minPlayers === n ? "on" : ""}`} onClick={() => setMinPlayers(n)}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <p className={`pt-min-note ${minPlayers <= maxPlayers ? "ok" : ""}`}>
+                  {minPlayers} / {maxPlayers} players needed for the game to be viable.
                 </p>
-                <button
-                  className="play-btn gold"
-                  onClick={() => router.push(`/play-together/new/${court.venue_id}`)}
-                >
-                  Continue to Play Together <ChevronRight size={15} />
-                </button>
+
+                <div className="bk-split" style={{ marginTop: 16 }}>
+                  Rs {contribution} per player · you pay the full Rs {price} now and get reimbursed
+                  directly as they join.
+                </div>
+
+                <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Joining closes</p>
+                <div className="bk-chips">
+                  {DEADLINE_OPTS.map((d) => (
+                    <button key={d.hours} className={`bk-chip ${deadlineHours === d.hours ? "on" : ""}`}
+                      onClick={() => setDeadlineHours(d.hours)}>
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 20 }}>
+                  <p className="hint" style={{ marginBottom: 8 }}>Anything players should know? (optional)</p>
+                  <textarea className="bk-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)}
+                    placeholder="Turf shoes only · park on the side street" />
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* ── 4. Confirm ───────────────────────────────────────── */}
-        {step === 3 && (
+        {/* ── 4. Payment details (Play Together only) ───────────── */}
+        {needPlayers && step === 3 && (
+          <div className="bk-panel">
+            <h3>How players pay you</h3>
+            <p className="hint">
+              Khelam Na never holds player contributions — this is shown directly to approved
+              players so they can pay you.
+            </p>
+
+            <p className="hint" style={{ marginBottom: 8 }}>Your phone number</p>
+            <input
+              type="tel" inputMode="tel" className="bk-in" style={{ marginBottom: 20 }}
+              value={hostPhone} onChange={(e) => setHostPhone(e.target.value)}
+              placeholder="98XXXXXXXX"
+            />
+
+            <p className="hint" style={{ marginBottom: 8 }}>Your eSewa or Khalti QR code</p>
+            <input
+              ref={qrFileRef} type="file" accept="image/jpeg,image/png,image/webp"
+              onChange={pickQrFile} style={{ display: "none" }}
+            />
+            {qrPreviewUrl ? (
+              <div className="pymt-shot" onClick={() => qrFileRef.current?.click()}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrPreviewUrl} alt="Your payment QR preview" />
+                <span className="pymt-shot-replace">{qrUploading ? "Uploading…" : "Replace"}</span>
+              </div>
+            ) : (
+              <button className="pymt-upload" onClick={() => qrFileRef.current?.click()} type="button">
+                <Upload size={15} /> Upload your QR code
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ── 5. Confirm ───────────────────────────────────────── */}
+        {step === lastStep && (
           <div className="bk-panel">
             <h3>Check and confirm</h3>
             <p className="hint">{venueName}</p>
@@ -340,7 +487,10 @@ export default function BookingFlow({
             <div className="bk-sum-row"><span className="lbl">Time</span><span className="val">{hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—"}</span></div>
             <div className="bk-sum-row"><span className="lbl">Duration</span><span className="val">{duration === 1 ? "1 hour" : `${duration} hours`}</span></div>
             {needPlayers && (
-              <div className="bk-sum-row"><span className="lbl">Open spots</span><span className="val">{spots}</span></div>
+              <>
+                <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{maxPlayers} max, {minPlayers} min</span></div>
+                <div className="bk-sum-row"><span className="lbl">Your contact</span><span className="val">{hostPhone || "—"}</span></div>
+              </>
             )}
             {priced.rule && (
               <div className="bk-sum-row">
@@ -351,30 +501,50 @@ export default function BookingFlow({
               </div>
             )}
             <div className="bk-sum-row bk-sum-total">
-              <span className="lbl">{needPlayers ? "Your share" : "Total"}</span>
+              <span className="lbl">{needPlayers ? "Total payable now" : "Total"}</span>
               <span className="val">
                 {priced.saved > 0 && (
                   <s style={{ opacity: .45, marginRight: 8, fontWeight: 500 }}>Rs {priced.base}</s>
                 )}
-                Rs {needPlayers ? perHead : price}
+                Rs {price}
               </span>
             </div>
 
-            {needPlayers && (
-              <div className="bk-split">The other Rs {price - perHead} is covered as {spots} players join.</div>
-            )}
+            {needPlayers ? (
+              <>
+                <div className="bk-split">
+                  Expected player contribution: <b>Rs {contribution}</b> / player, paid to you directly.
+                  Khelam Na never collects this.
+                </div>
 
-            <div style={{ marginTop: 20 }}>
-              <p className="hint" style={{ marginBottom: 8 }}>Phone number</p>
-              <input
-                type="tel" inputMode="tel" className="bk-in" value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="98XXXXXXXX"
-              />
-              <p className="hint" style={{ fontSize: 12, marginTop: 6, marginBottom: 0, opacity: 0.7 }}>
-                So the venue can reach you about this booking.
-              </p>
-            </div>
+                <div className="pt-risk-box">
+                  <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <h4>Important</h4>
+                    <p>
+                      You are paying the full venue amount now. Players will reimburse you directly.
+                      If fewer players join, you remain responsible for the venue booking cost.
+                    </p>
+                    <label className="pt-risk-check">
+                      <input type="checkbox" checked={ackRisk} onChange={(e) => setAckRisk(e.target.checked)} />
+                      I understand that I am responsible for the venue payment.
+                    </label>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div style={{ marginTop: 20 }}>
+                <p className="hint" style={{ marginBottom: 8 }}>Phone number</p>
+                <input
+                  type="tel" inputMode="tel" className="bk-in" value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="98XXXXXXXX"
+                />
+                <p className="hint" style={{ fontSize: 12, marginTop: 6, marginBottom: 0, opacity: 0.7 }}>
+                  So the venue can reach you about this booking.
+                </p>
+              </div>
+            )}
 
             <p className="hint" style={{ fontSize: 12.5, marginTop: 18, marginBottom: 0 }}>
               <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
@@ -389,10 +559,10 @@ export default function BookingFlow({
       {/* ── Sticky footer: price + navigation ──────────────────── */}
       <div className="bkw-bar">
         <div className="bkw-price">
-          <span className="lbl">{needPlayers ? "Your share" : "Total"}</span>
+          <span className="lbl">{needPlayers ? "Total payable now" : "Total"}</span>
           <span className="val">
             {priced.saved > 0 && <s>Rs {priced.base}</s>}
-            Rs {needPlayers ? perHead : price}
+            Rs {price}
           </span>
           {hour !== null && (
             <span className="sub">{fmtHM(hour)}–{fmtHM(hour + duration)} · {court?.name}</span>
@@ -404,13 +574,13 @@ export default function BookingFlow({
               <ChevronLeft size={15} /> Back
             </button>
           )}
-          {step < 3 ? (
+          {step < lastStep ? (
             <button className="play-btn gold" onClick={next} disabled={!canNext}>
               Continue <ChevronRight size={15} />
             </button>
           ) : (
-            <button className="play-btn gold" onClick={confirm} disabled={pending || hour === null}>
-              {pending ? "Reserving…" : `Reserve · Rs ${needPlayers ? perHead : price}`}
+            <button className="play-btn gold" onClick={confirm} disabled={pending || hour === null || (needPlayers && !ackRisk)}>
+              {pending ? "Reserving…" : `Reserve · Rs ${price}`}
             </button>
           )}
         </div>
@@ -489,6 +659,11 @@ export default function BookingFlow({
           .bkw-price .sub { display: none; }
           .bkw-nav .play-btn { padding: 11px 16px; font-size: 13.5px; }
         }
+
+        .pymt-shot { position: relative; border-radius: 12px; overflow: hidden; cursor: pointer; border: 1px solid var(--line); max-height: 220px; }
+        .pymt-shot img { width: 100%; max-height: 220px; object-fit: contain; background: #000; display: block; }
+        .pymt-shot-replace { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.7); color: #fff; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px; }
+        .pymt-upload { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 11px; border: 1px dashed var(--line); background: transparent; color: inherit; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
       `}</style>
     </div>
   );
