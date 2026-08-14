@@ -62,7 +62,7 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
           <div className="bk-sum-row"><span className="lbl">Player contribution</span><span className="val">Rs {game.contribution_amount}/player</span></div>
           <div className="bk-sum-row bk-sum-total"><span className="lbl">Expected collection</span><span className="val">Rs {expectedCollection}</span></div>
 
-          <PlayTogetherManageClient gameId={gameId} players={players} requests={requests} gameStatus={game.status} />
+          <PlayTogetherManageClient gameId={gameId} sport={game.sport} players={players} requests={requests} gameStatus={game.status} />
         </div>
       </div>
     </div>

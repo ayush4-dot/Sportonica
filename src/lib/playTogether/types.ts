@@ -70,6 +70,17 @@ export function hostQrPublicUrl(hostQrPath: string | null): string | null {
   return `${base}/storage/v1/object/public/host-qr/${hostQrPath}`;
 }
 
+// Click-to-chat link to a specific player's own number (not the platform's),
+// e.g. so a host can message a requester before approving them. Same
+// no-auth api.whatsapp.com/send pattern as whatsappNotifyUrl() in
+// src/lib/payments/types.ts, just parameterized on the recipient.
+export function playerWhatsappUrl(phone: string, message: string): string | null {
+  const digits = phone.replace(/\D/g, "").replace(/^0+/, "");
+  if (!digits) return null;
+  const withCountryCode = digits.startsWith("977") ? digits : `977${digits}`;
+  return `https://api.whatsapp.com/send?phone=${withCountryCode}&text=${encodeURIComponent(message)}`;
+}
+
 // Friendly messages for the Postgres exceptions raised by the RPCs in
 // supabase/play_together.sql — keeps the mapping in one place instead of
 // repeated inline string checks (mirrors src/lib/payments/types.ts).

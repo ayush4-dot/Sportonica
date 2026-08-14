@@ -2,15 +2,17 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, X } from "lucide-react";
+import { Check } from "lucide-react";
 import { markContributionCollected, cancelGame, approveJoinRequest } from "@/lib/playTogether/actions";
 import type { GamePlayerWithProfile } from "@/lib/playTogether/queries";
 import type { GameStatus } from "@/lib/playTogether/types";
+import PlayTogetherReviewModal from "./PlayTogetherReviewModal";
 
 export default function PlayTogetherManageClient({
-  gameId, players, requests, gameStatus,
+  gameId, sport, players, requests, gameStatus,
 }: {
   gameId: string;
+  sport: string;
   players: GamePlayerWithProfile[];
   requests: GamePlayerWithProfile[];
   gameStatus: GameStatus;
@@ -19,6 +21,7 @@ export default function PlayTogetherManageClient({
   const [pending, startTransition] = useTransition();
   const [rows, setRows] = useState(players);
   const [pendingRows, setPendingRows] = useState(requests);
+  const [reviewing, setReviewing] = useState<GamePlayerWithProfile | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [reason, setReason] = useState("");
@@ -37,17 +40,11 @@ export default function PlayTogetherManageClient({
     });
   }
 
-  function review(row: GamePlayerWithProfile, approve: boolean) {
-    setErr(null);
-    startTransition(async () => {
-      try {
-        await approveJoinRequest(row.id, gameId, approve);
-        setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
-        if (approve) setRows((rs) => [...rs, { ...row, status: "joined" }]);
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : "Could not review this request.");
-      }
-    });
+  async function review(row: GamePlayerWithProfile, approve: boolean) {
+    await approveJoinRequest(row.id, gameId, approve);
+    setPendingRows((rs) => rs.filter((r) => r.id !== row.id));
+    if (approve) setRows((rs) => [...rs, { ...row, status: "joined" }]);
+    setReviewing(null);
   }
 
   function doCancel() {
@@ -78,18 +75,22 @@ export default function PlayTogetherManageClient({
                   <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
                   <div className="pt-player-sub">Wants to join</div>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="pt-collect-btn on" onClick={() => review(p, true)} disabled={pending}>
-                    <Check size={12} style={{ verticalAlign: -2 }} /> Approve
-                  </button>
-                  <button className="pt-collect-btn" onClick={() => review(p, false)} disabled={pending}>
-                    <X size={12} style={{ verticalAlign: -2 }} /> Reject
-                  </button>
-                </div>
+                <button className="pt-collect-btn" onClick={() => setReviewing(p)} disabled={pending}>
+                  Review
+                </button>
               </div>
             ))}
           </div>
         </>
+      )}
+
+      {reviewing && (
+        <PlayTogetherReviewModal
+          request={reviewing}
+          sport={sport}
+          onClose={() => setReviewing(null)}
+          onReview={(approve) => review(reviewing, approve)}
+        />
       )}
 
       <p className="hint" style={{ marginTop: 20, marginBottom: 8 }}>Players ({rows.length})</p>

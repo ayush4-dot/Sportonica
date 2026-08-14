@@ -38,14 +38,14 @@ export async function getGame(gameId: string): Promise<GameWithVenue | null> {
 }
 
 export interface GamePlayerWithProfile extends GamePlayer {
-  profiles: { full_name: string | null; name: string | null; avatar_url: string | null } | null;
+  profiles: { full_name: string | null; name: string | null; avatar_url: string | null; phone: string | null } | null;
 }
 
 export async function getGamePlayers(gameId: string): Promise<GamePlayerWithProfile[]> {
   const sb = await createClient();
   const { data } = await sb
     .from("game_players")
-    .select("*, profiles(full_name, name, avatar_url)")
+    .select("*, profiles(full_name, name, avatar_url, phone)")
     .eq("game_id", gameId)
     .eq("status", "joined")
     .order("joined_at", { ascending: true });
@@ -58,7 +58,7 @@ export async function getPendingRequests(gameId: string): Promise<GamePlayerWith
   const sb = await createClient();
   const { data } = await sb
     .from("game_players")
-    .select("*, profiles(full_name, name, avatar_url)")
+    .select("*, profiles(full_name, name, avatar_url, phone)")
     .eq("game_id", gameId)
     .eq("status", "requested")
     .order("joined_at", { ascending: true });
