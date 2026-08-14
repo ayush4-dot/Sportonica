@@ -144,9 +144,25 @@ export default function BookingFlow({
 
   function confirm() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
+    // The slot picker only greys out past times at selection time — if the
+    // wizard sat open a while (uploading a QR, deliberating on capacity),
+    // the previously-picked time can go stale before this final submit.
+    // Re-check right here rather than letting the backend reject it with a
+    // raw error; the backend (create_play_together_game()/book_court())
+    // still re-validates this itself regardless, per
+    // supabase/play_together_payments.sql.
+    if (new Date(ktmIso(dateStr, hour)).getTime() <= Date.now()) {
+      setErr("That time has already passed. Go back and pick a new time.");
+      return;
+    }
     if (needPlayers) {
       if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
       if (!ackRisk) { setErr("Please confirm you understand the venue payment terms."); return; }
+      const deadline = new Date(ktmIso(dateStr, hour)).getTime() - deadlineHours * 3600_000;
+      if (deadline <= Date.now()) {
+        setErr(`With this start time, "${deadlineHours} hour${deadlineHours === 1 ? "" : "s"} before" would already be in the past. Pick a shorter joining window.`);
+        return;
+      }
     } else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) {
       setErr("Enter a valid phone number.");
       return;

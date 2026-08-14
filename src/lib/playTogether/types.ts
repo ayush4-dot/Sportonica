@@ -150,6 +150,8 @@ export const PLAY_TOGETHER_ERROR_MESSAGES: Record<string, string> = {
   RISK_NOT_ACKNOWLEDGED: "Please confirm you understand the venue payment terms before continuing.",
   INVALID_CAPACITY: "Minimum players must be at least 1, and can't be more than the maximum.",
   DEADLINE_AFTER_START: "The joining deadline must be before the game starts.",
+  STARTS_AT_IN_PAST: "That time has already passed. Pick a new time and try again.",
+  DEADLINE_IN_PAST: "With this start time, the joining deadline would already be in the past. Pick a later start time or a shorter deadline window.",
   HOST_QR_REQUIRED: "Upload your payment QR so players know how to pay you.",
   HOST_PHONE_REQUIRED: "Add a phone number so players can reach you.",
   ALREADY_REVIEWED: "This request has already been reviewed.",

@@ -522,4 +522,84 @@ exception
   when undefined_object then null;
 end $$;
 
+-- ================================================================
+-- create_play_together_game: REPLACES the play_together.sql version.
+-- Real bug hit in production: nothing validated that the chosen slot
+-- was actually still in the future. A host who leaves the wizard open
+-- for a while (uploading a QR, deliberating on capacity) before
+-- finally submitting could reserve a court for a starts_at that had
+-- already passed by the time the RPC ran — and worse, a
+-- joining_deadline that was ALREADY in the past the moment the game
+-- was created, silently making the game unjoinable from the instant
+-- it existed. The frontend's SlotPicker greys out past slots, but that
+-- check only runs at selection time, not at final submit — exactly
+-- the class of bug the state-machine's own design note warns about
+-- (never trust client-side timing as authority). Same signature as
+-- before, so this cleanly replaces it — no duplicate overload risk.
+-- ================================================================
+create or replace function public.create_play_together_game(
+  p_court_id          uuid,
+  p_starts_at         timestamptz,
+  p_ends_at           timestamptz,
+  p_sport             text,
+  p_game_format       text,
+  p_min_players       int,
+  p_max_players       int,
+  p_joining_deadline  timestamptz,
+  p_host_qr_path      text,
+  p_host_phone        text,
+  p_notes             text default null,
+  p_ack_risk          boolean default false
+) returns public.games
+language plpgsql security definer set search_path = public as $$
+declare
+  v_booking public.court_bookings;
+  v_game    public.games;
+begin
+  if p_ack_risk is not true then
+    raise exception 'RISK_NOT_ACKNOWLEDGED';
+  end if;
+  if p_min_players is null or p_min_players < 1 then
+    raise exception 'INVALID_CAPACITY';
+  end if;
+  if p_max_players is null or p_max_players < p_min_players then
+    raise exception 'INVALID_CAPACITY';
+  end if;
+  if p_starts_at is null or p_starts_at <= now() then
+    raise exception 'STARTS_AT_IN_PAST';
+  end if;
+  if p_joining_deadline is null or p_joining_deadline >= p_starts_at then
+    raise exception 'DEADLINE_AFTER_START';
+  end if;
+  if p_joining_deadline <= now() then
+    raise exception 'DEADLINE_IN_PAST';
+  end if;
+  if p_host_qr_path is null or length(trim(p_host_qr_path)) = 0 then
+    raise exception 'HOST_QR_REQUIRED';
+  end if;
+  if p_host_phone is null or length(trim(p_host_phone)) = 0 then
+    raise exception 'HOST_PHONE_REQUIRED';
+  end if;
+
+  -- Atomic slot reservation — same locking/conflict-check every other
+  -- court booking on the platform goes through.
+  v_booking := public.book_court(p_court_id, p_starts_at, p_ends_at, auth.uid(), null, 'platform');
+
+  insert into public.games (
+    host_id, court_booking_id, venue_id, court_id, sport, game_format,
+    starts_at, ends_at, min_players, max_players, contribution_amount,
+    joining_deadline, host_qr_path, host_phone, notes, status
+  ) values (
+    auth.uid(), v_booking.id, v_booking.venue_id, p_court_id, p_sport, p_game_format,
+    p_starts_at, p_ends_at, p_min_players, p_max_players,
+    round(v_booking.price / p_max_players, 2),
+    p_joining_deadline, trim(p_host_qr_path), trim(p_host_phone), p_notes, 'awaiting_payment'
+  ) returning * into v_game;
+
+  return v_game;
+end;
+$$;
+grant execute on function public.create_play_together_game
+  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,text,text,boolean) to authenticated;
+
 -- ── DONE ─────────────────────────────────────────────────────────
