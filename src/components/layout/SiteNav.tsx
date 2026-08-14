@@ -8,7 +8,6 @@ import type { User as SupaUser } from "@supabase/supabase-js";
 
 const NAV = [
   { label: "Play", href: "/discover" },
-  { label: "Play Together", href: "/play-together" },
   { label: "Host event", href: "/create" },
   { label: "Chat", href: "/league" },
 ];
