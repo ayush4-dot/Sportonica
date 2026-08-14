@@ -18,6 +18,12 @@ type Game = {
   confirmed_count: number; slots_remaining: number;
   skill_level?: string | null; notes?: string | null;
   paymentStatus?: string; bookingId?: string | null;
+  // Play Together games (src/lib/playTogether/) live in a separate table
+  // and don't support Edit/Invite (those are hostActions.ts, events-only)
+  // — they show a "Manage" button instead that routes to their own
+  // approval flow. Absent/"event" = a regular hosted event.
+  kind?: "event" | "play_together";
+  pendingRequests?: number;
 };
 type Invite = {
   id: string; event_id: string; email: string;
@@ -94,7 +100,8 @@ export default function MyGamesClient({
         ) : (
           <div className="mg-grid">
             {hosted.map((g) => {
-              const mine = invites.filter((i) => i.event_id === g.id);
+              const isPlayTogether = g.kind === "play_together";
+              const mine = isPlayTogether ? [] : invites.filter((i) => i.event_id === g.id);
               return (
                 <article key={g.id} className="mg-card">
                   <div className="mg-card-top">
@@ -109,6 +116,11 @@ export default function MyGamesClient({
                   <p className="mg-meta">
                     <Wallet size={12} /> {g.fee === 0 ? "Free" : `Rs ${g.fee}`}
                   </p>
+                  {isPlayTogether && !!g.pendingRequests && (
+                    <span className="mg-pay-badge pending">
+                      <Clock3 size={11} /> {g.pendingRequests} request{g.pendingRequests === 1 ? "" : "s"} to review
+                    </span>
+                  )}
 
                   {mine.length > 0 && (
                     <div className="mg-invites">
@@ -131,13 +143,23 @@ export default function MyGamesClient({
                   )}
 
                   <div className="mg-actions">
-                    <button className="mg-btn" onClick={() => setEditing(g)}>
-                      <Pencil size={13} /> Edit
-                    </button>
-                    <button className="mg-btn" onClick={() => setInviting(g)}>
-                      <Plus size={13} /> Invite
-                    </button>
-                    <Link className="mg-btn ghost" href={`/game/${g.id}`}>View</Link>
+                    {isPlayTogether ? (
+                      <Link className="mg-btn" href={`/play-together/${g.id}/manage`}>
+                        <Users size={13} /> Manage
+                      </Link>
+                    ) : (
+                      <>
+                        <button className="mg-btn" onClick={() => setEditing(g)}>
+                          <Pencil size={13} /> Edit
+                        </button>
+                        <button className="mg-btn" onClick={() => setInviting(g)}>
+                          <Plus size={13} /> Invite
+                        </button>
+                      </>
+                    )}
+                    <Link className="mg-btn ghost" href={isPlayTogether ? `/play-together/${g.id}` : `/game/${g.id}`}>
+                      View
+                    </Link>
                   </div>
                 </article>
               );
