@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Menu, X, ArrowRight, LogOut, LayoutDashboard, User } from "lucide-react";
+import { Search, Menu, X, ArrowRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { User as SupaUser } from "@supabase/supabase-js";
 
@@ -17,7 +17,6 @@ export default function SiteNav() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [user, setUser] = useState<SupaUser | null>(null);
-  const [userMenu, setUserMenu] = useState(false);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -34,19 +33,10 @@ export default function SiteNav() {
     return () => sub.subscription.unsubscribe();
   }, [sb]);
 
-  const role = user?.user_metadata?.role;
-  const isOwner = role === "venue_owner" || role === "admin";
   const firstName =
     (user?.user_metadata?.full_name as string | undefined)?.split(" ")[0] ??
     user?.email?.split("@")[0] ??
     "Account";
-
-  async function logout() {
-    await sb.auth.signOut();
-    setUserMenu(false);
-    setMenuOpen(false);
-    window.location.href = "/";
-  }
 
   return (
     <>
@@ -101,24 +91,6 @@ export default function SiteNav() {
           background: var(--pink); color: var(--chalk);
           display: grid; place-items: center; font-size: 12px; font-weight: 800;
         }
-        .snav-dropdown {
-          position: absolute; top: calc(100% + 10px); right: 0;
-          background: #14171E; border: 1px solid rgba(255,255,255,0.1);
-          border-radius: 12px; padding: 7px; min-width: 200px;
-          box-shadow: 0 20px 50px -12px rgba(0,0,0,0.6);
-        }
-        .snav-dropdown a, .snav-dropdown button {
-          display: flex; align-items: center; gap: 10px; width: 100%;
-          background: transparent; border: none; cursor: pointer;
-          color: color-mix(in srgb, var(--chalk) 82%, transparent);
-          font-size: 13.5px; font-weight: 500; font-family: inherit;
-          text-decoration: none; padding: 10px 11px; border-radius: 8px;
-          text-align: left; transition: background 0.15s, color 0.15s;
-        }
-        .snav-dropdown a:hover, .snav-dropdown button:hover {
-          background: rgba(255,255,255,0.06); color: var(--chalk);
-        }
-        .snav-dropdown .sep { height: 1px; background: rgba(255,255,255,0.08); margin: 5px 0; }
         .snav-mob-menu {
           display: none; flex-direction: column; position: fixed; inset: 0;
           background: rgba(11, 13, 17, 0.98); z-index: 300; padding: 80px 32px 40px;
@@ -164,12 +136,7 @@ export default function SiteNav() {
             ))}
 
             {user ? (
-              <>
-                <a href={isOwner ? "/admin" : "/discover"} onClick={() => setMenuOpen(false)}>
-                  {isOwner ? "Console" : "My games"}
-                </a>
-                <button onClick={logout}>Log out</button>
-              </>
+              <a href="/profile" onClick={() => setMenuOpen(false)}>Profile</a>
             ) : (
               <>
                 <a href="/login" onClick={() => setMenuOpen(false)}>Sign in</a>
@@ -204,29 +171,10 @@ export default function SiteNav() {
 
         <div className="snav-cta-d">
           {user ? (
-            <div className="snav-user" onClick={() => setUserMenu((v) => !v)}>
+            <a href="/profile" className="snav-user" style={{ textDecoration: "none" }}>
               <div className="snav-avatar">{firstName.charAt(0).toUpperCase()}</div>
               <span>{firstName}</span>
-              <AnimatePresence>
-                {userMenu && (
-                  <motion.div
-                    className="snav-dropdown"
-                    initial={{ opacity: 0, y: -6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -6 }}
-                    transition={{ duration: 0.15 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <a href={isOwner ? "/admin" : "/discover"}>
-                      {isOwner ? <LayoutDashboard size={15} /> : <User size={15} />}
-                      {isOwner ? "Venue console" : "My games"}
-                    </a>
-                    <div className="sep" />
-                    <button onClick={logout}><LogOut size={15} /> Log out</button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+            </a>
           ) : (
             <>
               <a href="/login" className="snav-signin">Sign in</a>

@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
-import { getMyProfile } from "@/lib/profile/queries";
-import ProfileEditor from "./ProfileEditor";
+import {
+  getMyProfile, getPlayerStats, getPlayerSports, getMyActivitySummary,
+  computeBadges, trustLabel,
+} from "@/lib/profile/queries";
+import ProfileHub from "./ProfileHub";
 import "../p/profile.css";
 
 export const dynamic = "force-dynamic";
@@ -10,13 +12,17 @@ export default async function ProfilePage() {
   const profile = await getMyProfile();
   if (!profile) redirect("/login?redirect=/profile");
 
-  const h = await headers();
-  const host = h.get("host") ?? "localhost:3000";
-  const proto = host.startsWith("localhost") ? "http" : "https";
+  const [stats, sports, activity] = await Promise.all([
+    getPlayerStats(profile.id),
+    getPlayerSports(profile.id),
+    getMyActivitySummary(profile.id),
+  ]);
+  const badges = computeBadges(stats, sports);
+  const trust = trustLabel(profile.trust_score ?? 50);
 
   return (
     <div className="pf">
-      <ProfileEditor profile={profile} origin={`${proto}://${host}`} />
+      <ProfileHub profile={profile} stats={stats} sports={sports} activity={activity} badges={badges} trust={trust} />
     </div>
   );
 }

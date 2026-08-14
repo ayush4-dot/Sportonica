@@ -87,6 +87,42 @@ export async function getRecentGames(userId: string, limit = 5): Promise<RecentG
     .filter((e): e is RecentGame => !!e);
 }
 
+// ── Activity summary for the Profile hub's "My Activity" card ───
+// Reuses the same tables /my-games/page.tsx already queries (events by
+// host_id, bookings by user_id, court_bookings by user_id) — this doesn't
+// replace that page, just buckets the same underlying rows by date so the
+// hub can show "Upcoming" / "Completed" counts without a second source of
+// truth. "Requests" comes from Play Together's own pending-state count,
+// which nothing else surfaces at the account level.
+export interface ActivitySummary { upcoming: number; completed: number; requests: number }
+
+export async function getMyActivitySummary(userId: string): Promise<ActivitySummary> {
+  const sb = await createClient();
+  const { getMyPendingRequestsCount } = await import("@/lib/playTogether/queries");
+  const nowIso = new Date().toISOString();
+
+  const [
+    { count: hostedUpcoming },
+    { data: myBookings },
+    { count: courtUpcoming },
+    requests,
+  ] = await Promise.all([
+    sb.from("events").select("id", { count: "exact", head: true }).eq("host_id", userId).gte("event_date", nowIso),
+    sb.from("bookings").select("event_id, events(event_date)").eq("user_id", userId).eq("status", "confirmed"),
+    sb.from("court_bookings").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("starts_at", nowIso),
+    getMyPendingRequestsCount(userId),
+  ]);
+
+  const joinedUpcoming = ((myBookings ?? []) as unknown as { events: { event_date: string } | null }[])
+    .filter((b) => b.events && new Date(b.events.event_date).getTime() >= Date.now()).length;
+
+  return {
+    upcoming: (hostedUpcoming ?? 0) + joinedUpcoming + (courtUpcoming ?? 0),
+    completed: (await getPlayerStats(userId)).games_played,
+    requests,
+  };
+}
+
 // ── Badges: computed, no storage needed ─────────────────────────
 export interface Badge { key: string; label: string; note: string; color: string }
 

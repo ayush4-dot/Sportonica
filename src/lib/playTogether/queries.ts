@@ -111,6 +111,21 @@ export async function getHistoricalRequests(gameId: string): Promise<GamePlayerW
   return (data as GamePlayerWithProfile[]) ?? [];
 }
 
+// A player's own count of Play Together join requests still somewhere in
+// the pipeline (awaiting host approval, or approved and awaiting/under
+// payment review) across every game they've ever requested to join — not
+// scoped to one game. Backs the Profile hub's "Requests" activity count;
+// RLS (game_players_read_own) already scopes this to the caller.
+export async function getMyPendingRequestsCount(userId: string): Promise<number> {
+  const sb = await createClient();
+  const { count } = await sb
+    .from("game_players")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .in("status", ["requested", "payment_pending", "payment_verification_pending", "payment_rejected"]);
+  return count ?? 0;
+}
+
 // A player's own request/membership row for a game — drives the "Request
 // sent, waiting for approval" vs "You're in" vs nothing-yet UI state.
 export async function getMyGamePlayerStatus(gameId: string, userId: string): Promise<GamePlayer | null> {
