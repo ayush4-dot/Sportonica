@@ -173,7 +173,8 @@ function DiscoverInner() {
           transition={{ duration: 0.6, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
         >
           Pick a sport, scan the map, and join the game — or{" "}
-          <a href="/create">host your own</a>.
+          <a href="/create">host your own</a>. Prefer a peer-organized game where you pay the
+          host directly? Try <a href="/play-together">Play Together</a>.
         </motion.p>
       </header>
 
