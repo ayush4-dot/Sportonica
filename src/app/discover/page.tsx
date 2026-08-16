@@ -159,33 +159,22 @@ function DiscoverInner() {
     <main className="disc-root">
       <style>{CSS}</style>
 
-      {/* ── Hero header ── */}
+      {/* ── Hero header ──
+          Plain elements + CSS keyframes, not framer-motion. This is the
+          page's headline — it must be visible even if client JS never
+          finishes hydrating (a conflicting browser extension, a slow chunk
+          load, whatever). framer-motion's initial={opacity:0} renders
+          correctly in the server HTML, but if hydration fails the animate
+          step never runs and the text stays invisible forever — which is
+          exactly what happened here. CSS animations run independent of
+          React, so the text is guaranteed to end up visible either way. */}
       <header className="disc-hero">
-        <motion.p
-          className="disc-eyebrow"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        >
-          Live in Kathmandu
-        </motion.p>
-        <motion.h1
-          className="disc-title"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-        >
-          Find your <em>game</em>
-        </motion.h1>
-        <motion.p
-          className="disc-sub"
-          initial={{ opacity: 0, y: 14 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-        >
+        <p className="disc-eyebrow disc-fade">Live in Kathmandu</p>
+        <h1 className="disc-title disc-fade">Find your <em>game</em></h1>
+        <p className="disc-sub disc-fade">
           Pick a sport, scan the map, and join the game — or{" "}
           <a href="/create">host your own</a>.
-        </motion.p>
+        </p>
       </header>
 
       <section className="disc-section">
@@ -563,6 +552,20 @@ const CSS = `
   color: color-mix(in srgb, var(--chalk) 72%, transparent);
   margin: 0;
   max-width: 520px;
+}
+
+/* CSS-driven entrance, not framer-motion — see the comment above the hero
+   header JSX for why this content can't depend on JS to become visible. */
+@keyframes discFadeUp {
+  from { opacity: 0; transform: translateY(var(--disc-fy, 14px)); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.disc-fade { animation: discFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
+.disc-eyebrow.disc-fade { --disc-fy: 10px; animation-duration: 0.5s; }
+.disc-title.disc-fade   { --disc-fy: 20px; animation-duration: 0.7s; animation-delay: 0.12s; }
+.disc-sub.disc-fade     { --disc-fy: 14px; animation-duration: 0.6s; animation-delay: 0.24s; }
+@media (prefers-reduced-motion: reduce) {
+  .disc-fade { animation: none; opacity: 1; transform: none; }
 }
 .disc-sub a { color: var(--lime); text-decoration: none; }
 [data-theme="paper"] .disc-eyebrow { color: var(--turf); }
