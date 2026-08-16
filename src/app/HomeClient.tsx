@@ -1,6 +1,7 @@
 "use client";
 export const dynamic = "force-dynamic";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
@@ -11,18 +12,7 @@ import type { getHomeRails } from "@/lib/play/homeRails";
 import SiteNav from "@/components/layout/SiteNav";
 import { useCity, inCity } from "@/lib/city";
 
-import { useEvents } from "@/lib/hooks/useEvents";
-
 type HomeRails = Awaited<ReturnType<typeof getHomeRails>>;
-
-const SPORT_FACT: Record<string, { big: string; small: string }> = {
-  Football:   { big: "7-a-side is the Kathmandu default", small: "Most turf grounds run 7v7 — grab six friends and you've got a match." },
-  Cricket:    { big: "Box cricket, any evening", small: "Short-format indoor cricket is booming across the valley's cages." },
-  Basketball: { big: "3-on-3 runs all week", small: "Half-court hoops fill up fast after 5 PM. Show up and get next." },
-  Futsal:     { big: "Floodlit till late", small: "Futsal courts stay open past 10 PM — the city's favourite night game." },
-  Volleyball: { big: "Co-ed and casual", small: "Six-a-side, beach or indoor. Easiest sport to join as a newcomer." },
-  Badminton:  { big: "Doubles before work", small: "Indoor halls open at 6 AM — a quick game before the day starts." },
-};
 
 const SPORTS_PANELS = [
   { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
@@ -177,12 +167,6 @@ const CSS = `
     background: linear-gradient(180deg, rgba(20,23,30,0.04), transparent 60%);
     border-bottom-color: rgba(20,23,30,0.1);
   }
-  .p-panel { position:relative; min-height:auto; overflow:hidden; padding:52px 0; }
-  .p-panel-bg { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:24vw; line-height:1; opacity:0.045; pointer-events:none; user-select:none; }
-  .p-panel-content { position:relative; z-index:2; padding:0 clamp(24px,5vw,56px); max-width:700px; }
-  .p-panel-title { font-size:clamp(36px,5.5vw,64px); font-weight:800; line-height:0.95; letter-spacing:-2px; font-family:'Inter',sans-serif; margin-bottom:14px; }
-  .p-panel-desc { font-size:15px; line-height:1.55; color:rgba(255,255,255,0.6); max-width:440px; margin-bottom:20px; }
-  .p-panel-accent { position:absolute; right:0; top:0; bottom:0; width:40%; display:flex; align-items:center; justify-content:center; font-size:28vw; opacity:0.1; pointer-events:none; }
 
   /* ── sport slider (Playo-style clickable rail) ── */
   .p-sportbar { padding:56px clamp(24px,5vw,56px) 8px; }
@@ -216,28 +200,6 @@ const CSS = `
     .p-sportchip { width:130px; height:166px; }
     .p-sportchip-label { font-size:16px; }
   }
-
-  /* game cards inside each sport panel */
-  .p-games { position:relative; z-index:2; padding:24px clamp(24px,5vw,56px) 0; display:grid; grid-template-columns:repeat(auto-fill, minmax(260px,1fr)); gap:16px; }
-  .p-gcard { background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.1); border-radius:16px; padding:18px; transition:transform 0.4s cubic-bezier(0.22,1,0.36,1), border-color 0.4s, background 0.4s; }
-  .p-gcard.link { cursor:pointer; text-decoration:none; color:inherit; display:block; }
-  .p-gcard.link:hover { transform:translateY(-5px); border-color:rgba(255,255,255,0.25); background:rgba(255,255,255,0.05); }
-  .p-gcard-title { font-family:'Inter',sans-serif; font-size:16px; font-weight:700; color:#fff; margin:0 0 4px; letter-spacing:-0.3px; }
-  .p-gcard-venue { font-size:12.5px; color:rgba(255,255,255,0.55); margin:0 0 14px; display:flex; align-items:center; gap:5px; }
-  .p-gcard-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
-  .p-gcard-when { font-family:'Inter',sans-serif; font-size:11.5px; color:rgba(255,255,255,0.7); }
-  .p-gcard-fee { font-family:'Inter',sans-serif; font-size:15px; font-weight:700; }
-  .p-gcard-bar { height:4px; border-radius:2px; background:rgba(255,255,255,0.1); overflow:hidden; margin-bottom:8px; }
-  .p-gcard-slots { font-size:11px; color:rgba(255,255,255,0.5); font-family:'Inter',sans-serif; }
-  /* fact card (untouchable) */
-  .p-gcard.fact { display:flex; flex-direction:column; justify-content:space-between; background:linear-gradient(150deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01)); }
-  .p-gcard.fact .big { font-family:'Inter',sans-serif; font-size:19px; font-weight:800; line-height:1.15; letter-spacing:-0.5px; margin-bottom:8px; }
-  .p-gcard.fact .small { font-size:12.5px; color:rgba(255,255,255,0.6); line-height:1.5; }
-  /* host-a-game card (empty state) */
-  .p-gcard.host { display:flex; flex-direction:column; align-items:flex-start; justify-content:center; gap:12px; min-height:150px; border-style:dashed; }
-  .p-gcard.host .big { font-family:'Inter',sans-serif; font-size:18px; font-weight:800; line-height:1.2; }
-  .p-gcard.host .small { font-size:12.5px; color:rgba(255,255,255,0.55); line-height:1.5; }
-  @media (max-width:640px){ .p-games { padding:28px clamp(24px,5vw,56px) 0; grid-template-columns:1fr; } }
 
   /* ── editorial grid ── */
   .p-editorial { display:grid; grid-template-columns:1fr 1fr; min-height:100vh; }
@@ -287,7 +249,6 @@ const CSS = `
   /* ── mobile ── */
   @media(max-width:900px){
     .p-hero-h1 { letter-spacing:-1.5px; }
-    .p-panel-accent { display:none; }
     .p-editorial { grid-template-columns:1fr; }
     .p-editorial-left { border-right:none; border-bottom:1px solid rgba(255,255,255,0.08); padding:56px 24px; }
     .p-editorial-right { padding:56px 24px; }
@@ -302,19 +263,7 @@ const CSS = `
   }
 
   /* ══ Paper theme — flip the homepage's dark class styles ══ */
-  [data-theme="paper"] .p-panel-desc { color: rgba(20,23,30,0.65); }
   [data-theme="paper"] .p-editorial-body { color: rgba(20,23,30,0.65); }
-  [data-theme="paper"] .p-panel { border-top-color: rgba(20,23,30,0.1) !important; }
-  [data-theme="paper"] .p-gcard { background: #ffffff; border-color: rgba(20,23,30,0.12); }
-  [data-theme="paper"] .p-gcard.link:hover { background: #fff; border-color: rgba(20,23,30,0.3); }
-  [data-theme="paper"] .p-gcard-title { color: #14171E; }
-  [data-theme="paper"] .p-gcard-venue { color: rgba(20,23,30,0.55); }
-  [data-theme="paper"] .p-gcard-when { color: rgba(20,23,30,0.7); }
-  [data-theme="paper"] .p-gcard-bar { background: rgba(20,23,30,0.1); }
-  [data-theme="paper"] .p-gcard-slots { color: rgba(20,23,30,0.5); }
-  [data-theme="paper"] .p-gcard.fact { background: linear-gradient(150deg, #ffffff, #f1ebdf); }
-  [data-theme="paper"] .p-gcard.fact .small { color: rgba(20,23,30,0.6); }
-  [data-theme="paper"] .p-gcard.host .small { color: rgba(20,23,30,0.55); }
   [data-theme="paper"] .btn-ghost { color: #14171E; border-color: rgba(20,23,30,0.25); }
 `;
 
@@ -334,14 +283,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
   const { city, area } = useCity();
   const heroRef = useRef<HTMLDivElement>(null);
 
-  // All upcoming games, grouped by sport, to fill each sport panel.
-  const { events: allGames } = useEvents({ limit: 60, onlyUpcoming: true });
-  const gamesBySport = allGames.reduce((acc, g) => {
-    (acc[g.sport] ??= []).push(g);
-    return acc;
-  }, {} as Record<string, typeof allGames>);
-  // Which sport panel is expanded below the slider. Null = none open.
-  const [openSport, setOpenSport] = useState<string | null>(null);
   // Which FAQ item is expanded. 0 = first question open by default, so
   // the section doesn't read as an empty wall of collapsed bars.
   const [openFaq, setOpenFaq] = useState<number | null>(0);
@@ -410,91 +351,27 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                 </div>
 
                 <div className="p-sportrail">
-                  {SPORTS_PANELS.map((sp) => {
-                    const isOpen = openSport === sp.sport;
-                    return (
-                      <button
-                        key={sp.sport}
-                        className="p-sportchip"
-                        onClick={() => setOpenSport(isOpen ? null : sp.sport)}
-                        aria-label={`Show ${sp.sport}`}
-                        style={{ borderColor: isOpen ? sp.color : undefined }}
-                      >
-                        <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
-                        <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
-                        <span className="p-sportchip-shade" />
-                        <span className="p-sportchip-emoji">{sp.emoji}</span>
-                        <span className="p-sportchip-label">{sp.sport}</span>
-                        <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
-                          {isOpen ? "Showing" : "View"} <ArrowRight size={12} color={sp.color} strokeWidth={3} />
-                        </span>
-                      </button>
-                    );
-                  })}
+                  {/* Each card is a direct shortcut into Book, pre-filtered
+                      to that sport — no intermediate detail view. */}
+                  {SPORTS_PANELS.map((sp) => (
+                    <Link
+                      key={sp.sport}
+                      href={`/create?sport=${encodeURIComponent(sp.sport)}`}
+                      className="p-sportchip"
+                      aria-label={`Book ${sp.sport} grounds`}
+                    >
+                      <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
+                      <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
+                      <span className="p-sportchip-shade" />
+                      <span className="p-sportchip-emoji">{sp.emoji}</span>
+                      <span className="p-sportchip-label">{sp.sport}</span>
+                      <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
+                        Book grounds <ArrowRight size={12} color={sp.color} strokeWidth={3} />
+                      </span>
+                    </Link>
+                  ))}
                 </div>
               </div>
-
-              {/* Expanded panel — only the selected sport, opens on tap */}
-              {(() => {
-                const sp = SPORTS_PANELS.find((x) => x.sport === openSport);
-                if (!sp) return null;
-                return (
-                  <motion.div
-                    key={sp.sport}
-                    className="p-panel"
-                    initial={{ opacity:0, height:0 }} animate={{ opacity:1, height:"auto" }}
-                    transition={{ duration:0.4, ease:[0.22,1,0.36,1] }}
-                    style={{ background:"var(--inkSoft)", borderTop:`1px solid ${sp.color}44` }}
-                  >
-                    <div className="p-panel-bg">{sp.emoji}</div>
-                    <div className="p-panel-accent">{sp.emoji}</div>
-
-                    {/* Game cards for this sport (real games + fact, or host prompt) */}
-                    <div className="p-games">
-                      {(gamesBySport[sp.sport] ?? []).slice(0, 3).map((g) => {
-                        const pct = Math.round(((g.max_players - g.slots_remaining) / g.max_players) * 100);
-                        const when = new Date(g.event_date).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" });
-                        return (
-                          <a key={g.id} href="/discover" className="p-gcard link">
-                            <div className="p-gcard-title">{g.title}</div>
-                            <div className="p-gcard-venue"><MapPin size={12} /> {g.venue}</div>
-                            <div className="p-gcard-row">
-                              <span className="p-gcard-when">{when}</span>
-                              <span className="p-gcard-fee" style={{ color: sp.color }}>Rs {g.fee}</span>
-                            </div>
-                            <div className="p-gcard-bar"><div style={{ height:"100%", width:`${pct}%`, background: sp.color, borderRadius:2 }} /></div>
-                            <div className="p-gcard-slots">{g.slots_remaining} of {g.max_players} spots left</div>
-                          </a>
-                        );
-                      })}
-
-                      {/* Fact card — untouchable */}
-                      {SPORT_FACT[sp.sport] && (
-                        <div className="p-gcard fact">
-                          <div>
-                            <div className="big" style={{ color: sp.color }}>{SPORT_FACT[sp.sport].big}</div>
-                            <div className="small">{SPORT_FACT[sp.sport].small}</div>
-                          </div>
-                          <div style={{ fontSize:11, fontFamily:"'Inter',sans-serif", color:"var(--faint)", letterSpacing:"0.1em", textTransform:"uppercase", marginTop:14 }}>
-                            {sp.label} · Kathmandu
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Empty state — aesthetic host prompt */}
-                      {(gamesBySport[sp.sport] ?? []).length === 0 && (
-                        <a href="/create" className="p-gcard host link" style={{ borderColor: `${sp.color}55` }}>
-                          <div className="big" style={{ color: sp.color }}>No {sp.sport} games yet</div>
-                          <div className="small">Be the first to host one. Book a court, set your spots, and let players come to you.</div>
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:13, fontWeight:700, color: sp.color }}>
-                            Host a {sp.sport} game <ArrowRight size={14} />
-                          </span>
-                        </a>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })()}
             </div>
           </div>
         </div>

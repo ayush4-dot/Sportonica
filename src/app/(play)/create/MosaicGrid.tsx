@@ -15,7 +15,7 @@ const HUES = [
   { a: "#FB923C", b: "#EA580C" },  // orange
   { a: "#F87171", b: "#DC2626" },  // red
 ];
-import BookFilters, { NO_BOOK_FILTERS, timeLabel, type BookQuery } from "./BookFilters";
+import BookFilters, { NO_BOOK_FILTERS, bookActiveCount, timeLabel, type BookQuery } from "./BookFilters";
 import DateStrip from "@/components/shared/DateStrip";
 import { useCity, inCity } from "@/lib/city";
 import { normalizeSport, SPORT_NAMES } from "@/lib/sports";
@@ -25,14 +25,28 @@ import type { Venue, Court } from "@/lib/admin/types";
 
 type VenueWithCourts = Venue & { courts: Court[] };
 
-export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWithCourts[] ; offers?: Record<string, { label: string; amount: number }> }) {
+export default function MosaicGrid({ venues, offers = {}, initialSport = null }: { venues: VenueWithCourts[]; offers?: Record<string, { label: string; amount: number }>; initialSport?: string | null }) {
   const router = useRouter();
   const [theme] = useTheme();
   const { city, area } = useCity();
-  const [q, setQ] = useState<BookQuery>(NO_BOOK_FILTERS);
+  const [q, setQ] = useState<BookQuery>(() => ({ ...NO_BOOK_FILTERS, sport: initialSport }));
   const [pickDate, setPickDate] = useState(() => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" }));
   const [myCoords, setMyCoords] = useState<[number, number] | null>(null);
   const venueTypes = [...new Set(venues.map((v) => v.venue_type).filter(Boolean))];
+
+  // Sport is the one filter that lives in the URL too — a shared/refreshed
+  // /create?sport=Futsal link should land pre-filtered, and back/forward
+  // between "Pick your game" and Book should behave like real navigation.
+  function setSport(sp: string | null) {
+    setQ((cur) => ({ ...cur, sport: sp }));
+    router.replace(sp ? `/create?sport=${encodeURIComponent(sp)}` : "/create", { scroll: false });
+  }
+
+  function clearFilters() {
+    setQ(NO_BOOK_FILTERS);
+    setMyCoords(null);
+    router.replace("/create", { scroll: false });
+  }
 
   // ── Filter the venues before laying out the mosaic ──────────────
   const R = 6371;
@@ -177,7 +191,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
             asking about a ground instead of a game. */}
         <BookFilters
           sport={q.sport}
-          setSport={(sp) => setQ((cur) => ({ ...cur, sport: sp }))}
+          setSport={setSport}
           sports={SPORT_NAMES}
           venueTypes={venueTypes}
           value={q}
@@ -201,19 +215,27 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
         ) : shown.length === 0 ? (
           <div style={{ textAlign: "center", padding: "80px 20px", opacity: 0.65 }}>
             <h3 style={{ fontFamily: "'Inter',sans-serif", fontSize: 22 }}>
-              {venues.length === 0 ? "No venues listed yet" : q.time != null ? "Nothing free at that time" : "No grounds match that"}
+              {venues.length === 0
+                ? "No venues listed yet"
+                : q.time != null
+                  ? "Nothing free at that time"
+                  : q.sport
+                    ? `No ${q.sport} grounds available`
+                    : "No grounds match that"}
             </h3>
             <p style={{ fontSize: 14 }}>
               {venues.length === 0
                 ? "Once owners list their grounds, they'll appear here ready to book."
                 : q.time != null
                   ? "Try a different time, or another day."
-                  : "Try another sport, or widen the distance."}
+                  : q.sport
+                    ? "We couldn't find any available grounds for this sport right now."
+                    : "Try another sport, or widen the distance."}
             </p>
             {venues.length > 0 && (
-              <button onClick={() => { setQ(NO_BOOK_FILTERS); setMyCoords(null); }}
+              <button onClick={clearFilters}
                 style={{ marginTop: 14, background: "none", border: "none", color: "#006241", fontWeight: 700, fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
-                Clear filters →
+                {q.sport && bookActiveCount(q) === 0 && q.time == null ? "Browse all grounds →" : "Clear filters →"}
               </button>
             )}
           </div>
@@ -231,7 +253,7 @@ export default function MosaicGrid({ venues , offers = {} }: { venues: VenueWith
               const shown = sports.slice(0, 3);
               const extra = sports.length - shown.length;
               const km = myCoords && v.lat != null && v.lng != null ? kmTo(v.lat, v.lng) : null;
-              const href = `/create/${v.id}?date=${pickDate}${q.time ? `&time=${q.time}` : ""}`;
+              const href = `/create/${v.id}?date=${pickDate}${q.time ? `&time=${q.time}` : ""}${q.sport ? `&sport=${encodeURIComponent(q.sport)}` : ""}`;
               // Cards cycle through three skins so a row never looks flat.
               const skin = ["indigo", "chalk", "ink"][i % 3];
               const maps = v.lat != null && v.lng != null

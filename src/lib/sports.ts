@@ -52,3 +52,14 @@ export function normalizeSport(name: string | null | undefined): string {
   if (!name) return "Futsal";
   return name.trim().toLowerCase() === "football" ? "Futsal" : name;
 }
+
+/**
+ * Resolve a raw `?sport=` query value (any case, e.g. from a "Pick your
+ * game" link) to one of the canonical SPORT_NAMES. Returns null if it
+ * doesn't match a known sport, so callers can fall back to "any sport".
+ */
+export function resolveSportParam(param: string | null | undefined): string | null {
+  if (!param) return null;
+  const normalized = normalizeSport(param).trim().toLowerCase();
+  return SPORT_NAMES.find((s) => s.toLowerCase() === normalized) ?? null;
+}

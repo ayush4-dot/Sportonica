@@ -11,13 +11,15 @@ export default async function VenueBookingPage({
   params, searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ date?: string; time?: string }>;
+  searchParams: Promise<{ date?: string; time?: string; sport?: string }>;
 }) {
   const { id } = await params;
-  const { date, time } = await searchParams;
+  const { date, time, sport } = await searchParams;
   const timeMins = time != null && /^\d+$/.test(time) ? Number(time) : undefined;
   const { venue, courts, hoursByCourt } = await getVenueForBooking(id);
   if (!venue) notFound();
+
+  const backHref = sport ? `/create?sport=${encodeURIComponent(sport)}` : "/create";
 
   const photo = venue.photos?.[0];
   const pricingRules = await getVenuePricingRules(id);
@@ -25,7 +27,7 @@ export default async function VenueBookingPage({
   return (
     <div className="play">
       <div className="play-wrap">
-        <Link href="/create" className="bk-back"><ArrowLeft size={16} /> All venues</Link>
+        <Link href={backHref} className="bk-back"><ArrowLeft size={16} /> All venues</Link>
 
         <div className="bk-hero">
           {photo ? (
