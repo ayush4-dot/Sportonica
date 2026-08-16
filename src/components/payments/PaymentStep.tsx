@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Upload, AlertCircle } from "lucide-react";
 import { getPaymentMethods, uploadPaymentProof, submitPayment } from "@/lib/payments/actions";
 import { bookingLabel, paymentQrPublicUrl } from "@/lib/payments/types";
@@ -33,6 +34,7 @@ export default function PaymentStep({
   /** Extra actions rendered under the "submitted" confirmation (e.g. "Done" / "See my games"). */
   footer?: React.ReactNode;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [methods, setMethods] = useState<PaymentMethodConfig[] | null>(null);
   const [method, setMethod] = useState<PaymentMethod | null>(null);
@@ -83,9 +85,15 @@ export default function PaymentStep({
     startTransition(async () => {
       try {
         const path = await uploadPaymentProof(bookingType, bookingId, file);
-        if (isActionError(path)) { setErr(path.message); return; }
+        if (isActionError(path)) {
+          if (path.message === "UNAUTHORIZED") { router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`); return; }
+          setErr(path.message); return;
+        }
         const payment = await submitPayment(bookingType, bookingId, method, transactionId.trim(), path);
-        if (isActionError(payment)) { setErr(payment.message); return; }
+        if (isActionError(payment)) {
+          if (payment.message === "UNAUTHORIZED") { router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`); return; }
+          setErr(payment.message); return;
+        }
         setSubmitted(payment);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not submit your payment. Try again.");

@@ -275,6 +275,11 @@ export async function togglePricingRule(id: string, venue_id: string, active: bo
 export async function addStaff(input: { venue_id: string; user_id: string; role: string }) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+  // RLS (staff_owner_all in admin_schema.sql) would reject this insert
+  // anyway, but that surfaces as a raw Postgres error — check here too so
+  // a non-owner gets a clean message instead of a database internals leak.
+  const { data: canManage } = await sb.rpc("has_venue_access", { v_id: input.venue_id, min_role: "owner" });
+  if (!canManage) return actionError("FORBIDDEN");
   const { error } = await sb.from("venue_staff").insert(input);
   if (error) return actionError(error.message);
   revalidatePath(`/admin/venues/${input.venue_id}/staff`);
