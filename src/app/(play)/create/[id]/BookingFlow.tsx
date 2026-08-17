@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, AlertTriangle } from "lucide-react";
+import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, AlertTriangle, Minus, Plus } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
@@ -79,6 +79,25 @@ export default function BookingFlow({
   const [qrPath, setQrPath] = useState<string | null>(null);
   const [qrUploading, setQrUploading] = useState(false);
   const qrFileRef = useRef<HTMLInputElement>(null);
+
+  const MAX_PLAYERS_FLOOR = 2;
+  const MAX_PLAYERS_CEIL = 30;
+  function decMaxPlayers() {
+    setMaxPlayers((v) => {
+      const next = Math.max(MAX_PLAYERS_FLOOR, v - 2);
+      setMinPlayers((m) => Math.min(m, next));
+      return next;
+    });
+  }
+  function incMaxPlayers() {
+    setMaxPlayers((v) => Math.min(MAX_PLAYERS_CEIL, v + 2));
+  }
+  function decMinPlayers() {
+    setMinPlayers((v) => Math.max(1, v - 1));
+  }
+  function incMinPlayers() {
+    setMinPlayers((v) => Math.min(maxPlayers, v + 1));
+  }
 
   useEffect(() => {
     return () => { if (qrPreviewUrl) URL.revokeObjectURL(qrPreviewUrl); };
@@ -363,7 +382,7 @@ export default function BookingFlow({
             <h3>When are you playing?</h3>
             <p className="hint">
               <Clock size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
-              Live availability — slots already taken are hidden.
+              Live availability — booked slots are shown greyed out so you know what&apos;s already taken.
             </p>
 
             <WeekStrip
@@ -424,27 +443,49 @@ export default function BookingFlow({
                 page. The next step asks for your phone/QR. */}
             {needPlayers && (
               <div style={{ marginTop: 18 }}>
-                <p className="hint" style={{ marginBottom: 8, marginTop: 4 }}>Maximum players</p>
-                <div className="bk-chips" style={{ marginBottom: 18 }}>
-                  {[4, 6, 8, 10, 12, 14, 16, 18, 20, 22].map((n) => (
-                    <button key={n} className={`bk-chip ${maxPlayers === n ? "on" : ""}`}
-                      onClick={() => { setMaxPlayers(n); setMinPlayers(Math.max(1, Math.min(n, Math.round(n * 0.8)))); }}>
-                      {n}
-                    </button>
-                  ))}
+                <p className="hint" style={{ marginBottom: 2, marginTop: 4 }}>Total players (including you)</p>
+                <p className="hint" style={{ marginBottom: 10, fontSize: 12, opacity: .7 }}>
+                  How big should the full squad be once everyone&apos;s joined?
+                </p>
+                <div className="bk-stepper">
+                  <button type="button" className="bk-step-btn" onClick={decMaxPlayers}
+                    disabled={maxPlayers <= MAX_PLAYERS_FLOOR} aria-label="Decrease total players">
+                    <Minus size={16} />
+                  </button>
+                  <div className="bk-step-val">
+                    <span className="n">{maxPlayers}</span>
+                    <span className="u">players</span>
+                  </div>
+                  <button type="button" className="bk-step-btn" onClick={incMaxPlayers}
+                    disabled={maxPlayers >= MAX_PLAYERS_CEIL} aria-label="Increase total players">
+                    <Plus size={16} />
+                  </button>
                 </div>
-                <p className="pt-min-note">Player slots available: {Math.max(maxPlayers - 1, 0)} (you&apos;re the host)</p>
+                <p className="pt-min-note" style={{ marginTop: 10 }}>
+                  {Math.max(maxPlayers - 1, 0)} open spot{Math.max(maxPlayers - 1, 0) === 1 ? "" : "s"}{" "}
+                  for others to join — you&apos;re already counted in as the host.
+                </p>
 
-                <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Minimum players required</p>
-                <div className="bk-chips" style={{ marginBottom: 8 }}>
-                  {Array.from({ length: maxPlayers }, (_, i) => i + 1).map((n) => (
-                    <button key={n} className={`bk-chip ${minPlayers === n ? "on" : ""}`} onClick={() => setMinPlayers(n)}>
-                      {n}
-                    </button>
-                  ))}
+                <p className="hint" style={{ marginBottom: 2, marginTop: 24 }}>Minimum to make it happen</p>
+                <p className="hint" style={{ marginBottom: 10, fontSize: 12, opacity: .7 }}>
+                  If fewer than this join, you can still play — just know it won&apos;t be full.
+                </p>
+                <div className="bk-stepper">
+                  <button type="button" className="bk-step-btn" onClick={decMinPlayers}
+                    disabled={minPlayers <= 1} aria-label="Decrease minimum players">
+                    <Minus size={16} />
+                  </button>
+                  <div className="bk-step-val">
+                    <span className="n">{minPlayers}</span>
+                    <span className="u">players</span>
+                  </div>
+                  <button type="button" className="bk-step-btn" onClick={incMinPlayers}
+                    disabled={minPlayers >= maxPlayers} aria-label="Increase minimum players">
+                    <Plus size={16} />
+                  </button>
                 </div>
                 <p className={`pt-min-note ${minPlayers <= maxPlayers ? "ok" : ""}`}>
-                  {minPlayers} / {maxPlayers} players needed for the game to be viable.
+                  Needs at least {minPlayers} of {maxPlayers} players for the game to go ahead.
                 </p>
 
                 <div className="bk-split" style={{ marginTop: 16 }}>
@@ -452,7 +493,7 @@ export default function BookingFlow({
                   directly as they join.
                 </div>
 
-                <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Joining closes</p>
+                <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>When should joining close?</p>
                 <div className="bk-chips">
                   {DEADLINE_OPTS.map((d) => (
                     <button key={d.hours} className={`bk-chip ${deadlineHours === d.hours ? "on" : ""}`}
@@ -698,6 +739,22 @@ export default function BookingFlow({
         .pymt-shot img { width: 100%; max-height: 220px; object-fit: contain; background: #000; display: block; }
         .pymt-shot-replace { position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,.7); color: #fff; font-size: 11px; font-weight: 700; padding: 5px 10px; border-radius: 999px; }
         .pymt-upload { width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 11px; border: 1px dashed var(--line); background: transparent; color: inherit; font-family: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; }
+
+        .bk-stepper { display: flex; align-items: center; gap: 14px; }
+        .bk-step-btn {
+          width: 40px; height: 40px; border-radius: 11px; flex-shrink: 0;
+          display: flex; align-items: center; justify-content: center;
+          border: 1px solid var(--line); background: var(--ink); color: inherit;
+          cursor: pointer; transition: border-color .18s, background .18s, transform .12s;
+        }
+        .bk-step-btn:hover:not(:disabled) { border-color: rgba(0,98,65,.55); background: rgba(0,98,65,.1); }
+        .bk-step-btn:active:not(:disabled) { transform: scale(.94); }
+        .bk-step-btn:disabled { opacity: .35; cursor: not-allowed; }
+        .bk-step-val {
+          min-width: 84px; display: flex; flex-direction: column; align-items: center; line-height: 1.15;
+        }
+        .bk-step-val .n { font-family: 'Inter', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -.5px; color: var(--sodium, #006241); }
+        .bk-step-val .u { font-size: 11px; font-weight: 600; opacity: .55; text-transform: uppercase; letter-spacing: .06em; }
       `}</style>
     </div>
   );
