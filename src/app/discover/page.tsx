@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
   MapPin, Clock, Zap, CircleDot,
@@ -11,7 +12,11 @@ import {
 } from "lucide-react";
 import NepalMap from "@/components/NepalMap";
 import { useCity, inCity } from "@/lib/city";
-import KhelamnaMap from "@/components/KhelamnaMap";
+// Leaflet only actually renders once someone taps "See map" *and* drills
+// into a province — loading it eagerly meant every visit to this page (the
+// app's main landing page) paid for Leaflet's JS whether they ever touched
+// the map or not.
+const KhelamnaMap = dynamic(() => import("@/components/KhelamnaMap"), { ssr: false });
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { usePlayTogetherEvents } from "@/lib/hooks/usePlayTogetherEvents";
 import { useProfile } from "@/lib/hooks/useProfile";

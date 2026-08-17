@@ -16,13 +16,17 @@ export default async function VenueBookingPage({
   const { id } = await params;
   const { date, time, sport } = await searchParams;
   const timeMins = time != null && /^\d+$/.test(time) ? Number(time) : undefined;
-  const { venue, courts, hoursByCourt } = await getVenueForBooking(id);
+  // Independent queries — pricing rules don't depend on the venue lookup's
+  // result, so there's no reason to wait on one before starting the other.
+  const [{ venue, courts, hoursByCourt }, pricingRules] = await Promise.all([
+    getVenueForBooking(id),
+    getVenuePricingRules(id),
+  ]);
   if (!venue) notFound();
 
   const backHref = sport ? `/create?sport=${encodeURIComponent(sport)}` : "/create";
 
   const photo = venue.photos?.[0];
-  const pricingRules = await getVenuePricingRules(id);
 
   return (
     <div className="play">
