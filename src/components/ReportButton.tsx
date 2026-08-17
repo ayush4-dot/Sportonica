@@ -58,7 +58,7 @@ export default function ReportButton({
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <Check size={28} style={{ color: "#2E7D5B", marginBottom: 10 }} />
                 <div style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>Report sent</div>
-                <div style={{ fontSize: 13, opacity: 0.65, marginTop: 6 }}>Our team will review it. Thanks for keeping Khelam Na safe.</div>
+                <div style={{ fontSize: 13, opacity: 0.65, marginTop: 6 }}>Our team will review it. Thanks for keeping Sportonica safe.</div>
               </div>
             ) : (
               <>

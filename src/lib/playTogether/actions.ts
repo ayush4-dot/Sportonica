@@ -23,7 +23,7 @@ async function requireUser() {
 }
 
 // Upload the host's own eSewa/Khalti QR — shown to players so they pay the
-// host directly, never a KhelamNa QR. Mirrors uploadPaymentProof() in
+// host directly, never a Sportonica QR. Mirrors uploadPaymentProof() in
 // src/lib/payments/actions.ts (same size/type limits), targeting the
 // public 'host-qr' bucket instead of the private 'payment-proofs' one.
 export async function uploadHostQr(file: File): Promise<string | ActionError> {
@@ -278,7 +278,7 @@ export async function leaveGame(gameId: string): Promise<GamePlayer | ActionErro
 }
 
 // Host-only: toggles a player's cash-collection record. This is only a
-// record — KhelamNa never processes or holds this cash.
+// record — Sportonica never processes or holds this cash.
 export async function markContributionCollected(
   gamePlayerId: string,
   gameId: string,
@@ -298,7 +298,7 @@ export async function markContributionCollected(
 }
 
 // Host-only. No refund is computed or processed here — refunds depend on
-// venue/KhelamNa policy, which isn't implemented yet (see
+// venue/Sportonica policy, which isn't implemented yet (see
 // supabase/play_together.sql). Any refund must currently be handled
 // manually by an admin.
 export async function cancelGame(gameId: string, reason?: string): Promise<Game | ActionError> {

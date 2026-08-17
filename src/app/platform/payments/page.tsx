@@ -25,7 +25,7 @@ export default async function PlatformPaymentsPage() {
     <>
       <h1 className="plt-h1">Payments</h1>
       <p className="plt-sub2">
-        Khelam Na&apos;s own eSewa/Khalti merchant QR codes, and manual verification of every payment
+        Sportonica&apos;s own eSewa/Khalti merchant QR codes, and manual verification of every payment
         submitted against a booking. A screenshot is evidence, not proof — always confirm the merchant,
         amount and transaction ID before approving.
       </p>

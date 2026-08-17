@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 import "../../(play)/play.css";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Khelam Na",
-  description: "How Khelam Na collects, uses, and protects your data.",
+  title: "Privacy Policy — Sportonica",
+  description: "How Sportonica collects, uses, and protects your data.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -28,12 +28,12 @@ export default function PrivacyPolicyPage() {
           <style>{`.legal-sec ul { padding-left: 20px; margin: 8px 0; } .legal-sec li { margin-bottom: 6px; } .legal-sec p { margin-bottom: 8px; }`}</style>
 
           <Section title="What we collect">
-            <p>When you create an account or use Khelam Na, we collect:</p>
+            <p>When you create an account or use Sportonica, we collect:</p>
             <ul>
               <li><b>Account info</b> — name, email, and profile photo, from either email/password signup or Google sign-in.</li>
               <li><b>Phone number</b> — so a venue or another player can reach you about a specific booking or game.</li>
               <li><b>Booking and game activity</b> — the courts you book, games you join or host, and your history of showing up (this feeds a trust score shown to other players).</li>
-              <li><b>Payment proof images</b> — when you pay a venue or a host via eSewa/Khalti QR, you upload a screenshot and transaction ID so it can be verified. Khelam Na does not process card or bank payments directly, and never sees your banking credentials.</li>
+              <li><b>Payment proof images</b> — when you pay a venue or a host via eSewa/Khalti QR, you upload a screenshot and transaction ID so it can be verified. Sportonica does not process card or bank payments directly, and never sees your banking credentials.</li>
               <li><b>Location</b> — only if you tap &quot;Use my location&quot; to find nearby venues; otherwise you pick your city manually.</li>
             </ul>
           </Section>
@@ -59,7 +59,7 @@ export default function PrivacyPolicyPage() {
 
           <Section title="Payments">
             <p>
-              Khelam Na never collects or holds your payment credentials. Venue bookings and Play Together
+              Sportonica never collects or holds your payment credentials. Venue bookings and Play Together
               contributions are paid directly to the venue or host via eSewa/Khalti QR; you submit proof
               (a screenshot and transaction ID) for manual verification.
             </p>
@@ -81,7 +81,7 @@ export default function PrivacyPolicyPage() {
           </Section>
 
           <p className="hint" style={{ marginTop: 28 }}>
-            <Link href="/">← Back to Khelam Na</Link>
+            <Link href="/">← Back to Sportonica</Link>
           </p>
         </div>
       </div>

@@ -1,12 +1,12 @@
 -- ================================================================
--- Khelam Na — "Play Together" (Phase 1: core loop)
+-- Sportonica — "Play Together" (Phase 1: core loop)
 -- Run this whole file in the Supabase SQL Editor. Safe to re-run.
 --
--- Model: the host books and pays for the venue through KhelamNa
+-- Model: the host books and pays for the venue through Sportonica
 -- upfront (reuses the existing atomic book_court() + QR payment /
 -- review pipeline from payments.sql, unchanged). Other players join
--- the game for free — no money ever moves through KhelamNa for them —
--- and reimburse the host in cash at the venue. KhelamNa never
+-- the game for free — no money ever moves through Sportonica for them —
+-- and reimburse the host in cash at the venue. Sportonica never
 -- collects, holds, or distributes player contributions.
 --
 -- Deliberately new tables (games, game_players), not the legacy
@@ -16,7 +16,7 @@
 --
 -- Phase 1 scope only: no waitlist, no joining-deadline auto-cancel,
 -- no attendance/no-show/reliability, no refund-policy engine, no
--- KhelamNa service fee on top of venue price, no admin dashboard.
+-- Sportonica service fee on top of venue price, no admin dashboard.
 -- Those are follow-up migrations.
 -- ================================================================
 
@@ -41,7 +41,7 @@ create table if not exists public.games (
   notes                 text,
   cancel_reason         text,
   -- The host's OWN eSewa/Khalti QR + phone, captured at creation time —
-  -- players pay the host directly with these, never a KhelamNa QR.
+  -- players pay the host directly with these, never a Sportonica QR.
   host_qr_path          text,
   host_phone            text,
   status                text not null default 'awaiting_payment',
@@ -380,7 +380,7 @@ $$;
 grant execute on function public.leave_play_together_game(uuid) to authenticated;
 
 -- ── mark_contribution_collected: host-only cash-tracking toggle ──
--- This is only a record. KhelamNa never processes or holds this cash.
+-- This is only a record. Sportonica never processes or holds this cash.
 create or replace function public.mark_contribution_collected(p_game_player_id uuid, p_collected boolean)
 returns public.game_players
 language plpgsql security definer set search_path = public as $$
@@ -407,7 +407,7 @@ grant execute on function public.mark_contribution_collected(uuid,boolean) to au
 
 -- ================================================================
 -- cancel_play_together_game: host-only. No refund logic — per the
--- product spec, refunds depend on venue/KhelamNa policy, which is a
+-- product spec, refunds depend on venue/Sportonica policy, which is a
 -- later phase. This only stops the game and records why; any refund
 -- must currently be handled manually by an admin.
 -- ================================================================

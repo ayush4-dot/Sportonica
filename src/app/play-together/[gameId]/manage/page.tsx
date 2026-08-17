@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 
 const KTM = "Asia/Kathmandu";
 
-export const metadata: Metadata = { title: "Manage game — Khelam Na" };
+export const metadata: Metadata = { title: "Manage game — Sportonica" };
 
 export default async function ManagePlayTogetherGamePage({ params }: { params: Promise<{ gameId: string }> }) {
   const { gameId } = await params;
@@ -53,7 +53,7 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
             <ShareGameButton
               gameId={gameId}
               title={`${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together`}
-              text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Khelam Na`}
+              text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Sportonica`}
             />
           )}
         </div>

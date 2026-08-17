@@ -44,7 +44,7 @@ export default function UsersGrid({ users }: { users: UserRow[] }) {
       columns={COLS}
       rows={users}
       pageSize={15}
-      exportName="khelamna-users"
+      exportName="sportonica-users"
       empty="No users yet."
       actions={(u) => (
         u.role === "super_admin" ? <span className="dt-dim">—</span> : (

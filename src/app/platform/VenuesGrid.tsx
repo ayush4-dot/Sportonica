@@ -46,7 +46,7 @@ export default function VenuesGrid({ venues }: { venues: VenueRow[] }) {
       columns={COLS}
       rows={venues}
       pageSize={10}
-      exportName="khelamna-venues"
+      exportName="sportonica-venues"
       empty="No venues listed yet."
       actions={(v) => (
         <>

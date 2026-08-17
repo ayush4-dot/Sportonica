@@ -17,9 +17,9 @@ const KTM = "Asia/Kathmandu";
 export async function generateMetadata({ params }: { params: Promise<{ gameId: string }> }): Promise<Metadata> {
   const { gameId } = await params;
   const game = await getGame(gameId);
-  if (!game) return { title: "Game · Khelam Na" };
+  if (!game) return { title: "Game · Sportonica" };
   return {
-    title: `${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together · Khelam Na`,
+    title: `${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together · Sportonica`,
     description: `${game.sport} at ${game.venues?.name ?? "the venue"} · Rs ${game.contribution_amount}/player, paid to the host.`,
   };
 }
@@ -69,7 +69,7 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
           <ShareGameButton
             gameId={game.id}
             title={`${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together`}
-            text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Khelam Na`}
+            text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Sportonica`}
           />
         </div>
 
@@ -188,7 +188,7 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
                 <span className="val">Rs {game.contribution_amount}</span>
               </div>
               <p className="hint" style={{ marginTop: -4 }}>
-                No payment is required to Khelam Na for joining this game.
+                No payment is required to Sportonica for joining this game.
               </p>
 
               <PlayTogetherJoinPanel

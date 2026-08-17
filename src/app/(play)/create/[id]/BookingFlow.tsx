@@ -538,7 +538,7 @@ export default function BookingFlow({
           <div className="bk-panel">
             <h3>How players pay you</h3>
             <p className="hint">
-              Khelam Na never holds player contributions — this is shown directly to approved
+              Sportonica never holds player contributions — this is shown directly to approved
               players so they can pay you.
             </p>
 
@@ -610,7 +610,7 @@ export default function BookingFlow({
               <>
                 <div className="bk-split">
                   Expected player contribution: <b>Rs {contribution}</b> / player, paid to you directly.
-                  Khelam Na never collects this.
+                  Sportonica never collects this.
                 </div>
 
                 <div className="pt-risk-box">

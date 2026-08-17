@@ -6,8 +6,8 @@ import type { CapacitorConfig } from '@capacitor/cli';
 // above is required by the CLI but unused: the native shell loads the
 // live production URL instead of local files.
 const config: CapacitorConfig = {
-  appId: 'com.khelamna.app',
-  appName: 'Khelam Na',
+  appId: 'com.sportonica.app',
+  appName: 'Sportonica',
   webDir: 'public',
   server: {
     url: 'https://www.khelamna.com',

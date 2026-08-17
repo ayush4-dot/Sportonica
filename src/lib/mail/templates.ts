@@ -37,7 +37,7 @@ Your court is locked in.
 
 See you on the pitch.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -58,7 +58,7 @@ export function venueNewBooking(p: {
 
 It's already on your calendar in the venue console.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -72,7 +72,7 @@ export function hostGameLive(p: {
     subject: `Your ${p.sport} game is live — ${p.spots} spots open`,
     body: `Hi ${p.hostName},
 
-Your game is up on Khelam Na and players can join now.
+Your game is up on Sportonica and players can join now.
 
   Sport    ${p.sport}
   Venue    ${p.venue}
@@ -84,7 +84,7 @@ Share it around: ${p.link}
 
 We'll email you as players join.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -107,7 +107,7 @@ You've joined the game.
 
 Turn up. Your show-up rate is watching.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -130,7 +130,7 @@ ${full
   ? "That's a full side. Game on."
   : `${p.spotsLeft} spot${p.spotsLeft !== 1 ? "s" : ""} still open.`}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -155,7 +155,7 @@ Notify on WhatsApp: ${whatsappNotifyUrl(
   `New payment to verify — Rs ${Math.round(p.amount)} via ${p.method}, txn ${p.transactionId}. Review: /platform/payments`
 )}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -178,7 +178,7 @@ Payment verified. Your booking is confirmed.
 
 See you on the pitch.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -198,7 +198,7 @@ Payment could not be verified.
 
 Please submit a valid payment or contact support.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -219,12 +219,12 @@ Your venue payment is confirmed. Your ${p.sport} game is now live on Play Togeth
   Open spots    ${p.spots}
   Contribution  ${rs(p.contribution)} per player, paid to you in cash at the venue
 
-Players don't pay Khelam Na to join — you collect their contributions
+Players don't pay Sportonica to join — you collect their contributions
 yourself when they show up.
 
 Share it around: ${p.link}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -247,7 +247,7 @@ Payment verified. You're officially in the game!
   When           ${fmtWhen(p.startsAt)}
   Paid           ${rs(p.contribution)}, direct to the host
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -277,7 +277,7 @@ Pay now: ${p.link}
 If payment isn't completed by the deadline, this request is automatically
 cancelled and your spot is released.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -297,7 +297,7 @@ until you verify it.
 
 Review it from your game's Manage Payments page: ${p.link}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -317,7 +317,7 @@ Your payment could not be verified by the host.${p.reason ? `\n\n  Reason   ${p.
 If your payment window hasn't closed yet (deadline: ${fmtWhen(p.deadline)}),
 you can submit valid payment proof again: ${p.link}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -337,7 +337,7 @@ ${p.playerName} just ${p.joined ? "joined" : "left"} your ${p.sport} game on ${f
 
 ${p.spotsLeft > 0 ? `${p.spotsLeft} spot${p.spotsLeft !== 1 ? "s" : ""} still open.` : "That's a full side."}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -356,11 +356,11 @@ The host cancelled this game.
   Venue   ${p.venue}
   When    ${fmtWhen(p.startsAt)}
 
-You never paid Khelam Na for this game, so there's nothing to refund from
+You never paid Sportonica for this game, so there's nothing to refund from
 our side. If you'd already paid the host in cash, that's between you and
 them.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -378,7 +378,7 @@ ${p.requesterName} requested to join your ${p.sport} game on ${fmtWhen(p.startsA
 They won't be counted in or notified until you approve them — review it
 from your game's Manage page.
 
-— Khelam Na`,
+— Sportonica`,
   };
 }
 
@@ -397,6 +397,6 @@ The host didn't approve your request to join this game.
   Venue   ${p.venue}
   When    ${fmtWhen(p.startsAt)}
 
-— Khelam Na`,
+— Sportonica`,
   };
 }

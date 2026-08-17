@@ -144,8 +144,8 @@ export const CITIES: City[] = [
     ] },
 ];
 
-const KEY = "khelamna-city";
-const AKEY = "khelamna-area";
+const KEY = "sportonica-city";
+const AKEY = "sportonica-area";
 
 export function cityBySlug(slug: string | null): City | null {
   return CITIES.find((c) => c.slug === slug) ?? null;

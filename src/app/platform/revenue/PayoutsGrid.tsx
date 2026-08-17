@@ -44,7 +44,7 @@ export default function PayoutsGrid({ venues }: { venues: PayoutRow[] }) {
       columns={COLS}
       rows={venues}
       pageSize={15}
-      exportName="khelamna-payouts"
+      exportName="sportonica-payouts"
       empty="No revenue yet — bookings will show here."
       actions={(v) => (
         Number(v.payout_pending) > 0 ? (

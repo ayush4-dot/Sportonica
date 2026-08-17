@@ -38,7 +38,7 @@ const COLS: Column<Row>[] = [
   { key: "booking_when", label: "Date/Time", render: (r) => whenLabel(r.booking_when) },
   { key: "expected_amount", label: "Amount", type: "money" },
   {
-    // Both stay within the KhelamNa green/ink palette — no new colors.
+    // Both stay within the Sportonica green/ink palette — no new colors.
     key: "payment_method", label: "Method", type: "badge",
     badgeColors: { esewa: "#006241", khalti: "#1e3932" },
   },

@@ -33,7 +33,7 @@ export default function RolePicker({ name, next }: { name: string; next: string 
   return (
     <div className="wc">
       <div className="wc-card">
-        <div className="wc-eyebrow">Welcome to Khelam Na</div>
+        <div className="wc-eyebrow">Welcome to Sportonica</div>
         <h1 className="wc-title">Hey {name}.<br />How will you use it?</h1>
         <p className="wc-sub">You can change this later — it just decides where we drop you.</p>
 

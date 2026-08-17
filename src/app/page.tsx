@@ -11,14 +11,14 @@ const JSON_LD = {
   "@graph": [
     {
       "@type": "Organization",
-      "name": "Khelam Na",
+      "name": "Sportonica",
       "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
       "logo": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com"}/icons/icon-512.png`,
       "areaServed": { "@type": "City", "name": "Kathmandu" },
     },
     {
       "@type": "WebSite",
-      "name": "Khelam Na",
+      "name": "Sportonica",
       "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
       "description": "Book courts, join pickup games, and find your regular crew across Kathmandu.",
       "potentialAction": {

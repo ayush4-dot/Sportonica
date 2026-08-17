@@ -162,7 +162,7 @@ export async function invitePlayers(input: {
         ``,
         `Details and RSVP: ${link}`,
         ``,
-        `— Khelam Na`,
+        `— Sportonica`,
       ].join("\n"),
     }))
   );

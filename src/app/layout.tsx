@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   ),
-  title: 'Khelam Na — Find your game',
+  title: 'Sportonica — Find your game',
   description: 'Book courts, join pickup games, and find your regular crew across Kathmandu.',
-  applicationName: 'Khelam Na',
+  applicationName: 'Sportonica',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: [
@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   // iOS ignores the manifest — these tell Safari it's an installable app.
   appleWebApp: {
     capable: true,
-    title: 'Khelam Na',
+    title: 'Sportonica',
     statusBarStyle: 'default',
   },
 }
@@ -62,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           strategy="beforeInteractive"
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("khelamna-theme-v2")||"paper";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="paper";}})();`,
+            __html: `(function(){try{var t=localStorage.getItem("sportonica-theme-v2")||"paper";document.documentElement.dataset.theme=t;}catch(e){document.documentElement.dataset.theme="paper";}})();`,
           }}
         />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

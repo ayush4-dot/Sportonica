@@ -24,9 +24,9 @@ export default function AdminNav() {
 
   const brand = (
     <Link href="/admin" className="adm-brand" style={{ textDecoration: "none", color: "inherit" }}>
-      <div className="adm-brand-mark">K</div>
+      <div className="adm-brand-mark">S</div>
       <div>
-        <div className="adm-brand-name">Khelam Na</div>
+        <div className="adm-brand-name">Sportonica</div>
         <div className="adm-brand-sub">Venue Console</div>
       </div>
     </Link>
@@ -41,8 +41,8 @@ export default function AdminNav() {
           <Menu size={20} />
         </button>
         <div className="adm-mobilebar-brand">
-          <div className="adm-brand-mark">K</div>
-          <span>Khelam Na</span>
+          <div className="adm-brand-mark">S</div>
+          <span>Sportonica</span>
         </div>
       </div>
 

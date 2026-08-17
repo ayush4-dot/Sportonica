@@ -389,7 +389,7 @@ export default function PlayTogetherWizard({
           <div className="bk-panel">
             <h3>How players pay you</h3>
             <p className="hint">
-              Khelam Na never holds player contributions — this is shown directly to approved
+              Sportonica never holds player contributions — this is shown directly to approved
               players so they can pay you.
             </p>
 
@@ -443,7 +443,7 @@ export default function PlayTogetherWizard({
 
             <div className="bk-split" style={{ marginTop: 4 }}>
               Expected player contribution: <b>Rs {contribution}</b> / player, paid to you in cash at the venue.
-              Khelam Na never collects this.
+              Sportonica never collects this.
             </div>
 
             <div className="pt-risk-box">

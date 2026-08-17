@@ -11,10 +11,10 @@ import { createClient } from "@/lib/supabase/client";
 import { getCachedUser } from "@/lib/supabase/authCache";
 import { generateKeyPair, exportPublicKeyJwk } from "./e2e";
 
-const DB_NAME = "khelamna-e2e";
+const DB_NAME = "sportonica-e2e";
 const STORE = "keypair";
 const KEY = "self";
-const RECONCILED_FLAG = "khelamna-e2e-reconciled";
+const RECONCILED_FLAG = "sportonica-e2e-reconciled";
 
 function openDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {

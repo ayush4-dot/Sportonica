@@ -1,8 +1,8 @@
 // Shared "Play Together" types — mirrors supabase/play_together.sql exactly.
 //
-// Model: the host books and pays for the venue through KhelamNa upfront.
+// Model: the host books and pays for the venue through Sportonica upfront.
 // Other players join for free and reimburse the host in cash at the venue —
-// KhelamNa never collects, holds, or distributes player contributions.
+// Sportonica never collects, holds, or distributes player contributions.
 
 export const GAME_STATUS = {
   AWAITING_PAYMENT: "awaiting_payment",
@@ -67,7 +67,7 @@ export interface Game {
   skill_level: SkillLevel;
   cancel_reason: string | null;
   // The host's own eSewa/Khalti QR + phone — players pay the host
-  // directly with these, never a KhelamNa QR.
+  // directly with these, never a Sportonica QR.
   host_qr_path: string | null;
   host_phone: string | null;
   status: GameStatus;

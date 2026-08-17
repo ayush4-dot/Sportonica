@@ -115,7 +115,7 @@ export default function ReviewPaymentModal({
 
         {confirming && (
           <div className="rpm-confirm">
-            <p><ShieldCheck size={14} /> Confirm that you have verified this payment against the Khelam Na merchant account.</p>
+            <p><ShieldCheck size={14} /> Confirm that you have verified this payment against the Sportonica merchant account.</p>
             <div className="rpm-actions">
               <button className="dt-btn ok" disabled={pending} onClick={approve}>
                 {pending ? "Approving…" : "Approve Payment"}

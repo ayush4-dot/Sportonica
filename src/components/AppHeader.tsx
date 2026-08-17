@@ -72,7 +72,7 @@ export default function AppHeader() {
     : [];
 
   const firstName = profile?.full_name?.trim().split(" ")[0] ?? null;
-  const initial = (firstName ?? "K").charAt(0).toUpperCase();
+  const initial = (firstName ?? "S").charAt(0).toUpperCase();
 
   return (
     <>

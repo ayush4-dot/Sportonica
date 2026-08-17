@@ -78,7 +78,7 @@ export default function PlayTogetherReviewModal({
 
         <div className="ptrm-sec-t">Payment</div>
         <Row label="Owes you" value={`Rs ${request.contribution_amount}`} accent />
-        <p className="ptrm-note">Paid directly to you — in cash, or via your eSewa/Khalti QR — never through Khelam Na.</p>
+        <p className="ptrm-note">Paid directly to you — in cash, or via your eSewa/Khalti QR — never through Sportonica.</p>
 
         {err && <div className="ptrm-err">{err}</div>}
 

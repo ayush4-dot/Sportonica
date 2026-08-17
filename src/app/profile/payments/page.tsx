@@ -71,7 +71,7 @@ export default async function PaymentsPage() {
       <div className="pf-wrap" style={{ maxWidth: 720 }}>
         <Link href="/profile" className="pf-back"><ArrowLeft size={15} /> Profile</Link>
         <h1 className="pf-hub-name" style={{ marginTop: 18 }}>Payments</h1>
-        <p className="pf-hub-tag">Court bookings paid to Khelam Na, and Play Together contributions paid to hosts.</p>
+        <p className="pf-hub-tag">Court bookings paid to Sportonica, and Play Together contributions paid to hosts.</p>
 
         <section className="pf-sec" style={{ marginTop: 40 }}>
           {rows.length === 0 ? (

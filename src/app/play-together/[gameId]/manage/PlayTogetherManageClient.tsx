@@ -245,7 +245,7 @@ export default function PlayTogetherManageClient({
           ) : (
             <>
               <p>
-                Cancelling notifies every approved and pending player. Khelam Na doesn&apos;t automatically
+                Cancelling notifies every approved and pending player. Sportonica doesn&apos;t automatically
                 refund your venue payment — any refund follows the venue&apos;s cancellation policy and must
                 currently be handled by an admin.
               </p>

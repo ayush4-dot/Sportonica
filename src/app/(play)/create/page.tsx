@@ -8,7 +8,7 @@ import "./mosaic.css";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Book a court in Kathmandu — Khelam Na",
+  title: "Book a court in Kathmandu — Sportonica",
   description: "Real courts, live availability, hourly slots. Book futsal, cricket, basketball, badminton and more across Kathmandu.",
 };
 

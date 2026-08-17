@@ -11,7 +11,7 @@
 // message to the client must therefore return an ActionError instead of
 // throwing. Truly unexpected errors (programmer bugs) can still throw —
 // there's no client-side message to preserve for those anyway.
-const ACTION_ERROR_TAG = "__khelamnaActionError" as const;
+const ACTION_ERROR_TAG = "__sportonicaActionError" as const;
 
 export type ActionError = { [ACTION_ERROR_TAG]: true; message: string };
 

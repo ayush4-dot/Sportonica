@@ -18,7 +18,7 @@ export default function ShareButton({ url, name }: { url: string; name: string }
     // message and the link preview as two separate items.
     if (navigator.share) {
       try {
-        await navigator.share({ title: `${name} · Khelam Na`, url: fullUrl });
+        await navigator.share({ title: `${name} · Sportonica`, url: fullUrl });
       } catch {
         /* user dismissed — stop here, don't also copy */
       }

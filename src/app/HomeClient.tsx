@@ -36,11 +36,11 @@ const STATS = [
 // FAQPage structured data so Google can surface it as a rich result.
 const FAQS = [
   {
-    q: "Is Khelam Na free to use?",
-    a: "Finding and joining pickup games is completely free. Booking a court only costs the venue's hourly rate, split automatically between everyone in the game — Khelam Na doesn't add booking fees on top.",
+    q: "Is Sportonica free to use?",
+    a: "Finding and joining pickup games is completely free. Booking a court only costs the venue's hourly rate, split automatically between everyone in the game — Sportonica doesn't add booking fees on top.",
   },
   {
-    q: "What sports can I play on Khelam Na?",
+    q: "What sports can I play on Sportonica?",
     a: "Futsal, cricket, basketball, volleyball, badminton, pickleball, swimming and running, with more added as venues sign up. Browse by sport on the Play page to see what's live near you today.",
   },
   {
@@ -56,7 +56,7 @@ const FAQS = [
     a: "Pay with Khalti, eSewa, FonePay or bank transfer. Your money sits in escrow and only reaches the host or venue after the game happens — if it's cancelled, you're covered.",
   },
   {
-    q: "Which cities does Khelam Na cover?",
+    q: "Which cities does Sportonica cover?",
     a: "We started in Kathmandu and have since expanded across the valley to Lalitpur and Bhaktapur, plus Pokhara, Bharatpur, Biratnagar and other cities around Nepal. Set your city from the location picker to see what's live there.",
   },
 ];
@@ -289,11 +289,11 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
 
   useEffect(() => {
     (async () => {
-      const raw = sessionStorage.getItem("khelamna_pending_intent");
+      const raw = sessionStorage.getItem("sportonica_pending_intent");
       if (!raw) return;
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      sessionStorage.removeItem("khelamna_pending_intent");
+      sessionStorage.removeItem("sportonica_pending_intent");
       const intent = JSON.parse(raw) as { type:"join"|"host"; eventId?:string };
       if (intent.type === "host") { router.push("/create"); return; }
       if (intent.type === "join" && intent.eventId) {
@@ -464,7 +464,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               </a>
             ))}
           </div>
-          <span style={{ fontSize:"12px", color:"var(--faint)" }}>© Khelamna 2026</span>
+          <span style={{ fontSize:"12px", color:"var(--faint)" }}>© Sportonica 2026</span>
         </footer>
 
       </div>

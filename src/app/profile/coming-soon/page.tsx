@@ -21,7 +21,7 @@ const SECTIONS: Record<string, { title: string; body: string }> = {
   },
   help: {
     title: "Help & Support",
-    body: "A dedicated help centre is on the way. For now, reach out to the Khelam Na team directly if you run into an issue.",
+    body: "A dedicated help centre is on the way. For now, reach out to the Sportonica team directly if you run into an issue.",
   },
   legal: {
     title: "Legal",

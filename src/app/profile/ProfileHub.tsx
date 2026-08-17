@@ -134,7 +134,7 @@ export default function ProfileHub({
       <div className="pf-hub-promo">
         <div>
           <div className="pf-hub-promo-t"><Users size={15} /> Invite your friends</div>
-          <p>Bring your team along. The more people on Khelam Na, the easier it is to fill a game.</p>
+          <p>Bring your team along. The more people on Sportonica, the easier it is to fill a game.</p>
         </div>
         <ShareButton url={`/p/${profile.username}`} name={name} />
       </div>

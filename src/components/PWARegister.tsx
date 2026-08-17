@@ -10,7 +10,7 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
-const DISMISS_KEY = "khelamna-install-dismissed";
+const DISMISS_KEY = "sportonica-install-dismissed";
 const SNOOZE_DAYS = 7;
 
 function isSnoozed() {
@@ -85,9 +85,9 @@ export default function PWARegister() {
 
   return (
     <div className="pwa-bar">
-      <div className="pwa-mark">K</div>
+      <div className="pwa-mark">S</div>
       <div className="pwa-copy">
-        <b>Add Khelam Na to your home screen</b>
+        <b>Add Sportonica to your home screen</b>
         {showIOS ? (
           <small>
             Tap <Share size={12} style={{ verticalAlign: -2, color: "#006241" }} /> below,

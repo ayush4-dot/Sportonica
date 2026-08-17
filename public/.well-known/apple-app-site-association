@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.khelamna.app",
+        "appID": "REPLACE_WITH_APPLE_TEAM_ID.com.sportonica.app",
         "paths": ["/auth/callback*", "/play-together/*", "/game/*", "/create/*"]
       }
     ]

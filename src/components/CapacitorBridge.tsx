@@ -46,7 +46,7 @@ export default function CapacitorBridge() {
     // Match the status bar to whichever theme is active, and keep it in
     // sync when the user flips the toggle (see src/lib/useTheme.ts).
     syncStatusBar();
-    window.addEventListener("khelamna-theme-change", syncStatusBar);
+    window.addEventListener("sportonica-theme-change", syncStatusBar);
 
     // Universal Link (iOS) / App Link (Android) reopening the app —
     // this is how a Google Sign-In started via Browser.open() (see
@@ -76,7 +76,7 @@ export default function CapacitorBridge() {
     });
 
     return () => {
-      window.removeEventListener("khelamna-theme-change", syncStatusBar);
+      window.removeEventListener("sportonica-theme-change", syncStatusBar);
       urlSub.then((s) => s.remove());
       backSub.then((s) => s.remove());
     };

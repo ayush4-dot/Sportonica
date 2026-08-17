@@ -10,7 +10,7 @@ export default async function PlatformUsersPage() {
   return (
     <>
       <h1 className="plt-h1">Users</h1>
-      <p className="plt-sub2">Everyone on Khelam Na. Promote players to venue owners here.</p>
+      <p className="plt-sub2">Everyone on Sportonica. Promote players to venue owners here.</p>
       <UsersGrid users={users} />
     </>
   );

@@ -1,5 +1,5 @@
 /* ================================================================
-   Khelamna Admin — "Floodlit Control Room"
+   Sportonica Admin — "Floodlit Control Room"
    Dark operations console. Sodium-vapor yellow = the floodlight.
    Mono for every number (this is an instrument panel, not a brochure).
    ================================================================ */
@@ -13,7 +13,7 @@
   --a-text:    #ECEEF2;
   --a-dim:     #5f756d;
   --a-faint:   #5f756d;
-  --a-accent:  #006241;   /* floodlight — KhelamNa brand green */
+  --a-accent:  #006241;   /* floodlight — Sportonica brand green */
   --a-turf:    #1e3932;
   --a-danger:  #ef4444;   /* genuine danger/error — cancelled, high no-show rate */
   --a-pink:    #ef4444;   /* legacy name, same token as --a-danger */

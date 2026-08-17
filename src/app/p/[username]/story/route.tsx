@@ -21,7 +21,7 @@ export async function GET(
     return new ImageResponse(
       (
         <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#0B0D11", color: "#F2EDE6", fontSize: 72, fontWeight: 700 }}>
-          Khelam Na
+          Sportonica
         </div>
       ),
       { width: 1080, height: 1920 }
@@ -129,7 +129,7 @@ export async function GET(
             K
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Khelam Na</div>
+            <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
             <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>Kathmandu&apos;s sports platform</div>
           </div>
         </div>

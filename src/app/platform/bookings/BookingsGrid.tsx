@@ -87,7 +87,7 @@ export default function BookingsGrid({ bookings }: { bookings: BookingRow[] }) {
         columns={COLS}
         rows={bookings}
         pageSize={15}
-        exportName="khelamna-bookings"
+        exportName="sportonica-bookings"
         empty="No bookings yet."
       />
     </>

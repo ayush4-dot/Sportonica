@@ -6,7 +6,7 @@ import { browseVenues } from "@/lib/play/queries";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Host a game — Play Together — Khelam Na",
+  title: "Host a game — Play Together — Sportonica",
   description: "Book and pay for the venue upfront. Players join and reimburse you in cash at the venue.",
 };
 
@@ -21,7 +21,7 @@ export default async function NewGameVenuePickerPage() {
           <h1>Pick a <em>venue</em> to host at</h1>
           <p>
             You book and pay for the venue upfront. Players who join reimburse you in cash
-            at the venue — Khelam Na never collects their contributions.
+            at the venue — Sportonica never collects their contributions.
           </p>
         </div>
 

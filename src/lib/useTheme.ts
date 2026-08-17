@@ -7,8 +7,8 @@ export type Theme = "glass" | "paper";
 // v2: bumped so pre-existing "glass" values written by the old default
 // (nothing ever exposed a real theme toggle) don't shadow the new
 // light-by-default rollout.
-const KEY = "khelamna-theme-v2";
-const EVT = "khelamna-theme-change";
+const KEY = "sportonica-theme-v2";
+const EVT = "sportonica-theme-change";
 
 function applyTheme(t: Theme) {
   document.documentElement.dataset.theme = t;

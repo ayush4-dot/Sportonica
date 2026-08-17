@@ -16,7 +16,7 @@ import { useCity, inCity } from "@/lib/city";
 // into a province — loading it eagerly meant every visit to this page (the
 // app's main landing page) paid for Leaflet's JS whether they ever touched
 // the map or not.
-const KhelamnaMap = dynamic(() => import("@/components/KhelamnaMap"), { ssr: false });
+const SportonicaMap = dynamic(() => import("@/components/SportonicaMap"), { ssr: false });
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { usePlayTogetherEvents } from "@/lib/hooks/usePlayTogetherEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
@@ -268,7 +268,7 @@ function DiscoverInner() {
                       </span>
                       {ev.event_type === "platform_event" ? (
                         <span className="disc-official-badge" style={{ color: "#006241", borderColor: "rgba(0,98,65,0.4)", background: "rgba(0,98,65,0.12)" }}>
-                          ★ Khelam Na
+                          ★ Sportonica
                         </span>
                       ) : ev.event_type === "venue_event" ? (
                         <span className="disc-official-badge" style={{ color: "#2E7D5B", borderColor: "rgba(46,125,91,0.4)", background: "rgba(46,125,91,0.12)" }}>
@@ -433,7 +433,7 @@ function DiscoverInner() {
             >
               <ChevronRight size={14} style={{ transform: "rotate(180deg)" }} /> Back to Nepal
             </button>
-            <KhelamnaMap
+            <SportonicaMap
               center={drill.center}
               zoom={11}
               height="100%"

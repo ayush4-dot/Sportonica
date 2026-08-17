@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 // directly — this layout exists purely to give the route its own title
 // instead of inheriting the homepage's generic one.
 export const metadata: Metadata = {
-  title: "Find a game in Kathmandu — Khelam Na",
+  title: "Find a game in Kathmandu — Sportonica",
   description: "Browse live pickup games, filter by sport and time, and grab the last spot. Futsal, cricket, basketball, badminton and more.",
 };
 

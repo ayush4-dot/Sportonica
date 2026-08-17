@@ -63,7 +63,7 @@ export function EventsRail({ events }: { events: RailEvent[] }) {
               borderColor: platform ? "rgba(0,98,65,.4)" : "rgba(46,125,91,.4)",
               background: platform ? "rgba(0,98,65,.12)" : "rgba(46,125,91,.12)",
             }}>
-              {platform ? <><Star size={10} /> Khelam Na</> : <><Check size={10} /> Official</>}
+              {platform ? <><Star size={10} /> Sportonica</> : <><Check size={10} /> Official</>}
             </div>
             <div className="rc-sport" style={{ color: c }}>{e.sport}</div>
             <div className="rc-title">{e.title}</div>

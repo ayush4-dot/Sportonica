@@ -15,9 +15,9 @@ const KTM = "Asia/Kathmandu";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const g = await getGame(id);
-  if (!g) return { title: "Game · Khelam Na" };
+  if (!g) return { title: "Game · Sportonica" };
   return {
-    title: `${g.title} · Khelam Na`,
+    title: `${g.title} · Sportonica`,
     description: `${g.sport} at ${g.venue} · ${g.slots_remaining} spots left · Rs ${g.fee}`,
   };
 }
@@ -55,7 +55,7 @@ export default async function GamePage({ params }: { params: Promise<{ id: strin
           <div>
             {/* Masthead */}
             <div className="gm-eyebrow" style={{ color }}>
-              {game.event_type === "platform_event" ? "★ Khelam Na event"
+              {game.event_type === "platform_event" ? "★ Sportonica event"
                 : game.event_type === "venue_event" ? "✓ Official venue event"
                 : "Pickup game"}
               <span className="sep" />

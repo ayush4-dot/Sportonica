@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * KhelamnaMap — shared Leaflet map used across:
+ * SportonicaMap — shared Leaflet map used across:
  *   - /discover  (read-only, shows event pins)
  *   - /create    (read-only, shows venue pin from address)
  *   - /admin/venue (pick-a-point, updates lat/lng)
@@ -40,7 +40,7 @@ interface Props {
 // Kathmandu city centre default
 const KTM: [number, number] = [27.7172, 85.324];
 
-export default function KhelamnaMap({
+export default function SportonicaMap({
   center = KTM,
   zoom = 14,
   pins = [],

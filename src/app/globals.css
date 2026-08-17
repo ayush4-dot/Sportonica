@@ -4,7 +4,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* ── KhelamNa green system — the single source of truth. Every other
+  /* ── Sportonica green system — the single source of truth. Every other
      color token on this page (and most component-local ones) resolves
      back to one of these five. ── */
   --color-primary:       #006241;

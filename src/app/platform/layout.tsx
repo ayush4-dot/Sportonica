@@ -15,9 +15,9 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <div className="plt">
       <header className="plt-top">
         <div className="plt-brand">
-          <span className="plt-k">K</span>
+          <span className="plt-k">S</span>
           <div>
-            <div className="plt-name">Khelam Na</div>
+            <div className="plt-name">Sportonica</div>
             <div className="plt-sub">Platform console</div>
           </div>
         </div>

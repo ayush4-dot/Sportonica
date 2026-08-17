@@ -1,4 +1,4 @@
-export const metadata = { title: "Offline · Khelam Na" };
+export const metadata = { title: "Offline · Sportonica" };
 
 export default function OfflinePage() {
   return (
@@ -12,7 +12,7 @@ export default function OfflinePage() {
           width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#ffffff",
           display: "grid", placeItems: "center", margin: "0 auto 22px",
           fontFamily: "'Inter', sans-serif", fontSize: 34, fontWeight: 800,
-        }}>K</div>
+        }}>S</div>
 
         <h1 style={{
           fontFamily: "'Inter', sans-serif",
@@ -21,7 +21,7 @@ export default function OfflinePage() {
           You&apos;re offline
         </h1>
         <p style={{ fontSize: 14.5, lineHeight: 1.6, opacity: 0.65, margin: "0 0 26px" }}>
-          Khelam Na needs a connection to show live games and court availability.
+          Sportonica needs a connection to show live games and court availability.
           Check your network and try again.
         </p>
 
