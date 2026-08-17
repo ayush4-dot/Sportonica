@@ -1,5 +1,5 @@
 -- ================================================================
--- Khelam Na — "Play Together" Phase 2: host-approval -> payment ->
+-- Sportonica — "Play Together" Phase 2: host-approval -> payment ->
 -- verification -> confirmed-membership state machine.
 -- Run this whole file in the Supabase SQL Editor, AFTER play_together.sql.
 -- Safe to re-run.
