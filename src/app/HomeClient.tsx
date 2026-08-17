@@ -446,8 +446,8 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         ══════════════════════════════════ */}
         <footer className="p-footer">
           <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"2px" }}>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"var(--chalk)", fontFamily:"'Inter',sans-serif" }}>Khelam</span>
-            <span style={{ fontSize:"18px", fontWeight:800, color:"#006241", fontFamily:"'Inter',sans-serif" }}> Na.</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"var(--chalk)", fontFamily:"'Inter',sans-serif" }}>Sport</span>
+            <span style={{ fontSize:"18px", fontWeight:800, color:"#006241", fontFamily:"'Inter',sans-serif" }}>onica.</span>
           </a>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
             {[
