@@ -15,6 +15,7 @@ import { priceFor, offerLabel, whenLabel } from "@/lib/play/priceCalc";
 import type { Court, CourtHours } from "@/lib/admin/types";
 import type { SkillLevel } from "@/lib/playTogether/types";
 import SkillLevelPicker, { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
+import { useHardwareBack } from "@/lib/capacitor/hardwareBack";
 
 const KTM_TZ = "Asia/Kathmandu";
 
@@ -167,6 +168,15 @@ export default function BookingFlow({
     setStep((v) => Math.min(lastStep, v + 1));
   }
   function back() { setErr(null); setStep((v) => Math.max(0, v - 1)); }
+
+  // Android hardware back steps back through the wizard instead of
+  // leaving the page — only while there's an earlier step to return to
+  // and we're not already past the wizard (payment/success screens fall
+  // through to CapacitorBridge's default behavior).
+  useHardwareBack(() => {
+    if (!done && !awaitingPayment && step > 0) { back(); return true; }
+    return false;
+  });
 
   function confirm() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }

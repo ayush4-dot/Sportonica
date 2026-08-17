@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Download, X, Share } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
 
 // Chrome fires this before showing its own install banner.
 interface InstallPromptEvent extends Event {
@@ -27,6 +28,11 @@ export default function PWARegister() {
   const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
+    // The native app IS the installed app — "add to home screen" is
+    // meaningless (and its own giveaway that this used to be a wrapped
+    // website) once you're already running inside it.
+    if (Capacitor.isNativePlatform()) return;
+
     // 1. Register the service worker.
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/sw.js").catch((e) =>

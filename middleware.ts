@@ -64,6 +64,6 @@ export const config = {
   // that is a page navigation and none of it needs the auth/role gating
   // below, so it's excluded here too.
   matcher: [
-    '/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|sw\\.js|icons/|panels/|sports/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|mp4|css|js|woff2?|geojson)$).*)',
+    '/((?!_next/static|_next/image|favicon\\.ico|manifest\\.webmanifest|sw\\.js|icons/|panels/|sports/|\\.well-known/|.*\\.(?:png|jpg|jpeg|gif|webp|avif|svg|ico|mp4|css|js|woff2?|geojson)$).*)',
   ],
 }

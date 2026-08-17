@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
+import { Browser } from "@capacitor/browser";
 import { createClient } from "@/lib/supabase/client";
 
 // Google's own mark — required by their branding guidelines if you say
@@ -35,8 +37,18 @@ export default function GoogleButton({
     });
     console.log("[GoogleButton] supabase replied", { data, error });
     if (error) { setErr(error.message); setPending(false); return; }
-    // Some setups don't auto-navigate — push manually if we got a URL back.
-    if (data?.url) window.location.href = data.url;
+    if (!data?.url) return;
+    // Google blocks OAuth entirely inside an embedded/wrapped WebView
+    // (Error 400: disallowed_useragent) — in the native app this has to
+    // open in the system browser (Custom Tabs / SFSafariViewController)
+    // instead of navigating the app's own WebView. CapacitorBridge.tsx
+    // listens for the app being reopened via the Universal/App Link once
+    // Google → /auth/callback finishes and brings the user back in.
+    if (Capacitor.isNativePlatform()) {
+      await Browser.open({ url: data.url });
+    } else {
+      window.location.href = data.url;
+    }
   }
 
   return (

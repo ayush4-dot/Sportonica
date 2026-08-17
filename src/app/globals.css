@@ -37,6 +37,30 @@
 
 html { scroll-behavior: smooth; }
 
+/* ── Native app only (class set by CapacitorBridge.tsx) — kill every
+   tell that this is a wrapped website, not a "real" app. Left off the
+   plain website so normal browser behavior (text selection, copy on
+   long-press, momentum bounce) is untouched there. ── */
+html.capacitor-native,
+html.capacitor-native body {
+  overscroll-behavior: none;
+}
+html.capacitor-native * {
+  -webkit-tap-highlight-color: transparent;
+}
+/* UI chrome only, not text content — inputs/textareas/content areas
+   stay selectable so a player can still copy e.g. a venue address. */
+html.capacitor-native button,
+html.capacitor-native a,
+html.capacitor-native .dock,
+html.capacitor-native [class*="-btn"],
+html.capacitor-native [class*="-chip"],
+html.capacitor-native [class*="-card"] {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 body {
   background: var(--bg);
   color: var(--paper);

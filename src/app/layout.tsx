@@ -3,6 +3,8 @@ import Script from 'next/script'
 import './globals.css'
 import NavWrapper from '@/components/NavWrapper'
 import PWARegister from '@/components/PWARegister'
+import CapacitorBridge from '@/components/CapacitorBridge'
+import PageTransition from '@/components/PageTransition'
 
 export const metadata: Metadata = {
   // Social bots need absolute URLs for og:image. In production set
@@ -73,8 +75,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       {/* Extensions inject attributes into body before React hydrates. */}
       <body suppressHydrationWarning>
         <NavWrapper />
-        {children}
+        <PageTransition>{children}</PageTransition>
         <PWARegister />
+        <CapacitorBridge />
       </body>
     </html>
   )

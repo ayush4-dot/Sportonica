@@ -12,6 +12,7 @@ import WeekStrip from "../../../(play)/create/[id]/WeekStrip";
 import type { Court, CourtHours } from "@/lib/admin/types";
 import type { SkillLevel } from "@/lib/playTogether/types";
 import SkillLevelPicker, { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
+import { useHardwareBack } from "@/lib/capacitor/hardwareBack";
 
 const KTM_TZ = "Asia/Kathmandu";
 
@@ -137,6 +138,11 @@ export default function PlayTogetherWizard({
     setStep((v) => Math.min(STEPS.length - 1, v + 1));
   }
   function back() { setErr(null); setStep((v) => Math.max(0, v - 1)); }
+
+  useHardwareBack(() => {
+    if (!done && !awaitingPayment && step > 0) { back(); return true; }
+    return false;
+  });
 
   function submit() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
