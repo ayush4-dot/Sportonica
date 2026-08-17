@@ -1,4 +1,4 @@
-package com.khelamna.app;
+package com.sportonica.app;
 
 import com.getcapacitor.BridgeActivity;
 
