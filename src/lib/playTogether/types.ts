@@ -11,6 +11,11 @@ export const GAME_STATUS = {
 } as const;
 export type GameStatus = (typeof GAME_STATUS)[keyof typeof GAME_STATUS];
 
+// Mirrors SKILL_LABEL in src/lib/play/gameQueries.ts (the regular-events
+// system) — same four values, so the two game types read consistently
+// wherever they're mixed together (e.g. Discover's shared card grid).
+export type SkillLevel = "any" | "beginner" | "intermediate" | "advanced";
+
 // A "Join" tap only ever creates a 'requested' row (PENDING_HOST_APPROVAL).
 // A player is NEVER a confirmed member just because the host approved the
 // request — approval only opens a 2-hour payment window ('payment_pending').
@@ -57,6 +62,9 @@ export interface Game {
   service_fee: number;
   joining_deadline: string;
   notes: string | null;
+  // Informational only — nothing server-side checks a requester's actual
+  // skill against this; it just helps a player judge fit before asking.
+  skill_level: SkillLevel;
   cancel_reason: string | null;
   // The host's own eSewa/Khalti QR + phone — players pay the host
   // directly with these, never a KhelamNa QR.
@@ -149,6 +157,7 @@ export function playerWhatsappUrl(phone: string, message: string): string | null
 export const PLAY_TOGETHER_ERROR_MESSAGES: Record<string, string> = {
   RISK_NOT_ACKNOWLEDGED: "Please confirm you understand the venue payment terms before continuing.",
   INVALID_CAPACITY: "Minimum players must be at least 1, and can't be more than the maximum.",
+  INVALID_SKILL_LEVEL: "Pick a valid skill level.",
   DEADLINE_AFTER_START: "The joining deadline must be before the game starts.",
   STARTS_AT_IN_PAST: "That time has already passed. Pick a new time and try again.",
   DEADLINE_IN_PAST: "With this start time, the joining deadline would already be in the past. Pick a later start time or a shorter deadline window.",

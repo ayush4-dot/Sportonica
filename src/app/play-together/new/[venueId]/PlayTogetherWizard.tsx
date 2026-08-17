@@ -10,6 +10,8 @@ import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "../../../(play)/create/[id]/SlotPicker";
 import WeekStrip from "../../../(play)/create/[id]/WeekStrip";
 import type { Court, CourtHours } from "@/lib/admin/types";
+import type { SkillLevel } from "@/lib/playTogether/types";
+import SkillLevelPicker, { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
 
 const KTM_TZ = "Asia/Kathmandu";
 
@@ -66,6 +68,7 @@ export default function PlayTogetherWizard({
   const [duration, setDuration] = useState(1);
   const [maxPlayers, setMaxPlayers] = useState(10);
   const [minPlayers, setMinPlayers] = useState(8);
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>("any");
   const [deadlineHours, setDeadlineHours] = useState(2);
   const [notes, setNotes] = useState("");
   const [ackRisk, setAckRisk] = useState(false);
@@ -151,6 +154,7 @@ export default function PlayTogetherWizard({
           game_format: gameFormat || undefined,
           min_players: minPlayers,
           max_players: maxPlayers,
+          skill_level: skillLevel,
           joining_deadline: new Date(new Date(startsAt).getTime() - deadlineHours * 3600_000).toISOString(),
           host_qr_path: qrPath,
           host_phone: hostPhone.trim(),
@@ -207,6 +211,7 @@ export default function PlayTogetherWizard({
               { label: "Court", value: court?.name ?? "—" },
               { label: "Sport", value: `${court?.sport ?? ""}${gameFormat ? " · " + gameFormat : ""}` },
               { label: "Players", value: `${maxPlayers} max, ${minPlayers} min` },
+              { label: "Skill level", value: SKILL_LEVEL_LABEL[skillLevel] },
             ]}
             footer={
               <button className="play-btn gold" onClick={() => router.push("/my-games")}>Go to My Games</button>
@@ -352,6 +357,9 @@ export default function PlayTogetherWizard({
               {minPlayers} / {maxPlayers} players needed for the game to be viable.
             </p>
 
+            <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>What skill level are you looking for?</p>
+            <SkillLevelPicker value={skillLevel} onChange={setSkillLevel} />
+
             <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Joining closes</p>
             <div className="bk-chips">
               {DEADLINE_OPTS.map((d) => (
@@ -419,6 +427,7 @@ export default function PlayTogetherWizard({
             </span></div>
             <div className="bk-sum-row"><span className="lbl">Time</span><span className="val">{hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—"}</span></div>
             <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{maxPlayers} max, {minPlayers} min</span></div>
+            <div className="bk-sum-row"><span className="lbl">Skill level</span><span className="val">{SKILL_LEVEL_LABEL[skillLevel]}</span></div>
             <div className="bk-sum-row"><span className="lbl">Your contact</span><span className="val">{hostPhone || "—"}</span></div>
             <div className="bk-sum-row"><span className="lbl">Venue booking</span><span className="val">Rs {estimatedPrice}</span></div>
             <div className="bk-sum-row bk-sum-total">

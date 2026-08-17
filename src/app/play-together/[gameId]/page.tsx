@@ -6,6 +6,8 @@ import { getGame, getGamePlayers, getMyGamePlayerStatus, getSimilarPublishedGame
 import { createClient } from "@/lib/supabase/server";
 import { availablePlayerSpots } from "@/lib/playTogether/types";
 import { sportColor, normalizeSport } from "@/lib/sports";
+import { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
+import ShareGameButton from "@/components/playTogether/ShareGameButton";
 import PlayTogetherJoinPanel from "./PlayTogetherJoinPanel";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +64,14 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
   return (
     <div className="play">
       <div className="play-wrap">
-        <Link href="/play-together" className="bk-back"><ArrowLeft size={15} /> All games</Link>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <Link href="/play-together" className="bk-back"><ArrowLeft size={15} /> All games</Link>
+          <ShareGameButton
+            gameId={game.id}
+            title={`${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together`}
+            text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Khelam Na`}
+          />
+        </div>
 
         <div className="bk-layout" style={{ marginTop: 20 }}>
           <div>
@@ -85,6 +94,10 @@ export default async function PlayTogetherGamePage({ params }: { params: Promise
               <div className="pt-host">
                 <Avatar name={hostName} url={game.host?.avatar_url ?? null} size={32} />
                 <span>Hosted by <span className="pt-host-name">{hostName}</span></span>
+              </div>
+
+              <div className="pt-tags">
+                <span className="pt-tag">{SKILL_LEVEL_LABEL[game.skill_level] ?? SKILL_LEVEL_LABEL.any}</span>
               </div>
 
               {/* Key facts strip */}

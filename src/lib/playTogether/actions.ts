@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { friendlyPlayTogetherError } from "./types";
-import type { Game, GamePlayer, PlayTogetherPaymentMethod } from "./types";
+import type { Game, GamePlayer, PlayTogetherPaymentMethod, SkillLevel } from "./types";
 import {
   notifyPlayTogetherJoinRequested,
   notifyPlayTogetherJoinRejected,
@@ -65,6 +65,7 @@ export async function createGame(input: {
   host_phone: string;
   notes?: string;
   ack_risk: boolean;
+  skill_level?: SkillLevel;
 }): Promise<{ game: Game; price: number } | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
@@ -81,6 +82,7 @@ export async function createGame(input: {
     p_host_phone: input.host_phone.trim(),
     p_notes: input.notes?.trim() || null,
     p_ack_risk: input.ack_risk,
+    p_skill_level: input.skill_level ?? "any",
   });
   if (error) return actionError(friendlyPlayTogetherError(error.message));
   const game = data as Game;

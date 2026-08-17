@@ -59,9 +59,14 @@ create index if not exists idx_games_status_starts on public.games (status, star
 create index if not exists idx_games_host on public.games (host_id);
 
 -- Re-run safety: the table may already exist from an earlier run of this
--- file without these two columns.
+-- file without these columns.
 alter table public.games add column if not exists host_qr_path text;
 alter table public.games add column if not exists host_phone text;
+-- The skill level the host wants players to be — purely informational
+-- (shown on the game page so a player can judge fit before requesting to
+-- join); nothing server-side enforces a requester's actual skill.
+alter table public.games add column if not exists skill_level text not null default 'any'
+  check (skill_level in ('any','beginner','intermediate','advanced'));
 
 drop trigger if exists games_touch on public.games;
 create trigger games_touch before update on public.games
@@ -163,6 +168,13 @@ create policy game_players_read_published on public.game_players for select usin
 -- 'awaiting_payment' — never joinable — until the host's payment is
 -- confirmed (see finalize_play_together_game() below).
 -- ================================================================
+-- Signature is gaining p_skill_level below — create or replace only
+-- overwrites a function with the exact same argument types, so the old
+-- 12-arg version has to be dropped explicitly or it'd linger as a dead
+-- overload.
+drop function if exists public.create_play_together_game
+  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,text,text,boolean);
+
 create or replace function public.create_play_together_game(
   p_court_id          uuid,
   p_starts_at         timestamptz,
@@ -175,7 +187,8 @@ create or replace function public.create_play_together_game(
   p_host_qr_path      text,
   p_host_phone        text,
   p_notes             text default null,
-  p_ack_risk          boolean default false
+  p_ack_risk          boolean default false,
+  p_skill_level       text default 'any'
 ) returns public.games
 language plpgsql security definer set search_path = public as $$
 declare
@@ -200,6 +213,9 @@ begin
   if p_host_phone is null or length(trim(p_host_phone)) = 0 then
     raise exception 'HOST_PHONE_REQUIRED';
   end if;
+  if p_skill_level is null or p_skill_level not in ('any','beginner','intermediate','advanced') then
+    raise exception 'INVALID_SKILL_LEVEL';
+  end if;
 
   -- Atomic slot reservation — same locking/conflict-check every other
   -- court booking on the platform goes through.
@@ -208,19 +224,19 @@ begin
   insert into public.games (
     host_id, court_booking_id, venue_id, court_id, sport, game_format,
     starts_at, ends_at, min_players, max_players, contribution_amount,
-    joining_deadline, host_qr_path, host_phone, notes, status
+    joining_deadline, host_qr_path, host_phone, notes, skill_level, status
   ) values (
     auth.uid(), v_booking.id, v_booking.venue_id, p_court_id, p_sport, p_game_format,
     p_starts_at, p_ends_at, p_min_players, p_max_players,
     round(v_booking.price / p_max_players, 2),
-    p_joining_deadline, trim(p_host_qr_path), trim(p_host_phone), p_notes, 'awaiting_payment'
+    p_joining_deadline, trim(p_host_qr_path), trim(p_host_phone), p_notes, p_skill_level, 'awaiting_payment'
   ) returning * into v_game;
 
   return v_game;
 end;
 $$;
 grant execute on function public.create_play_together_game
-  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,text,text,boolean) to authenticated;
+  (uuid,timestamptz,timestamptz,text,text,int,int,timestamptz,text,text,text,boolean,text) to authenticated;
 
 -- ================================================================
 -- finalize_play_together_game: idempotent, mirrors

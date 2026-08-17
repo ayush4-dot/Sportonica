@@ -63,6 +63,14 @@
 [data-theme="paper"] .pt-player-row { background: rgba(20,23,30,.02); border-color: rgba(20,23,30,.1); }
 [data-theme="paper"] .pt-progress-track { background: rgba(20,23,30,.1); }
 
+.pt-share-btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--dim);
+  background: transparent; border: 1px solid var(--line); border-radius: 999px;
+  padding: 7px 14px; cursor: pointer; transition: border-color 0.2s, color 0.2s;
+}
+.pt-share-btn:hover { border-color: var(--sodium); color: var(--sodium); }
+
 /* ── Richer game-detail masthead/facts (mirrors src/app/game/[id]/game.css's
    editorial layout, but reuses this flow's own --dim/--faint/--line/--sodium
    vars from play.css so it stays visually consistent with the join panel,
@@ -74,8 +82,14 @@
 }
 .pt-eyebrow .sep { width: 20px; height: 1px; background: var(--line); }
 
-.pt-host { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--dim); margin: 0 0 18px; }
+.pt-host { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--dim); margin: 0 0 14px; }
 .pt-host-name { color: inherit; font-weight: 700; }
+
+.pt-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.pt-tag {
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 6px 13px; font-size: 12px; font-weight: 600; color: var(--dim);
+}
 
 .pt-facts {
   display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));

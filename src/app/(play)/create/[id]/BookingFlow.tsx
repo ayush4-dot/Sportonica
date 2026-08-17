@@ -13,6 +13,8 @@ import WeekStrip from "./WeekStrip";
 import type { PricingRule } from "@/lib/play/pricing";
 import { priceFor, offerLabel, whenLabel } from "@/lib/play/priceCalc";
 import type { Court, CourtHours } from "@/lib/admin/types";
+import type { SkillLevel } from "@/lib/playTogether/types";
+import SkillLevelPicker, { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
 
 const KTM_TZ = "Asia/Kathmandu";
 
@@ -72,6 +74,7 @@ export default function BookingFlow({
   // when this is on. ──────────────────────────────────────────────
   const [maxPlayers, setMaxPlayers] = useState(10);
   const [minPlayers, setMinPlayers] = useState(8);
+  const [skillLevel, setSkillLevel] = useState<SkillLevel>("any");
   const [deadlineHours, setDeadlineHours] = useState(2);
   const [ackRisk, setAckRisk] = useState(false);
   const [hostPhone, setHostPhone] = useState("");
@@ -204,6 +207,7 @@ export default function BookingFlow({
             sport: court.sport,
             min_players: minPlayers,
             max_players: maxPlayers,
+            skill_level: skillLevel,
             joining_deadline: new Date(new Date(startsAt).getTime() - deadlineHours * 3600_000).toISOString(),
             host_qr_path: qrPath!,
             host_phone: hostPhone.trim(),
@@ -493,6 +497,12 @@ export default function BookingFlow({
                   directly as they join.
                 </div>
 
+                <p className="hint" style={{ marginBottom: 2, marginTop: 20 }}>What skill level are you looking for?</p>
+                <p className="hint" style={{ marginBottom: 10, fontSize: 12, opacity: .7 }}>
+                  Shown on your game so players can judge if it&apos;s a fit before requesting to join.
+                </p>
+                <SkillLevelPicker value={skillLevel} onChange={setSkillLevel} />
+
                 <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>When should joining close?</p>
                 <div className="bk-chips">
                   {DEADLINE_OPTS.map((d) => (
@@ -564,6 +574,7 @@ export default function BookingFlow({
             {needPlayers && (
               <>
                 <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{maxPlayers} max, {minPlayers} min</span></div>
+                <div className="bk-sum-row"><span className="lbl">Skill level</span><span className="val">{SKILL_LEVEL_LABEL[skillLevel]}</span></div>
                 <div className="bk-sum-row"><span className="lbl">Your contact</span><span className="val">{hostPhone || "—"}</span></div>
               </>
             )}

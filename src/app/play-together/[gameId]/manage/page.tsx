@@ -8,6 +8,8 @@ import {
 } from "@/lib/playTogether/queries";
 import { createClient } from "@/lib/supabase/server";
 import { availablePlayerSpots } from "@/lib/playTogether/types";
+import { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
+import ShareGameButton from "@/components/playTogether/ShareGameButton";
 import PlayTogetherManageClient from "./PlayTogetherManageClient";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +47,16 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
   return (
     <div className="play">
       <div className="play-wrap">
-        <Link href={`/play-together/${gameId}`} className="bk-back"><ArrowLeft size={15} /> Game page</Link>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <Link href={`/play-together/${gameId}`} className="bk-back"><ArrowLeft size={15} /> Game page</Link>
+          {game.status === "published" && (
+            <ShareGameButton
+              gameId={gameId}
+              title={`${game.sport}${game.game_format ? " · " + game.game_format : ""} · Play Together`}
+              text={`Join my ${game.sport} game at ${game.venues?.name ?? "the venue"} on Khelam Na`}
+            />
+          )}
+        </div>
 
         <div className="bk-panel" style={{ marginTop: 20 }}>
           <span className={`pt-status-pill ${game.status}`} style={{ marginBottom: 10 }}>
@@ -65,6 +76,7 @@ export default async function ManagePlayTogetherGamePage({ params }: { params: P
             <span className="val">{booking?.payment_status === "paid" ? "✓ Paid" : booking?.payment_status ?? "—"}</span></div>
           <div className="bk-sum-row"><span className="lbl">Venue cost</span><span className="val">Rs {booking?.price ?? 0}</span></div>
           <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{players.length} / {spots}</span></div>
+          <div className="bk-sum-row"><span className="lbl">Skill level</span><span className="val">{SKILL_LEVEL_LABEL[game.skill_level] ?? SKILL_LEVEL_LABEL.any}</span></div>
           <div className="bk-sum-row"><span className="lbl">Player contribution</span><span className="val">Rs {game.contribution_amount}/player</span></div>
           <div className="bk-sum-row bk-sum-total"><span className="lbl">Expected collection</span><span className="val">Rs {expectedCollection}</span></div>
 
