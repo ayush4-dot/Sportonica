@@ -2,8 +2,9 @@ import { createClient } from "@/lib/supabase/server";
 import type { Game, GamePlayer } from "./types";
 
 export interface GameWithVenue extends Game {
-  venues: { name: string } | null;
+  venues: { name: string; address: string | null; lat: number | null; lng: number | null } | null;
   courts: { name: string } | null;
+  host: { full_name: string | null; name: string | null; avatar_url: string | null } | null;
 }
 
 // Public browsing — RLS (games_read_public) allows anyone to select
@@ -33,8 +34,26 @@ export async function listPublishedGames(): Promise<(GameWithVenue & { joined_co
 export async function getGame(gameId: string): Promise<GameWithVenue | null> {
   const sb = await createClient();
   const { data } = await sb
-    .from("games").select("*, venues(name), courts(name)").eq("id", gameId).maybeSingle();
+    .from("games")
+    .select("*, venues(name, address, lat, lng), courts(name), host:profiles!host_id(full_name, name, avatar_url)")
+    .eq("id", gameId).maybeSingle();
   return data as GameWithVenue | null;
+}
+
+// Other upcoming Play Together games in the same sport — mirrors
+// getSimilarGames() in src/lib/play/gameQueries.ts for regular events.
+export async function getSimilarPublishedGames(game: Pick<Game, "id" | "sport">, limit = 6): Promise<GameWithVenue[]> {
+  const sb = await createClient();
+  const { data } = await sb
+    .from("games")
+    .select("*, venues(name, address, lat, lng), courts(name), host:profiles!host_id(full_name, name, avatar_url)")
+    .eq("sport", game.sport)
+    .neq("id", game.id)
+    .eq("status", "published")
+    .gt("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: true })
+    .limit(limit);
+  return (data as GameWithVenue[]) ?? [];
 }
 
 export interface GamePlayerWithProfile extends GamePlayer {

@@ -63,6 +63,59 @@
 [data-theme="paper"] .pt-player-row { background: rgba(20,23,30,.02); border-color: rgba(20,23,30,.1); }
 [data-theme="paper"] .pt-progress-track { background: rgba(20,23,30,.1); }
 
+/* ── Richer game-detail masthead/facts (mirrors src/app/game/[id]/game.css's
+   editorial layout, but reuses this flow's own --dim/--faint/--line/--sodium
+   vars from play.css so it stays visually consistent with the join panel,
+   badges and buttons already on this page). ── */
+.pt-eyebrow {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  font-family: 'Inter', sans-serif; font-size: 11px;
+  letter-spacing: 0.16em; text-transform: uppercase; margin-bottom: 10px;
+}
+.pt-eyebrow .sep { width: 20px; height: 1px; background: var(--line); }
+
+.pt-host { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--dim); margin: 0 0 18px; }
+.pt-host-name { color: inherit; font-weight: 700; }
+
+.pt-facts {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); margin: 4px 0 14px;
+}
+.pt-fact { padding: 15px 16px 15px 0; text-decoration: none; color: inherit; }
+.pt-fact + .pt-fact { padding-left: 16px; border-left: 1px solid var(--line); }
+.pt-fact-link:hover .pt-fact-v { color: var(--sodium); }
+.pt-fact-l {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Inter', sans-serif; font-size: 9.5px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px;
+}
+.pt-fact-v { font-size: 14px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.25; }
+.pt-fact-s { font-size: 11.5px; color: var(--dim); margin-top: 3px; }
+
+.pt-sec { margin-top: 24px; }
+.pt-sec-t {
+  display: flex; align-items: baseline; gap: 10px;
+  font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800;
+  letter-spacing: -0.01em; margin: 0 0 12px;
+}
+.pt-sec-count { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 11.5px; color: var(--faint); font-weight: 400; }
+
+.pt-players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; margin-top: 12px; }
+.pt-player-card {
+  display: flex; align-items: center; gap: 10px; padding: 10px;
+  border: 1px solid var(--line); border-radius: 12px;
+}
+
+.pt-rail { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+.pt-mini {
+  min-width: 180px; border: 1px solid var(--line); border-radius: 13px;
+  padding: 13px; text-decoration: none; color: inherit; transition: border-color 0.2s;
+}
+.pt-mini:hover { border-color: rgba(0,98,65,0.4); }
+.pt-mini-t { font-size: 13.5px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 6px; }
+.pt-mini-m { font-size: 11.5px; color: var(--faint); font-family: 'Inter', sans-serif; margin-bottom: 10px; }
+.pt-mini-f { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 600; }
+
 /* The floating dock nav (MagnetDock.tsx) sits fixed on the right edge
    at desktop widths and was overlapping/clipping the sticky join panel
    here (contribution amount, "request reviewed" copy). Give the game
