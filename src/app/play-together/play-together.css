@@ -62,3 +62,13 @@
 
 [data-theme="paper"] .pt-player-row { background: rgba(20,23,30,.02); border-color: rgba(20,23,30,.1); }
 [data-theme="paper"] .pt-progress-track { background: rgba(20,23,30,.1); }
+
+/* The floating dock nav (MagnetDock.tsx) sits fixed on the right edge
+   at desktop widths and was overlapping/clipping the sticky join panel
+   here (contribution amount, "request reviewed" copy). Give the game
+   page's two-column layout room to clear it. Below MagnetDock's own
+   780px breakpoint the dock drops to a bottom bar, so no reservation
+   is needed there. */
+@media (min-width: 781px) {
+  .bk-layout { padding-right: 100px; }
+}
