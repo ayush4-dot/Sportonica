@@ -1,5 +1,5 @@
 /* ================================================================
-   Khelam Na service worker.
+   Sportonica service worker.
    Strategy by request type:
      · navigations  → network first, cached shell as fallback offline
      · static files → cache first (fonts, icons, images)
@@ -7,7 +7,7 @@
    Booking and availability data must never be served stale.
    ================================================================ */
 
-const VERSION = "khelamna-v1";
+const VERSION = "sportonica-v1";
 const SHELL = `${VERSION}-shell`;
 const ASSETS = `${VERSION}-assets`;
 const OFFLINE_URL = "/offline";
