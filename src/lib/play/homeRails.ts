@@ -39,6 +39,14 @@ export async function getHomeRails() {
   const sb = await createClient();
   const nowIso = new Date().toISOString();
 
+  // The venues query used to come back with just the 8 rows, then a
+  // second query looked up courts for those specific venue IDs to find
+  // the cheapest one — a genuine data dependency (needs the IDs first),
+  // so it couldn't join the Promise.all above and always cost a full
+  // extra sequential DB round trip on every homepage load. Embedding
+  // courts directly in this select gets everything in one round trip
+  // instead, at the cost of over-fetching a little more court data than
+  // needed (fine at this scale — 8 venues' worth of courts).
   const [officialRes, gamesRes, venuesRes] = await Promise.all([
     sb.from("events_full")
       .select("*")
@@ -53,33 +61,25 @@ export async function getHomeRails() {
       .order("event_date", { ascending: true })
       .limit(8),
     sb.from("venues")
-      .select("id, name, venue_type, address, photos, sports, lat, lng")
+      .select("id, name, venue_type, address, photos, sports, lat, lng, courts(base_price, status)")
       .eq("verification_status", "verified")
       .eq("status", "open")
       .order("created_at", { ascending: false })
       .limit(8),
   ]);
 
-  // Cheapest court per venue, for the "from Rs X/hr" line.
-  const venueIds = (venuesRes.data ?? []).map((v) => v.id);
-  const { data: courts } = venueIds.length
-    ? await sb.from("courts").select("venue_id, base_price").in("venue_id", venueIds).eq("status", "active")
-    : { data: [] as { venue_id: string; base_price: number }[] };
-
-  const cheapest = new Map<string, number>();
-  (courts ?? []).forEach((c) => {
-    const p = Number(c.base_price) || 0;
-    if (p <= 0) return;
-    const cur = cheapest.get(c.venue_id);
-    if (cur == null || p < cur) cheapest.set(c.venue_id, p);
-  });
-
   return {
     official: (officialRes.data ?? []) as RailEvent[],
     games: (gamesRes.data ?? []) as RailEvent[],
-    venues: (venuesRes.data ?? []).map((v) => ({
-      ...v,
-      from_price: cheapest.get(v.id) ?? null,
-    })) as RailVenue[],
+    venues: (venuesRes.data ?? []).map((v) => {
+      const { courts, ...venue } = v as typeof v & {
+        courts: { base_price: number; status: string }[] | null;
+      };
+      const prices = (courts ?? [])
+        .filter((c) => c.status === "active")
+        .map((c) => Number(c.base_price) || 0)
+        .filter((p) => p > 0);
+      return { ...venue, from_price: prices.length ? Math.min(...prices) : null };
+    }) as RailVenue[],
   };
 }
