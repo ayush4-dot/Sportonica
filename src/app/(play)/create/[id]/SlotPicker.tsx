@@ -65,12 +65,14 @@ export default function SlotPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courtId, dateStr, durationMins]);
 
-  // Counts per band, so the tabs can say what's actually free.
+  // Counts per band, so the tabs can say what's actually free. Booked and
+  // past slots aren't shown at all (not just disabled), so only the free
+  // count matters here — a band with nothing free just doesn't get a tab.
   const counts = useMemo(() => {
-    const out: Record<string, { free: number; total: number }> = {};
+    const out: Record<string, { free: number }> = {};
     for (const b of BANDS) {
       const inBand = (slots ?? []).filter((s) => s.mins >= b.from && s.mins < b.to);
-      out[b.key] = { free: inBand.filter((s) => s.available).length, total: inBand.length };
+      out[b.key] = { free: inBand.filter((s) => s.available).length };
     }
     return out;
   }, [slots]);
@@ -102,7 +104,9 @@ export default function SlotPicker({
   }
 
   const activeBand = BANDS.find((b) => b.key === band) ?? BANDS[2];
-  const shown = slots.filter((s) => s.mins >= activeBand.from && s.mins < activeBand.to);
+  // Booked and already-past times are dropped here, not just disabled —
+  // this timetable should only ever show times someone could actually book.
+  const shown = slots.filter((s) => s.mins >= activeBand.from && s.mins < activeBand.to && s.available);
 
   return (
     <div className="sp">
@@ -110,11 +114,11 @@ export default function SlotPicker({
       <div className="sp-tabs">
         {BANDS.map((b) => {
           const c = counts[b.key];
-          if (!c || c.total === 0) return null;
+          if (!c || c.free === 0) return null;
           return (
             <button key={b.key} className={`sp-tab ${band === b.key ? "on" : ""}`} onClick={() => setBand(b.key)}>
               <span className="t">{b.label}</span>
-              <span className="n">{c.free ? `${c.free} free` : "full"}</span>
+              <span className="n">{c.free} free</span>
             </button>
           );
         })}
@@ -123,18 +127,12 @@ export default function SlotPicker({
       <div className="sp-grid">
         {shown.map((s) => {
           const picked = value === s.mins;
-          const cls = picked ? "picked" : s.available ? "free" : s.reason === "past" ? "past" : "taken";
           return (
             <button
               key={s.mins}
-              className={`sp-slot ${cls}`}
-              onClick={() => s.available && onPick(s.mins)}
-              disabled={!s.available}
-              title={
-                s.reason === "booked" ? "Already booked"
-                : s.reason === "past" ? "Too late for today"
-                : `Book ${s.label}`
-              }
+              className={`sp-slot ${picked ? "picked" : "free"}`}
+              onClick={() => onPick(s.mins)}
+              title={`Book ${s.label}`}
             >
               {s.label}
             </button>
@@ -144,9 +142,8 @@ export default function SlotPicker({
 
       <div className="sp-legend">
         <span><i className="sw free" /> Free</span>
-        <span><i className="sw taken" /> Booked</span>
         <span><i className="sw picked" /> Your pick</span>
-        <span className="sp-count">{free.length} of {slots.length} free today</span>
+        <span className="sp-count">{free.length} free today</span>
       </div>
 
       <style>{`
@@ -174,17 +171,6 @@ export default function SlotPicker({
         .sp-slot.free { cursor: pointer; }
         .sp-slot.free:hover { border-color: rgba(0,98,65,.6); transform: translateY(-2px); }
 
-        .sp-slot.taken {
-          cursor: not-allowed;
-          background: rgba(95,117,109,.12); border-color: rgba(95,117,109,.4);
-          color: rgba(95,117,109,.9);
-          text-decoration: line-through; text-decoration-thickness: 1px;
-        }
-        .sp-slot.past {
-          cursor: not-allowed; opacity: .25;
-          text-decoration: line-through; text-decoration-thickness: 1px;
-        }
-
         /* Your pick — solid, lifted and ringed so it can't be missed. */
         .sp-slot.picked {
           background: #006241; border-color: #006241; color: #ffffff;
@@ -200,7 +186,6 @@ export default function SlotPicker({
         .sp-legend span { display: inline-flex; align-items: center; gap: 6px; }
         .sp-legend .sw { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
         .sp-legend .sw.free   { border: 1px solid var(--line); }
-        .sp-legend .sw.taken  { background: rgba(95,117,109,.22); border: 1px solid rgba(95,117,109,.5); }
         .sp-legend .sw.picked { background: #006241; }
         .sp-count { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 11px; opacity: .55; }
 
