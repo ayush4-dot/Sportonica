@@ -37,6 +37,19 @@ export default function CapacitorBridge() {
     // app only — the website keeps normal browser behavior.
     document.documentElement.classList.add("capacitor-native");
 
+    // Same reasoning, same native-only scope: a real app's layout doesn't
+    // pinch-zoom or pan like a webpage. layout.tsx's viewport export sets
+    // initialScale for everyone (web needs pinch-zoom for accessibility —
+    // WCAG 1.4.4 — so it can't be disabled there); overwrite the rendered
+    // <meta name="viewport"> tag's content here, native-only, once mounted.
+    const viewportMeta = document.querySelector('meta[name="viewport"]');
+    if (viewportMeta) {
+      viewportMeta.setAttribute(
+        "content",
+        "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+      );
+    }
+
     // launchAutoHide is off (capacitor.config.ts) specifically so this
     // fires once this component — meaning the remote page — has actually
     // mounted, rather than a fixed timer that risks a blank-white gap on

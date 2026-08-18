@@ -8,8 +8,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         guard let windowScene = scene as? UIWindowScene else { return }
 
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = CAPBridgeViewController()
+        let bridgeVC = CAPBridgeViewController()
+        window?.rootViewController = bridgeVC
         window?.makeKeyAndVisible()
+
+        // A real app's layout doesn't pinch-zoom/pan like a webpage. The
+        // web layer already locks this via a native-only viewport meta
+        // tag (CapacitorBridge.tsx), but WKWebView can ignore a viewport
+        // meta change made after initial load, so disable the gesture
+        // here too as a native-level backstop.
+        bridgeVC.webView?.scrollView.pinchGestureRecognizer?.isEnabled = false
 
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
