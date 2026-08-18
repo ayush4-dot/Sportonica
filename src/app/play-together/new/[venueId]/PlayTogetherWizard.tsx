@@ -40,13 +40,13 @@ const FORMAT_OPTIONS: Record<string, string[]> = {
   Tennis: ["Singles", "Doubles"],
 };
 
-const DEADLINE_OPTS = [
-  { label: "1 hour before", hours: 1 },
-  { label: "2 hours before", hours: 2 },
-  { label: "4 hours before", hours: 4 },
-  { label: "12 hours before", hours: 12 },
-  { label: "24 hours before", hours: 24 },
-];
+// Players could request to join right up until the game starts, but a
+// short buffer avoids a request landing after the host's already left
+// for the venue. Fixed rather than a host-chosen "N hours before" picker
+// (removed — with a start time coming up soon, most of those options put
+// the deadline in the past before the host even finished this form, which
+// just produced a confusing validation error instead of a useful choice).
+const JOIN_DEADLINE_BUFFER_MINS = 15;
 
 const STEPS = ["Court", "Format", "When", "Capacity", "Payment details", "Confirm"];
 
@@ -70,7 +70,6 @@ export default function PlayTogetherWizard({
   const [maxPlayers, setMaxPlayers] = useState(10);
   const [minPlayers, setMinPlayers] = useState(8);
   const [skillLevel, setSkillLevel] = useState<SkillLevel>("any");
-  const [deadlineHours, setDeadlineHours] = useState(2);
   const [notes, setNotes] = useState("");
   const [ackRisk, setAckRisk] = useState(false);
 
@@ -168,7 +167,7 @@ export default function PlayTogetherWizard({
           min_players: minPlayers,
           max_players: maxPlayers,
           skill_level: skillLevel,
-          joining_deadline: new Date(new Date(startsAt).getTime() - deadlineHours * 3600_000).toISOString(),
+          joining_deadline: new Date(new Date(startsAt).getTime() - JOIN_DEADLINE_BUFFER_MINS * 60_000).toISOString(),
           host_qr_path: qrPath,
           host_phone: hostPhone.trim(),
           notes: notes.trim() || undefined,
@@ -379,16 +378,6 @@ export default function PlayTogetherWizard({
 
             <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>What skill level are you looking for?</p>
             <SkillLevelPicker value={skillLevel} onChange={setSkillLevel} />
-
-            <p className="hint" style={{ marginBottom: 8, marginTop: 20 }}>Joining closes</p>
-            <div className="bk-chips">
-              {DEADLINE_OPTS.map((d) => (
-                <button key={d.hours} className={`bk-chip ${deadlineHours === d.hours ? "on" : ""}`}
-                  onClick={() => setDeadlineHours(d.hours)}>
-                  {d.label}
-                </button>
-              ))}
-            </div>
 
             <div style={{ marginTop: 20 }}>
               <p className="hint" style={{ marginBottom: 8 }}>Anything players should know? (optional)</p>
