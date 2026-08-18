@@ -112,11 +112,22 @@ export async function getDaySlots(
     .forEach((b) => busy.push(rangeOf(b.starts_at, b.ends_at)));
   (blocks ?? []).forEach((b) => busy.push(rangeOf(b.starts_at, b.ends_at)));
 
-  // "Now" in Kathmandu minutes, for hiding past slots today.
-  const nowKtm = new Date().toLocaleString("en-CA", { timeZone: "Asia/Kathmandu", hour12: false });
-  const isToday = nowKtm.slice(0, 10) === dateStr;
+  // "Now" in Kathmandu minutes, for hiding past slots today. en-CA's
+  // combined date+time format is "YYYY-MM-DD, HH:MM:SS" — a comma-space,
+  // not a single space — so slicing fixed date-string offsets out of it
+  // silently pulled the wrong characters (Number(" 1") and Number(":2"),
+  // one wrong and one NaN) and made this comparison always false: no
+  // slot was ever actually excluded as "past", for anyone, at any time.
+  // Two separate, single-purpose locale calls (date-only, time-only) sidestep
+  // the combined format entirely — same approach as ktmMinutes() below.
+  const todayKtm = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+  const isToday = todayKtm === dateStr;
   const nowMins = isToday
-    ? Number(nowKtm.slice(11, 13)) * 60 + Number(nowKtm.slice(14, 16))
+    ? (() => {
+        const t = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" });
+        const [h, m] = t.split(":").map(Number);
+        return h * 60 + m;
+      })()
     : -1;
 
   const out: Slot[] = [];

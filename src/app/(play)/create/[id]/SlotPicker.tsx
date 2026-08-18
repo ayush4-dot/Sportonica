@@ -16,6 +16,21 @@ const BANDS: { key: "morning" | "afternoon" | "evening"; label: string; from: nu
 const CACHE_TTL_MS = 20_000;
 const cache = new Map<string, { data: Slot[]; at: number }>();
 
+// availability.ts computes "past" once, at fetch time — fine for a slot
+// that's already past when the list loads, but a slot that was still
+// >=30min out at fetch time silently drifts into "too soon to book" the
+// longer the page sits open (no refetch just because time passes). Redo
+// the same check live, client-side, on every render.
+const KTM_TZ = "Asia/Kathmandu";
+function nowKtmMins(): number {
+  const t = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: KTM_TZ });
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function todayKtmStr(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: KTM_TZ });
+}
+
 export default function SlotPicker({
   courtId, dateStr, durationMins, value, onPick,
 }: {
@@ -34,6 +49,24 @@ export default function SlotPicker({
     return "evening";
   });
   const [pending, startTransition] = useTransition();
+
+  // Ticks every 30s so a slot that drifts within the 30-min lead-time
+  // window while this screen is just sitting open disappears on its own,
+  // instead of staying clickable until something else forces a re-render.
+  const [nowMins, setNowMins] = useState(nowKtmMins);
+  useEffect(() => {
+    const id = setInterval(() => setNowMins(nowKtmMins()), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  const isPastLive = (mins: number) => dateStr === todayKtmStr() && mins <= nowMins + 30;
+
+  // If the already-picked time drifts into the past while this screen
+  // just sits open, drop the selection instead of leaving a now-invalid
+  // pick that would fail at booking time.
+  useEffect(() => {
+    if (value != null && isPastLive(value)) onPick(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nowMins]);
 
   useEffect(() => {
     if (!courtId || !dateStr) return;
@@ -65,17 +98,26 @@ export default function SlotPicker({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courtId, dateStr, durationMins]);
 
+  // Re-apply the past-time check live (see isPastLive above) on top of
+  // whatever the server said at fetch time — this is what everything
+  // below actually renders from, not the raw fetch result.
+  const liveSlots = useMemo(
+    () => (slots ?? []).map((s) => (s.available && isPastLive(s.mins) ? { ...s, available: false, reason: "past" as const } : s)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [slots, nowMins, dateStr]
+  );
+
   // Counts per band, so the tabs can say what's actually free. Booked and
   // past slots aren't shown at all (not just disabled), so only the free
   // count matters here — a band with nothing free just doesn't get a tab.
   const counts = useMemo(() => {
     const out: Record<string, { free: number }> = {};
     for (const b of BANDS) {
-      const inBand = (slots ?? []).filter((s) => s.mins >= b.from && s.mins < b.to);
+      const inBand = liveSlots.filter((s) => s.mins >= b.from && s.mins < b.to);
       out[b.key] = { free: inBand.filter((s) => s.available).length };
     }
     return out;
-  }, [slots]);
+  }, [liveSlots]);
 
   // Open the first band that actually has something free.
   useEffect(() => {
@@ -84,7 +126,7 @@ export default function SlotPicker({
     const firstFree = BANDS.find((b) => counts[b.key]?.free > 0);
     if (firstFree) setBand(firstFree.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slots]);
+  }, [slots, counts]);
 
   if (slots === null || pending) {
     return <div className="sp-msg"><Loader2 size={16} className="sp-spin" /> Checking what&apos;s free…</div>;
@@ -93,7 +135,7 @@ export default function SlotPicker({
     return <div className="sp-msg"><CalendarX size={18} style={{ opacity: .6 }} /> Closed on this day. Try another date.</div>;
   }
 
-  const free = slots.filter((s) => s.available);
+  const free = liveSlots.filter((s) => s.available);
   if (free.length === 0) {
     return (
       <div className="sp-msg">
@@ -106,7 +148,7 @@ export default function SlotPicker({
   const activeBand = BANDS.find((b) => b.key === band) ?? BANDS[2];
   // Booked and already-past times are dropped here, not just disabled —
   // this timetable should only ever show times someone could actually book.
-  const shown = slots.filter((s) => s.mins >= activeBand.from && s.mins < activeBand.to && s.available);
+  const shown = liveSlots.filter((s) => s.mins >= activeBand.from && s.mins < activeBand.to && s.available);
 
   return (
     <div className="sp">
