@@ -417,7 +417,7 @@ export default function BookingFlow({
             <h3>When are you playing?</h3>
             <p className="hint">
               <Clock size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
-              Live availability — booked slots are shown greyed out so you know what&apos;s already taken.
+              Live availability — already-booked and passed times aren&apos;t shown.
             </p>
 
             <WeekStrip
