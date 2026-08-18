@@ -37,7 +37,7 @@ export default function MemberManager({
           Members <span style={{ opacity: 0.4, fontWeight: 500 }}>({members.length})</span>
         </h2>
         {isCreator && (
-          <button className="play-btn" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => setShowInvite(true)}>
+          <button className="play-btn" style={{ padding: "13px 16px", fontSize: 13 }} onClick={() => setShowInvite(true)}>
             <UserPlus size={14} /> Invite players
           </button>
         )}
@@ -60,7 +60,7 @@ export default function MemberManager({
             ) : isCreator && m.user_id !== meId ? (
               <button onClick={() => remove(m.user_id)} disabled={pending}
                 title="Remove from squad"
-                style={{ background: "none", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444", borderRadius: 8, padding: "5px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                style={{ background: "none", border: "1px solid rgba(239,68,68,0.4)", color: "#ef4444", borderRadius: 8, padding: "10px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5 }}>
                 <UserMinus size={12} /> Remove
               </button>
             ) : null}
@@ -119,10 +119,10 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
         style={{ width: "100%", maxWidth: 420, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Invite players</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer" }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid rgba(128,128,128,0.3)", borderRadius: 10, padding: "9px 12px", marginBottom: 14 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid rgba(128,128,128,0.3)", borderRadius: 10, padding: "13px 12px", marginBottom: 14 }}>
           <Search size={15} style={{ opacity: 0.6 }} />
           <input value={q} onChange={(e) => search(e.target.value)} placeholder="Search by name or @username"
             style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "inherit", fontFamily: "inherit", fontSize: 14 }} />
@@ -141,7 +141,7 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
                 {p.username && <div style={{ fontSize: 11.5, opacity: 0.5, fontFamily: "'Inter',sans-serif" }}>@{p.username}</div>}
               </div>
               <button onClick={() => invite(p.id)} disabled={pending || added.has(p.id)}
-                style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#ffffff", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#ffffff", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                 {added.has(p.id) ? "Added ✓" : "Add"}
               </button>
             </div>

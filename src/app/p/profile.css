@@ -20,7 +20,7 @@
      "editorial" breathing room. */
   padding: 84px 24px 110px;
 }
-@media (max-width: 760px) { .pf { padding-top: 34px; } }
+@media (max-width: 760px) { .pf { padding: 34px 16px 80px; } }
 [data-theme="paper"] .pf {
   --pf-bg:    #F2EDE6;
   --pf-text:  #1e3932;
@@ -55,6 +55,12 @@
   background: linear-gradient(150deg, #006241, #1e3932); color: #ffffff;
 }
 @media (max-width: 640px) { .pf-avatar { width: 84px; height: 84px; font-size: 34px; } }
+@media (max-width: 480px) {
+  /* Row layout with an 11vw/52px-min display name and a fixed 32px gap
+     has nowhere to give on a narrow phone — a normal-length name gets
+     squeezed against the avatar with no wrap. Stack instead. */
+  .pf-hero { flex-direction: column; gap: 14px; align-items: flex-start; }
+}
 
 .pf-lede {
   font-size: clamp(16px, 2.4vw, 20px); line-height: 1.55; color: var(--pf-dim);
@@ -177,13 +183,14 @@
 
 /* ── Edit-profile card shell (pre-existing gap: ProfileEditor.tsx used
    these classes but nothing here ever defined them) ── */
-.pf-card { border: 1px solid var(--pf-hair); padding: 26px; margin-bottom: 22px; }
+.pf-card { border: 1px solid var(--pf-hair); padding: 20px; margin-bottom: 22px; }
 .pf-card-t { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800; margin: 0 0 20px; letter-spacing: -0.02em; }
 .pf-input {
   background: transparent; border: 1px solid var(--pf-hair);
-  border-radius: 10px; padding: 10px 12px; color: inherit;
+  border-radius: 10px; padding: 13px 14px; color: inherit;
   font-family: inherit; font-size: 14px;
 }
+@media (max-width: 640px) { .pf-card { padding: 16px; } }
 .pf-input:focus { outline: none; border-color: var(--pf-accent); }
 .pf-back {
   display: inline-flex; align-items: center; gap: 6px;
@@ -207,7 +214,7 @@
 .pf-chips { display: flex; gap: 9px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
 .pf-chip {
   display: inline-flex; align-items: center; gap: 7px; flex-shrink: 0;
-  padding: 9px 15px; border-radius: 999px; border: 1px solid var(--pf-hair);
+  min-height: 44px; padding: 0 15px; border-radius: 999px; border: 1px solid var(--pf-hair);
   background: transparent; color: var(--pf-dim); font-family: inherit;
   font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s ease;
 }
@@ -246,3 +253,14 @@
   opacity: 1; background: #ef4444; color: #fff; padding: 10px 18px; border-radius: 8px;
 }
 .pf-hub-logout-confirm p { font-size: 13.5px; color: var(--pf-dim); margin: 0 0 12px; }
+
+/* ── Mobile: several of this editorial system's section gaps (72/56px)
+   were sized for a desktop-width column and read as dead space once the
+   column narrows to a phone. Tighten to the top of the app's spacing
+   scale rather than inventing new values. ── */
+@media (max-width: 640px) {
+  .pf-sec { margin-top: 40px; }
+  .pf-hub-promo { margin-top: 32px; padding: 20px; }
+  .pf-hub-logout-wrap { margin-top: 32px; }
+  .pf-trustline { margin-top: 40px; }
+}

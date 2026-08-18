@@ -82,7 +82,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
             <p style={{ fontSize: 14, color: "rgba(242,237,230,0.75)", margin: "0 0 20px", lineHeight: 1.5 }}>
               You&apos;ve joined {event.title}. See you on the pitch! Your spot is confirmed.
             </p>
-            <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
+            <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
           </div>
         ) : awaitingPayment ? (
           <PaymentStep
@@ -95,7 +95,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
               { label: "When", value: new Date(event.event_date).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" }) },
             ]}
             footer={
-              <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 13, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
+              <button onClick={onClose} style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 11, padding: 14, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>Done</button>
             }
           />
         ) : (
@@ -124,7 +124,7 @@ export default function JoinModal({ event, onClose }: { event: EventRow; onClose
                 type="tel" inputMode="tel" value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="98XXXXXXXX"
-                style={{ width: "100%", boxSizing: "border-box", background: "#0B0D11", border: "1px solid rgba(242,237,230,0.14)", borderRadius: 10, padding: "11px 13px", color: "#F2EDE6", fontFamily: "inherit", fontSize: 14 }}
+                style={{ width: "100%", boxSizing: "border-box", background: "#0B0D11", border: "1px solid rgba(242,237,230,0.14)", borderRadius: 10, padding: "14px 13px", color: "#F2EDE6", fontFamily: "inherit", fontSize: 14 }}
               />
             </div>
 

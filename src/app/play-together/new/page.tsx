@@ -31,7 +31,7 @@ export default async function NewGameVenuePickerPage() {
             <p>Check back soon.</p>
           </div>
         ) : (
-          <div className="play-grid">
+          <div className="play-grid pt-venue-grid">
             {venues.filter((v) => v.courts.length > 0).map((v) => {
               const photo = v.photos?.[0];
               const cheapest = v.courts.reduce((m, c) => Math.min(m, Number(c.base_price)), Infinity);
@@ -65,6 +65,15 @@ export default async function NewGameVenuePickerPage() {
           </div>
         )}
       </div>
+
+      {/* .play-grid's minmax(320px,1fr) columns force horizontal overflow
+          below ~368px viewport width (320px column + 2×24px page padding).
+          Drop to a single column before that happens. */}
+      <style>{`
+        @media (max-width: 400px) {
+          .pt-venue-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
     </div>
   );
 }

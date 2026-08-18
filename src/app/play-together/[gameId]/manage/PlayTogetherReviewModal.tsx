@@ -117,8 +117,12 @@ export default function PlayTogetherReviewModal({
           background: var(--ink-2); border: 1px solid var(--line); border-radius: 18px; padding: 22px; color: var(--paper); }
         .ptrm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
         .ptrm-head h3 { font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 800; margin: 0; }
-        .ptrm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer; }
-        .ptrm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; }
+        /* Icon-only buttons had no padding at all — just the bare 16-18px
+           icon as the tap target. Pad them out toward 44px; there's plenty
+           of slack in this header row for the extra box size. */
+        .ptrm-x { background: none; border: none; color: inherit; opacity: .6; cursor: pointer;
+          padding: 12px; margin: -6px -6px -6px 0; }
+        .ptrm-wa { display: inline-flex; color: #2E7D5B; opacity: .8; padding: 12px; margin: -6px; }
         .ptrm-wa:hover { opacity: 1; }
         .ptrm-player { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
         .ptrm-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
@@ -130,11 +134,15 @@ export default function PlayTogetherReviewModal({
         .ptrm-note { font-size: 12px; color: var(--faint); line-height: 1.5; margin: 8px 0 0; }
         .ptrm-err { color: #ef4444; font-size: 12.5px; margin-top: 12px; }
         .ptrm-actions { display: flex; gap: 8px; margin-top: 14px; }
+        .ptrm-actions .ptrm-btn { flex: 1; min-width: 0; }
+        @media (max-width: 340px) {
+          .ptrm-actions { flex-direction: column; }
+        }
         .ptrm-confirm { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--line); }
         .ptrm-confirm p { display: flex; align-items: center; gap: 8px; font-size: 12.5px; opacity: .8; margin: 0 0 4px; }
         .ptrm-btn {
-          font-size: 12.5px; font-weight: 700; padding: 9px 14px; border-radius: 999px;
-          border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer;
+          font-size: 12.5px; font-weight: 700; padding: 9px 14px; min-height: 44px; box-sizing: border-box;
+          border-radius: 999px; border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer;
         }
         .ptrm-btn:disabled { opacity: .35; cursor: default; }
         .ptrm-btn.ok { border-color: rgba(46,125,91,0.5); color: #2E7D5B; }

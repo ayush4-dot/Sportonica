@@ -255,12 +255,22 @@ function TermsCard({
           I have read and agree to the Play Together Terms &amp; Conditions.
         </label>
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+      <div className="pt-terms-actions">
         <button className="play-btn gold" onClick={onConfirm} disabled={!ackTerms || pending}>
           {pending ? "Sending…" : "Confirm & Send Request"}
         </button>
         <button className="play-btn ghost" onClick={onCancel} disabled={pending}>Never mind</button>
       </div>
+      <style>{`
+        .pt-terms-actions { display: flex; gap: 8px; margin-top: 12px; }
+        .pt-terms-actions .play-btn { flex: 1; justify-content: center; min-width: 0; }
+        /* "Confirm & Send Request" is too long to share a row with a second
+           button once the sidebar panel narrows down to phone width —
+           stack full-width rather than let them squeeze/overflow. */
+        @media (max-width: 420px) {
+          .pt-terms-actions { flex-direction: column; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -194,8 +194,8 @@ const PTPM_CSS = `
 .ptpm-warn { font-size: 12.5px; color: #d97706; background: rgba(217,119,6,.08); border: 1px solid rgba(217,119,6,.3);
   border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
 .ptpm-actions { margin-top: 16px; }
-.ptpm-later { width: 100%; margin-top: 8px; padding: 12px; border-radius: 12px;
-  border: 1px solid rgba(242,237,230,.15); background: transparent; color: inherit;
+.ptpm-later { width: 100%; margin-top: 8px; padding: 12px; min-height: 44px; box-sizing: border-box;
+  border-radius: 12px; border: 1px solid rgba(242,237,230,.15); background: transparent; color: inherit;
   font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
 [data-theme="paper"] .ptpm-later { border-color: rgba(20,23,30,.14); }
 .ptpm-later:disabled { opacity: .5; cursor: default; }

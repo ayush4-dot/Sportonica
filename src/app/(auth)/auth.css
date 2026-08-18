@@ -105,9 +105,9 @@
 }
 .auth-card h1 {
   font-family: 'Inter', sans-serif;
-  font-size: 27px; font-weight: 800; letter-spacing: -0.8px; margin: 0 0 6px;
+  font-size: 27px; font-weight: 800; letter-spacing: -0.8px; margin: 0 0 8px;
 }
-.auth-card .sub { font-size: 14px; color: var(--dim); margin: 0 0 30px; }
+.auth-card .sub { font-size: 14px; color: var(--dim); margin: 0 0 20px; }
 
 .auth-field { margin-bottom: 16px; }
 .auth-field label {
@@ -176,6 +176,13 @@
 @media (max-width: 860px) {
   .auth { grid-template-columns: 1fr; }
   .auth-stage { display: none; }
+}
+
+/* ── Phone-sized: the 40px form padding was eating a third of a 375px
+   viewport before the card even started — drop to the 16px page-edge
+   standard so the card actually gets room to breathe. ── */
+@media (max-width: 640px) {
+  .auth-form-wrap { padding: 32px 16px; }
 }
 
 /* ── Respect reduced motion: no drift, no rise ── */

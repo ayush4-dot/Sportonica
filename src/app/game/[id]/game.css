@@ -14,7 +14,7 @@
      (.has-sitenav in globals.css). */
   padding: 72px 24px 90px;
 }
-@media (max-width: 760px) { .gm { padding-top: 28px; } }
+@media (max-width: 760px) { .gm { padding: 28px 16px 90px; } }
 [data-theme="paper"] .gm {
   --gm-text: #14171E;
   --gm-dim: rgba(20,23,30,0.62);
@@ -137,22 +137,23 @@
 }
 .gm-pay-b.on { border-color: rgba(0,98,65,0.55); background: rgba(0,98,65,0.12); color: #006241; }
 .gm-btn {
-  width: 100%; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  width: 100%; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: 7px;
   background: #006241; color: #ffffff; border: none; border-radius: 11px;
-  padding: 13px; font-weight: 700; font-size: 14.5px; cursor: pointer;
+  padding: 14px; font-weight: 700; font-size: 14.5px; cursor: pointer;
   font-family: inherit; text-decoration: none;
 }
 .gm-btn:disabled { opacity: 0.55; cursor: default; }
 .gm-btn.ghost {
   background: transparent; border: 1px solid var(--gm-line); color: var(--gm-text);
-  font-size: 13px; padding: 10px;
+  font-size: 13px; padding: 14px 10px;
 }
 .gm-btn.ghost:hover { border-color: var(--gm-text); }
 .gm-join-actions { display: flex; gap: 8px; margin-top: 10px; }
 .gm-joined {
   display: flex; align-items: center; justify-content: center; gap: 7px;
+  min-height: 44px;
   background: rgba(46,125,91,0.14); border: 1px solid rgba(46,125,91,0.4); color: #2E7D5B;
-  border-radius: 11px; padding: 13px; font-weight: 700; font-size: 14px;
+  border-radius: 11px; padding: 14px; font-weight: 700; font-size: 14px;
 }
 .gm-join-note { font-size: 13px; color: var(--gm-dim); text-align: center; padding: 10px 0; }
 .gm-err { color: #ef4444; font-size: 12.5px; margin-bottom: 10px; }

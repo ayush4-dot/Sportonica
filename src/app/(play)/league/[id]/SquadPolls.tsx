@@ -42,7 +42,7 @@ export default function SquadPolls({
         <h2 style={{ fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800, margin: 0 }}>
           Polls {polls.length > 0 && <span style={{ opacity: 0.4, fontWeight: 500 }}>({polls.length})</span>}
         </h2>
-        <button className="play-btn" style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => setShowCreate(true)}>
+        <button className="play-btn" style={{ padding: "13px 16px", fontSize: 13 }} onClick={() => setShowCreate(true)}>
           <Plus size={14} /> New poll
         </button>
       </div>
@@ -67,7 +67,7 @@ export default function SquadPolls({
                 </div>
                 {p.creator_id === meId && !p.closed && (
                   <button onClick={() => close(p.id)} disabled={pending}
-                    style={{ background: "none", border: "1px solid rgba(128,128,128,0.3)", color: "var(--dim)", borderRadius: 8, padding: "5px 10px", fontSize: 11.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
+                    style={{ background: "none", border: "1px solid rgba(128,128,128,0.3)", color: "var(--dim)", borderRadius: 8, padding: "10px 14px", fontSize: 11.5, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0 }}>
                     <Lock size={11} /> Close
                   </button>
                 )}
@@ -84,7 +84,7 @@ export default function SquadPolls({
                       style={{
                         position: "relative", overflow: "hidden", textAlign: "left",
                         border: `1px solid ${mine ? "rgba(0,98,65,0.5)" : "var(--line)"}`,
-                        background: "transparent", borderRadius: 10, padding: "11px 13px",
+                        background: "transparent", borderRadius: 10, padding: "13px 13px",
                         cursor: p.closed ? "default" : "pointer", color: "inherit",
                         fontFamily: "inherit", width: "100%",
                       }}>
@@ -152,7 +152,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
         style={{ width: "100%", maxWidth: 430, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>New poll</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer" }}><X size={18} /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
         </div>
 
         <input className="pl-in" value={question} onChange={(e) => setQuestion(e.target.value)}
@@ -173,7 +173,7 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
 
         {options.length < 6 && (
           <button onClick={() => setOptions([...options, ""])}
-            style={{ background: "none", border: "1px dashed rgba(128,128,128,0.4)", borderRadius: 9, color: "inherit", opacity: 0.7, cursor: "pointer", padding: "9px 12px", fontSize: 13, width: "100%", marginBottom: 14, fontFamily: "inherit" }}>
+            style={{ background: "none", border: "1px dashed rgba(128,128,128,0.4)", borderRadius: 9, color: "inherit", opacity: 0.7, cursor: "pointer", padding: "13px 12px", fontSize: 13, width: "100%", marginBottom: 14, fontFamily: "inherit" }}>
             + Add option
           </button>
         )}
@@ -186,14 +186,14 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
         {err && <div style={{ color: "#ef4444", fontSize: 13, marginBottom: 12 }}>{err}</div>}
 
         <button onClick={submit} disabled={pending}
-          style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, padding: 12, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+          style={{ width: "100%", background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, padding: 14, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
           {pending ? "Creating…" : "Post poll"}
         </button>
 
         <style>{`
           .pl-in { width: 100%; box-sizing: border-box; background: transparent;
             border: 1px solid rgba(128,128,128,0.28); border-radius: 10px;
-            padding: 10px 12px; color: inherit; font-family: inherit; font-size: 14px; }
+            padding: 13px 12px; color: inherit; font-family: inherit; font-size: 14px; }
           .pl-in:focus { outline: none; border-color: #006241; }
         `}</style>
       </div>

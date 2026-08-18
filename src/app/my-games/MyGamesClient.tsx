@@ -358,6 +358,17 @@ export default function MyGamesClient({
         .mg-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px;
           line-height: 1.45; cursor: pointer; margin-bottom: 16px; }
         .mg-check input { margin-top: 2px; }
+
+        @media (max-width: 640px) {
+          .mg { padding: 24px 16px 80px; }
+          /* auto-fill's 290px floor overflows a 320px viewport once page
+             padding is subtracted — force single column below that width. */
+          .mg-grid { grid-template-columns: 1fr; }
+          .mg-tabs button, .mg-btn { min-height: 44px; box-sizing: border-box; }
+          .mg-field input, .mg-field select, .mg-field textarea { min-height: 44px; box-sizing: border-box; }
+          .mg-field textarea { min-height: 80px; }
+          .mg-sheet { padding: 20px 16px; }
+        }
       `}</style>
     </main>
   );

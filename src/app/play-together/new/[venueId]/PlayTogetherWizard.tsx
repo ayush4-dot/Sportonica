@@ -416,7 +416,7 @@ export default function PlayTogetherWizard({
                 <Upload size={15} /> Upload your QR code
               </button>
             )}
-            <style>{`.pymt-shot{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--line);max-height:220px}.pymt-shot img{width:100%;max-height:220px;object-fit:contain;background:#000;display:block}.pymt-shot-replace{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px}.pymt-upload{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border-radius:11px;border:1px dashed var(--line);background:transparent;color:inherit;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer}`}</style>
+            <style>{`.pymt-shot{position:relative;border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid var(--line);max-height:220px}.pymt-shot img{width:100%;max-height:220px;object-fit:contain;background:#000;display:block}.pymt-shot-replace{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px}.pymt-upload{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;min-height:44px;box-sizing:border-box;border-radius:11px;border:1px dashed var(--line);background:transparent;color:inherit;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer}`}</style>
           </div>
         )}
 
@@ -498,7 +498,7 @@ export default function PlayTogetherWizard({
         .bkw-steps li { flex: 1; }
         .bkw-steps button {
           width: 100%; display: flex; align-items: center; gap: 8px;
-          background: none; border: none; cursor: pointer; padding: 0;
+          background: none; border: none; cursor: pointer; padding: 9px 4px;
           font-family: inherit; color: inherit; opacity: .4;
         }
         .bkw-steps li.on button, .bkw-steps li.done button { opacity: 1; }
@@ -529,7 +529,20 @@ export default function PlayTogetherWizard({
         .bkw-nav { display: flex; gap: 8px; }
         @media (max-width: 480px) {
           .bkw-price .sub { display: none; }
-          .bkw-nav .play-btn { padding: 11px 16px; font-size: 13.5px; }
+          .bkw-nav .play-btn { padding: 11px 16px; font-size: 13.5px; min-height: 44px; box-sizing: border-box; }
+        }
+        /* Below ~400px the price block + two nav buttons no longer fit on
+           one row at once — shrink the (decorative) label and tighten
+           button padding rather than let the bar overflow horizontally. */
+        @media (max-width: 400px) {
+          .bkw-bar { gap: 8px; padding-left: 16px; padding-right: 16px; }
+          .bkw-price { min-width: 0; }
+          .bkw-price .lbl {
+            font-size: 9px; letter-spacing: .06em; max-width: 90px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+          }
+          .bkw-nav { gap: 6px; }
+          .bkw-nav .play-btn { padding: 12px; font-size: 12.5px; }
         }
       `}</style>
     </div>

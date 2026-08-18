@@ -114,8 +114,9 @@ export default function FriendRequestButton({
       {error && <span style={{ fontSize: 11.5, color: "#ef4444" }}>{error}</span>}
       <style>{`
         .frb-btn {
-          display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
-          padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700;
+          display: inline-flex; align-items: center; justify-content: center; gap: 7px; white-space: nowrap;
+          min-height: 44px; box-sizing: border-box; padding: 9px 16px; border-radius: 10px;
+          font-size: 13px; font-weight: 700;
           font-family: inherit; cursor: pointer; text-decoration: none;
           background: #006241; color: #ffffff; border: 1px solid #006241;
           transition: transform .2s cubic-bezier(.22,1,.36,1), opacity .2s;

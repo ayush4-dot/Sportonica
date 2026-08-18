@@ -38,7 +38,7 @@ export default async function SquadPage({ params }: { params: Promise<{ id: stri
             <Users size={26} />
           </div>
           <div>
-            <h1 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 30, fontWeight: 800, letterSpacing: "-1px" }}>{squad.name}</h1>
+            <h1 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: "clamp(26px, 6vw, 30px)", fontWeight: 800, letterSpacing: "-1px" }}>{squad.name}</h1>
             <span className="venue-tag">{squad.sport}</span>
           </div>
         </div>

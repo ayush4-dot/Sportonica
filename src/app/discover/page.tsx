@@ -529,7 +529,7 @@ const CSS = `
 }
 
 .disc-hero {
-  padding: 18px clamp(20px, 5vw, 56px) 8px;
+  padding: 18px clamp(16px, 5vw, 56px) 8px;
   max-width: 720px;
 }
 .disc-eyebrow {
@@ -577,7 +577,7 @@ const CSS = `
 [data-theme="paper"] .disc-sub a { color: var(--turf); }
 
 .disc-filter-wrap {
-  padding: 20px clamp(20px, 5vw, 56px) 0;
+  padding: 20px clamp(16px, 5vw, 56px) 0;
   display: flex;
   justify-content: center;
 }
@@ -627,7 +627,7 @@ const CSS = `
   font-weight: 700;
 }
 
-.disc-section { padding: 24px clamp(20px, 5vw, 56px) 0; }
+.disc-section { padding: 24px clamp(16px, 5vw, 56px) 0; }
 
 /* Give the floating dock its own lane on desktop so it never overlaps
    the map or event list. Mobile dock sits at the bottom, so skip it there. */
@@ -654,7 +654,13 @@ const CSS = `
 }
 .disc-list::-webkit-scrollbar { width: 4px; }
 .disc-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
-.disc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px; }
+.disc-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+/* auto-fill's 300px minimum doesn't fit inside a 320px viewport once page
+   padding is subtracted (320 - 2*16 = 288px) — forces a single column with
+   no minimum so the grid can't overflow on the smallest phones. */
+@media (max-width: 380px) {
+  .disc-cards { grid-template-columns: 1fr; }
+}
 
 .disc-sortbar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:14px 0 6px; }
 .disc-sortbar-count { font-size:13px; font-weight:700; color:var(--chalk); }
@@ -685,7 +691,7 @@ const CSS = `
 .disc-card {
   border: 1px solid var(--line);
   border-radius: 18px;
-  padding: 14px 16px;
+  padding: 16px;
   cursor: pointer;
   background: linear-gradient(170deg, var(--card-tint-1), var(--card-tint-2));
   transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
@@ -771,7 +777,8 @@ const CSS = `
 }
 .disc-card-meta {
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   font-size: 12px;
   color: color-mix(in srgb, var(--chalk) 55%, transparent);
   margin-bottom: 14px;
@@ -798,6 +805,7 @@ const CSS = `
 .disc-book-btn {
   border: none;
   color: #fff;
+  min-height: 44px;
   padding: 9px 18px;
   border-radius: 999px;
   font-size: 12px;
@@ -806,6 +814,7 @@ const CSS = `
   white-space: nowrap;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   font-family: 'Inter', sans-serif;
 }
@@ -899,7 +908,7 @@ const CSS = `
 @keyframes disc-spin { to { transform: rotate(360deg); } }
 
 .disc-cta {
-  padding: 72px clamp(20px, 5vw, 56px) 88px;
+  padding: 72px clamp(16px, 5vw, 56px) 88px;
   text-align: center;
 }
 .disc-cta-inner {
@@ -940,6 +949,10 @@ const CSS = `
     max-height: none;
   }
   .disc-cta-inner { padding: 32px 22px; }
+}
+@media (max-width: 480px) {
+  .disc-title { margin: 0 0 10px; }
+  .disc-cta-inner { padding: 24px 20px; }
 }
 `;
 

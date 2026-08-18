@@ -119,7 +119,7 @@ export default function WeekStrip({
       </div>
 
       <style>{`
-        .wsx { margin-bottom: 26px; }
+        .wsx { margin-bottom: 24px; }
 
         .wsx-head {
           display: flex; align-items: flex-end; justify-content: space-between;

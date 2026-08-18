@@ -141,7 +141,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
             {SPORTS.map((s) => (
               <button key={s} onClick={() => toggleSport(s)}
                 style={{
-                  padding: "7px 13px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
+                  minHeight: 44, padding: "0 16px", borderRadius: 999, fontSize: 12.5, fontWeight: 600, cursor: "pointer",
                   fontFamily: "inherit",
                   background: sports.includes(s) ? "rgba(0,98,65,0.14)" : "transparent",
                   color: sports.includes(s) ? "#006241" : "var(--pf-dim)",
@@ -186,9 +186,10 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
         .pf-in {
           width: 100%; box-sizing: border-box;
           background: transparent; border: 1px solid var(--pf-hair);
-          border-radius: 10px; padding: 10px 12px; color: inherit;
+          border-radius: 10px; padding: 13px 14px; color: inherit;
           font-family: inherit; font-size: 14px;
         }
+        textarea.pf-in { padding: 12px 14px; }
         .pf-in:focus { outline: none; border-color: #006241; box-shadow: 0 0 0 3px rgba(0,98,65,0.12); }
       `}</style>
     </div>

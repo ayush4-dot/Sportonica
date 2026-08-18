@@ -275,7 +275,7 @@ export default function PlayFilters({
         @media (max-width:820px) {
           .pf-search { flex-wrap:wrap; }
           .pf-seg { flex:1 1 45%; }
-          .pf-find { flex:1 1 100%; justify-content:center; padding:13px; }
+          .pf-find { flex:1 1 100%; justify-content:center; padding:14px; min-height:44px; }
         }
 
         .pf-btn, .pf-quick {

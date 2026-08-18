@@ -254,7 +254,7 @@ export default function PlayTogetherManageClient({
                 value={reason} onChange={(e) => setReason(e.target.value)}
                 placeholder="Reason (optional)"
               />
-              <div style={{ display: "flex", gap: 8 }}>
+              <div className="pt-danger-actions">
                 <button className="pt-danger-btn" onClick={doCancel} disabled={pending}>
                   {pending ? "Cancelling…" : "Confirm cancellation"}
                 </button>

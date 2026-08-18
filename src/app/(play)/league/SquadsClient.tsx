@@ -168,7 +168,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
       <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 460, background: "var(--ink-2, #14171E)", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 18, padding: 26, color: "var(--paper, #F2EDE6)" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 22, fontWeight: 800 }}>Make a group</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6 }}><X size={20} /></button>
+          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", opacity: 0.6, width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={20} /></button>
         </div>
 
         <Field label="Squad name">
@@ -198,7 +198,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         </button>
 
         <style>{`
-          .sq-in { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid rgba(128,128,128,0.28); border-radius: 10px; padding: 10px 12px; color: inherit; font-family: inherit; font-size: 14px; }
+          .sq-in { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid rgba(128,128,128,0.28); border-radius: 10px; padding: 13px 12px; color: inherit; font-family: inherit; font-size: 14px; }
           .sq-in:focus { outline: none; border-color: #006241; }
           .sq-in option { background: #14171E; color: #F2EDE6; }
         `}</style>
@@ -209,7 +209,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ marginBottom: 14 }}>
+    <div style={{ marginBottom: 12 }}>
       <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, opacity: 0.7, marginBottom: 6 }}>{label}</label>
       {children}
     </div>

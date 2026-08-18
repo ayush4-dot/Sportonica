@@ -32,7 +32,7 @@ export default function PlayersClient({ initial }: { initial: PlayerListItem[] }
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search players by name or username…"
           style={{
-            width: "100%", padding: "11px 14px 11px 36px", borderRadius: 12,
+            width: "100%", padding: "14px 14px 14px 36px", borderRadius: 12,
             border: "1px solid var(--line, rgba(255,255,255,.1))", background: "transparent",
             color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none",
           }}

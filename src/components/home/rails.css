@@ -123,6 +123,11 @@
 .rc-img-empty { width: 100%; height: 100%; display: grid; place-items: center; opacity: 0.35; }
 
 @media (max-width: 560px) {
-  .rc { width: 240px; }
+  .rail { padding: 40px 16px 0; }
+  .rail-t { font-size: 26px; letter-spacing: -1px; }
+  .rail-s { font-size: 13px; }
+  .rail-head { margin-bottom: 16px; }
+  .rc { width: 240px; padding: 16px; }
+  .rc-img { margin: 0 -16px 12px; }
   .rail-ctl button { display: none; }
 }

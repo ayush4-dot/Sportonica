@@ -98,7 +98,7 @@ export default function GameJoinPanel({
               onChange={(e) => setPhone(e.target.value)}
               placeholder="Phone number"
               className="gm-pay-b"
-              style={{ width: "100%", boxSizing: "border-box", textAlign: "left", fontWeight: 500, marginBottom: 10, cursor: "text" }}
+              style={{ width: "100%", boxSizing: "border-box", textAlign: "left", fontWeight: 500, marginBottom: 10, cursor: "text", padding: "14px", minHeight: 44 }}
             />
           )}
           <button className="gm-btn" onClick={join} disabled={pending || slotsLeft <= 0}>

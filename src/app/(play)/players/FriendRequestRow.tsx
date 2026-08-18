@@ -31,9 +31,9 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
     <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 0", borderBottom: "1px solid var(--border-line)" }}>
       <Link href={requester.username ? `/p/${requester.username}` : "#"} style={{ flexShrink: 0 }}>
         <div style={{
-          width: 42, height: 42, borderRadius: "50%", overflow: "hidden",
+          width: 44, height: 44, borderRadius: "50%", overflow: "hidden",
           background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center",
-          fontSize: 15, fontWeight: 800, color: "#0B0D11",
+          fontSize: 16, fontWeight: 800, color: "#0B0D11",
         }}>
           {requester.avatar_url
             // eslint-disable-next-line @next/next/no-img-element
@@ -46,14 +46,14 @@ export default function FriendRequestRow({ request }: { request: PendingRequest 
         {requester.username && <div style={{ fontSize: 12, opacity: 0.55 }}>@{requester.username}</div>}
       </div>
       <button disabled={pending} onClick={() => decide("accepted")}
-        style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
+        style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 12, width: 44, height: 44, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }}
         aria-label="Accept">
-        <Check size={15} />
+        <Check size={16} />
       </button>
       <button disabled={pending} onClick={() => decide("declined")}
-        style={{ background: "transparent", color: "inherit", border: "1px solid var(--border-line)", borderRadius: 9, width: 34, height: 34, display: "grid", placeItems: "center", cursor: "pointer" }}
+        style={{ background: "transparent", color: "inherit", border: "1px solid var(--border-line)", borderRadius: 12, width: 44, height: 44, display: "grid", placeItems: "center", cursor: "pointer", flexShrink: 0 }}
         aria-label="Decline">
-        <X size={15} />
+        <X size={16} />
       </button>
       {error && <span style={{ fontSize: 11, color: "#ef4444", flexBasis: "100%" }}>{error}</span>}
     </div>

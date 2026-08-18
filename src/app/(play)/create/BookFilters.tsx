@@ -203,6 +203,8 @@ export default function BookFilters({
         </div>
       )}
 
+      {open && <div className="bf-backdrop" onClick={() => setOpen(false)} />}
+
       {open && (
         <div className="bf-panel">
           <div className="bf-searchrow">
@@ -309,8 +311,33 @@ export default function BookFilters({
         @media (max-width:820px) {
           .bf-search { flex-wrap:wrap; }
           .bf-seg { flex:1 1 45%; }
+          /* The time stepper needs more room than a half-width slot gives
+             it — give it the full row rather than squeezing the −/+
+             buttons and label together. */
+          .bf-seg.time { flex:1 1 100%; border-left:none; border-top:1px solid var(--line, rgba(242,237,230,.1)); }
           .bf-find { flex:1 1 100%; justify-content:center; padding:13px; }
         }
+
+        /* ── Mobile: the filter panel becomes a bottom sheet instead of an
+           inline block pushing the page content down (spec: convert
+           desktop-style filter layouts to a bottom sheet on mobile). ── */
+        .bf-backdrop { display:none; }
+        @media (max-width:640px) {
+          .bf-backdrop {
+            display:block; position:fixed; inset:0; z-index:490;
+            background:rgba(4,6,9,.55); backdrop-filter:blur(2px);
+            animation: bfFade .2s ease both;
+          }
+          .bf-panel {
+            position:fixed; left:0; right:0; bottom:0; z-index:500;
+            margin-top:0; max-height:78vh; overflow-y:auto;
+            border-radius:22px 22px 0 0;
+            padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));
+            animation: bfSheetUp .28s cubic-bezier(.22,1,.36,1) both;
+          }
+        }
+        @keyframes bfFade { from { opacity:0; } to { opacity:1; } }
+        @keyframes bfSheetUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
 
         .bf-chips { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:10px; }
         .bf-chip {
@@ -384,7 +411,7 @@ export default function BookFilters({
         }
         [data-theme="paper"] .bf-step-box { background:#fff; border-color:rgba(20,23,30,.14); }
         .bf-step-box button {
-          width:28px; height:28px; flex-shrink:0; border-radius:8px; cursor:pointer;
+          width:34px; height:34px; flex-shrink:0; border-radius:9px; cursor:pointer;
           display:inline-flex; align-items:center; justify-content:center;
           border:none; background:transparent; color:#006241;
           transition:background .18s;

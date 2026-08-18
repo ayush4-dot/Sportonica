@@ -148,9 +148,9 @@ export default function SquadChat({
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Message your squad…"
-          style={{ flex: 1, background: "transparent", border: "1px solid rgba(128,128,128,0.28)", borderRadius: 10, padding: "10px 13px", color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none" }}
+          style={{ flex: 1, background: "transparent", border: "1px solid rgba(128,128,128,0.28)", borderRadius: 10, padding: "13px 14px", color: "inherit", fontFamily: "inherit", fontSize: 14, outline: "none" }}
         />
-        <button onClick={send} style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, padding: "0 16px", cursor: "pointer", display: "grid", placeItems: "center" }}>
+        <button onClick={send} style={{ background: "#006241", color: "#ffffff", border: "none", borderRadius: 10, width: 46, minHeight: 44, flexShrink: 0, cursor: "pointer", display: "grid", placeItems: "center" }}>
           <Send size={16} />
         </button>
       </div>

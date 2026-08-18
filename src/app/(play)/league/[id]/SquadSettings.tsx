@@ -56,7 +56,18 @@ function Row({
   icon, title, note, on, onToggle, disabled,
 }: { icon: React.ReactNode; title: string; note: string; on: boolean; onToggle: () => void; disabled: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14, padding: "10px 0" }}>
+    // The whole row is the tap target (min ~48px tall with the padding
+    // below), not just the visual switch — a 44px-tall switch would look
+    // cartoonish next to the icon/title, but the tap target still needs
+    // to meet the spec's touch-target floor.
+    <button
+      onClick={onToggle} disabled={disabled} aria-label={title} aria-pressed={on}
+      style={{
+        display: "flex", alignItems: "center", justifyContent: "space-between", gap: 14,
+        width: "100%", padding: "12px 0", background: "none", border: "none", cursor: "pointer",
+        color: "inherit", font: "inherit", textAlign: "left",
+      }}
+    >
       <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
         <span style={{ opacity: 0.7, marginTop: 2 }}>{icon}</span>
         <div>
@@ -64,11 +75,12 @@ function Row({
           <div style={{ fontSize: 12, color: "var(--dim)", marginTop: 2 }}>{note}</div>
         </div>
       </div>
-      <button onClick={onToggle} disabled={disabled} aria-label={title}
-        style={{ width: 44, height: 25, borderRadius: 99, border: "none", cursor: "pointer", flexShrink: 0, position: "relative",
+      <span
+        aria-hidden
+        style={{ width: 44, height: 25, borderRadius: 99, flexShrink: 0, position: "relative",
           background: on ? "#006241" : "rgba(128,128,128,0.35)", transition: "background 0.3s" }}>
         <span style={{ position: "absolute", top: 3, left: on ? 22 : 3, width: 19, height: 19, borderRadius: "50%", background: "#fff", transition: "left 0.3s cubic-bezier(0.22,1,0.36,1)" }} />
-      </button>
-    </div>
+      </span>
+    </button>
   );
 }

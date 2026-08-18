@@ -101,6 +101,11 @@ export default function RolePicker({ name, next }: { name: string; next: string 
         }
         .wc-go:disabled { opacity: .6; cursor: default; }
         .wc-err { color: #ef4444; font-size: 13px; margin: 4px 0 0; }
+
+        @media (max-width: 480px) {
+          .wc { padding: 16px; }
+          .wc-sub { margin-bottom: 20px; }
+        }
       `}</style>
     </div>
   );

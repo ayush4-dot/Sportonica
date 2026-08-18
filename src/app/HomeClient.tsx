@@ -142,9 +142,9 @@ const CSS = `
   .p-hero-h1 em { font-style:normal; color:#006241; }
   [data-theme="paper"] .p-hero-h1 { color:#14171E; }
 
-  /* Phones: keep the CTA beside the headline instead of stacking it in
-     its own row (which used to leave a slab of empty vertical space
-     under a full-width button) — shrink both just enough to sit flush. */
+  /* Phones: the CTA stacks under the headline (not full-width — it stays
+     a compact, content-sized pill so it doesn't leave a slab of empty
+     space) — shrink both just enough to sit flush with a tight gap. */
   @media (max-width:560px) {
     .p-hero-h1 { font-size:clamp(30px,10.5vw,44px); letter-spacing:-1.4px; }
     .p-hero-top { gap:10px; }
@@ -153,6 +153,19 @@ const CSS = `
     .p-book-txt b { font-size:13px; }
     .p-book-txt small { font-size:9px; white-space:nowrap; }
     .p-book-go { width:26px; height:26px; }
+
+    /* Page edges: 16px, matching the site-wide mobile spacing scale
+       (the tablet-up clamp() bottoms out at 24px, too wide for phones). */
+    .p-hero-content, .p-sportbar, .p-footer { padding-left:16px; padding-right:16px; }
+
+    /* "Pick your game" was inheriting the same clamp() as the hero H1
+       (38px+ even at 320px) — too heavy for a sub-section title once
+       it's not the single thing on the screen. */
+    .p-sportbar-title { font-size:28px; letter-spacing:-1px; }
+
+    .p-faq-section { padding:48px 16px; }
+    .p-faq-head { margin-bottom:24px; }
+    .p-footer { padding:24px 16px; }
   }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
