@@ -142,31 +142,6 @@ const CSS = `
   .p-hero-h1 em { font-style:normal; color:#006241; }
   [data-theme="paper"] .p-hero-h1 { color:#14171E; }
 
-  /* Phones: the CTA stacks under the headline (not full-width — it stays
-     a compact, content-sized pill so it doesn't leave a slab of empty
-     space) — shrink both just enough to sit flush with a tight gap. */
-  @media (max-width:560px) {
-    .p-hero-h1 { font-size:clamp(30px,10.5vw,44px); letter-spacing:-1.4px; }
-    .p-hero-top { gap:10px; }
-    .p-hero-aside { flex:0 1 auto; min-width:0; }
-    .p-book-in { padding:10px 12px 10px 14px; gap:8px; }
-    .p-book-txt b { font-size:13px; }
-    .p-book-txt small { font-size:9px; white-space:nowrap; }
-    .p-book-go { width:26px; height:26px; }
-
-    /* Page edges: 16px, matching the site-wide mobile spacing scale
-       (the tablet-up clamp() bottoms out at 24px, too wide for phones). */
-    .p-hero-content, .p-sportbar, .p-footer { padding-left:16px; padding-right:16px; }
-
-    /* "Pick your game" was inheriting the same clamp() as the hero H1
-       (38px+ even at 320px) — too heavy for a sub-section title once
-       it's not the single thing on the screen. */
-    .p-sportbar-title { font-size:28px; letter-spacing:-1px; }
-
-    .p-faq-section { padding:48px 16px; }
-    .p-faq-head { margin-bottom:24px; }
-    .p-footer { padding:24px 16px; }
-  }
   .p-hero-ctas { display:flex; gap:14px; flex-wrap:wrap; }
   @keyframes scrollBounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
 
@@ -278,6 +253,41 @@ const CSS = `
   /* ══ Paper theme — flip the homepage's dark class styles ══ */
   [data-theme="paper"] .p-editorial-body { color: rgba(20,23,30,0.65); }
   [data-theme="paper"] .btn-ghost { color: #14171E; border-color: rgba(20,23,30,0.25); }
+
+  /* Phones: the CTA stacks under the headline (not full-width — it stays
+     a compact, content-sized pill so it doesn't leave a slab of empty
+     space) — shrink both just enough to sit flush with a tight gap.
+     Declared LAST in this file on purpose: every rule this overrides
+     (.p-sportbar-title, .p-sportbar's own padding, .p-faq-section,
+     .p-faq-head, .p-footer) is also set unconditionally or under the
+     900px tier further up — an earlier position here loses the
+     cascade to those later same-specificity rules and silently does
+     nothing, which is exactly what was happening before this block
+     was moved down here. */
+  @media (max-width:560px) {
+    .p-hero { padding: 32px 0 24px; }
+    .p-hero-h1 { font-size:clamp(30px,10.5vw,44px); letter-spacing:-1.4px; }
+    .p-hero-top { gap:10px; }
+    .p-hero-aside { flex:0 1 auto; min-width:0; }
+    .p-book-in { padding:10px 12px 10px 14px; gap:8px; }
+    .p-book-txt b { font-size:13px; }
+    .p-book-txt small { font-size:9px; white-space:nowrap; }
+    .p-book-go { width:26px; height:26px; }
+
+    /* Page edges: 16px, matching the site-wide mobile spacing scale
+       (the tablet-up clamp() bottoms out at 24px, too wide for phones). */
+    .p-hero-content, .p-sportbar, .p-footer { padding-left:16px; padding-right:16px; }
+    .p-sportbar { padding-top: 32px; padding-bottom: 4px; }
+
+    /* "Pick your game" was inheriting the same clamp() as the hero H1
+       (38px+ even at 320px) — too heavy for a sub-section title once
+       it's not the single thing on the screen. */
+    .p-sportbar-title { font-size:28px; letter-spacing:-1px; }
+
+    .p-faq-section { padding:48px 16px; }
+    .p-faq-head { margin-bottom:24px; }
+    .p-footer { padding:24px 16px; }
+  }
 `;
 
 const SPORT_IMG: Record<string, string> = {

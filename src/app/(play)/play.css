@@ -28,11 +28,16 @@
 .play-wrap { max-width: 1180px; margin: 0 auto; padding: 76px 24px 80px; }
 @media (max-width: 780px) {
   .play-wrap { padding: 56px 16px 80px; }
-  .play-hero { margin-bottom: 32px; }
 }
 
 /* ── Hero ── */
 .play-hero { margin-bottom: 56px; max-width: 720px; }
+/* Declared after the unconditional rule above on purpose — an earlier
+   @media(max-width:780px) position here loses the cascade to that
+   later same-specificity rule and silently never applies. */
+@media (max-width: 780px) {
+  .play-hero { margin-bottom: 32px; }
+}
 .play-eyebrow {
   font-family: 'Inter', sans-serif; font-size: 12px;
   letter-spacing: 0.22em; text-transform: uppercase; color: var(--sodium);
