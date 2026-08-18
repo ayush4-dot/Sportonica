@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export default async function MyGamesPage() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) redirect("/login");
+  if (!user) redirect("/login?redirect=/my-games");
 
   // Games this person is hosting.
   const { data: hostedEvents } = await sb
