@@ -155,6 +155,8 @@ export default function PlayFilters({
         </div>
       )}
 
+      {open && <div className="pf-backdrop" onClick={() => setOpen(false)} />}
+
       {open && (
         <div className="pf-panel">
           {formats.length > 0 && (
@@ -316,6 +318,29 @@ export default function PlayFilters({
           display:flex; flex-direction:column; gap:18px;
         }
         [data-theme="paper"] .pf-panel { background:rgba(20,23,30,.03); }
+
+        /* ── Mobile: the filter panel becomes a bottom sheet instead of an
+           inline block pushing the page content down (spec: convert
+           desktop-style filter layouts to a bottom sheet on mobile). ── */
+        .pf-backdrop { display:none; }
+        @media (max-width:640px) {
+          .pf-backdrop {
+            display:block; position:fixed; inset:0; z-index:490;
+            background:rgba(4,6,9,.55); backdrop-filter:blur(2px);
+            animation: pfFade .2s ease both;
+          }
+          .pf-panel {
+            position:fixed; left:0; right:0; bottom:0; z-index:500;
+            margin-top:0; max-height:78vh; overflow-y:auto;
+            border-radius:22px 22px 0 0;
+            padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));
+            background:#12151b;
+            animation: pfSheetUp .28s cubic-bezier(.22,1,.36,1) both;
+          }
+          [data-theme="paper"] .pf-panel { background:#F8F5F0; }
+        }
+        @keyframes pfFade { from { opacity:0; } to { opacity:1; } }
+        @keyframes pfSheetUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
 
         .pf-gt {
           display:flex; align-items:center; gap:7px; margin:0 0 9px;
