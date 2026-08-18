@@ -122,8 +122,12 @@ export function GamesRail({ games }: { games: RailEvent[] }) {
     >
       {games.map((g) => {
         const c = g.sport_color ?? sportColor(g.sport);
+        // Play Together games (src/lib/playTogether/) live at their own
+        // route, not /game/[id] — events_full rows (event_type: "pickup")
+        // are the only ones that actually resolve there.
+        const href = g.event_type === "play_together" ? `/play-together/${g.id}` : `/game/${g.id}`;
         return (
-          <Link key={g.id} href={`/game/${g.id}`} className="rc rc-game" style={{ ["--rc-accent" as string]: c }}>
+          <Link key={g.id} href={href} className="rc rc-game" style={{ ["--rc-accent" as string]: c }}>
             <div className="rc-sport" style={{ color: c }}>{g.sport}</div>
             <div className="rc-title">{g.title}</div>
             <div className="rc-host">
