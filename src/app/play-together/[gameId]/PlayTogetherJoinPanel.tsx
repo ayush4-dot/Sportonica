@@ -69,7 +69,14 @@ export default function PlayTogetherJoinPanel({
     startTransition(async () => {
       try {
         const row = await joinGame(gameId, ackTerms);
-        if (isActionError(row)) { setErr(row.message); return; }
+        if (isActionError(row)) {
+          if (row.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(row.message);
+          return;
+        }
         setPlayer(row);
         setShowTerms(false);
       } catch (e) {
@@ -83,7 +90,14 @@ export default function PlayTogetherJoinPanel({
     startTransition(async () => {
       try {
         const row = await leaveGame(gameId);
-        if (isActionError(row)) { setErr(row.message); return; }
+        if (isActionError(row)) {
+          if (row.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(row.message);
+          return;
+        }
         setPlayer(row);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "Could not leave this game.");

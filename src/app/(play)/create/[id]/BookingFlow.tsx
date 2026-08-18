@@ -120,7 +120,14 @@ export default function BookingFlow({
     setQrUploading(true);
     uploadHostQr(f)
       .then((path) => {
-        if (isActionError(path)) { setErr(path.message); return; }
+        if (isActionError(path)) {
+          if (path.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(path.message);
+          return;
+        }
         setQrPath(path);
       })
       .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload your QR."))
@@ -238,7 +245,14 @@ export default function BookingFlow({
             setAwaitingPayment({ id: game.court_booking_id, price: bookedPrice });
           } else {
             const confirmed = await confirmFreeBooking("court_booking", game.court_booking_id);
-            if (isActionError(confirmed)) { setErr(confirmed.message); return; }
+            if (isActionError(confirmed)) {
+              if (confirmed.message === "UNAUTHORIZED") {
+                router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+                return;
+              }
+              setErr(confirmed.message);
+              return;
+            }
             setDone(true);
           }
           return;
@@ -269,7 +283,14 @@ export default function BookingFlow({
           setAwaitingPayment({ id: booking.id, price: bookedPrice });
         } else {
           const confirmed = await confirmFreeBooking("court_booking", booking.id);
-          if (isActionError(confirmed)) { setErr(confirmed.message); return; }
+          if (isActionError(confirmed)) {
+            if (confirmed.message === "UNAUTHORIZED") {
+              router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+              return;
+            }
+            setErr(confirmed.message);
+            return;
+          }
           setDone(true);
         }
       } catch (e) {

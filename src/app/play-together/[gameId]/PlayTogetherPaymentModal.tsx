@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Upload, Phone } from "lucide-react";
 import { uploadGamePaymentProof, submitPlayTogetherPayment } from "@/lib/playTogether/actions";
 import { hostQrPublicUrl, friendlyPlayTogetherError } from "@/lib/playTogether/types";
@@ -39,6 +40,7 @@ export default function PlayTogetherPaymentModal({
   onClose: () => void;
   onSubmitted: () => void;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [payingNow, setPayingNow] = useState(false);
   const [transactionId, setTransactionId] = useState("");
@@ -72,11 +74,25 @@ export default function PlayTogetherPaymentModal({
     startTransition(async () => {
       try {
         const path = await uploadGamePaymentProof(gamePlayerId, file);
-        if (isActionError(path)) { setErr(path.message); return; }
+        if (isActionError(path)) {
+          if (path.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(path.message);
+          return;
+        }
         const submitted = await submitPlayTogetherPayment({
           gamePlayerId, gameId, method: "host_qr", transactionId: transactionId.trim(), proofPath: path,
         });
-        if (isActionError(submitted)) { setErr(submitted.message); return; }
+        if (isActionError(submitted)) {
+          if (submitted.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(submitted.message);
+          return;
+        }
         onSubmitted();
       } catch (e) {
         setErr(e instanceof Error ? e.message : friendlyPlayTogetherError("Could not submit your payment. Try again."));
