@@ -46,6 +46,12 @@ export default async function VenueBookingPage({
         <div className="bk-hero-info">
           <h1>{venue.name}</h1>
           <div className="sub">
+              {/* Which sports this venue actually offers — shown up front
+                  so picking a court further down (each tied to one sport)
+                  isn't the first place a player learns what's on offer. */}
+              {Array.from(new Set(courts.map((c) => c.sport))).map((sport) => (
+                <span key={sport} className="bk-sport-pill">{sport}</span>
+              ))}
               {(venue.maps_url || (venue.lat != null && venue.lng != null)) && (
                 <a
                   href={venue.maps_url ?? `https://www.google.com/maps/search/?api=1&query=${venue.lat},${venue.lng}`}
@@ -56,7 +62,9 @@ export default async function VenueBookingPage({
                 </a>
               )}
               {venue.verification_status === "verified" && (
-                <span style={{ color: "var(--turf)" }}><ShieldCheck size={14} style={{ verticalAlign: -2, marginRight: 5 }} />Verified venue</span>
+                <span style={{ color: "var(--turf)", display: "inline-flex", alignItems: "center" }}>
+                  <ShieldCheck size={14} style={{ display: "inline", verticalAlign: -2, marginRight: 5 }} />Verified venue
+                </span>
             )}
           </div>
         </div>

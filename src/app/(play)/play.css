@@ -330,6 +330,11 @@
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
   font-size: 13px;
 }
+.bk-sport-pill {
+  font-size: 11.5px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--sodium); background: rgba(0,98,65,0.1); border: 1px solid rgba(0,98,65,0.28);
+  border-radius: 999px; padding: 5px 12px;
+}
 /* the gradient was only there to protect overlaid text */
 .bk-hero-grad { display: none; }
 

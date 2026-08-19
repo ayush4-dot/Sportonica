@@ -300,8 +300,8 @@ export default function BookingFlow({
         <h3 style={{ fontSize: 22 }}>{needPlayers ? "Your game is live!" : "You're booked!"}</h3>
         <p className="hint" style={{ maxWidth: 380, margin: "8px auto 20px" }}>
           {needPlayers
-            ? `${court?.name} at ${venueName}. Players can now request to join — approve them from your Manage page, and each pays you Rs ${contribution} directly.`
-            : `${court?.name} at ${venueName}, ${new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM_TZ })} at ${fmtHM(hour ?? 0)} for ${duration === 1 ? "1 hour" : `${duration} hours`}.`}
+            ? `${court?.sport} on ${court?.name} at ${venueName}. Players can now request to join — approve them from your Manage page, and each pays you Rs ${contribution} directly.`
+            : `${court?.sport} on ${court?.name} at ${venueName}, ${new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM_TZ })} at ${fmtHM(hour ?? 0)} for ${duration === 1 ? "1 hour" : `${duration} hours`}.`}
         </p>
         <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
           <button className="play-btn gold" onClick={() => router.push(needPlayers ? "/play-together" : "/discover")}>
@@ -323,6 +323,7 @@ export default function BookingFlow({
             amount={awaitingPayment.price}
             summary={[
               { label: "Venue", value: venueName },
+              { label: "Sport", value: court?.sport ?? "—" },
               { label: "Court", value: court?.name ?? "—" },
               { label: "Date", value: new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: KTM_TZ }) },
               { label: "Time", value: hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—" },
@@ -370,6 +371,13 @@ export default function BookingFlow({
             ))}
           </div>
         </div>
+      )}
+
+      {/* Persistent reminder of what's being booked — once you're past
+          picking the court, nothing else on screen names the sport, which
+          is confusing at venues with multiple sports across courts. */}
+      {step > 0 && court && (
+        <div className="bkw-sport-ctx">{court.sport} · {court.name}</div>
       )}
 
       {/* Progress */}
@@ -666,7 +674,7 @@ export default function BookingFlow({
             Rs {price}
           </span>
           {hour !== null && (
-            <span className="sub">{fmtHM(hour)}–{fmtHM(hour + duration)} · {court?.name}</span>
+            <span className="sub">{court?.sport} · {fmtHM(hour)}–{fmtHM(hour + duration)} · {court?.name}</span>
           )}
         </div>
         <div className="bkw-nav">
@@ -712,6 +720,13 @@ export default function BookingFlow({
         .bkw-offer .lbl { font-size: 12.5px; font-weight: 700; }
         .bkw-offer .when { font-size: 11px; opacity: .6; }
         .bkw-price .val s { opacity: .45; font-weight: 500; margin-right: 7px; font-size: 15px; }
+
+        .bkw-sport-ctx {
+          display: inline-block; font-size: 11.5px; font-weight: 700;
+          letter-spacing: .04em; color: var(--sodium); text-transform: uppercase;
+          background: rgba(0,98,65,0.1); border: 1px solid rgba(0,98,65,0.28);
+          border-radius: 999px; padding: 5px 12px; margin-bottom: 16px;
+        }
 
         .bkw-steps {
           display: flex; align-items: center; gap: 6px;
