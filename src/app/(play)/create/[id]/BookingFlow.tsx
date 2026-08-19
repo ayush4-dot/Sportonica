@@ -410,7 +410,7 @@ export default function BookingFlow({
           <div className="bk-panel">
             <h3>When are you playing?</h3>
             <p className="hint">
-              <Clock size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+              <Clock size={13} style={{ display: "inline", verticalAlign: -2, marginRight: 4 }} />
               Live availability — already-booked and passed times aren&apos;t shown.
             </p>
 
@@ -451,7 +451,7 @@ export default function BookingFlow({
               <div className={`bk-switch ${needPlayers ? "on" : ""}`} />
               <div>
                 <h3 style={{ margin: 0 }}>
-                  <Users size={15} style={{ verticalAlign: -2, marginRight: 6 }} />Need more players?
+                  <Users size={15} style={{ display: "inline", verticalAlign: -2, marginRight: 6 }} />Need more players?
                 </h3>
                 <p className="hint" style={{ margin: "2px 0 0" }}>
                   Open your game so others can join and split the cost.
@@ -648,7 +648,7 @@ export default function BookingFlow({
             )}
 
             <p className="hint" style={{ fontSize: 12.5, marginTop: 18, marginBottom: 0 }}>
-              <Wallet size={13} style={{ verticalAlign: -2, marginRight: 4 }} />
+              <Wallet size={13} style={{ display: "inline", verticalAlign: -2, marginRight: 4 }} />
               Next you&apos;ll pay via eSewa or Khalti QR and submit your transaction ID for verification.
             </p>
           </div>
