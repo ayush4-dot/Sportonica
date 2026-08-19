@@ -15,13 +15,13 @@ import { useCity, inCity } from "@/lib/city";
 type HomeRails = Awaited<ReturnType<typeof getHomeRails>>;
 
 const SPORTS_PANELS = [
-  { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", emoji:"⚽", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
-  { sport:"Cricket",    label:"CRICKET",    color:"#f97316", emoji:"🏏", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
-  { sport:"Basketball", label:"BASKETBALL", color:"#006241", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
-  { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
-  { sport:"Badminton",  label:"BADMINTON",  color:"#006241", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
-  { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🏓", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
-  { sport:"Swimming",   label:"SWIMMING",   color:"#06b6d4", emoji:"🏊", desc:"Lane bookings, early-morning laps, and coached sessions." },
+  { sport:"Futsal",     label:"FUTSAL",     color:"#2E7D5B", desc:"Book floodlit courts by the hour. Kathmandu's favourite night game." },
+  { sport:"Cricket",    label:"CRICKET",    color:"#f97316", desc:"Weekend box cricket cups, pitch bookings, and tournaments." },
+  { sport:"Basketball", label:"BASKETBALL", color:"#006241", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
+  { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", desc:"Co-ed games, beach courts, and organised leagues." },
+  { sport:"Badminton",  label:"BADMINTON",  color:"#006241", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
+  { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
+  { sport:"Swimming",   label:"SWIMMING",   color:"#06b6d4", desc:"Lane bookings, early-morning laps, and coached sessions." },
 ];
 
 const STATS = [
@@ -175,9 +175,7 @@ const CSS = `
   .p-sportchip-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
   .p-sportchip-tint { position:absolute; inset:0; }
   .p-sportchip-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0.4) 100%); }
-  .p-sportchip-emoji { position:absolute; top:14px; left:14px; font-size:26px; line-height:1; z-index:1; filter:drop-shadow(0 2px 6px rgba(0,0,0,0.5)); }
-  .p-sportchip-label { position:absolute; left:14px; bottom:34px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Inter',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
-  .p-sportchip-cta { position:absolute; left:14px; bottom:13px; z-index:1; font-size:11px; font-weight:700; display:flex; align-items:center; gap:5px; }
+  .p-sportchip-label { position:absolute; left:14px; bottom:14px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Inter',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
   [data-theme="paper"] .p-sportbar-title { color:#14171E; }
   [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.55); }
@@ -386,11 +384,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                       <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
                       <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
                       <span className="p-sportchip-shade" />
-                      <span className="p-sportchip-emoji">{sp.emoji}</span>
                       <span className="p-sportchip-label">{sp.sport}</span>
-                      <span className="p-sportchip-cta" style={{ color: "rgba(255,255,255,0.9)" }}>
-                        Book grounds <ArrowRight size={12} color={sp.color} strokeWidth={3} />
-                      </span>
                     </Link>
                   ))}
                 </div>
