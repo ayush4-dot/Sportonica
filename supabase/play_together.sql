@@ -98,34 +98,13 @@ create table if not exists public.game_players (
 create index if not exists idx_game_players_game on public.game_players (game_id);
 create index if not exists idx_game_players_user on public.game_players (user_id);
 
--- ── Re-run safety: widen an already-existing status check/default ──
--- (mirrors the pg_temp helper payments.sql already established, for the
--- exact same reason: these tables were never created via a name-tracked
--- constraint, so find-and-drop rather than assume a name).
-create or replace function pg_temp.drop_check_constraints(p_table text, p_column text)
-returns void language plpgsql as $$
-declare r record;
-begin
-  for r in
-    select con.conname
-    from pg_constraint con
-    join pg_class rel on rel.oid = con.conrelid
-    join pg_namespace nsp on nsp.oid = rel.relnamespace
-    join pg_attribute att on att.attrelid = rel.oid and att.attnum = any(con.conkey)
-    where nsp.nspname = 'public' and rel.relname = p_table
-      and con.contype = 'c' and att.attname = p_column
-  loop
-    execute format('alter table public.%I drop constraint %I', p_table, r.conname);
-  end loop;
-end;
-$$;
-
-select pg_temp.drop_check_constraints('game_players', 'status');
-alter table public.game_players add constraint game_players_status_check
-  check (status in ('requested','joined','left','rejected'));
+-- Re-run safety for the status check/default used to live here, widening
+-- to ('requested','joined','left','rejected'). play_together_payments.sql
+-- (always run right after this file) now owns the status check end to
+-- end — it widens further to the full payment-state-machine set, so
+-- re-narrowing to just these four here would fight that file and break
+-- on any row already in a payment state. Do not re-add it.
 alter table public.game_players alter column status set default 'requested';
-
-drop function pg_temp.drop_check_constraints(text, text);
 
 -- ── ROW LEVEL SECURITY ─────────────────────────────────────────
 -- Deliberately minimal, same style as payments.sql: only SELECT
