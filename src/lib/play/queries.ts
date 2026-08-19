@@ -10,7 +10,8 @@ export async function browseVenues(): Promise<(Venue & { courts: Court[] })[]> {
     .select("*")
     .eq("status", "open")
     .eq("verification_status", "verified") // approval gate: only approved venues reach players
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(100);
 
   if (!venues?.length) return [];
 
