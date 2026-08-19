@@ -77,6 +77,8 @@ export default function BookingFlow({
   const [minPlayers, setMinPlayers] = useState(8);
   const [skillLevel, setSkillLevel] = useState<SkillLevel>("any");
   const [ackRisk, setAckRisk] = useState(false);
+  const [riskFlash, setRiskFlash] = useState(false);
+  const riskBoxRef = useRef<HTMLDivElement>(null);
   const [hostPhone, setHostPhone] = useState("");
   const [qrPreviewUrl, setQrPreviewUrl] = useState<string | null>(null);
   const [qrPath, setQrPath] = useState<string | null>(null);
@@ -199,7 +201,13 @@ export default function BookingFlow({
     }
     if (needPlayers) {
       if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
-      if (!ackRisk) { setErr("Please confirm you understand the venue payment terms."); return; }
+      if (!ackRisk) {
+        setErr("Please confirm you understand the venue payment terms.");
+        riskBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        setRiskFlash(true);
+        setTimeout(() => setRiskFlash(false), 1000);
+        return;
+      }
     } else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) {
       setErr("Enter a valid phone number.");
       return;
@@ -626,7 +634,7 @@ export default function BookingFlow({
                   Sportonica never collects this.
                 </div>
 
-                <div className="pt-risk-box">
+                <div className={`pt-risk-box ${riskFlash ? "flash" : ""}`} ref={riskBoxRef}>
                   <AlertTriangle size={18} color="#d97706" style={{ flexShrink: 0, marginTop: 2 }} />
                   <div>
                     <h4>Important</h4>
@@ -688,7 +696,7 @@ export default function BookingFlow({
               Continue <ChevronRight size={15} />
             </button>
           ) : (
-            <button className="play-btn gold" onClick={confirm} disabled={pending || hour === null || (needPlayers && !ackRisk)}>
+            <button className="play-btn gold" onClick={confirm} disabled={pending || hour === null}>
               {pending ? "Reserving…" : `Reserve · Rs ${price}`}
             </button>
           )}

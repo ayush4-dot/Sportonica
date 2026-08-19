@@ -240,11 +240,26 @@
   display: flex; gap: 12px; align-items: flex-start;
   background: rgba(217,119,6,.08); border: 1px solid rgba(217,119,6,.3);
   border-radius: 14px; padding: 16px; margin-top: 18px;
+  transition: background 0.3s, border-color 0.3s;
 }
 .pt-risk-box h4 { margin: 0 0 6px; font-size: 14px; font-family: 'Inter', sans-serif; }
 .pt-risk-box p { margin: 0 0 12px; font-size: 13px; color: var(--dim); line-height: 1.55; }
 .pt-risk-check { display: flex; align-items: flex-start; gap: 9px; cursor: pointer; font-size: 13px; }
 .pt-risk-check input { margin-top: 3px; accent-color: #006241; }
+
+/* Draws the eye to the unticked checkbox after a failed Reserve attempt —
+   the button used to just be silently disabled with no feedback at all. */
+.pt-risk-box.flash {
+  background: rgba(217,119,6,.18); border-color: rgba(217,119,6,.7);
+  animation: riskShake 0.4s ease;
+}
+@keyframes riskShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
 
 .bk-toggle { display: flex; align-items: center; gap: 12px; padding: 14px 0; cursor: pointer; }
 .bk-switch {
