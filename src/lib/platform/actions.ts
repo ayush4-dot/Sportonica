@@ -57,7 +57,8 @@ export async function allVenuesForPlatform() {
   const { data } = await sb
     .from("venues")
     .select("id, name, venue_type, address, verification_status, status, created_at, owner_id")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   // attach owner names
   const ownerIds = [...new Set((data ?? []).map((v) => v.owner_id).filter(Boolean))];
@@ -128,7 +129,8 @@ export async function allUsersForPlatform() {
   const { data } = await sb
     .from("profiles")
     .select("id, full_name, name, username, role, trust_score, city, is_public")
-    .order("trust_score", { ascending: false });
+    .order("trust_score", { ascending: false })
+    .limit(500);
   return (data ?? []).map((u) => ({
     ...u,
     display_name: u.full_name ?? u.name ?? u.username ?? "—",
