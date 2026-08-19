@@ -157,7 +157,7 @@ const CSS = `
   }
 
   /* ── sport slider (Playo-style clickable rail) ── */
-  .p-sportbar { padding:56px clamp(24px,5vw,56px) 8px; }
+  .p-sportbar { padding:56px 0 8px; }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap; }
   .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Inter',sans-serif; line-height:0.95; color:#ffffff; }
@@ -182,7 +182,7 @@ const CSS = `
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
   [data-theme="paper"] .p-sportchip:hover { border-color:rgba(20,23,30,0.3); }
   @media (max-width:900px){
-    .p-sportbar { padding:44px clamp(24px,5vw,56px) 4px; }
+    .p-sportbar { padding:44px 0 4px; }
     .p-sportchip { width:130px; height:166px; }
     .p-sportchip-label { font-size:16px; }
   }
@@ -274,7 +274,7 @@ const CSS = `
 
     /* Page edges: 16px, matching the site-wide mobile spacing scale
        (the tablet-up clamp() bottoms out at 24px, too wide for phones). */
-    .p-hero-content, .p-sportbar, .p-footer { padding-left:16px; padding-right:16px; }
+    .p-hero-content, .p-footer { padding-left:16px; padding-right:16px; }
     .p-sportbar { padding-top: 32px; padding-bottom: 4px; }
 
     /* "Pick your game" was inheriting the same clamp() as the hero H1
