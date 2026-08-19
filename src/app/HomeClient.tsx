@@ -20,7 +20,7 @@ const SPORTS_PANELS = [
   { sport:"Basketball", label:"BASKETBALL", color:"#006241", emoji:"🏀", desc:"Find courts, join runs, and compete in 3-on-3 leagues." },
   { sport:"Volleyball", label:"VOLLEYBALL", color:"#3b82f6", emoji:"🏐", desc:"Co-ed games, beach courts, and organised leagues." },
   { sport:"Badminton",  label:"BADMINTON",  color:"#006241", emoji:"🏸", desc:"Indoor halls, coaching sessions, and weekly round-robins." },
-  { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🥒", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
+  { sport:"Pickleball", label:"PICKLEBALL", color:"#84cc16", emoji:"🏓", desc:"The fastest-growing game in town. Easy to learn, hard to stop." },
   { sport:"Swimming",   label:"SWIMMING",   color:"#06b6d4", emoji:"🏊", desc:"Lane bookings, early-morning laps, and coached sessions." },
 ];
 
@@ -296,8 +296,8 @@ const SPORT_IMG: Record<string, string> = {
   Basketball: "/sports/basketball.jpg",
   Volleyball: "/sports/volleyball.jpg",
   Badminton:  "/sports/badminton.jpg",
-  Pickleball: "/sports/running.jpg",
-  Swimming:   "/sports/running.jpg",
+  Pickleball: "/sports/pickleball.jpg",
+  Swimming:   "/sports/swimming.jpg",
 };
 
 export default function HomeClient({ rails }: { rails?: HomeRails }) {
