@@ -180,7 +180,7 @@ export default function MosaicGrid({ venues, offers = {}, initialSport = null }:
         <div className="mz-head">
           <div>
             <div className="mz-eyebrow">Book a ground</div>
-            <h1>Pick a <em>pitch.</em><br />Round up your side.</h1>
+            <h1>Book your <em>venue.</em></h1>
             <p>Every ground, every open slot. Lock a court, split the cost, and if you&apos;re short — open your game to the city.</p>
           </div>
         </div>

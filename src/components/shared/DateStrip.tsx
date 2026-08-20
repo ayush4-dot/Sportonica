@@ -38,7 +38,6 @@ export default function DateStrip({
     <div className="ds">
       <div className="ds-head">
         <div>
-          <p className="ds-kicker">Choose your day</p>
           <h3 className="ds-big">{bigLabel}</h3>
         </div>
         <div className="ds-nav">
@@ -81,10 +80,6 @@ export default function DateStrip({
         .ds-head {
           display: flex; align-items: flex-end; justify-content: space-between;
           gap: 14px; margin-bottom: 16px;
-        }
-        .ds-kicker {
-          font-size: 10.5px; font-weight: 800; letter-spacing: .18em;
-          text-transform: uppercase; opacity: .42; margin: 0 0 6px;
         }
         .ds-big {
           font-family: 'Inter', sans-serif;

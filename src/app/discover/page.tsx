@@ -174,12 +174,8 @@ function DiscoverInner() {
           exactly what happened here. CSS animations run independent of
           React, so the text is guaranteed to end up visible either way. */}
       <header className="disc-hero">
-        <p className="disc-eyebrow disc-fade">Live in Kathmandu</p>
-        <h1 className="disc-title disc-fade">Find your <em>game</em></h1>
-        <p className="disc-sub disc-fade">
-          Pick a sport, scan the map, and join the game — or{" "}
-          <a href="/create">host your own</a>.
-        </p>
+        <h1 className="disc-title disc-fade">Join the <em>game</em></h1>
+        <p className="disc-sub disc-fade">Choose your fav sport & join in.</p>
       </header>
 
       <section className="disc-section">
@@ -532,14 +528,6 @@ const CSS = `
   padding: 18px clamp(16px, 5vw, 56px) 8px;
   max-width: 720px;
 }
-.disc-eyebrow {
-  font-family: 'Inter', sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  color: var(--lime);
-  margin: 0 0 14px;
-}
 .disc-title {
   font-family: 'Inter', system-ui, sans-serif;
   font-weight: 800;
@@ -566,15 +554,11 @@ const CSS = `
   to   { opacity: 1; transform: translateY(0); }
 }
 .disc-fade { animation: discFadeUp 0.6s cubic-bezier(0.22,1,0.36,1) both; }
-.disc-eyebrow.disc-fade { --disc-fy: 10px; animation-duration: 0.5s; }
 .disc-title.disc-fade   { --disc-fy: 20px; animation-duration: 0.7s; animation-delay: 0.12s; }
 .disc-sub.disc-fade     { --disc-fy: 14px; animation-duration: 0.6s; animation-delay: 0.24s; }
 @media (prefers-reduced-motion: reduce) {
   .disc-fade { animation: none; opacity: 1; transform: none; }
 }
-.disc-sub a { color: var(--lime); text-decoration: none; }
-[data-theme="paper"] .disc-eyebrow { color: var(--turf); }
-[data-theme="paper"] .disc-sub a { color: var(--turf); }
 
 .disc-filter-wrap {
   padding: 20px clamp(16px, 5vw, 56px) 0;

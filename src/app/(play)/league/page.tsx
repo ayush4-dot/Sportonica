@@ -11,8 +11,6 @@ export default async function LeaguePage() {
       <div className="play-wrap">
         <ChatTabs />
         <div className="play-hero">
-          <div className="play-eyebrow">Chat &amp; communities</div>
-          <h1>Find your regular <em>crew.</em></h1>
           <p>
             The best games come around every week. Make a group or join one near you —
             build a pool of players you can pull a game together with any time.
