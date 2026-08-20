@@ -255,6 +255,12 @@ function TermsCard({
 }) {
   return (
     <div className="pt-risk-box" style={{ marginTop: 8 }}>
+      {/* A single flex child — .pt-risk-box is shared with the
+          icon-plus-text layout elsewhere (see PlayTogetherWizard /
+          BookingFlow), so it's a flex ROW by default. Nesting the actions
+          in here too, instead of as a second top-level child, keeps them
+          stacked under the text instead of squeezed into their own
+          narrow column beside it. */}
       <div>
         <h4>Request to Join</h4>
         <p>
@@ -268,12 +274,12 @@ function TermsCard({
           <input type="checkbox" checked={ackTerms} onChange={(e) => setAckTerms(e.target.checked)} />
           I have read and agree to the Play Together Terms &amp; Conditions.
         </label>
-      </div>
-      <div className="pt-terms-actions">
-        <button className="play-btn gold" onClick={onConfirm} disabled={!ackTerms || pending}>
-          {pending ? "Sending…" : "Confirm & Send Request"}
-        </button>
-        <button className="play-btn ghost" onClick={onCancel} disabled={pending}>Never mind</button>
+        <div className="pt-terms-actions">
+          <button className="play-btn gold" onClick={onConfirm} disabled={!ackTerms || pending}>
+            {pending ? "Sending…" : "Confirm & Send Request"}
+          </button>
+          <button className="play-btn ghost" onClick={onCancel} disabled={pending}>Never mind</button>
+        </div>
       </div>
       <style>{`
         .pt-terms-actions { display: flex; gap: 8px; margin-top: 12px; }
