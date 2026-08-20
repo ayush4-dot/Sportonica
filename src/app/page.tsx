@@ -12,18 +12,18 @@ const JSON_LD = {
     {
       "@type": "Organization",
       "name": "Sportonica",
-      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
-      "logo": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com"}/icons/icon-512.png`,
+      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com",
+      "logo": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/icons/icon-512.png`,
       "areaServed": { "@type": "City", "name": "Kathmandu" },
     },
     {
       "@type": "WebSite",
       "name": "Sportonica",
-      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com",
+      "url": process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com",
       "description": "Book courts, join pickup games, and find your regular crew across Kathmandu.",
       "potentialAction": {
         "@type": "SearchAction",
-        "target": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.khelamna.com"}/discover?q={search_term_string}`,
+        "target": `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/discover?q={search_term_string}`,
         "query-input": "required name=search_term_string",
       },
     },

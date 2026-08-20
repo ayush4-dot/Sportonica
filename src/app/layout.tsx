@@ -8,7 +8,7 @@ import PageTransition from '@/components/PageTransition'
 
 export const metadata: Metadata = {
   // Social bots need absolute URLs for og:image. In production set
-  // NEXT_PUBLIC_SITE_URL to your real domain (e.g. https://khelamna.com).
+  // NEXT_PUBLIC_SITE_URL to your real domain (e.g. https://sportonica.com).
   metadataBase: new URL(
     process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
   ),

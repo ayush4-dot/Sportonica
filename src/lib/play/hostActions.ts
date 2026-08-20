@@ -144,7 +144,7 @@ export async function invitePlayers(input: {
   );
   if (error) return actionError(error.message);
 
-  const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://khelumna.vercel.app"}/game/${input.eventId}`;
+  const link = `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/game/${input.eventId}`;
   await sendMail(
     emails.map((to) => ({
       to,
