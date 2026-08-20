@@ -70,8 +70,8 @@
 .auth-brand-mark {
   width: 38px; height: 38px; border-radius: 10px;
   background: var(--sodium); color: #0B0D11;
-  display: grid; place-items: center;
-  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 22px;
+  display: grid; place-items: center; padding: 6px; box-sizing: border-box;
+  object-fit: contain;
   box-shadow: 0 6px 30px -6px rgba(0,98,65,0.6);
 }
 .auth-brand-name { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 20px; letter-spacing: -0.5px; }

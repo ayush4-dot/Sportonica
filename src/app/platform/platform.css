@@ -17,9 +17,9 @@
 [data-theme="paper"] .plt-top { border-bottom-color: rgba(20,23,30,0.12); }
 .plt-brand { display: flex; align-items: center; gap: 13px; }
 .plt-k {
-  width: 40px; height: 40px; border-radius: 11px; background: #006241; color: #ffffff;
-  display: grid; place-items: center; font-weight: 800; font-size: 22px;
-  font-family: 'Inter', sans-serif;
+  width: 40px; height: 40px; border-radius: 11px; background: #006241;
+  display: grid; place-items: center; padding: 7px; box-sizing: border-box;
+  object-fit: contain;
 }
 .plt-name { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: -0.4px; }
 .plt-sub { font-family: 'Inter', sans-serif; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.5; }

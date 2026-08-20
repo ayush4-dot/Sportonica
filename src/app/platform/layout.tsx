@@ -15,7 +15,8 @@ export default async function PlatformLayout({ children }: { children: React.Rea
     <div className="plt">
       <header className="plt-top">
         <div className="plt-brand">
-          <span className="plt-k">S</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/mark.png" alt="" className="plt-k" />
           <div>
             <div className="plt-name">Sportonica</div>
             <div className="plt-sub">Platform console</div>

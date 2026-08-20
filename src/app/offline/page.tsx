@@ -8,11 +8,14 @@ export default function OfflinePage() {
       fontFamily: "'Inter', system-ui, sans-serif", textAlign: "center",
     }}>
       <div style={{ maxWidth: 380 }}>
-        <div style={{
-          width: 62, height: 62, borderRadius: 16, background: "#006241", color: "#ffffff",
-          display: "grid", placeItems: "center", margin: "0 auto 22px",
-          fontFamily: "'Inter', sans-serif", fontSize: 34, fontWeight: 800,
-        }}>S</div>
+        {/* icon-192.png specifically — it's already in the service worker's
+            PRECACHE list (see public/sw.js), so it's guaranteed available
+            on this exact page even with zero network. mark.png isn't. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icons/icon-192.png" alt="" width={62} height={62}
+          style={{ borderRadius: 16, margin: "0 auto 22px", display: "block" }}
+        />
 
         <h1 style={{
           fontFamily: "'Inter', sans-serif",

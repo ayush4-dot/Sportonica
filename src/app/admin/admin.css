@@ -53,9 +53,9 @@
 }
 .adm-brand-mark {
   width: 30px; height: 30px; border-radius: 8px;
-  background: var(--a-accent); color: #ffffff;
-  display: grid; place-items: center;
-  font-family: var(--a-disp); font-weight: 800; font-size: 18px;
+  background: var(--a-accent);
+  display: grid; place-items: center; padding: 5px; box-sizing: border-box;
+  object-fit: contain;
   box-shadow: 0 0 0 1px rgba(0,98,65,0.3), 0 4px 20px -4px rgba(0,98,65,0.5);
 }
 .adm-brand-name {

@@ -47,7 +47,8 @@ function SignupInner() {
     <div className="auth">
       <div className="auth-stage">
         <div className="auth-brand">
-          <div className="auth-brand-mark">S</div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/mark.png" alt="" className="auth-brand-mark" />
           <div className="auth-brand-name">Sportonica</div>
         </div>
         <div className="auth-tagline">

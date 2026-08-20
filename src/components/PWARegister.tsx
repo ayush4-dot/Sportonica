@@ -85,7 +85,8 @@ export default function PWARegister() {
 
   return (
     <div className="pwa-bar">
-      <div className="pwa-mark">S</div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/icons/mark.png" alt="" className="pwa-mark" />
       <div className="pwa-copy">
         <b>Add Sportonica to your home screen</b>
         {showIOS ? (
@@ -122,8 +123,8 @@ export default function PWARegister() {
         @keyframes pwaUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .pwa-mark {
           width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
-          background: #006241; color: #ffffff; display: grid; place-items: center;
-          font-family: 'Inter', sans-serif; font-size: 21px; font-weight: 800;
+          background: #006241; display: grid; place-items: center; padding: 6px; box-sizing: border-box;
+          object-fit: contain;
         }
         .pwa-copy { flex: 1; min-width: 0; }
         .pwa-copy b { display: block; font-size: 13.5px; font-weight: 700; }

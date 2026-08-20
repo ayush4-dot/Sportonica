@@ -72,7 +72,7 @@ export default function AppHeader() {
     : [];
 
   const firstName = profile?.full_name?.trim().split(" ")[0] ?? null;
-  const initial = (firstName ?? "S").charAt(0).toUpperCase();
+  const initial = firstName?.charAt(0).toUpperCase() ?? null;
 
   return (
     <>
@@ -81,10 +81,17 @@ export default function AppHeader() {
           {/* left — who and where */}
           <div className="ah-l">
             <Link href={profile ? "/profile" : `/login?redirect=${encodeURIComponent(pathname)}`} className="ah-av" aria-label="Profile">
-              {profile?.avatar_url
+              {profile?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                ? <img src={profile.avatar_url} alt="" />
-                : <span>{initial}</span>}
+                <img src={profile.avatar_url} alt="" />
+              ) : initial ? (
+                <span>{initial}</span>
+              ) : (
+                // Logged out — no user to show an initial for, so show the
+                // site mark instead of a meaningless "S".
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src="/icons/mark.png" alt="" className="ah-av-mark" />
+              )}
             </Link>
 
             <div className="ah-txt">
@@ -239,6 +246,7 @@ export default function AppHeader() {
           box-shadow:0 6px 18px -8px rgba(0,98,65,.9);
         }
         .ah-av img { width:100%; height:100%; object-fit:cover; }
+        .ah-av img.ah-av-mark { object-fit:contain; padding:9px; box-sizing:border-box; }
         .ah-txt { min-width:0; }
         .ah-hi { font-size:12.5px; opacity:.55; margin:0 0 1px; white-space:nowrap; }
         .ah-hi b { font-weight:800; opacity:1; }
