@@ -224,7 +224,9 @@ export default function PlayTogetherManageClient({
             <div key={p.id} className="pt-player-row">
               <div>
                 <div className="pt-player-name">{p.profiles?.full_name ?? p.profiles?.name ?? "Player"}</div>
-                <div className="pt-player-sub">Rs {p.contribution_amount}</div>
+                <div className="pt-player-sub">
+                  Rs {p.contribution_amount} · {p.payment_method === "cash" ? "Cash at venue" : "Paid online"}
+                </div>
               </div>
               <button
                 className={`pt-collect-btn ${p.contribution_status === "collected" ? "on" : ""}`}

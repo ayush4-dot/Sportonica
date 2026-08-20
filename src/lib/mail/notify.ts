@@ -14,6 +14,7 @@ import {
   playTogetherGamePublished, playTogetherPlayerJoined, playTogetherHostRosterChanged,
   playTogetherGameCancelled, playTogetherJoinRequested, playTogetherJoinRejected,
   playTogetherPaymentRequired, playTogetherPaymentSubmitted, playTogetherPaymentRejected,
+  playTogetherPlayerJoinedCash, playTogetherCashPaymentSelected,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 import { PLAY_TOGETHER_PAYMENT_REJECTION_REASONS } from "@/lib/playTogether/types";
@@ -322,6 +323,49 @@ export async function notifyPlayTogetherPaymentSubmitted(input: { gamePlayerId: 
     {
       user_id: row.user_id, kind: "game_payment_submitted", title: "Payment submitted",
       body: `Your payment proof for the ${game.sport} game was submitted. Waiting on the host to verify it.`,
+      game_id: game.id,
+    },
+  ]);
+}
+
+// ── Player chose "pay in cash at the venue" instead of paying online —
+// they're confirmed immediately (see choose_play_together_cash_payment()
+// in supabase/play_together_cash_payment.sql), so this is both a "you're
+// in" email to the player and a heads-up to the host that there's
+// nothing to verify, just cash to collect at the venue. ───────────────
+export async function notifyPlayTogetherCashSelected(input: { gamePlayerId: string; gameId: string }) {
+  const sb = await createClient();
+  const { data: row } = await sb
+    .from("game_players").select("user_id, contribution_amount")
+    .eq("id", input.gamePlayerId).maybeSingle();
+  if (!row) return;
+
+  const ctx = await playTogetherContext(input.gameId);
+  if (!ctx) return;
+  const { game, venueName } = ctx;
+  const amount = Number(row.contribution_amount) || 0;
+
+  const [hostEmail, hostName, playerEmail, playerName] = await Promise.all([
+    emailFor(game.host_id), nameFor(game.host_id), emailFor(row.user_id), nameFor(row.user_id),
+  ]);
+  if (hostEmail) {
+    await sendMail(playTogetherCashPaymentSelected({ to: hostEmail, hostName, playerName, sport: game.sport, amount }));
+  }
+  if (playerEmail) {
+    await sendMail(playTogetherPlayerJoinedCash({
+      to: playerEmail, playerName, sport: game.sport, venue: venueName, startsAt: game.starts_at, contribution: amount,
+    }));
+  }
+
+  await sb.from("notifications").insert([
+    {
+      user_id: game.host_id, kind: "game_payment_cash_selected", title: "Player will pay in cash",
+      body: `${playerName} chose to pay Rs ${Math.round(amount)} in cash at the venue for your ${game.sport} game. They're confirmed — mark it collected once they've paid.`,
+      game_id: game.id, actor_id: row.user_id,
+    },
+    {
+      user_id: row.user_id, kind: "game_joined", title: "You're in!",
+      body: `You're confirmed for the ${game.sport} game. Bring Rs ${Math.round(amount)} in cash to pay the host at the venue.`,
       game_id: game.id,
     },
   ]);

@@ -13,6 +13,7 @@ import {
   notifyPlayTogetherPaymentSubmitted,
   notifyPlayTogetherPaymentVerified,
   notifyPlayTogetherPaymentRejected,
+  notifyPlayTogetherCashSelected,
 } from "@/lib/mail/notify";
 import { actionError, type ActionError } from "@/lib/actionError";
 
@@ -203,6 +204,38 @@ export async function submitPlayTogetherPayment(input: {
   }
 
   await notifyPlayTogetherPaymentSubmitted({ gamePlayerId: input.gamePlayerId, gameId: input.gameId });
+
+  return row;
+}
+
+// Player-only alternative to submitPlayTogetherPayment(): commits to
+// paying the host in cash at the venue instead of online, so it skips
+// proof/verification entirely and goes straight to 'joined' — the
+// original Play Together model, offered alongside the QR-and-upload path
+// so a player can pick whichever the host actually supports. The 2-hour
+// deadline is still re-checked server-side inside
+// choose_play_together_cash_payment() (see supabase/
+// play_together_cash_payment.sql) — a lapsed window expires the row in
+// place exactly like submitPlayTogetherPayment() does, never trust the
+// client's countdown.
+export async function chooseCashPaymentAtVenue(gamePlayerId: string, gameId: string): Promise<GamePlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("choose_play_together_cash_payment", {
+    p_game_player_id: gamePlayerId,
+  });
+  if (error) return actionError(friendlyPlayTogetherError(error.message));
+  const row = data as GamePlayer;
+
+  revalidatePath(`/play-together/${gameId}`);
+  revalidatePath(`/play-together/${gameId}/manage`);
+  revalidatePath("/play-together");
+
+  if (row.status === "expired") {
+    return actionError(friendlyPlayTogetherError("PAYMENT_DEADLINE_EXPIRED"));
+  }
+
+  await notifyPlayTogetherCashSelected({ gamePlayerId, gameId });
 
   return row;
 }

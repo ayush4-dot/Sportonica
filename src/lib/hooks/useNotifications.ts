@@ -12,7 +12,8 @@ export type Notification = {
       | "game_join_requested" | "game_join_rejected"
       | "game_payment_required" | "game_payment_reminder" | "game_payment_submitted"
       | "game_payment_verified" | "game_payment_rejected" | "game_payment_expired"
-      | "game_host_payment_submitted" | "game_host_payment_expired";
+      | "game_host_payment_submitted" | "game_host_payment_expired"
+      | "game_payment_cash_selected";
   title: string;
   body: string | null;
   event_id: string | null;

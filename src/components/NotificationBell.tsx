@@ -34,6 +34,7 @@ function iconFor(kind: Notification["kind"]) {
     case "game_payment_rejected": return <AlertTriangle size={16} />;
     case "game_payment_expired":
     case "game_host_payment_expired": return <Clock3 size={16} />;
+    case "game_payment_cash_selected": return <Wallet size={16} />;
     case "game_published":
     case "game_joined": return <Calendar size={16} />;
     case "game_left":
@@ -186,7 +187,8 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                     // (see PlayTogetherJoinPanel).
                     const hostFacing = n.kind === "game_join_requested"
                       || n.kind === "game_host_payment_submitted"
-                      || n.kind === "game_host_payment_expired";
+                      || n.kind === "game_host_payment_expired"
+                      || n.kind === "game_payment_cash_selected";
                     if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/players");
                     else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
                     else if (n.squad_id) router.push(`/league/${n.squad_id}`);

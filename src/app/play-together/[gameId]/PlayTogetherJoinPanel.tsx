@@ -189,9 +189,9 @@ export default function PlayTogetherJoinPanel({
               hostPhone={hostPhone}
               resubmit={status === "payment_rejected"}
               onClose={() => setShowPaymentModal(false)}
-              onSubmitted={() => {
+              onSubmitted={(newStatus) => {
                 setShowPaymentModal(false);
-                setPlayer((p) => (p ? { ...p, status: "payment_verification_pending" } : p));
+                setPlayer((p) => (p ? { ...p, status: newStatus } : p));
               }}
             />
           )}

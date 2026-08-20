@@ -251,6 +251,49 @@ Payment verified. You're officially in the game!
   };
 }
 
+// ── Play Together: player chose to pay the host in cash at the venue —
+// confirmed immediately, no proof/verification step. ──────────────────
+export function playTogetherPlayerJoinedCash(p: {
+  to: string; playerName: string; sport: string; venue: string;
+  startsAt: string; contribution: number;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `You're in: ${p.sport} at ${p.venue}, ${fmtWhen(p.startsAt)}`,
+    body: `Hi ${p.playerName},
+
+You're officially in the game! You chose to pay the host in cash at the
+venue rather than online.
+
+  Sport          ${p.sport}
+  Venue          ${p.venue}
+  When           ${fmtWhen(p.startsAt)}
+  Bring          ${rs(p.contribution)} in cash for the host
+
+— Sportonica`,
+  };
+}
+
+// ── Play Together: host — a player picked "pay in cash at the venue"
+// instead of paying online. They're already confirmed; nothing for the
+// host to verify, just to collect and mark once paid. ─────────────────
+export function playTogetherCashPaymentSelected(p: {
+  to: string; hostName: string; playerName: string; sport: string; amount: number;
+}): Mail {
+  return {
+    to: p.to,
+    subject: `${p.playerName} will pay you in cash — ${p.sport}`,
+    body: `Hi ${p.hostName},
+
+${p.playerName} chose to pay ${rs(p.amount)} in cash at the venue instead
+of online for your ${p.sport} game. They're already confirmed — nothing
+to verify, just collect it at the venue and mark it collected from your
+game's Manage page once they've paid.
+
+— Sportonica`,
+  };
+}
+
 // ── Play Together: host approved the request — payment now required
 // within a 2-hour window before the spot is released. NOT a "you're in"
 // email — that only goes out once the host verifies the payment. ───────

@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Upload, Phone } from "lucide-react";
-import { uploadGamePaymentProof, submitPlayTogetherPayment } from "@/lib/playTogether/actions";
-import { hostQrPublicUrl, friendlyPlayTogetherError } from "@/lib/playTogether/types";
+import { Upload, Phone, QrCode, Wallet, ChevronLeft } from "lucide-react";
+import { uploadGamePaymentProof, submitPlayTogetherPayment, chooseCashPaymentAtVenue } from "@/lib/playTogether/actions";
+import { hostQrPublicUrl, friendlyPlayTogetherError, type GamePlayerStatus } from "@/lib/playTogether/types";
 import { isActionError } from "@/lib/actionError";
 import { PYMT_CSS } from "@/components/payments/PaymentStep";
 
@@ -38,11 +38,12 @@ export default function PlayTogetherPaymentModal({
   hostPhone: string | null;
   resubmit?: boolean;
   onClose: () => void;
-  onSubmitted: () => void;
+  onSubmitted: (status: GamePlayerStatus) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [payingNow, setPayingNow] = useState(false);
+  const [method, setMethod] = useState<"qr" | "cash" | null>(null);
   const [transactionId, setTransactionId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -93,9 +94,29 @@ export default function PlayTogetherPaymentModal({
           setErr(submitted.message);
           return;
         }
-        onSubmitted();
+        onSubmitted(submitted.status);
       } catch (e) {
         setErr(e instanceof Error ? e.message : friendlyPlayTogetherError("Could not submit your payment. Try again."));
+      }
+    });
+  }
+
+  function confirmCash() {
+    setErr(null);
+    startTransition(async () => {
+      try {
+        const row = await chooseCashPaymentAtVenue(gamePlayerId, gameId);
+        if (isActionError(row)) {
+          if (row.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(row.message);
+          return;
+        }
+        onSubmitted(row.status);
+      } catch (e) {
+        setErr(e instanceof Error ? e.message : friendlyPlayTogetherError("Could not confirm cash payment. Try again."));
       }
     });
   }
@@ -129,7 +150,31 @@ export default function PlayTogetherPaymentModal({
           </div>
         )}
 
-        {payingNow && !expired && (
+        {payingNow && !method && !expired && (
+          <>
+            <div className="ptpm-methods">
+              <button className="ptpm-method" onClick={() => setMethod("qr")} type="button">
+                <QrCode size={20} />
+                <div>
+                  <b>Pay via QR / online</b>
+                  <span>Scan the host&apos;s QR (or eSewa/Khalti/bank transfer), then upload proof for the host to verify.</span>
+                </div>
+              </button>
+              <button className="ptpm-method" onClick={() => setMethod("cash")} type="button">
+                <Wallet size={20} />
+                <div>
+                  <b>Pay at the venue</b>
+                  <span>Pay the host in cash when you arrive. No proof needed — you&apos;re confirmed right away.</span>
+                </div>
+              </button>
+            </div>
+            <button className="ptpm-later" style={{ marginTop: 8 }} onClick={() => setPayingNow(false)}>
+              <ChevronLeft size={14} style={{ verticalAlign: -2 }} /> Back
+            </button>
+          </>
+        )}
+
+        {payingNow && method === "qr" && !expired && (
           <>
             {(hostQrPath || hostPhone) && (
               <div className="pymt-panel" style={{ marginTop: 14 }}>
@@ -177,8 +222,36 @@ export default function PlayTogetherPaymentModal({
             <button className="pymt-submit" onClick={submit} disabled={!canSubmit}>
               {pending ? "Submitting…" : "Submit Payment"}
             </button>
-            <button className="ptpm-later" style={{ marginTop: 8 }} onClick={onClose} disabled={pending}>
-              I&apos;ll Pay Later
+            <button className="ptpm-later" style={{ marginTop: 8 }} onClick={() => setMethod(null)} disabled={pending}>
+              <ChevronLeft size={14} style={{ verticalAlign: -2 }} /> Choose a different payment method
+            </button>
+          </>
+        )}
+
+        {payingNow && method === "cash" && !expired && (
+          <>
+            <div className="pymt-panel" style={{ marginTop: 14 }}>
+              <h4>Pay the host in cash at the venue</h4>
+              {hostPhone && (
+                <p className="pymt-hint">
+                  <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                </p>
+              )}
+            </div>
+
+            <p className="ptpm-warn" style={{ marginTop: 12 }}>
+              You&apos;ll pay {rs(contribution)} directly to the host when you arrive. Choosing this
+              confirms your spot immediately — no proof needed — but let the host know once you&apos;ve
+              actually paid.
+            </p>
+
+            {err && <div className="pymt-err">{err}</div>}
+
+            <button className="pymt-submit" onClick={confirmCash} disabled={pending}>
+              {pending ? "Confirming…" : "Confirm — I'll pay at the venue"}
+            </button>
+            <button className="ptpm-later" style={{ marginTop: 8 }} onClick={() => setMethod(null)} disabled={pending}>
+              <ChevronLeft size={14} style={{ verticalAlign: -2 }} /> Choose a different payment method
             </button>
           </>
         )}
@@ -210,9 +283,22 @@ const PTPM_CSS = `
 .ptpm-warn { font-size: 12.5px; color: #d97706; background: rgba(217,119,6,.08); border: 1px solid rgba(217,119,6,.3);
   border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
 .ptpm-actions { margin-top: 16px; }
+.ptpm-methods { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+.ptpm-method {
+  display: flex; align-items: flex-start; gap: 12px; text-align: left;
+  padding: 14px; border-radius: 14px; border: 1px solid rgba(242,237,230,.15);
+  background: transparent; color: inherit; cursor: pointer; font-family: inherit;
+  transition: border-color .2s, background .2s;
+}
+.ptpm-method:hover { border-color: rgba(0,98,65,.5); background: rgba(0,98,65,.08); }
+.ptpm-method svg { flex-shrink: 0; margin-top: 2px; color: #006241; }
+.ptpm-method b { display: block; font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+.ptpm-method span { display: block; font-size: 12px; opacity: .65; line-height: 1.45; }
+[data-theme="paper"] .ptpm-method { border-color: rgba(20,23,30,.14); }
 .ptpm-later { width: 100%; margin-top: 8px; padding: 12px; min-height: 44px; box-sizing: border-box;
   border-radius: 12px; border: 1px solid rgba(242,237,230,.15); background: transparent; color: inherit;
-  font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit; }
+  font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: inherit;
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 [data-theme="paper"] .ptpm-later { border-color: rgba(20,23,30,.14); }
 .ptpm-later:disabled { opacity: .5; cursor: default; }
 `;
