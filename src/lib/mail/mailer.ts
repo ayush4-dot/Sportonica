@@ -14,7 +14,7 @@ export interface Mail {
   body: string;   // plain text — readable in logs, fine in email
 }
 
-const FROM = "Sportonica <noreply@khelamna.com>";
+const FROM = "Sportonica <support@sportonica.com>";
 
 // ── The only function that touches a delivery mechanism ─────────
 async function deliver(mail: Mail): Promise<void> {
@@ -50,7 +50,7 @@ async function deliver(mail: Mail): Promise<void> {
       body: JSON.stringify({
         sender: {
           name: "Sportonica",
-          email: process.env.MAIL_FROM ?? "noreply@khelamna.com",
+          email: process.env.MAIL_FROM ?? "support@sportonica.com",
         },
         to: [{ email: mail.to }],
         subject: mail.subject,
