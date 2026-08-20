@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { motion } from "framer-motion";
 import {
@@ -63,7 +64,7 @@ function fmtTime(iso: string) {
 
 function DiscoverInner() {
   const router = useRouter();
-  const { profile } = useProfile();
+  const { user } = useProfile();
 
   const searchParams = useSearchParams();
   const sportParam = searchParams.get("sport");
@@ -176,6 +177,11 @@ function DiscoverInner() {
       <header className="disc-hero">
         <h1 className="disc-title disc-fade">Join the <em>game</em></h1>
         <p className="disc-sub disc-fade">Choose your fav sport & join in.</p>
+        {user && (
+          <Link href="/my-games" className="disc-manage-link disc-fade">
+            Manage your games <ChevronRight size={13} />
+          </Link>
+        )}
       </header>
 
       <section className="disc-section">
@@ -546,6 +552,13 @@ const CSS = `
   margin: 0;
   max-width: 520px;
 }
+.disc-manage-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-top: 14px; font-size: 13.5px; font-weight: 700;
+  color: var(--lime); text-decoration: none;
+}
+.disc-manage-link:hover { text-decoration: underline; }
+[data-theme="paper"] .disc-manage-link { color: var(--turf); }
 
 /* CSS-driven entrance, not framer-motion — see the comment above the hero
    header JSX for why this content can't depend on JS to become visible. */
