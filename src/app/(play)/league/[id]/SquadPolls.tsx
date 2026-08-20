@@ -147,9 +147,8 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
   }
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(6,7,10,0.72)", backdropFilter: "blur(6px)", zIndex: 400, display: "grid", placeItems: "center", padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 430, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
+    <div onClick={onClose} className="sp-scrim">
+      <div onClick={(e) => e.stopPropagation()} className="sp-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>New poll</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
@@ -191,6 +190,11 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
         </button>
 
         <style>{`
+          .sp-scrim { position: fixed; inset: 0; background: rgba(6,7,10,0.72); backdrop-filter: blur(6px);
+            z-index: 400; display: grid; place-items: center; padding: 20px; }
+          .sp-card { width: 100%; max-width: 430px; background: #14171E; border: 1px solid rgba(242,237,230,0.12);
+            border-radius: 16px; padding: 22px; color: #F2EDE6; }
+          [data-theme="paper"] .sp-card { background: #fff; border-color: rgba(20,23,30,0.1); color: #14171E; }
           .pl-in { width: 100%; box-sizing: border-box; background: transparent;
             border: 1px solid rgba(128,128,128,0.28); border-radius: 10px;
             padding: 13px 12px; color: inherit; font-family: inherit; font-size: 14px; }

@@ -21,7 +21,6 @@ const SportonicaMap = dynamic(() => import("@/components/SportonicaMap"), { ssr:
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { usePlayTogetherEvents } from "@/lib/hooks/usePlayTogetherEvents";
 import { useProfile } from "@/lib/hooks/useProfile";
-import JoinModal from "./JoinModal";
 import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
 import { SPORT_NAMES, sportColor, normalizeSport } from "@/lib/sports";
@@ -71,7 +70,6 @@ function DiscoverInner() {
   const [activeSport, setActiveSport] = useState(sportParam ?? "All sports");
   const [showFlash, setShowFlash] = useState(false);
   const [flashEvent, setFlashEvent] = useState<EventRow | null>(null);
-  const [modalEvent, setModalEvent] = useState<EventRow | null>(null);
   const [pq, setPq] = useState<PlayQuery>(NO_FILTERS);
   const [day, setDay] = useState(() =>
     new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" })
@@ -502,8 +500,6 @@ function DiscoverInner() {
           </a>
         </div>
       </section>
-
-      { modalEvent && <JoinModal event={modalEvent} onClose={() => setModalEvent(null)} /> }
     </main >
   );
 }

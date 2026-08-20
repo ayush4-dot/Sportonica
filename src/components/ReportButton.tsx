@@ -50,10 +50,9 @@ export default function ReportButton({
       </button>
 
       {open && (
-        <div onClick={() => setOpen(false)}
-          style={{ position: "fixed", inset: 0, background: "rgba(6,7,10,0.72)", backdropFilter: "blur(6px)", zIndex: 500, display: "grid", placeItems: "center", padding: 20 }}>
-          <div onClick={(e) => e.stopPropagation()}
-            style={{ width: "100%", maxWidth: 400, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 24, color: "#F2EDE6" }}>
+        <div onClick={() => setOpen(false)} className="rb-scrim">
+          <style>{RB_CSS}</style>
+          <div onClick={(e) => e.stopPropagation()} className="rb-card">
             {sent ? (
               <div style={{ textAlign: "center", padding: "16px 0" }}>
                 <Check size={28} style={{ color: "#2E7D5B", marginBottom: 10 }} />
@@ -70,7 +69,7 @@ export default function ReportButton({
                 <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, opacity: 0.7, marginBottom: 6 }}>What&apos;s wrong?</label>
                 <select value={reason} onChange={(e) => setReason(e.target.value)}
                   style={{ width: "100%", boxSizing: "border-box", background: "transparent", border: "1px solid rgba(128,128,128,0.3)", borderRadius: 9, padding: "10px 12px", color: "inherit", fontFamily: "inherit", fontSize: 14, marginBottom: 14 }}>
-                  {REASONS.map((r) => <option key={r} style={{ background: "#14171E" }}>{r}</option>)}
+                  {REASONS.map((r) => <option key={r} className="rb-option">{r}</option>)}
                 </select>
 
                 <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, opacity: 0.7, marginBottom: 6 }}>Details (optional)</label>
@@ -90,3 +89,13 @@ export default function ReportButton({
     </>
   );
 }
+
+const RB_CSS = `
+.rb-scrim { position: fixed; inset: 0; background: rgba(6,7,10,0.72); backdrop-filter: blur(6px);
+  z-index: 500; display: grid; place-items: center; padding: 20px; }
+.rb-card { width: 100%; max-width: 400px; background: #14171E; border: 1px solid rgba(242,237,230,0.12);
+  border-radius: 16px; padding: 24px; color: #F2EDE6; }
+[data-theme="paper"] .rb-card { background: #fff; border-color: rgba(20,23,30,0.1); color: #14171E; }
+.rb-option { background: #14171E; color: #F2EDE6; }
+[data-theme="paper"] .rb-option { background: #fff; color: #14171E; }
+`;

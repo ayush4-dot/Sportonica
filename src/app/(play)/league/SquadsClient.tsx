@@ -200,7 +200,7 @@ function CreateModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
         <style>{`
           .sq-in { width: 100%; box-sizing: border-box; background: transparent; border: 1px solid rgba(128,128,128,0.28); border-radius: 10px; padding: 13px 12px; color: inherit; font-family: inherit; font-size: 14px; }
           .sq-in:focus { outline: none; border-color: #006241; }
-          .sq-in option { background: #14171E; color: #F2EDE6; }
+          .sq-in option { background: var(--ink-2, #14171E); color: var(--paper, #F2EDE6); }
         `}</style>
       </div>
     </div>

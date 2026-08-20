@@ -114,15 +114,15 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
   }
 
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(6,7,10,0.72)", backdropFilter: "blur(6px)", zIndex: 400, display: "grid", placeItems: "center", padding: 20 }}>
-      <div onClick={(e) => e.stopPropagation()}
-        style={{ width: "100%", maxWidth: 420, background: "#14171E", border: "1px solid rgba(242,237,230,0.12)", borderRadius: 16, padding: 22, color: "#F2EDE6" }}>
+    <div onClick={onClose} className="mm-scrim">
+      <style>{MM_CSS}</style>
+      <div onClick={(e) => e.stopPropagation()} className="mm-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Invite players</h3>
           <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid rgba(128,128,128,0.3)", borderRadius: 10, padding: "13px 12px", marginBottom: 14 }}>
+        <div className="mm-search">
           <Search size={15} style={{ opacity: 0.6 }} />
           <input value={q} onChange={(e) => search(e.target.value)} placeholder="Search by name or @username"
             style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "inherit", fontFamily: "inherit", fontSize: 14 }} />
@@ -134,7 +134,7 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
           ) : results.length === 0 ? (
             <div style={{ fontSize: 13, opacity: 0.5, padding: "20px 0", textAlign: "center" }}>{pending ? "Searching…" : "No players found."}</div>
           ) : results.map((p) => (
-            <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 11, padding: "10px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+            <div key={p.id} className="mm-row">
               <Avatar name={p.name} url={p.avatar_url} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{p.name}</div>
@@ -151,3 +151,15 @@ function InviteModal({ squadId, onClose }: { squadId: string; onClose: () => voi
     </div>
   );
 }
+
+const MM_CSS = `
+.mm-scrim { position: fixed; inset: 0; background: rgba(6,7,10,0.72); backdrop-filter: blur(6px);
+  z-index: 400; display: grid; place-items: center; padding: 20px; }
+.mm-card { width: 100%; max-width: 420px; background: #14171E; border: 1px solid rgba(242,237,230,0.12);
+  border-radius: 16px; padding: 22px; color: #F2EDE6; }
+[data-theme="paper"] .mm-card { background: #fff; border-color: rgba(20,23,30,0.1); color: #14171E; }
+.mm-search { display: flex; align-items: center; gap: 8px; border: 1px solid rgba(128,128,128,0.3);
+  border-radius: 10px; padding: 13px 12px; margin-bottom: 14px; }
+.mm-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+[data-theme="paper"] .mm-row { border-bottom-color: rgba(20,23,30,0.08); }
+`;
