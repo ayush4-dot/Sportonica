@@ -27,14 +27,14 @@ export default function ReportButton({
       try {
         const res = await fileReport({ target_type: targetType, target_id: targetId, reason, details });
         if (isActionError(res)) {
-          if (res.message === "UNAUTHORIZED") window.location.href = "/login";
+          if (res.message === "UNAUTHORIZED") window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
           return;
         }
         setSent(true);
         setTimeout(() => { setOpen(false); setSent(false); setDetails(""); }, 1600);
       } catch (e) {
         if (e instanceof Error && e.message.includes("UNAUTHORIZED")) {
-          window.location.href = "/login";
+          window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
         }
       }
     });

@@ -186,7 +186,7 @@ export default function MagnetDock() {
             straight to login rather than through /profile's own redirect.
             Owners/admins go straight to their console, same as before. */}
         <a
-          href={!user ? "/login" : isOwner ? "/admin" : "/profile"}
+          href={!user ? `/login?redirect=${encodeURIComponent(pathname)}` : isOwner ? "/admin" : "/profile"}
           className={`dock-item ${profileActive ? "active" : ""}`}
           style={{ transform: `scale(${hoverIdx === null ? 1 : magnify(profileIdx - hoverIdx)})`, width: 46 }}
           onMouseEnter={() => setHoverIdx(profileIdx)}

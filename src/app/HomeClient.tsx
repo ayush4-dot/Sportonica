@@ -9,7 +9,6 @@ import { MapPin, ArrowRight, ChevronDown } from "lucide-react";
 import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
-import SiteNav from "@/components/layout/SiteNav";
 import { useCity, inCity } from "@/lib/city";
 
 type HomeRails = Awaited<ReturnType<typeof getHomeRails>>;

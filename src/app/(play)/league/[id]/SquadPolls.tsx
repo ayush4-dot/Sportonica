@@ -19,13 +19,13 @@ export default function SquadPolls({
       try {
         const res = await castVote(pollId, optionId, squadId);
         if (isActionError(res)) {
-          if (res.message === "UNAUTHORIZED") window.location.href = "/login";
+          if (res.message === "UNAUTHORIZED") window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
           return;
         }
         router.refresh();
       }
       catch (e) {
-        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) window.location.href = "/login";
+        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`;
       }
     });
   }
@@ -134,13 +134,13 @@ function CreatePollModal({ squadId, onClose }: { squadId: string; onClose: () =>
       try {
         const res = await createPoll({ squadId, question, options, multi });
         if (isActionError(res)) {
-          if (res.message === "UNAUTHORIZED") { window.location.href = "/login"; return; }
+          if (res.message === "UNAUTHORIZED") { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
           setErr(res.message);
           return;
         }
         onClose();
       } catch (e) {
-        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) { window.location.href = "/login"; return; }
+        if (e instanceof Error && e.message.includes("UNAUTHORIZED")) { window.location.href = `/login?redirect=${encodeURIComponent(window.location.pathname)}`; return; }
         setErr(e instanceof Error ? e.message : "Couldn't create the poll.");
       }
     });

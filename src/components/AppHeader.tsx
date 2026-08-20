@@ -80,7 +80,7 @@ export default function AppHeader() {
         <div className="ah-in">
           {/* left — who and where */}
           <div className="ah-l">
-            <Link href={profile ? "/profile" : "/login"} className="ah-av" aria-label="Profile">
+            <Link href={profile ? "/profile" : `/login?redirect=${encodeURIComponent(pathname)}`} className="ah-av" aria-label="Profile">
               {profile?.avatar_url
                 // eslint-disable-next-line @next/next/no-img-element
                 ? <img src={profile.avatar_url} alt="" />
