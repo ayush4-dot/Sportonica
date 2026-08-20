@@ -122,8 +122,7 @@ export default function PWARegister() {
         }
         @keyframes pwaUp { from { opacity: 0; transform: translate(-50%, 16px); } to { opacity: 1; transform: translate(-50%, 0); } }
         .pwa-mark {
-          width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0;
-          background: #006241; display: grid; place-items: center; padding: 6px; box-sizing: border-box;
+          width: 40px; height: 40px; flex-shrink: 0;
           object-fit: contain;
         }
         .pwa-copy { flex: 1; min-width: 0; }

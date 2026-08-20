@@ -110,8 +110,9 @@ export default function MagnetDock() {
           border: 5px solid transparent; border-left-color: var(--ink, #0B0D11);
         }
         .dock-avatar {
-          width: 26px; height: 26px; border-radius: 50%; background: #006241;
-          display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff;
+          width: 26px; height: 26px; border-radius: 50%; background: #F2EDE6;
+          border: 1px solid rgba(0,98,65,0.3);
+          display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #006241;
         }
         /* ── Paper theme ── */
         [data-theme="paper"] .dock {

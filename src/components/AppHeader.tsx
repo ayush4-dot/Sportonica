@@ -247,6 +247,7 @@ export default function AppHeader() {
         }
         .ah-av img { width:100%; height:100%; object-fit:cover; }
         .ah-av img.ah-av-mark { object-fit:contain; padding:9px; box-sizing:border-box; }
+        .ah-av:has(img.ah-av-mark) { background:#F2EDE6; border:1px solid rgba(0,98,65,0.3); box-shadow:none; }
         .ah-txt { min-width:0; }
         .ah-hi { font-size:12.5px; opacity:.55; margin:0 0 1px; white-space:nowrap; }
         .ah-hi b { font-weight:800; opacity:1; }
