@@ -85,8 +85,7 @@ export function VenuesRail({ venues }: { venues: RailVenue[] }) {
   if (venues.length === 0) return null;
   return (
     <Rail
-      title="Grounds to book"
-      sub="Verified courts across Kathmandu, bookable by the hour."
+      title="Venue near me"
       href="/create" hrefLabel="See all grounds"
     >
       {venues.map((v) => {

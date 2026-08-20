@@ -159,7 +159,6 @@ const CSS = `
   /* ── sport slider (Playo-style clickable rail) ── */
   .p-sportbar { padding:56px 0 8px; }
   .p-sportbar-head { display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:16px; gap:16px; flex-wrap:wrap; }
-  .p-sportbar-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-sportbar-title { font-size:clamp(38px,5.5vw,68px); font-weight:800; letter-spacing:-2.5px; font-family:'Inter',sans-serif; line-height:0.95; color:#ffffff; }
   .p-sportbar-hint { font-size:11px; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.5); display:flex; align-items:center; gap:6px; white-space:nowrap; }
   .p-sportrail { display:flex; gap:14px; overflow-x:auto; padding:4px 0 20px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; }
@@ -177,7 +176,6 @@ const CSS = `
   .p-sportchip-shade { position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.55) 30%, rgba(0,0,0,0.12) 60%, rgba(0,0,0,0.4) 100%); }
   .p-sportchip-label { position:absolute; left:14px; bottom:14px; right:14px; z-index:1; color:#fff; font-size:18px; font-weight:800; font-family:'Inter',sans-serif; letter-spacing:-0.5px; line-height:1.05; }
   [data-theme="paper"] .p-sportbar-title { color:#14171E; }
-  [data-theme="paper"] .p-sportbar-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-sportbar-hint { color:rgba(20,23,30,0.55); }
   [data-theme="paper"] .p-sportchip { border-color:rgba(20,23,30,0.12); }
   [data-theme="paper"] .p-sportchip:hover { border-color:rgba(20,23,30,0.3); }
@@ -205,9 +203,7 @@ const CSS = `
   /* ── FAQ section ── */
   .p-faq-section { max-width:900px; margin:0 auto; padding:100px 24px; }
   .p-faq-head { text-align:center; margin-bottom:48px; }
-  .p-faq-eyebrow { font-size:11px; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.55); margin-bottom:12px; }
   .p-faq-h2 { font-size:clamp(32px,4.5vw,52px); font-weight:800; letter-spacing:-1.5px; font-family:'Inter',sans-serif; line-height:1; color:#ffffff; }
-  [data-theme="paper"] .p-faq-eyebrow { color:rgba(20,23,30,0.6); }
   [data-theme="paper"] .p-faq-h2 { color:#14171E; }
 
   .p-faq-list { display:flex; flex-direction:column; }
@@ -365,8 +361,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               <div className="p-sportbar">
                 <div className="p-sportbar-head">
                   <div>
-                    <p className="p-sportbar-eyebrow">Browse by sport</p>
-                    <h2 className="p-sportbar-title">Pick your game</h2>
+                    <h2 className="p-sportbar-title">Pick your sport</h2>
                   </div>
                   <span className="p-sportbar-hint"><ArrowRight size={13} /> Swipe</span>
                 </div>
@@ -409,8 +404,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
         ══════════════════════════════════ */}
         <div className="p-faq-section">
           <div className="p-faq-head">
-            <p className="p-faq-eyebrow">Questions</p>
-            <h2 className="p-faq-h2">Before you jump in.</h2>
+            <h2 className="p-faq-h2">Frequently asked questions</h2>
           </div>
           <div className="p-faq-list">
             {FAQS.map((f, i) => {
