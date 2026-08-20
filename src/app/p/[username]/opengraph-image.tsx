@@ -98,15 +98,13 @@ export default async function OG({ params }: { params: Promise<{ username: strin
         {/* brand */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center" }}>
-            <div
-              style={{
-                width: 44, height: 44, borderRadius: 10, background: "#006241", color: "#ffffff",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 28, fontWeight: 700, marginRight: 14,
-              }}
-            >
-              K
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/icons/icon-192.png`}
+              width={44} height={44}
+              style={{ borderRadius: 10, marginRight: 14 }}
+              alt=""
+            />
             <div style={{ fontSize: 30, fontWeight: 700, display: "flex" }}>Sportonica</div>
           </div>
           <div style={{ fontSize: 24, color: "#5A6472", display: "flex" }}>{trust.label}</div>
