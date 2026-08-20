@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import "../../p/profile.css";
 
@@ -32,14 +32,14 @@ export default async function PaymentsPage() {
       .order("starts_at", { ascending: false })
       .limit(50),
     sb.from("game_players")
-      .select("id, contribution_amount, contribution_status, status, joined_at, games(sport, venues(name))")
+      .select("id, game_id, contribution_amount, contribution_status, status, joined_at, games(sport, venues(name))")
       .eq("user_id", user.id)
       .order("joined_at", { ascending: false })
       .limit(50),
   ]);
 
   type CourtRow = { id: string; starts_at: string; price: number; payment_status: string; courts: { name: string; sport: string } | null; venues: { name: string } | null };
-  type GameRow = { id: string; contribution_amount: number; contribution_status: string; status: string; joined_at: string; games: { sport: string; venues: { name: string } | null } | null };
+  type GameRow = { id: string; game_id: string; contribution_amount: number; contribution_status: string; status: string; joined_at: string; games: { sport: string; venues: { name: string } | null } | null };
 
   const rows = [
     ...((courtBookings ?? []) as unknown as CourtRow[]).map((b) => ({
@@ -48,7 +48,7 @@ export default async function PaymentsPage() {
       when: when(b.starts_at),
       amount: Number(b.price) || 0,
       status: STATUS_LABEL[b.payment_status] ?? b.payment_status,
-      paidToPlatform: true,
+      href: null as string | null,
     })),
     ...((gamePlayers ?? []) as unknown as GameRow[])
       .filter((g) => g.status === "joined" || g.status === "payment_pending" || g.status === "payment_verification_pending" || g.status === "payment_rejected")
@@ -59,10 +59,13 @@ export default async function PaymentsPage() {
         amount: Number(g.contribution_amount) || 0,
         status: g.status === "joined"
           ? (STATUS_LABEL[g.contribution_status] ?? g.contribution_status)
-          : g.status === "payment_pending" ? "Payment required"
+          : g.status === "payment_pending" ? "Payment required — tap to pay"
           : g.status === "payment_verification_pending" ? "Awaiting host verification"
-          : "Payment not verified",
-        paidToPlatform: false,
+          : "Payment not verified — tap to resubmit",
+        // Sends them straight back to the game page, which auto-opens the
+        // pay-the-host / upload-screenshot popup for these two statuses
+        // (see the autoOpenedRef effect in PlayTogetherJoinPanel).
+        href: `/play-together/${g.game_id}` as string | null,
       })),
   ];
 
@@ -78,18 +81,26 @@ export default async function PaymentsPage() {
             <div className="pf-empty">No payments yet.</div>
           ) : (
             <div className="pf-hub-list">
-              {rows.map((r) => (
-                <div key={r.key} className="pf-hub-row" style={{ cursor: "default" }}>
-                  <div style={{ flex: 1 }}>
-                    <div className="pf-hub-row-label">{r.label}</div>
-                    <div style={{ fontSize: 12, color: "var(--pf-faint)", marginTop: 2 }}>{r.when}</div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontWeight: 700 }}>Rs {r.amount}</div>
-                    <div style={{ fontSize: 12, color: "var(--pf-faint)", marginTop: 2 }}>{r.status}</div>
-                  </div>
-                </div>
-              ))}
+              {rows.map((r) => {
+                const body = (
+                  <>
+                    <div style={{ flex: 1 }}>
+                      <div className="pf-hub-row-label">{r.label}</div>
+                      <div style={{ fontSize: 12, color: "var(--pf-faint)", marginTop: 2 }}>{r.when}</div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontWeight: 700 }}>Rs {r.amount}</div>
+                      <div style={{ fontSize: 12, color: "var(--pf-faint)", marginTop: 2 }}>{r.status}</div>
+                    </div>
+                    {r.href && <ChevronRight size={16} className="pf-hub-row-chev" />}
+                  </>
+                );
+                return r.href ? (
+                  <Link key={r.key} href={r.href} className="pf-hub-row">{body}</Link>
+                ) : (
+                  <div key={r.key} className="pf-hub-row" style={{ cursor: "default" }}>{body}</div>
+                );
+              })}
             </div>
           )}
         </section>

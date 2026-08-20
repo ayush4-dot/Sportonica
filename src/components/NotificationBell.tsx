@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle, Receipt, ShieldCheck, ShieldX } from "lucide-react";
+import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle, Receipt, ShieldCheck, ShieldX, Wallet, Clock3, AlertTriangle, XCircle } from "lucide-react";
 import { useNotifications, type Notification } from "@/lib/hooks/useNotifications";
 
 function timeAgo(iso: string): string {
@@ -24,6 +24,20 @@ function iconFor(kind: Notification["kind"]) {
     case "payment_submitted": return <Receipt size={16} />;
     case "payment_approved": return <ShieldCheck size={16} />;
     case "payment_rejected": return <ShieldX size={16} />;
+    case "game_join_requested": return <Users size={16} />;
+    case "game_join_rejected": return <XCircle size={16} />;
+    case "game_payment_required":
+    case "game_payment_reminder": return <Wallet size={16} />;
+    case "game_payment_submitted":
+    case "game_host_payment_submitted": return <Receipt size={16} />;
+    case "game_payment_verified": return <ShieldCheck size={16} />;
+    case "game_payment_rejected": return <AlertTriangle size={16} />;
+    case "game_payment_expired":
+    case "game_host_payment_expired": return <Clock3 size={16} />;
+    case "game_published":
+    case "game_joined": return <Calendar size={16} />;
+    case "game_left":
+    case "game_cancelled": return <UserMinus size={16} />;
     default: return <Bell size={16} />;
   }
 }
@@ -163,9 +177,20 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                   key={n.id}
                   className="notif-item"
                   onClick={() => {
+                    // Host-facing Play Together kinds land on the manage
+                    // console (where the approve/verify actions live);
+                    // every other game_id notification — including all the
+                    // payment-reminder kinds — goes to the player's game
+                    // page, which auto-opens the pay/upload-proof popup
+                    // itself while a request is payment_pending/rejected
+                    // (see PlayTogetherJoinPanel).
+                    const hostFacing = n.kind === "game_join_requested"
+                      || n.kind === "game_host_payment_submitted"
+                      || n.kind === "game_host_payment_expired";
                     if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/players");
                     else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
                     else if (n.squad_id) router.push(`/league/${n.squad_id}`);
+                    else if (n.game_id) router.push(hostFacing ? `/play-together/${n.game_id}/manage` : `/play-together/${n.game_id}`);
                     else if (n.event_id) router.push(`/game/${n.event_id}`);
                     setOpen(false);
                   }}

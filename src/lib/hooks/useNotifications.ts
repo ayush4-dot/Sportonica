@@ -7,12 +7,18 @@ import { getCachedUser } from "@/lib/supabase/authCache";
 export type Notification = {
   id: string;
   kind: "joined" | "left" | "spots_needed" | "hosted" | "event" | "friend_request" | "friend_accepted"
-      | "payment_submitted" | "payment_approved" | "payment_rejected";
+      | "payment_submitted" | "payment_approved" | "payment_rejected"
+      | "game_published" | "game_joined" | "game_left" | "game_cancelled"
+      | "game_join_requested" | "game_join_rejected"
+      | "game_payment_required" | "game_payment_reminder" | "game_payment_submitted"
+      | "game_payment_verified" | "game_payment_rejected" | "game_payment_expired"
+      | "game_host_payment_submitted" | "game_host_payment_expired";
   title: string;
   body: string | null;
   event_id: string | null;
   squad_id: string | null;
   conversation_id: string | null;
+  game_id: string | null;
   read: boolean;
   created_at: string;
 };
@@ -29,7 +35,7 @@ export function useNotifications() {
     setUserId(user.id);
     const { data } = await supabase
       .from("notifications")
-      .select("id, kind, title, body, event_id, squad_id, conversation_id, read, created_at")
+      .select("id, kind, title, body, event_id, squad_id, conversation_id, game_id, read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30);

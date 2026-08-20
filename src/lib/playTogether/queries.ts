@@ -33,6 +33,17 @@ export async function listPublishedGames(): Promise<(GameWithVenue & { joined_co
 // super-admin. notFound() upstream if the row isn't visible/doesn't exist.
 export async function getGame(gameId: string): Promise<GameWithVenue | null> {
   const sb = await createClient();
+  // Belt-and-suspenders deadline enforcement: pg_cron sweeps this every
+  // minute (see supabase/play_together_payments.sql), but that's
+  // best-effort and no-ops silently if the pg_cron extension was never
+  // enabled on this project. Firing the same sweep here means a stale
+  // payment_pending row gets flipped to 'expired' (and both sides
+  // notified) the moment anyone next loads this game, even if the cron
+  // job never ran — never trust the client's countdown as the deadline's
+  // only enforcement. Awaited (an un-awaited call can be torn down mid-
+  // flight once this serverless function returns) but never allowed to
+  // fail the page render.
+  try { await sb.rpc("expire_stale_play_together_requests"); } catch { /* best-effort */ }
   const { data } = await sb
     .from("games")
     .select("*, venues(name, address, lat, lng), courts(name), host:profiles!host_id(full_name, name, avatar_url)")
