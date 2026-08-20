@@ -9,18 +9,15 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { consumeHardwareBack } from "@/lib/capacitor/hardwareBack";
 
-// Same two colors the theme system already uses — --ink for "glass"
-// (dark) and the paper background for "paper" (light), see
-// src/lib/useTheme.ts and src/app/layout.tsx's viewport.themeColor.
-const THEME_BG: Record<string, string> = { glass: "#0B0D11", paper: "#F2EDE6" };
-
+// The app is cream/"paper" only (see src/lib/useTheme.ts) — status bar
+// always matches the paper background, same value as layout.tsx's
+// viewport.themeColor.
 function syncStatusBar() {
-  const theme = document.documentElement.dataset.theme === "glass" ? "glass" : "paper";
-  StatusBar.setBackgroundColor({ color: THEME_BG[theme] }).catch(() => {});
-  // Style.Light = light icons (for the dark "glass" bg), Style.Dark =
-  // dark icons (for the light "paper" bg) — named for the status bar
-  // CONTENT color, not the background, which trips people up.
-  StatusBar.setStyle({ style: theme === "glass" ? Style.Light : Style.Dark }).catch(() => {});
+  StatusBar.setBackgroundColor({ color: "#F2EDE6" }).catch(() => {});
+  // Style.Dark = dark icons, for the light "paper" background — named
+  // for the status bar CONTENT color, not the background, which trips
+  // people up.
+  StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
 }
 
 // Native-only wiring, mounted once in the root layout. No-ops entirely
@@ -56,10 +53,7 @@ export default function CapacitorBridge() {
     // a slow connection or hanging around too long on a fast one.
     SplashScreen.hide().catch(() => {});
 
-    // Match the status bar to whichever theme is active, and keep it in
-    // sync when the user flips the toggle (see src/lib/useTheme.ts).
     syncStatusBar();
-    window.addEventListener("sportonica-theme-change", syncStatusBar);
 
     // Universal Link (iOS) / App Link (Android) reopening the app —
     // this is how a Google Sign-In started via Browser.open() (see
@@ -89,7 +83,6 @@ export default function CapacitorBridge() {
     });
 
     return () => {
-      window.removeEventListener("sportonica-theme-change", syncStatusBar);
       urlSub.then((s) => s.remove());
       backSub.then((s) => s.remove());
     };
