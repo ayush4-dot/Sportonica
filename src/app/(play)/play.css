@@ -363,7 +363,10 @@
      wants ~16px panel padding and real touch targets on phones. */
   .bk-layout { gap: 20px; }
   .bk-panel { padding: 16px; margin-bottom: 16px; }
-  .bk-chip { padding: 12px 16px; min-height: 44px; box-sizing: border-box; display: inline-flex; align-items: center; }
+  .bk-chip {
+    padding: 12px 16px; min-height: 44px; box-sizing: border-box;
+    display: flex; flex-direction: column; align-items: flex-start; justify-content: center;
+  }
   .bk-in { min-height: 44px; box-sizing: border-box; padding: 12px 13px; }
   .bk-pay { min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
   .bk-note { min-height: 44px; box-sizing: border-box; }
