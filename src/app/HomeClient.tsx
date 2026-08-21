@@ -40,7 +40,7 @@ const FAQS = [
   },
   {
     q: "What sports can I play on Sportonica?",
-    a: "Futsal, cricket, basketball, volleyball, badminton, pickleball, swimming and running, with more added as venues sign up. Browse by sport on the Play page to see what's live near you today.",
+    a: "Futsal, cricket, basketball, volleyball, badminton, tennis, pickleball, swimming and running, with more added as venues sign up. Browse by sport on the Play page to see what's live near you today.",
   },
   {
     q: "How do I book a futsal court or ground?",
@@ -48,11 +48,11 @@ const FAQS = [
   },
   {
     q: "Is it safe to play with people I don't know?",
-    a: "Every player builds a trust score from how reliably they show up, and you can see who's joining before you commit. Payment happens through the app and is held in escrow until the game is actually played, never released upfront.",
+    a: "Every player builds a trust score from how reliably they show up, and you can see who's joining before you commit. For a court you book directly through Sportonica, your payment sits in escrow until the game is actually played. For a Play Together game, you pay the host directly — cash at the venue or their own QR — and the host confirms they've received it before you're confirmed in.",
   },
   {
     q: "How do payments and refunds work?",
-    a: "Pay with Khalti, eSewa, FonePay or bank transfer. Your money sits in escrow and only reaches the host or venue after the game happens — if it's cancelled, you're covered.",
+    a: "Booking a court directly: pay with Khalti, eSewa, FonePay or bank transfer, and it sits in escrow until the game happens — if it's cancelled, you're covered. Joining a Play Together game: you pay the host directly, in cash or via their QR, and Sportonica never collects or holds that money — the host verifies it themselves.",
   },
   {
     q: "Which cities does Sportonica cover?",
