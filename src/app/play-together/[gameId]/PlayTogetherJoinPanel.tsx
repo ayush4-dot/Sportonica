@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Check, Clock3, Phone, AlertTriangle, XCircle } from "lucide-react";
 import { joinGame, leaveGame } from "@/lib/playTogether/actions";
-import { hostQrPublicUrl, effectivePlayerStatus } from "@/lib/playTogether/types";
+import { hostQrPublicUrl, effectivePlayerStatus, telHref } from "@/lib/playTogether/types";
 import { isActionError } from "@/lib/actionError";
 import type { GamePlayer } from "@/lib/playTogether/types";
 import PlayTogetherPaymentModal from "./PlayTogetherPaymentModal";
@@ -132,7 +132,9 @@ export default function PlayTogetherJoinPanel({
               <div className="pt-player-row" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
                 <span className="pt-player-name">Pay Rs {contribution} to the host</span>
                 {hostPhone && (
-                  <span className="pt-player-sub"><Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}</span>
+                  <a href={telHref(hostPhone) ?? undefined} className="pt-player-sub pt-call">
+                    <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                  </a>
                 )}
                 {hostQrPath && (
                   // eslint-disable-next-line @next/next/no-img-element

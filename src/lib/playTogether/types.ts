@@ -144,6 +144,14 @@ export function hostQrPublicUrl(hostQrPath: string | null): string | null {
 // e.g. so a host can message a requester before approving them. Same
 // no-auth api.whatsapp.com/send pattern as whatsappNotifyUrl() in
 // src/lib/payments/types.ts, just parameterized on the recipient.
+// A tel: link a phone app will actually dial — same digit-cleaning as
+// playerWhatsappUrl() below, minus the country-code assumption (tel:
+// links work fine with just the local digits, no need to guess +977).
+export function telHref(phone: string): string | null {
+  const digits = phone.replace(/[^\d+]/g, "");
+  return digits ? `tel:${digits}` : null;
+}
+
 export function playerWhatsappUrl(phone: string, message: string): string | null {
   const digits = phone.replace(/\D/g, "").replace(/^0+/, "");
   if (!digits) return null;

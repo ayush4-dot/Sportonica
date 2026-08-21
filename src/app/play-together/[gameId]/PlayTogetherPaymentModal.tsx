@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Upload, Phone, QrCode, Wallet, ChevronLeft } from "lucide-react";
 import { uploadGamePaymentProof, submitPlayTogetherPayment, chooseCashPaymentAtVenue } from "@/lib/playTogether/actions";
-import { hostQrPublicUrl, friendlyPlayTogetherError, type GamePlayerStatus } from "@/lib/playTogether/types";
+import { hostQrPublicUrl, friendlyPlayTogetherError, telHref, type GamePlayerStatus } from "@/lib/playTogether/types";
 import { isActionError } from "@/lib/actionError";
 import { PYMT_CSS } from "@/components/payments/PaymentStep";
 
@@ -181,7 +181,9 @@ export default function PlayTogetherPaymentModal({
                 <h4>Pay the host directly</h4>
                 {hostPhone && (
                   <p className="pymt-hint" style={{ marginBottom: 10 }}>
-                    <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                    <a href={telHref(hostPhone) ?? undefined} className="ptpm-tel">
+                      <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                    </a>
                   </p>
                 )}
                 {hostQrPath && (
@@ -234,7 +236,9 @@ export default function PlayTogetherPaymentModal({
               <h4>Pay the host in cash at the venue</h4>
               {hostPhone && (
                 <p className="pymt-hint">
-                  <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                  <a href={telHref(hostPhone) ?? undefined} className="ptpm-tel">
+                    <Phone size={12} style={{ verticalAlign: -2 }} /> {hostPhone}
+                  </a>
                 </p>
               )}
             </div>
@@ -274,6 +278,8 @@ function Row({ label, value, accent }: { label: string; value: string; accent?: 
 }
 
 const PTPM_CSS = `
+.ptpm-tel { color: inherit; text-decoration: none; }
+.ptpm-tel:hover { color: #006241; text-decoration: underline; }
 .ptpm-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.65); backdrop-filter: blur(4px);
   z-index: 500; display: flex; align-items: center; justify-content: center; padding: 20px; }
 .ptpm-card { width: 100%; max-width: 420px; max-height: 90vh; overflow-y: auto;
