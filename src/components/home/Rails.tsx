@@ -51,7 +51,7 @@ export function EventsRail({ events }: { events: RailEvent[] }) {
     <Rail
       title="Official events"
       sub="Tournaments and organised nights, run by venues and by us."
-      href="/discover" hrefLabel="See all events"
+      href="/tournaments" hrefLabel="See all events"
     >
       {events.map((e) => {
         const c = e.sport_color ?? sportColor(e.sport);
