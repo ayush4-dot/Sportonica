@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Home, Volleyball, CalendarPlus, MessagesSquare, LogIn } from "lucide-react";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, Trophy, LogIn } from "lucide-react";
 import { useProfile } from "@/lib/hooks/useProfile";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
@@ -11,6 +11,7 @@ const LINKS: Item[] = [
   { label: "Home", href: "/", icon: <Home size={20} /> },
   { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
+  { label: "Events", href: "/tournaments", icon: <Trophy size={20} /> },
   { label: "Chat", href: "/messages", icon: <MessagesSquare size={20} /> },
 ];
 
