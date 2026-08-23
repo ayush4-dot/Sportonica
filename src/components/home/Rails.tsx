@@ -57,7 +57,7 @@ export function EventsRail({ events }: { events: RailEvent[] }) {
         const c = e.sport_color ?? sportColor(e.sport);
         const platform = e.event_type === "platform_event";
         return (
-          <Link key={e.id} href={`/game/${e.id}`} className="rc rc-event" style={{ ["--rc-accent" as string]: c }}>
+          <Link key={e.id} href={e.is_tournament ? `/tournaments/${e.id}` : `/game/${e.id}`} className="rc rc-event" style={{ ["--rc-accent" as string]: c }}>
             <div className="rc-badge" style={{
               color: platform ? "#006241" : "#2E7D5B",
               borderColor: platform ? "rgba(0,98,65,.4)" : "rgba(46,125,91,.4)",

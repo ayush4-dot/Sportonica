@@ -15,10 +15,11 @@ const toLocalTime = (iso: string | null | undefined) => (iso ? new Date(iso).toL
 const combine = (date: string, time: string) => (date && time ? `${date}T${time}:00${KTM_OFFSET}` : "");
 
 export default function TournamentForm({
-  venues, existing,
+  venues, existing, mode = "venue",
 }: {
   venues: { id: string; name: string }[];
   existing?: Tournament;
+  mode?: "venue" | "platform";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -28,6 +29,10 @@ export default function TournamentForm({
   const [name, setName] = useState(existing?.name ?? "");
   const [sport, setSport] = useState(existing?.sport ?? "Futsal");
   const [venueId, setVenueId] = useState(existing?.venue_id ?? venues[0]?.id ?? "");
+  const [organizerType, setOrganizerType] = useState<"venue" | "platform">(
+    existing?.organizer_type ?? (mode === "platform" ? "platform" : "venue")
+  );
+  const [organizerName, setOrganizerName] = useState(existing?.organizer_name ?? "");
   const [bannerUrl, setBannerUrl] = useState(existing?.banner_url ?? "");
   const [description, setDescription] = useState(existing?.description ?? "");
   const [contactPhone, setContactPhone] = useState(existing?.contact_phone ?? "");
@@ -65,8 +70,11 @@ export default function TournamentForm({
   const [venueRules, setVenueRules] = useState(existing?.venue_rules ?? "");
 
   function payload() {
+    const isSingleEvent = format === "single_event";
     return {
       venue_id: venueId,
+      organizer_type: organizerType,
+      organizer_name: organizerName.trim() || undefined,
       name: name.trim(),
       sport,
       banner_url: bannerUrl.trim() || undefined,
@@ -79,9 +87,9 @@ export default function TournamentForm({
       match_duration_mins: matchMins,
       format,
       max_teams: maxTeams,
-      min_players_per_team: minPlayers,
-      max_players_per_team: maxPlayers,
-      substitute_limit: subLimit,
+      min_players_per_team: isSingleEvent ? 1 : minPlayers,
+      max_players_per_team: isSingleEvent ? 1 : maxPlayers,
+      substitute_limit: isSingleEvent ? 0 : subLimit,
       registration_mode: regMode,
       gender_rule: genderRule.trim() || undefined,
       skill_category: skillCategory.trim() || undefined,
@@ -104,7 +112,7 @@ export default function TournamentForm({
     if (!startsDate || !endsDate) return "Set a start and end date.";
     if (!regOpenDate || !regCloseDate) return "Set when registration opens and closes.";
     if (combine(regCloseDate, regCloseTime) > combine(startsDate, startsTime)) return "Registration must close before the tournament starts.";
-    if (maxPlayers < minPlayers) return "Max players per team can't be less than the minimum.";
+    if (format !== "single_event" && maxPlayers < minPlayers) return "Max players per team can't be less than the minimum.";
     return null;
   }
 
@@ -175,6 +183,21 @@ export default function TournamentForm({
           </select>
         </div>
       </div>
+      {mode === "platform" && (
+        <div className="ev-row">
+          <div className="ev-field">
+            <label>Organizer</label>
+            <select value={organizerType} onChange={(e) => setOrganizerType(e.target.value as "venue" | "platform")}>
+              <option value="platform">Sportonica (platform-run)</option>
+              <option value="venue">The venue itself</option>
+            </select>
+          </div>
+          <div className="ev-field">
+            <label>Organizer name{organizerType === "platform" ? "" : " (optional)"}</label>
+            <input value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} placeholder="Sportonica" />
+          </div>
+        </div>
+      )}
       <div className="ev-field">
         <label>Banner image URL (optional)</label>
         <input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://…" />
@@ -243,24 +266,28 @@ export default function TournamentForm({
       </div>
       <div className="ev-row">
         <div className="ev-field">
-          <label>Max teams</label>
+          <label>{format === "single_event" ? "Max players" : "Max teams"}</label>
           <input type="number" min={2} value={maxTeams} onChange={(e) => setMaxTeams(Number(e.target.value))} />
         </div>
-        <div className="ev-field">
-          <label>Substitute slots per team</label>
-          <input type="number" min={0} value={subLimit} onChange={(e) => setSubLimit(Number(e.target.value))} />
-        </div>
+        {format !== "single_event" && (
+          <div className="ev-field">
+            <label>Substitute slots per team</label>
+            <input type="number" min={0} value={subLimit} onChange={(e) => setSubLimit(Number(e.target.value))} />
+          </div>
+        )}
       </div>
-      <div className="ev-row">
-        <div className="ev-field">
-          <label>Min players per team</label>
-          <input type="number" min={1} value={minPlayers} onChange={(e) => setMinPlayers(Number(e.target.value))} />
+      {format !== "single_event" && (
+        <div className="ev-row">
+          <div className="ev-field">
+            <label>Min players per team</label>
+            <input type="number" min={1} value={minPlayers} onChange={(e) => setMinPlayers(Number(e.target.value))} />
+          </div>
+          <div className="ev-field">
+            <label>Max players per team</label>
+            <input type="number" min={1} value={maxPlayers} onChange={(e) => setMaxPlayers(Number(e.target.value))} />
+          </div>
         </div>
-        <div className="ev-field">
-          <label>Max players per team</label>
-          <input type="number" min={1} value={maxPlayers} onChange={(e) => setMaxPlayers(Number(e.target.value))} />
-        </div>
-      </div>
+      )}
       <div className="ev-row">
         <div className="ev-field">
           <label>Gender rule (optional)</label>

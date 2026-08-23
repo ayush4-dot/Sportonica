@@ -20,6 +20,7 @@ import { useCity, inCity } from "@/lib/city";
 const SportonicaMap = dynamic(() => import("@/components/SportonicaMap"), { ssr: false });
 import { useEvents, type EventRow } from "@/lib/hooks/useEvents";
 import { usePlayTogetherEvents } from "@/lib/hooks/usePlayTogetherEvents";
+import { useSingleEventTournaments } from "@/lib/hooks/useSingleEventTournaments";
 import { useProfile } from "@/lib/hooks/useProfile";
 import { kmBetween } from "./DiscoverFilters";
 import PlayFilters from "./PlayFilters";
@@ -84,10 +85,11 @@ function DiscoverInner() {
   const sportFilter = activeSport === "All sports" ? undefined : activeSport;
   const { events: bookedEvents, loading, error, reload } = useEvents({ sport: sportFilter, limit: 50 });
   const playTogetherEvents = usePlayTogetherEvents();
-  // Play Together games are just another kind of game to browse — they
-  // flow through the same filter/sort/card pipeline as everything else,
-  // not a separate section.
-  const events = [...bookedEvents, ...playTogetherEvents].filter(
+  const singleEventTournaments = useSingleEventTournaments();
+  // Play Together games and single_event tournaments are just other kinds
+  // of games to browse — they flow through the same filter/sort/card
+  // pipeline as everything else, not a separate section.
+  const events = [...bookedEvents, ...playTogetherEvents, ...singleEventTournaments].filter(
     (ev) => !sportFilter || ev.sport === sportFilter
   );
 
@@ -150,7 +152,7 @@ function DiscoverInner() {
   }, [events]);
 
   const eventHref = (ev: EventRow) =>
-    ev.event_type === "play_together" ? `/play-together/${ev.id}` : `/game/${ev.id}`;
+    ev.event_type === "play_together" ? `/play-together/${ev.id}` : ev.is_tournament ? `/tournaments/${ev.id}` : `/game/${ev.id}`;
 
   const handleBook = (ev: EventRow, e?: React.MouseEvent) => {
     e?.stopPropagation();

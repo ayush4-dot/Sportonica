@@ -10,6 +10,10 @@ export interface RailEvent {
   max_players: number;
   slots_remaining: number;
   event_type: string | null;
+  // true for a merged-in single_event tournament — links to
+  // /tournaments/[id] instead of /game/[id]. Undefined for a real
+  // `events`-table row.
+  is_tournament?: boolean;
   organizer_name: string | null;
   skill_level: string | null;
   sport_color: string | null;
@@ -54,7 +58,7 @@ export async function getHomeRails() {
   // whose mapping this mirrors). host is embedded via the games.host_id
   // FK (games_host_id_fkey, Postgres's default constraint name for an
   // inline `references` with no explicit name) for one round trip.
-  const [officialRes, gamesRes, venuesRes, playTogetherRes] = await Promise.all([
+  const [officialRes, gamesRes, venuesRes, playTogetherRes, singleEventRes] = await Promise.all([
     sb.from("events_full")
       .select("*")
       .in("event_type", ["venue_event", "platform_event"])
@@ -80,6 +84,16 @@ export async function getHomeRails() {
         host:profiles!games_host_id_fkey (full_name, avatar_url, trust_score)
       `)
       .eq("status", "published")
+      .gt("starts_at", nowIso)
+      .order("starts_at", { ascending: true })
+      .limit(8),
+    sb.from("tournaments")
+      .select(`
+        id, owner_id, organizer_type, organizer_name, name, sport, starts_at, max_teams,
+        skill_category, fee, venue_id, venues(name)
+      `)
+      .eq("format", "single_event")
+      .in("status", ["registration_open", "live"])
       .gt("starts_at", nowIso)
       .order("starts_at", { ascending: true })
       .limit(8),
@@ -126,8 +140,52 @@ export async function getHomeRails() {
     .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
     .slice(0, 8);
 
+  // single_event tournaments — what replaced the old vendor-created
+  // venue_event/platform_event rows — folded into the same "Official
+  // events" rail, same event_type tags (badge styling already handles
+  // venue vs platform) plus is_tournament so the card links to
+  // /tournaments/[id] instead of /game/[id].
+  type RawSingleEventTournament = {
+    id: string; owner_id: string | null; organizer_type: "venue" | "platform"; organizer_name: string | null;
+    name: string; sport: string; starts_at: string; max_teams: number; skill_category: string | null;
+    fee: number; venue_id: string; venues: { name: string } | null;
+  };
+  const singleEventTournaments = (singleEventRes.data ?? []) as unknown as RawSingleEventTournament[];
+  const tIds = singleEventTournaments.map((t) => t.id);
+  const { data: tTeams } = tIds.length
+    ? await sb.from("tournament_teams").select("tournament_id").eq("status", "confirmed").in("tournament_id", tIds)
+    : { data: [] as { tournament_id: string }[] };
+  const tConfirmed = new Map<string, number>();
+  (tTeams ?? []).forEach((t) => tConfirmed.set(t.tournament_id, (tConfirmed.get(t.tournament_id) ?? 0) + 1));
+
+  const officialTournaments: RailEvent[] = singleEventTournaments.map((t) => {
+    const count = tConfirmed.get(t.id) ?? 0;
+    return {
+      id: t.id,
+      title: t.name,
+      sport: t.sport,
+      venue: t.venues?.name ?? "Venue",
+      event_date: t.starts_at,
+      fee: Number(t.fee) || 0,
+      max_players: t.max_teams,
+      slots_remaining: Math.max(t.max_teams - count, 0),
+      event_type: t.organizer_type === "platform" ? "platform_event" : "venue_event",
+      is_tournament: true,
+      organizer_name: t.organizer_name,
+      skill_level: t.skill_category,
+      sport_color: null,
+      host_name: null,
+      host_avatar: null,
+      host_trust: null,
+    };
+  });
+
+  const official = [...(officialRes.data ?? []) as RailEvent[], ...officialTournaments]
+    .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
+    .slice(0, 8);
+
   return {
-    official: (officialRes.data ?? []) as RailEvent[],
+    official,
     games,
     venues: (venuesRes.data ?? []).map((v) => {
       const { courts, ...venue } = v as typeof v & {

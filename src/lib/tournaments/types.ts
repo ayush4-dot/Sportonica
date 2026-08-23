@@ -1,13 +1,14 @@
 // Mirrors supabase/tournaments.sql exactly — see that file for the
 // authoritative schema/constraints and the state-machine RPCs.
 
-export const TOURNAMENT_FORMATS = ["knockout", "league", "group_knockout"] as const;
+export const TOURNAMENT_FORMATS = ["knockout", "league", "group_knockout", "single_event"] as const;
 export type TournamentFormat = (typeof TOURNAMENT_FORMATS)[number];
 
 export const FORMAT_LABELS: Record<TournamentFormat, string> = {
   knockout: "Knockout",
   league: "League (round robin)",
   group_knockout: "Groups + Knockout",
+  single_event: "Single event (no bracket)",
 };
 
 export const TOURNAMENT_STATUS = [

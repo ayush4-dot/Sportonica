@@ -22,6 +22,10 @@ export type EventRow = {
   venue_id: string | null;
   sport_color: string | null;
   event_type?: string | null;
+  // true for a merged-in single_event tournament (see
+  // useSingleEventTournaments.ts) — links to /tournaments/[id] instead of
+  // /game/[id]. Undefined/false for a real `events`-table row.
+  is_tournament?: boolean;
   organizer_name?: string | null;
   skill_level?: string | null;
   duration_mins?: number | null;

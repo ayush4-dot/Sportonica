@@ -1,14 +1,7 @@
-import EventForm from "@/components/EventForm";
-import "./events.css";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
+// Events was folded into Tournaments (as the 'single_event' format) —
+// this route is kept as a redirect for anything still linking here.
 export default function PlatformEventsPage() {
-  return (
-    <>
-      <h1 className="plt-h1">Create platform event</h1>
-      <p className="plt-sub2">A Sportonica-run event — a tournament, a league night, a city-wide game. Shows on discover with a platform badge.</p>
-      <EventForm kind="platform_event" defaultOrganizer="Sportonica" />
-    </>
-  );
+  redirect("/platform/tournaments/new");
 }

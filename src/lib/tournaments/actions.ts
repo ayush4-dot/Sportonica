@@ -251,6 +251,17 @@ export async function closeTournamentRegistration(id: string): Promise<Tournamen
   return data as Tournament;
 }
 
+export async function startSingleEvent(id: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("start_single_event", { p_id: id });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath("/tournaments");
+  revalidatePath(`/tournaments/${id}`);
+  return data as Tournament;
+}
+
 export async function cancelTournament(id: string, reason: string): Promise<Tournament | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");

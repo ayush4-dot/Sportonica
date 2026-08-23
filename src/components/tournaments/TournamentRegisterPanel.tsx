@@ -127,7 +127,7 @@ export default function TournamentRegisterPanel({
             <div style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em" }}>
               Roster ({roster.length}/{tournament.max_players_per_team})
             </div>
-            {(team.status === "pending" || team.status === "payment_pending") && (
+            {(team.status === "pending" || team.status === "payment_pending") && roster.length < tournament.max_players_per_team && (
               <button className="play-btn" style={{ padding: "9px 13px", fontSize: 12.5 }} onClick={() => setShowInvite(true)}>
                 <UserPlus size={13} /> Add player
               </button>

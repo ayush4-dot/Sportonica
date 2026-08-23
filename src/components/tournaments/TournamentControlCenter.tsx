@@ -3,9 +3,9 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
+  startSingleEvent,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -27,7 +27,9 @@ type TeamRow = TournamentTeam & { roster_count: number };
 type PaymentRow = { team_id: string; team_name: string; status: string; payment_method: string | null; expected_amount: number; submitted_at: string | null };
 
 const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"] as const;
-const LIVE_TABS = new Set<(typeof TABS)[number]>(["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"]);
+// A single_event tournament is captain-only, no bracket — those three tabs
+// don't apply and are dropped rather than shown locked.
+const NOT_FOR_SINGLE_EVENT = new Set<(typeof TABS)[number]>(["Fixtures", "Bracket", "Standings"]);
 type CourtOption = { id: string; name: string };
 
 export default function TournamentControlCenter({
@@ -49,6 +51,7 @@ export default function TournamentControlCenter({
   const [err, setErr] = useState<string | null>(null);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
+  const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
 
   function run(action: () => Promise<unknown>) {
     setErr(null);
@@ -80,9 +83,8 @@ export default function TournamentControlCenter({
       </div>
 
       <div className="tc-chips">
-        {TABS.map((t) => (
-          <button key={t} className={`tc-chip ${tab === t ? "on" : ""}`} onClick={() => LIVE_TABS.has(t) && setTab(t)} disabled={!LIVE_TABS.has(t)} style={!LIVE_TABS.has(t) ? { opacity: 0.35 } : undefined}>
-            {!LIVE_TABS.has(t) && <Lock size={10} style={{ marginRight: 4, verticalAlign: -1 }} />}
+        {visibleTabs.map((t) => (
+          <button key={t} className={`tc-chip ${tab === t ? "on" : ""}`} onClick={() => setTab(t)}>
             {t}
           </button>
         ))}
@@ -109,6 +111,9 @@ export default function TournamentControlCenter({
             )}
             {tournament.status === "registration_open" && (
               <button className="tc-btn" disabled={pending} onClick={() => run(() => closeTournamentRegistration(tournament.id))}>Close registration</button>
+            )}
+            {tournament.format === "single_event" && tournament.status === "registration_closed" && (
+              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => startSingleEvent(tournament.id))}>Start event</button>
             )}
             {tournament.status === "live" && (
               <button className="tc-btn primary" disabled={pending} onClick={() => run(() => completeTournament(tournament.id))}>Complete tournament</button>
