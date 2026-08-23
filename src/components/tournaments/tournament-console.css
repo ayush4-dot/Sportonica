@@ -1,0 +1,64 @@
+/* Self-contained styling for TournamentControlCenter and its list pages
+   — shared between /admin/tournaments (dark "ops console" scope) and
+   /platform/tournaments (light "dt-*" scope), so it can't borrow either
+   side's ambient CSS variables and owns its own look instead. */
+
+.tc-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(242,237,230,0.1);
+  border-radius: 16px; padding: 22px; margin-bottom: 18px;
+}
+[data-theme="paper"] .tc-card { background: #fff; border-color: rgba(20,23,30,0.1); }
+.tc-card-t { font-family: 'Inter', sans-serif; font-weight: 700; font-size: 15.5px; margin-bottom: 4px; }
+.tc-card-sub { font-size: 12.5px; opacity: 0.6; margin-bottom: 4px; }
+
+.tc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+@media (max-width: 720px) { .tc-stats { grid-template-columns: repeat(2, 1fr); } }
+.tc-stat {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(242,237,230,0.1);
+  border-radius: 13px; padding: 14px 16px;
+}
+[data-theme="paper"] .tc-stat { background: #fff; border-color: rgba(20,23,30,0.1); }
+.tc-stat-l { font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; opacity: 0.55; margin-bottom: 6px; }
+.tc-stat-v { font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 800; }
+.tc-stat-v small { font-size: 13px; font-weight: 600; opacity: 0.5; }
+
+.tc-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.tc-chip {
+  font-size: 12.5px; font-weight: 600; padding: 8px 14px; border-radius: 999px;
+  border: 1px solid rgba(242,237,230,0.15); background: transparent; color: inherit;
+  cursor: pointer; font-family: inherit; display: inline-flex; align-items: center;
+}
+[data-theme="paper"] .tc-chip { border-color: rgba(20,23,30,0.14); }
+.tc-chip.on { background: rgba(0,98,65,0.14); color: #006241; border-color: rgba(0,98,65,0.4); }
+.tc-chip:disabled { cursor: not-allowed; }
+
+.tc-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.tc-table th { text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; opacity: 0.5; padding: 8px 10px; border-bottom: 1px solid rgba(242,237,230,0.12); }
+[data-theme="paper"] .tc-table th { border-color: rgba(20,23,30,0.1); }
+.tc-table td { padding: 10px; border-bottom: 1px solid rgba(242,237,230,0.06); }
+[data-theme="paper"] .tc-table td { border-color: rgba(20,23,30,0.06); }
+.tc-num { font-variant-numeric: tabular-nums; }
+.tc-dim { opacity: 0.6; }
+
+.tc-badge {
+  display: inline-block; font-size: 11px; font-weight: 700; padding: 4px 10px;
+  border-radius: 999px; text-transform: capitalize;
+}
+.tc-badge.ok { background: rgba(0,98,65,0.14); color: #006241; }
+.tc-badge.warn { background: rgba(217,119,6,0.14); color: #d97706; }
+.tc-badge.danger { background: rgba(239,68,68,0.14); color: #ef4444; }
+.tc-badge.neutral { background: rgba(128,128,128,0.14); color: inherit; opacity: 0.75; }
+
+.tc-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.05); color: inherit; border: 1px solid rgba(242,237,230,0.15);
+  border-radius: 11px; padding: 11px 18px; font-weight: 700; font-size: 13.5px; cursor: pointer;
+  font-family: inherit;
+}
+[data-theme="paper"] .tc-btn { background: rgba(20,23,30,0.03); border-color: rgba(20,23,30,0.14); }
+.tc-btn.primary { background: #006241; border-color: #006241; color: #fff; }
+.tc-btn.danger { color: #ef4444; border-color: rgba(239,68,68,0.3); }
+.tc-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.tc-empty { text-align: center; padding: 40px 20px; opacity: 0.6; font-size: 13.5px; }
+.tc-err { color: #ef4444; font-size: 13px; margin-bottom: 14px; }

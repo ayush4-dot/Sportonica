@@ -13,13 +13,17 @@ export type Notification = {
       | "game_payment_required" | "game_payment_reminder" | "game_payment_submitted"
       | "game_payment_verified" | "game_payment_rejected" | "game_payment_expired"
       | "game_host_payment_submitted" | "game_host_payment_expired"
-      | "game_payment_cash_selected";
+      | "game_payment_cash_selected"
+      | "tournament_published" | "tournament_registration_submitted"
+      | "tournament_payment_verified" | "tournament_payment_rejected"
+      | "tournament_announcement";
   title: string;
   body: string | null;
   event_id: string | null;
   squad_id: string | null;
   conversation_id: string | null;
   game_id: string | null;
+  tournament_id: string | null;
   read: boolean;
   created_at: string;
 };
@@ -36,7 +40,7 @@ export function useNotifications() {
     setUserId(user.id);
     const { data } = await supabase
       .from("notifications")
-      .select("id, kind, title, body, event_id, squad_id, conversation_id, game_id, read, created_at")
+      .select("id, kind, title, body, event_id, squad_id, conversation_id, game_id, tournament_id, read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(30);

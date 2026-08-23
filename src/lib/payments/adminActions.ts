@@ -143,6 +143,7 @@ async function attachDisplayInfo(
 
   const courtIds = payments.filter((p) => p.booking_type === "court_booking").map((p) => p.court_booking_id!);
   const eventBookingIds = payments.filter((p) => p.booking_type === "event_booking").map((p) => p.event_booking_id!);
+  const tournamentRegIds = payments.filter((p) => p.booking_type === "tournament_registration").map((p) => p.tournament_registration_id!);
 
   const whenMap = new Map<string, { venue: string; when: string }>();
 
@@ -173,12 +174,31 @@ async function attachDisplayInfo(
     }
   }
 
+  if (tournamentRegIds.length) {
+    const { data: teams } = await sb
+      .from("tournament_teams").select("id, name, tournament_id").in("id", tournamentRegIds);
+    const tournamentIds = [...new Set((teams ?? []).map((t) => t.tournament_id).filter(Boolean))];
+    type TournamentRow = { id: string; name: string; starts_at: string; venues: { name: string } | null };
+    const { data: tournaments } = tournamentIds.length
+      ? await sb.from("tournaments").select("id, name, starts_at, venues(name)").in("id", tournamentIds)
+      : { data: [] as TournamentRow[] };
+    const tMap = new Map(((tournaments ?? []) as unknown as TournamentRow[]).map((t) => [t.id, t]));
+    for (const team of teams ?? []) {
+      const t = team.tournament_id ? tMap.get(team.tournament_id) : null;
+      whenMap.set(`tournament_registration:${team.id}`, {
+        venue: t?.venues?.name ?? "—",
+        when: t?.starts_at ?? "",
+      });
+    }
+  }
+
+  const bookingRef = (p: Payment) => p.court_booking_id ?? p.event_booking_id ?? p.tournament_registration_id;
   return payments.map((p) => {
-    const w = whenMap.get(`${p.booking_type}:${p.court_booking_id ?? p.event_booking_id}`);
+    const w = whenMap.get(`${p.booking_type}:${bookingRef(p)}`);
     return {
       ...p,
       customer_name: nameMap.get(p.user_id) ?? "—",
-      booking_label: bookingLabel(p.booking_type, p.court_booking_id ?? p.event_booking_id ?? ""),
+      booking_label: bookingLabel(p.booking_type, bookingRef(p) ?? ""),
       venue_name: w?.venue ?? "—",
       booking_when: w?.when ?? "",
     };
@@ -215,6 +235,20 @@ export async function getPaymentBookingDetails(paymentId: string): Promise<{
       time: booking?.starts_at && booking?.ends_at
         ? `${fmt(booking.starts_at).split(", ").pop()} – ${fmt(booking.ends_at).split(", ").pop()}`
         : "—",
+    };
+  }
+
+  if (payment.booking_type === "tournament_registration") {
+    const { data: team } = await sb
+      .from("tournament_teams").select("name, tournament_id").eq("id", payment.tournament_registration_id).maybeSingle();
+    const { data: tRow } = team?.tournament_id
+      ? await sb.from("tournaments").select("name, starts_at, venues(name)").eq("id", team.tournament_id).maybeSingle()
+      : { data: null };
+    const t = tRow as unknown as { name: string; starts_at: string; venues: { name: string } | null } | null;
+    return {
+      venue: t?.venues?.name ?? "—",
+      date: t?.starts_at ? fmt(t.starts_at) : "—",
+      time: team?.name ? `Team: ${team.name}` : "—",
     };
   }
 

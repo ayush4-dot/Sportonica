@@ -39,6 +39,11 @@ function iconFor(kind: Notification["kind"]) {
     case "game_joined": return <Calendar size={16} />;
     case "game_left":
     case "game_cancelled": return <UserMinus size={16} />;
+    case "tournament_published":
+    case "tournament_announcement": return <Calendar size={16} />;
+    case "tournament_registration_submitted": return <Receipt size={16} />;
+    case "tournament_payment_verified": return <ShieldCheck size={16} />;
+    case "tournament_payment_rejected": return <ShieldX size={16} />;
     default: return <Bell size={16} />;
   }
 }
@@ -193,6 +198,7 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                     else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
                     else if (n.squad_id) router.push(`/league/${n.squad_id}`);
                     else if (n.game_id) router.push(hostFacing ? `/play-together/${n.game_id}/manage` : `/play-together/${n.game_id}`);
+                    else if (n.tournament_id) router.push(`/tournaments/${n.tournament_id}`);
                     else if (n.event_id) router.push(`/game/${n.event_id}`);
                     setOpen(false);
                   }}

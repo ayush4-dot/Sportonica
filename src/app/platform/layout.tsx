@@ -25,6 +25,7 @@ export default async function PlatformLayout({ children }: { children: React.Rea
         <nav className="plt-nav">
           <Link href="/platform">Overview</Link>
           <Link href="/platform/events">+ Event</Link>
+          <Link href="/platform/tournaments">Tournaments</Link>
           <Link href="/platform/revenue">Revenue</Link>
           <Link href="/platform/payments">Payments</Link>
           <Link href="/platform/bookings">Bookings</Link>

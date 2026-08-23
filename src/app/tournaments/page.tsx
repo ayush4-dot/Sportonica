@@ -12,6 +12,6 @@ export const metadata: Metadata = {
 };
 
 export default async function TournamentsPage() {
-  const events = await listTournaments();
-  return <TournamentsClient events={events} />;
+  const items = await listTournaments();
+  return <TournamentsClient items={items} />;
 }

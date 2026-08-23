@@ -535,8 +535,27 @@ async function paymentContext(paymentId: string) {
   const { data: payment } = await sb.from("payments").select("*").eq("id", paymentId).maybeSingle();
   if (!payment) return null;
 
-  const label = bookingLabel(payment.booking_type, payment.court_booking_id ?? payment.event_booking_id);
+  const label = bookingLabel(payment.booking_type, payment.court_booking_id ?? payment.event_booking_id ?? payment.tournament_registration_id);
   const customerName = await nameFor(payment.user_id);
+
+  if (payment.booking_type === "tournament_registration") {
+    const { data: team } = await sb
+      .from("tournament_teams")
+      .select("tournament_id")
+      .eq("id", payment.tournament_registration_id)
+      .maybeSingle();
+    const { data: t } = team?.tournament_id
+      ? await sb.from("tournaments").select("id, name, starts_at, ends_at, venues(name)").eq("id", team.tournament_id).maybeSingle()
+      : { data: null };
+    const venueName = (t as unknown as { venues: { name: string } | null } | null)?.venues?.name;
+    return {
+      payment, label, customerName,
+      venueName: venueName ?? "the venue",
+      startsAt: t?.starts_at ?? new Date().toISOString(),
+      endsAt: t?.ends_at ?? new Date().toISOString(),
+      tournamentId: t?.id ?? null,
+    };
+  }
 
   if (payment.booking_type === "court_booking") {
     const { data: booking } = await sb
@@ -552,6 +571,7 @@ async function paymentContext(paymentId: string) {
       venueName: venue?.name ?? "the venue",
       startsAt: booking?.starts_at ?? new Date().toISOString(),
       endsAt: booking?.ends_at ?? new Date().toISOString(),
+      tournamentId: null as string | null,
     };
   }
 
@@ -569,6 +589,7 @@ async function paymentContext(paymentId: string) {
     payment, label, customerName,
     venueName: event?.venue ?? "the venue",
     startsAt, endsAt,
+    tournamentId: null as string | null,
   };
 }
 
@@ -618,22 +639,28 @@ export async function notifyPaymentReviewed(paymentId: string) {
         venue: ctx.venueName, startsAt: ctx.startsAt, endsAt: ctx.endsAt,
       }));
     }
+    const isTournament = ctx.payment.booking_type === "tournament_registration";
     await sb.from("notifications").insert({
       user_id: ctx.payment.user_id,
-      kind: "payment_approved",
-      title: "Booking confirmed",
-      body: `Payment verified. Your booking is confirmed. Rs ${Math.round(ctx.payment.expected_amount)} · ${ctx.label}`,
+      kind: isTournament ? "tournament_payment_verified" : "payment_approved",
+      title: isTournament ? "Team registration confirmed" : "Booking confirmed",
+      body: isTournament
+        ? `Payment verified. Your team's spot is confirmed. Rs ${Math.round(ctx.payment.expected_amount)} · ${ctx.label}`
+        : `Payment verified. Your booking is confirmed. Rs ${Math.round(ctx.payment.expected_amount)} · ${ctx.label}`,
+      tournament_id: ctx.tournamentId,
     });
   } else if (ctx.payment.status === "REJECTED") {
+    const isTournament = ctx.payment.booking_type === "tournament_registration";
     const reason = REJECTION_REASONS[ctx.payment.rejection_reason ?? "other"] ?? "Payment could not be verified";
     if (to) {
       await sendMail(paymentRejected({ to, playerName, bookingLabel: ctx.label, reason }));
     }
     await sb.from("notifications").insert({
       user_id: ctx.payment.user_id,
-      kind: "payment_rejected",
+      kind: isTournament ? "tournament_payment_rejected" : "payment_rejected",
       title: "Payment verification failed",
       body: `Payment could not be verified. ${ctx.label} · Reason: ${reason}`,
+      tournament_id: ctx.tournamentId,
     });
   }
 }

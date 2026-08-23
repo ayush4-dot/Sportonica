@@ -9,6 +9,9 @@ import { isActionError } from "@/lib/actionError";
 import type { BookingType, Payment, PaymentMethod, PaymentMethodConfig } from "@/lib/payments/types";
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
+const METHOD_LABELS: Record<PaymentMethod, string> = {
+  esewa: "eSewa", khalti: "Khalti", fonepay: "Fonepay", bank_transfer: "Bank Transfer",
+};
 
 const INSTRUCTIONS = [
   "Open eSewa or Khalti on your phone.",
@@ -112,7 +115,7 @@ export default function PaymentStep({
             <Row label="Booking" value={bookingLabel(bookingType, bookingId)} />
             {summary?.map((s) => <Row key={s.label} label={s.label} value={s.value} />)}
             <Row label="Amount" value={rs(submitted.expected_amount)} />
-            <Row label="Payment" value={submitted.payment_method === "esewa" ? "eSewa" : "Khalti"} />
+            <Row label="Payment" value={METHOD_LABELS[submitted.payment_method]} />
             <Row label="Transaction" value={submitted.transaction_id} />
             <Row label="Status" value="Awaiting Verification" accent />
           </div>
@@ -158,14 +161,14 @@ export default function PaymentStep({
                 className={`pymt-method ${method === m.method ? "on" : ""}`}
                 onClick={() => setMethod(m.method)}
               >
-                {m.method === "esewa" ? "eSewa" : "Khalti"}
+                {METHOD_LABELS[m.method]}
               </button>
             ))}
           </div>
 
           {active && (
             <div className="pymt-panel">
-              <h4>Pay with {active.method === "esewa" ? "eSewa" : "Khalti"}</h4>
+              <h4>Pay with {METHOD_LABELS[active.method]}</h4>
 
               {active.qr_path ? (
                 <img className="pymt-qr" src={paymentQrPublicUrl(active.qr_path) ?? ""} alt={`${active.method} QR code`} />
@@ -178,7 +181,7 @@ export default function PaymentStep({
 
               <div className="pymt-done-rows" style={{ marginTop: 14 }}>
                 <Row label="Merchant" value={active.merchant_name} />
-                <Row label={active.method === "esewa" ? "eSewa" : "Khalti"} value={active.account_identifier || "—"} />
+                <Row label={METHOD_LABELS[active.method]} value={active.account_identifier || "—"} />
                 <Row label="Amount" value={rs(amount)} accent />
               </div>
 

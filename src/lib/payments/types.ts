@@ -2,7 +2,7 @@
 // source of truth for both the customer checkout UI and the /platform
 // verification console. Mirrors supabase/payments.sql exactly.
 
-export const PAYMENT_METHODS = ["esewa", "khalti"] as const;
+export const PAYMENT_METHODS = ["esewa", "khalti", "fonepay", "bank_transfer"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 
 export const PAYMENT_STATUS = {
@@ -13,7 +13,7 @@ export const PAYMENT_STATUS = {
 } as const;
 export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 
-export type BookingType = "court_booking" | "event_booking";
+export type BookingType = "court_booking" | "event_booking" | "tournament_registration";
 
 export const REJECTION_REASONS: Record<string, string> = {
   incorrect_amount: "Incorrect amount",
@@ -41,6 +41,7 @@ export interface Payment {
   booking_type: BookingType;
   court_booking_id: string | null;
   event_booking_id: string | null;
+  tournament_registration_id: string | null;
   venue_id: string | null;
   user_id: string;
   payment_method: PaymentMethod;
@@ -104,7 +105,7 @@ export function friendlyPaymentError(message: string): string {
 // checkout UI, the admin review table, and email/notification copy so
 // the same booking always shows the same label everywhere.
 export function bookingLabel(bookingType: BookingType, bookingId: string): string {
-  const prefix = bookingType === "court_booking" ? "BK" : "GM";
+  const prefix = bookingType === "court_booking" ? "BK" : bookingType === "tournament_registration" ? "TR" : "GM";
   return `${prefix}-${bookingId.slice(0, 8).toUpperCase()}`;
 }
 

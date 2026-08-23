@@ -113,7 +113,10 @@ export async function confirmFreeBooking(bookingType: BookingType, bookingId: st
 export async function getMyPaymentStatus(bookingType: BookingType, bookingId: string): Promise<Payment | null | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const column = bookingType === "court_booking" ? "court_booking_id" : "event_booking_id";
+  const column =
+    bookingType === "court_booking" ? "court_booking_id" :
+    bookingType === "tournament_registration" ? "tournament_registration_id" :
+    "event_booking_id";
   const { data, error } = await sb
     .from("payments")
     .select("*")
