@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
-import { getMyVenues } from "@/lib/admin/queries";
+import { getMyVenues, getCourts } from "@/lib/admin/queries";
 import {
   getTournament, getTournamentVenueName, listTournamentTeamsWithRosterCount, listTournamentPayments,
+  getTournamentMatches, getTournamentAnnouncements,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import TournamentForm from "@/components/tournaments/TournamentForm";
@@ -28,10 +29,13 @@ export default async function AdminTournamentDetailPage({ params }: { params: Pr
     );
   }
 
-  const [venueName, teams, payments] = await Promise.all([
+  const [venueName, teams, payments, matches, announcements, courts] = await Promise.all([
     getTournamentVenueName(tournament.venue_id),
     listTournamentTeamsWithRosterCount(id),
     listTournamentPayments(id),
+    getTournamentMatches(id),
+    getTournamentAnnouncements(id),
+    getCourts(tournament.venue_id),
   ]);
 
   return (
@@ -43,6 +47,9 @@ export default async function AdminTournamentDetailPage({ params }: { params: Pr
           venueName={venueName ?? "—"}
           teams={isActionError(teams) ? [] : teams}
           payments={isActionError(payments) ? [] : payments}
+          matches={isActionError(matches) ? [] : matches}
+          announcements={isActionError(announcements) ? [] : announcements}
+          courts={courts.map((c) => ({ id: c.id, name: c.name }))}
           viewer="vendor"
           backHref="/admin/tournaments"
         />

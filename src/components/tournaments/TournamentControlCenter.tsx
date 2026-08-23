@@ -5,10 +5,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 import {
-  openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament,
+  openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
-import { STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS, type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
+import {
+  STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS,
+  type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement,
+} from "@/lib/tournaments/types";
+import FixturesTab from "./FixturesTab";
+import BracketView from "./BracketView";
+import StandingsTab from "./StandingsTab";
+import AnnouncementsTab from "./AnnouncementsTab";
 import "./tournament-console.css";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
@@ -19,16 +26,20 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
 type TeamRow = TournamentTeam & { roster_count: number };
 type PaymentRow = { team_id: string; team_name: string; status: string; payment_method: string | null; expected_amount: number; submitted_at: string | null };
 
-const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Results", "Announcements"] as const;
-const LIVE_TABS = new Set<(typeof TABS)[number]>(["Overview", "Registrations", "Payments", "Settings"]);
+const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"] as const;
+const LIVE_TABS = new Set<(typeof TABS)[number]>(["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"]);
+type CourtOption = { id: string; name: string };
 
 export default function TournamentControlCenter({
-  tournament, venueName, teams, payments, viewer, backHref,
+  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref,
 }: {
   tournament: Tournament;
   venueName: string;
   teams: TeamRow[];
   payments: PaymentRow[];
+  matches: TournamentMatch[];
+  announcements: TournamentAnnouncement[];
+  courts: CourtOption[];
   viewer: "vendor" | "super_admin";
   backHref: string;
 }) {
@@ -98,6 +109,9 @@ export default function TournamentControlCenter({
             )}
             {tournament.status === "registration_open" && (
               <button className="tc-btn" disabled={pending} onClick={() => run(() => closeTournamentRegistration(tournament.id))}>Close registration</button>
+            )}
+            {tournament.status === "live" && (
+              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => completeTournament(tournament.id))}>Complete tournament</button>
             )}
             {viewer === "super_admin" && !["completed", "cancelled"].includes(tournament.status) && (
               <button className="tc-btn danger" disabled={pending} onClick={() => run(() => cancelTournament(tournament.id, "Cancelled by Sportonica"))}>Cancel tournament</button>
@@ -169,6 +183,30 @@ export default function TournamentControlCenter({
             </p>
           )}
         </div>
+      )}
+
+      {tab === "Fixtures" && (
+        <FixturesTab
+          tournament={tournament}
+          teams={teams.filter((t) => t.status === "confirmed")}
+          matches={matches}
+          courts={courts}
+        />
+      )}
+
+      {tab === "Bracket" && (
+        <div className="tc-card">
+          <div className="tc-card-t">Bracket</div>
+          <BracketView matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
+        </div>
+      )}
+
+      {tab === "Standings" && (
+        <StandingsTab tournament={tournament} teams={teams} />
+      )}
+
+      {tab === "Announcements" && (
+        <AnnouncementsTab tournamentId={tournament.id} announcements={announcements} />
       )}
     </div>
   );

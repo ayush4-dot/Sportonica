@@ -2,13 +2,18 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getTournament, getTournamentVenueName, getMyTeamForTournament } from "@/lib/tournaments/actions";
+import {
+  getTournament, getTournamentVenueName, getMyTeamForTournament, getTournamentMatches, listTournamentTeams,
+} from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import { telHref } from "@/lib/playTogether/types";
 import TournamentRegisterPanel from "@/components/tournaments/TournamentRegisterPanel";
+import BracketView from "@/components/tournaments/BracketView";
+import StandingsTab from "@/components/tournaments/StandingsTab";
 import "@/app/(play)/play.css";
 import "@/app/platform/events/events.css";
+import "@/components/tournaments/tournament-console.css";
 
 export const dynamic = "force-dynamic";
 
@@ -29,10 +34,16 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
 
-  const [venueName, myTeam] = await Promise.all([
+  const isLiveOrDone = tournament.status === "live" || tournament.status === "completed";
+  const [venueName, myTeam, matchesRes, teamsRes] = await Promise.all([
     getTournamentVenueName(tournament.venue_id),
     user ? getMyTeamForTournament(id) : Promise.resolve(null),
+    isLiveOrDone ? getTournamentMatches(id) : Promise.resolve([]),
+    isLiveOrDone ? listTournamentTeams(id) : Promise.resolve([]),
   ]);
+  const matches = isActionError(matchesRes) ? [] : matchesRes;
+  const resultTeams = isActionError(teamsRes) ? [] : teamsRes;
+  const teamNameById = (tid: string | null) => resultTeams.find((t) => t.id === tid)?.name ?? "Unknown";
 
   const phoneHref = tournament.contact_phone ? telHref(tournament.contact_phone) : null;
   const prizes = [
@@ -68,6 +79,17 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
         <div className="bk-layout">
           <div>
+            {isLiveOrDone && matches.some((m) => m.stage === "knockout") && (
+              <div className="bk-panel">
+                <h3>Bracket</h3>
+                <BracketView matches={matches} teamName={teamNameById} />
+              </div>
+            )}
+
+            {isLiveOrDone && tournament.format !== "knockout" && (
+              <StandingsTab tournament={tournament} teams={resultTeams} />
+            )}
+
             {tournament.description && (
               <div className="bk-panel">
                 <h3>About</h3>

@@ -88,7 +88,64 @@ export interface TournamentTeam {
   captain_id: string;
   ack_terms: boolean;
   status: TeamStatus;
+  seed: number | null;
+  group_name: string | null;
   created_at: string;
+}
+
+export const MATCH_STAGES = ["group", "league", "knockout"] as const;
+export type MatchStage = (typeof MATCH_STAGES)[number];
+
+export const MATCH_STATUS = ["unscheduled", "scheduled", "completed", "walkover", "cancelled"] as const;
+export type MatchStatus = (typeof MATCH_STATUS)[number];
+
+export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
+  unscheduled: "Unscheduled",
+  scheduled: "Scheduled",
+  completed: "Completed",
+  walkover: "Walkover",
+  cancelled: "Cancelled",
+};
+
+export interface TournamentMatch {
+  id: string;
+  tournament_id: string;
+  stage: MatchStage;
+  group_name: string | null;
+  round: number;
+  round_label: string;
+  team_a_id: string | null;
+  team_b_id: string | null;
+  next_match_id: string | null;
+  next_match_slot: "a" | "b" | null;
+  court_id: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: MatchStatus;
+  score_a: number | null;
+  score_b: number | null;
+  winner_team_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TournamentAnnouncement {
+  id: string;
+  tournament_id: string;
+  title: string;
+  body: string | null;
+  posted_by: string;
+  created_at: string;
+}
+
+export interface TournamentStanding {
+  team_id: string;
+  team_name: string;
+  played: number;
+  won: number;
+  drawn: number;
+  lost: number;
+  points: number;
 }
 
 export interface TournamentTeamPlayer {
@@ -152,6 +209,26 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   ROSTER_FULL: "This team's roster is already full.",
   SUBSTITUTE_LIMIT_REACHED: "This team's substitute slots are full.",
   CANNOT_REMOVE_CAPTAIN: "The captain can't be removed from the roster.",
+  TEAM_NOT_CONFIRMED: "Only confirmed teams can be seeded.",
+  WRONG_FORMAT: "That action doesn't apply to this tournament's format.",
+  ALREADY_GENERATED: "Fixtures have already been generated for this tournament.",
+  TEAMS_NOT_GROUPED: "Assign every confirmed team to a group before generating fixtures.",
+  NOT_ENOUGH_TEAMS: "Not enough confirmed teams to generate fixtures.",
+  GROUP_STAGE_INCOMPLETE: "Every group match needs a result before the knockout stage can be generated.",
+  INVALID_ADVANCE_COUNT: "Enter how many teams advance from each group.",
+  MATCH_NOT_FOUND: "Match not found.",
+  TEAMS_NOT_SET: "Both teams for this match aren't set yet.",
+  MATCH_ALREADY_DONE: "This match is already finished.",
+  COURT_NOT_FOUND: "Court not found.",
+  COURT_NOT_IN_VENUE: "That court doesn't belong to this tournament's venue.",
+  INVALID_TIME_RANGE: "End time must be after start time.",
+  SLOT_TAKEN: "That court is already booked for that time.",
+  SLOT_BLOCKED: "That court is blocked for that time.",
+  SCORES_REQUIRED: "Enter a score for both teams.",
+  INVALID_WINNER: "Pick one of the two teams as the winner.",
+  KNOCKOUT_CANNOT_DRAW: "Knockout matches can't end in a draw — enter a winner instead.",
+  INCOMPLETE_MATCHES: "Every match needs a result before the tournament can be completed.",
+  TITLE_REQUIRED: "Enter a title for the announcement.",
 };
 
 export function friendlyTournamentError(message: string): string {

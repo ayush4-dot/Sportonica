@@ -4,7 +4,10 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { actionError, isActionError, type ActionError } from "@/lib/actionError";
 import { friendlyTournamentError } from "./types";
-import type { Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer } from "./types";
+import type {
+  Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
+  TournamentMatch, TournamentAnnouncement, TournamentStanding,
+} from "./types";
 
 async function requireUser() {
   const sb = await createClient();
@@ -284,4 +287,126 @@ export async function removeTeamPlayer(teamId: string, userId: string): Promise<
   if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.rpc("remove_team_player", { p_team_id: teamId, p_user_id: userId });
   if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// ── Fixtures / bracket / standings / announcements (Phase 2) ───────
+
+export async function getTournamentMatches(tournamentId: string): Promise<TournamentMatch[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb
+    .from("tournament_matches").select("*").eq("tournament_id", tournamentId)
+    .order("stage", { ascending: true }).order("round", { ascending: true });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentMatch[];
+}
+
+export async function getTournamentAnnouncements(tournamentId: string): Promise<TournamentAnnouncement[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb
+    .from("tournament_announcements").select("*").eq("tournament_id", tournamentId)
+    .order("created_at", { ascending: false });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentAnnouncement[];
+}
+
+export async function getTournamentStandings(tournamentId: string, groupName?: string): Promise<TournamentStanding[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("tournament_standings", { p_tournament_id: tournamentId, p_group_name: groupName ?? null });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentStanding[];
+}
+
+export async function setTeamSeed(teamId: string, seed: number, groupName?: string): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_team_seed", { p_team_id: teamId, p_seed: seed, p_group_name: groupName ?? null });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeam;
+}
+
+export async function generateKnockoutBracket(tournamentId: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("generate_knockout_bracket", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as Tournament;
+}
+
+export async function generateLeagueFixtures(tournamentId: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("generate_league_fixtures", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as Tournament;
+}
+
+export async function generateGroupFixtures(tournamentId: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("generate_group_fixtures", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as Tournament;
+}
+
+export async function generateKnockoutFromGroups(tournamentId: string, advancePerGroup: number): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("generate_knockout_from_groups", { p_tournament_id: tournamentId, p_advance_per_group: advancePerGroup });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as Tournament;
+}
+
+export async function scheduleMatch(matchId: string, courtId: string, startsAt: string, endsAt: string): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("schedule_match", { p_match_id: matchId, p_court_id: courtId, p_starts_at: startsAt, p_ends_at: endsAt });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+export async function unscheduleMatch(matchId: string): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("unschedule_match", { p_match_id: matchId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+export async function recordMatchResult(
+  matchId: string, scoreA: number | null, scoreB: number | null, winnerTeamId?: string
+): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("record_match_result", {
+    p_match_id: matchId, p_score_a: scoreA, p_score_b: scoreB, p_winner_team_id: winnerTeamId ?? null,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+export async function completeTournament(id: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("complete_tournament", { p_id: id });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath("/tournaments");
+  revalidatePath(`/tournaments/${id}`);
+  return data as Tournament;
+}
+
+export async function postTournamentAnnouncement(tournamentId: string, title: string, body?: string): Promise<TournamentAnnouncement | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("post_tournament_announcement", { p_tournament_id: tournamentId, p_title: title, p_body: body ?? null });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentAnnouncement;
 }
