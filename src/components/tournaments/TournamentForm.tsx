@@ -151,7 +151,16 @@ export default function TournamentForm({
     if (!venueId) return "Pick a venue.";
     if (!startsDate || !endsDate) return "Set a start and end date.";
     if (!regOpenDate || !regCloseDate) return "Set when registration opens and closes.";
+    if (combine(endsDate, endsTime) <= combine(startsDate, startsTime)) return "End time must be after the start time.";
     if (combine(regCloseDate, regCloseTime) > combine(startsDate, startsTime)) return "Registration must close before the tournament starts.";
+    // A tournament that already ended (or whose registration window
+    // already closed) before it's even published silently vanishes from
+    // /tournaments and rejects every registration with "closed" — with no
+    // hint anywhere why. Catching it here, at save time, is the only place
+    // that can explain it clearly.
+    const nowIso = new Date().toISOString();
+    if (combine(endsDate, endsTime) <= nowIso) return "The tournament's end time has already passed — pick a future date.";
+    if (combine(regCloseDate, regCloseTime) <= nowIso) return "Registration closes in the past — pick a future date/time.";
     if (format !== "single_event" && maxPlayers < minPlayers) return "Max players per team can't be less than the minimum.";
     return null;
   }

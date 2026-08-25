@@ -672,14 +672,21 @@ end;
 $$;
 grant execute on function public.auto_close_expired_tournament_registrations() to authenticated;
 
+-- Vendor-or-super_admin, not super_admin-only: once submitted, a
+-- tournament's details are locked (update_tournament_draft only allows
+-- 'draft'), so cancel-and-redraft is the vendor's only way to fix a
+-- mistake after publishing. Restricting this to super_admin left a vendor
+-- with no way out of a bad submission.
 create or replace function public.cancel_tournament(p_id uuid, p_reason text)
 returns public.tournaments
 language plpgsql security definer set search_path = public as $$
 declare v_row public.tournaments;
 begin
-  if not public.is_super_admin() then raise exception 'FORBIDDEN'; end if;
   select * into v_row from public.tournaments where id = p_id for update;
   if not found then raise exception 'NOT_FOUND'; end if;
+  if not (public.has_venue_access(v_row.venue_id, 'manager') or public.is_super_admin()) then
+    raise exception 'FORBIDDEN';
+  end if;
   if v_row.status in ('completed','cancelled') then raise exception 'INVALID_TRANSITION'; end if;
 
   update public.tournaments set status = 'cancelled', cancel_reason = p_reason where id = p_id returning * into v_row;

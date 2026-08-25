@@ -118,8 +118,13 @@ export default function TournamentControlCenter({
             {tournament.status === "live" && (
               <button className="tc-btn primary" disabled={pending} onClick={() => run(() => completeTournament(tournament.id))}>Complete tournament</button>
             )}
-            {viewer === "super_admin" && !["completed", "cancelled"].includes(tournament.status) && (
-              <button className="tc-btn danger" disabled={pending} onClick={() => run(() => cancelTournament(tournament.id, "Cancelled by Sportonica"))}>Cancel tournament</button>
+            {!["completed", "cancelled"].includes(tournament.status) && (
+              <button
+                className="tc-btn danger" disabled={pending}
+                onClick={() => run(() => cancelTournament(tournament.id, viewer === "super_admin" ? "Cancelled by Sportonica" : "Cancelled by venue"))}
+              >
+                Cancel tournament
+              </button>
             )}
           </div>
           {tournament.description && <p style={{ fontSize: 13.5, opacity: 0.75, marginTop: 18, maxWidth: 560 }}>{tournament.description}</p>}
