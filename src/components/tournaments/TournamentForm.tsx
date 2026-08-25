@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Trophy, Upload, X } from "lucide-react";
+import { Check, Trophy, Upload, X, Users, User } from "lucide-react";
 import { SPORT_NAMES as SPORTS } from "@/lib/sports";
 import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -56,6 +56,20 @@ export default function TournamentForm({
   const [maxPlayers, setMaxPlayers] = useState(existing?.max_players_per_team ?? 8);
   const [subLimit, setSubLimit] = useState(existing?.substitute_limit ?? 2);
   const [regMode, setRegMode] = useState<"team" | "individual">(existing?.registration_mode ?? "team");
+  // Derived from format rather than a separate concept in the UI: the data
+  // model's only individual-registration shape today is 'single_event'
+  // (team-of-one, captain-only, no bracket) — e.g. a running race or a
+  // singles chess/TT sign-up. Switching this also drives `format` and
+  // `regMode` together so the rest of the form doesn't need to know about it.
+  const [entryType, setEntryType] = useState<"team" | "individual">(
+    existing?.format === "single_event" ? "individual" : "team"
+  );
+  function chooseEntryType(type: "team" | "individual") {
+    setEntryType(type);
+    setRegMode(type);
+    if (type === "individual") setFormat("single_event");
+    else if (format === "single_event") setFormat("knockout");
+  }
   const [genderRule, setGenderRule] = useState(existing?.gender_rule ?? "");
   const [skillCategory, setSkillCategory] = useState(existing?.skill_category ?? "");
 
@@ -334,11 +348,38 @@ export default function TournamentForm({
 
       <SectionTitle>Format & teams</SectionTitle>
       <div className="ev-field">
-        <label>Format</label>
-        <select value={format} onChange={(e) => setFormat(e.target.value as TournamentFormat)}>
-          {TOURNAMENT_FORMATS.map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
-        </select>
+        <label>Registration type</label>
+        <div className="ev-entry-toggle">
+          <button type="button" className={entryType === "team" ? "on" : ""} onClick={() => chooseEntryType("team")}>
+            <Users size={15} />
+            <span>Team<small>Multiple players per entry — futsal, cricket…</small></span>
+          </button>
+          <button type="button" className={entryType === "individual" ? "on" : ""} onClick={() => chooseEntryType("individual")}>
+            <User size={15} />
+            <span>Individual<small>One person per entry — running, singles chess…</small></span>
+          </button>
+        </div>
+        <style>{`
+          .ev-entry-toggle { display: flex; gap: 10px; flex-wrap: wrap; }
+          .ev-entry-toggle button {
+            flex: 1 1 220px; display: flex; align-items: flex-start; gap: 9px; text-align: left;
+            padding: 12px 14px; border-radius: 11px; border: 1px solid rgba(128,128,128,0.3);
+            background: transparent; color: inherit; font-family: inherit; cursor: pointer;
+          }
+          .ev-entry-toggle button.on { border-color: #006241; background: rgba(0,98,65,0.1); }
+          .ev-entry-toggle button svg { flex-shrink: 0; margin-top: 2px; color: #006241; }
+          .ev-entry-toggle button span { display: flex; flex-direction: column; gap: 2px; font-size: 13.5px; font-weight: 700; }
+          .ev-entry-toggle button small { font-size: 11.5px; font-weight: 500; opacity: 0.65; }
+        `}</style>
       </div>
+      {entryType === "team" && (
+        <div className="ev-field">
+          <label>Format</label>
+          <select value={format} onChange={(e) => setFormat(e.target.value as TournamentFormat)}>
+            {TOURNAMENT_FORMATS.filter((f) => f !== "single_event").map((f) => <option key={f} value={f}>{FORMAT_LABELS[f]}</option>)}
+          </select>
+        </div>
+      )}
       <div className="ev-row">
         <div className="ev-field">
           <label>{format === "single_event" ? "Max players" : "Max teams"}</label>
