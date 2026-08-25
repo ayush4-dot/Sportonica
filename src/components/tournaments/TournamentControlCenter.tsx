@@ -12,10 +12,12 @@ import {
   STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS,
   type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement,
 } from "@/lib/tournaments/types";
+import type { Payment } from "@/lib/payments/types";
 import FixturesTab from "./FixturesTab";
 import BracketView from "./BracketView";
 import StandingsTab from "./StandingsTab";
 import AnnouncementsTab from "./AnnouncementsTab";
+import ReviewPaymentModal from "@/app/platform/payments/ReviewPaymentModal";
 import "./tournament-console.css";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
@@ -25,6 +27,7 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
 
 type TeamRow = TournamentTeam & { roster_count: number };
 type PaymentRow = { team_id: string; team_name: string; status: string; payment_method: string | null; expected_amount: number; submitted_at: string | null };
+type ReviewPaymentRow = Payment & { customer_name: string; booking_label: string };
 
 const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"] as const;
 // A single_event tournament is captain-only, no bracket — those three tabs
@@ -33,7 +36,7 @@ const NOT_FOR_SINGLE_EVENT = new Set<(typeof TABS)[number]>(["Fixtures", "Bracke
 type CourtOption = { id: string; name: string };
 
 export default function TournamentControlCenter({
-  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref,
+  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref, reviewPayments,
 }: {
   tournament: Tournament;
   venueName: string;
@@ -44,11 +47,17 @@ export default function TournamentControlCenter({
   courts: CourtOption[];
   viewer: "vendor" | "super_admin";
   backHref: string;
+  // Only fetched (and only usable) for viewer === "super_admin" — approving
+  // a tournament payment is the same Sportonica-only action as any other
+  // booking type, just reachable from here too instead of only
+  // /platform/payments.
+  reviewPayments?: ReviewPaymentRow[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const [err, setErr] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState<ReviewPaymentRow | null>(null);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
@@ -154,14 +163,46 @@ export default function TournamentControlCenter({
         </div>
       )}
 
-      {tab === "Payments" && (
+      {tab === "Payments" && viewer === "super_admin" && (
         <div className="tc-card">
           <div className="tc-card-t">Payments</div>
-          <div className="tc-card-sub">
-            {viewer === "vendor"
-              ? "View-only here — approve or reject from Sportonica's payment console."
-              : <Link href="/platform/payments">Go to Payment Verification →</Link>}
-          </div>
+          <div className="tc-card-sub">Approve or reject right here — same review as /platform/payments, scoped to this tournament.</div>
+          {(reviewPayments ?? []).length === 0 ? (
+            <div className="tc-empty">No payments submitted yet.</div>
+          ) : (
+            <table className="tc-table">
+              <thead><tr><th>Team</th><th>Method</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {(reviewPayments ?? []).map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 600 }}>{p.booking_label}</td>
+                    <td className="tc-dim" style={{ textTransform: "capitalize" }}>{p.payment_method ?? "—"}</td>
+                    <td className="tc-num">{money(p.expected_amount)}</td>
+                    <td><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
+                    <td>
+                      {p.status === "PENDING_VERIFICATION" && (
+                        <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setReviewing(p)}>Review</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {reviewing && (
+            <ReviewPaymentModal
+              payment={reviewing}
+              onClose={() => setReviewing(null)}
+              onReviewed={() => { setReviewing(null); router.refresh(); }}
+            />
+          )}
+        </div>
+      )}
+
+      {tab === "Payments" && viewer === "vendor" && (
+        <div className="tc-card">
+          <div className="tc-card-t">Payments</div>
+          <div className="tc-card-sub">View-only here — approve or reject from Sportonica&apos;s payment console.</div>
           {payments.length === 0 ? (
             <div className="tc-empty">No payments submitted yet.</div>
           ) : (

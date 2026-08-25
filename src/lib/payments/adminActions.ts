@@ -128,6 +128,31 @@ export async function listAllPayments(limit = 200) {
   return attachDisplayInfo(sb, (data ?? []) as Payment[]);
 }
 
+// Same review-ready shape as listPendingPayments()/listAllPayments(), scoped
+// to one tournament's teams — lets a super_admin approve/reject a
+// tournament's payments directly from its Control Center instead of
+// hunting for them in the platform-wide queue.
+export async function listTournamentPaymentsForReview(tournamentId: string) {
+  const auth = await requireSuperAdmin();
+  if (auth.error) return auth.error;
+  const { sb } = auth;
+
+  const { data: teams, error: teamsErr } = await sb
+    .from("tournament_teams").select("id").eq("tournament_id", tournamentId);
+  if (teamsErr) return actionError(teamsErr.message);
+  const teamIds = (teams ?? []).map((t) => t.id);
+  if (teamIds.length === 0) return [];
+
+  const { data, error } = await sb
+    .from("payments")
+    .select("*")
+    .eq("booking_type", "tournament_registration")
+    .in("tournament_registration_id", teamIds)
+    .order("submitted_at", { ascending: false });
+  if (error) return actionError(error.message);
+  return attachDisplayInfo(sb, (data ?? []) as Payment[]);
+}
+
 // Batches the customer-name/booking-label/venue/when lookups a review table
 // needs so the UI doesn't have to join client-side (and so this stays O(1)
 // queries regardless of how many rows are in the list, not O(n)).
