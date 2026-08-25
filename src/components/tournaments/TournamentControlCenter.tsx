@@ -45,7 +45,7 @@ export default function TournamentControlCenter({
   matches: TournamentMatch[];
   announcements: TournamentAnnouncement[];
   courts: CourtOption[];
-  viewer: "vendor" | "super_admin";
+  viewer: "vendor" | "organizer" | "super_admin";
   backHref: string;
   // Only fetched (and only usable) for viewer === "super_admin" — approving
   // a tournament payment is the same Sportonica-only action as any other
@@ -112,7 +112,7 @@ export default function TournamentControlCenter({
                 <button className="tc-btn danger" disabled={pending} onClick={() => run(() => approveTournament(tournament.id, false, "Needs changes"))}>Send back to draft</button>
               </>
             )}
-            {tournament.status === "pending_approval" && viewer === "vendor" && (
+            {tournament.status === "pending_approval" && viewer !== "super_admin" && (
               <div className="tc-dim" style={{ fontSize: 13 }}>Waiting for Sportonica to review and publish this tournament.</div>
             )}
             {tournament.status === "published" && (
@@ -130,7 +130,7 @@ export default function TournamentControlCenter({
             {!["completed", "cancelled"].includes(tournament.status) && (
               <button
                 className="tc-btn danger" disabled={pending}
-                onClick={() => run(() => cancelTournament(tournament.id, viewer === "super_admin" ? "Cancelled by Sportonica" : "Cancelled by venue"))}
+                onClick={() => run(() => cancelTournament(tournament.id, viewer === "super_admin" ? "Cancelled by Sportonica" : "Cancelled by organizer"))}
               >
                 Cancel tournament
               </button>
@@ -199,7 +199,7 @@ export default function TournamentControlCenter({
         </div>
       )}
 
-      {tab === "Payments" && viewer === "vendor" && (
+      {tab === "Payments" && viewer !== "super_admin" && (
         <div className="tc-card">
           <div className="tc-card-t">Payments</div>
           <div className="tc-card-sub">View-only here — approve or reject from Sportonica&apos;s payment console.</div>

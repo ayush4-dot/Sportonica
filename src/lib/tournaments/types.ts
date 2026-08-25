@@ -78,6 +78,7 @@ export interface Tournament {
   venue_rules: string | null;
   status: TournamentStatus;
   cancel_reason: string | null;
+  venue_booking_status: "pending" | "confirmed" | "declined";
   created_at: string;
   updated_at: string;
 }
@@ -196,6 +197,10 @@ export type TournamentDraftInput = Partial<{
 export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   FORBIDDEN: "You don't have permission to do that.",
   NOT_FOUND: "Tournament not found.",
+  VENUE_NOT_FOUND: "That venue couldn't be found.",
+  VENUE_NOT_CONFIRMED: "The venue hasn't confirmed hosting this tournament yet — check back once they respond, or pick another venue.",
+  INVALID_STATUS: "That's not a valid status.",
+  ROLE_CHANGE_NOT_ALLOWED: "That account change isn't allowed.",
   NOT_A_DRAFT: "This tournament has already been submitted and can no longer be edited — cancel it to start over.",
   INVALID_TRANSITION: "That action isn't available for this tournament right now.",
   INCOMPLETE_TOURNAMENT: "Fill in the required fields before publishing.",

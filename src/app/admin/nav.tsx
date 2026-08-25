@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import {
   LayoutDashboard, Building2, CalendarClock, Ticket,
-  Tag, Wallet, BarChart3, Users, Settings, Trophy,
+  Tag, Wallet, BarChart3, Users, Settings, Handshake, CalendarCheck,
 } from "lucide-react";
 
 export type NavItem = { href: string; label: string; desc: string; icon: ReactNode };
@@ -18,7 +18,8 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin", label: "Overview", desc: "Today's bookings, revenue and venue health at a glance.", icon: <LayoutDashboard size={16} /> },
       { href: "/admin/calendar", label: "Calendar", desc: "See every court's day laid out hour by hour.", icon: <CalendarClock size={16} /> },
-      { href: "/admin/tournaments", label: "Tournaments", desc: "Run tournaments and one-off events at your venue.", icon: <Trophy size={16} /> },
+      { href: "/admin/partnerships", label: "Partnerships", desc: "Organizers who want to run tournaments at your venue.", icon: <Handshake size={16} /> },
+      { href: "/admin/venue-bookings", label: "Venue bookings", desc: "Tournaments scheduled at your venue — confirm or decline hosting.", icon: <CalendarCheck size={16} /> },
       { href: "/admin/bookings", label: "Bookings", desc: "Every reservation across all your venues.", icon: <Ticket size={16} /> },
     ],
   },

@@ -223,6 +223,7 @@ export async function createTournament(input: TournamentDraftInput): Promise<Tou
   const { data, error } = await sb.rpc("create_tournament", { p: input });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath("/admin/tournaments");
+  revalidatePath("/organize");
   return data as Tournament;
 }
 
@@ -232,6 +233,7 @@ export async function updateTournamentDraft(id: string, input: TournamentDraftIn
   const { data, error } = await sb.rpc("update_tournament_draft", { p_id: id, p: input });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath(`/organize/tournaments/${id}`);
   return data as Tournament;
 }
 
@@ -242,6 +244,8 @@ export async function publishTournament(id: string): Promise<Tournament | Action
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath("/admin/tournaments");
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath("/organize");
+  revalidatePath(`/organize/tournaments/${id}`);
   revalidatePath("/tournaments");
   return data as Tournament;
 }
@@ -262,6 +266,7 @@ export async function openTournamentRegistration(id: string): Promise<Tournament
   const { data, error } = await sb.rpc("open_tournament_registration", { p_id: id });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath(`/organize/tournaments/${id}`);
   revalidatePath("/tournaments");
   return data as Tournament;
 }
@@ -272,6 +277,7 @@ export async function closeTournamentRegistration(id: string): Promise<Tournamen
   const { data, error } = await sb.rpc("close_tournament_registration", { p_id: id });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath(`/organize/tournaments/${id}`);
   return data as Tournament;
 }
 
@@ -281,6 +287,7 @@ export async function startSingleEvent(id: string): Promise<Tournament | ActionE
   const { data, error } = await sb.rpc("start_single_event", { p_id: id });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath(`/organize/tournaments/${id}`);
   revalidatePath("/tournaments");
   revalidatePath(`/tournaments/${id}`);
   return data as Tournament;
@@ -293,7 +300,9 @@ export async function cancelTournament(id: string, reason: string): Promise<Tour
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath("/admin/tournaments");
   revalidatePath("/platform/tournaments");
+  revalidatePath("/organize");
   revalidatePath(`/admin/tournaments/${id}`);
+  revalidatePath(`/organize/tournaments/${id}`);
   revalidatePath("/tournaments");
   return data as Tournament;
 }

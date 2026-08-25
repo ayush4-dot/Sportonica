@@ -19,7 +19,7 @@ export default function TournamentForm({
 }: {
   venues: { id: string; name: string }[];
   existing?: Tournament;
-  mode?: "venue" | "platform";
+  mode?: "venue" | "platform" | "organizer";
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -179,6 +179,11 @@ export default function TournamentForm({
     return null;
   }
 
+  const detailHref = (id: string) =>
+    mode === "platform" ? `/platform/tournaments/${id}`
+    : mode === "organizer" ? `/organize/tournaments/${id}`
+    : `/admin/tournaments/${id}`;
+
   function saveDraft() {
     const v = validate();
     if (v) { setErr(v); return; }
@@ -189,7 +194,7 @@ export default function TournamentForm({
         : await createTournament(payload());
       if (isActionError(result)) { setErr(result.message); return; }
       setDone("draft");
-      setTimeout(() => router.push(`/admin/tournaments/${result.id}`), 900);
+      setTimeout(() => router.push(detailHref(result.id)), 900);
     });
   }
 
@@ -205,7 +210,7 @@ export default function TournamentForm({
       const published = await publishTournament(saved.id);
       if (isActionError(published)) { setErr(published.message); return; }
       setDone("published");
-      setTimeout(() => router.push(`/admin/tournaments/${saved.id}`), 900);
+      setTimeout(() => router.push(detailHref(saved.id)), 900);
     });
   }
 
@@ -240,7 +245,7 @@ export default function TournamentForm({
           </select>
         </div>
         <div className="ev-field">
-          <label>Venue</label>
+          <label>{mode === "organizer" ? "Venue (from your partnerships)" : "Venue"}</label>
           <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
             {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
           </select>
@@ -259,6 +264,12 @@ export default function TournamentForm({
             <label>Organizer name{organizerType === "platform" ? "" : " (optional)"}</label>
             <input value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} placeholder="Sportonica" />
           </div>
+        </div>
+      )}
+      {mode === "organizer" && (
+        <div className="ev-field">
+          <label>Organizer name (optional)</label>
+          <input value={organizerName} onChange={(e) => setOrganizerName(e.target.value)} placeholder="Shown publicly as who's running this" />
         </div>
       )}
       <div className="ev-field">
