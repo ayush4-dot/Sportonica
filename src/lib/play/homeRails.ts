@@ -20,6 +20,7 @@ export interface RailEvent {
   host_name: string | null;
   host_avatar: string | null;
   host_trust: number | null;
+  banner_url?: string | null;
 }
 
 export interface RailVenue {

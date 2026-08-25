@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Trophy } from "lucide-react";
+import { Check, Trophy, Upload, X } from "lucide-react";
 import { SPORT_NAMES as SPORTS } from "@/lib/sports";
-import { createTournament, updateTournamentDraft, publishTournament } from "@/lib/tournaments/actions";
+import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS, TOURNAMENT_FORMATS } from "@/lib/tournaments/types";
 import type { Tournament, TournamentFormat } from "@/lib/tournaments/types";
@@ -34,6 +34,9 @@ export default function TournamentForm({
   );
   const [organizerName, setOrganizerName] = useState(existing?.organizer_name ?? "");
   const [bannerUrl, setBannerUrl] = useState(existing?.banner_url ?? "");
+  const [bannerPreview, setBannerPreview] = useState<string | null>(existing?.banner_url ?? null);
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const bannerFileRef = useRef<HTMLInputElement>(null);
   const [description, setDescription] = useState(existing?.description ?? "");
   const [contactPhone, setContactPhone] = useState(existing?.contact_phone ?? "");
 
@@ -68,6 +71,43 @@ export default function TournamentForm({
   const [rulesText, setRulesText] = useState(existing?.rules_text ?? "");
   const [equipmentNotes, setEquipmentNotes] = useState(existing?.equipment_notes ?? "");
   const [venueRules, setVenueRules] = useState(existing?.venue_rules ?? "");
+
+  useEffect(() => {
+    return () => { if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview); };
+  }, [bannerPreview]);
+
+  function pickBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const okTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!okTypes.includes(f.type)) { setErr("Upload a JPG, PNG or WebP image."); return; }
+    if (f.size > 5 * 1024 * 1024) { setErr("Image must be under 5 MB."); return; }
+    setErr(null);
+    if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview);
+    setBannerPreview(URL.createObjectURL(f));
+    setBannerUploading(true);
+    uploadTournamentBanner(f)
+      .then((url) => {
+        if (isActionError(url)) {
+          if (url.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(url.message);
+          return;
+        }
+        setBannerUrl(url);
+      })
+      .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload the banner image."))
+      .finally(() => setBannerUploading(false));
+  }
+
+  function removeBanner() {
+    if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview);
+    setBannerPreview(null);
+    setBannerUrl("");
+    if (bannerFileRef.current) bannerFileRef.current.value = "";
+  }
 
   function payload() {
     const isSingleEvent = format === "single_event";
@@ -199,8 +239,34 @@ export default function TournamentForm({
         </div>
       )}
       <div className="ev-field">
-        <label>Banner image URL (optional)</label>
-        <input value={bannerUrl} onChange={(e) => setBannerUrl(e.target.value)} placeholder="https://…" />
+        <label>Banner image (optional)</label>
+        <input
+          ref={bannerFileRef} type="file" accept="image/jpeg,image/png,image/webp"
+          onChange={pickBannerFile} style={{ display: "none" }}
+        />
+        {bannerPreview ? (
+          <div className="tf-banner-preview">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={bannerPreview} alt="" />
+            <button type="button" className="tf-banner-replace" onClick={() => bannerFileRef.current?.click()}>
+              {bannerUploading ? "Uploading…" : "Replace"}
+            </button>
+            <button type="button" className="tf-banner-remove" onClick={removeBanner} aria-label="Remove banner image">
+              <X size={13} />
+            </button>
+          </div>
+        ) : (
+          <button type="button" className="tf-banner-upload" onClick={() => bannerFileRef.current?.click()}>
+            <Upload size={15} /> Upload from your computer
+          </button>
+        )}
+        <style>{`
+          .tf-banner-preview{position:relative;border-radius:12px;overflow:hidden;border:1px solid var(--line, rgba(128,128,128,.3));max-height:180px}
+          .tf-banner-preview img{width:100%;max-height:180px;object-fit:cover;display:block;background:rgba(128,128,128,.1)}
+          .tf-banner-replace{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.7);color:#fff;font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;border:none;cursor:pointer;font-family:inherit}
+          .tf-banner-remove{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:rgba(0,0,0,.7);color:#fff;border:none;cursor:pointer;display:grid;place-items:center}
+          .tf-banner-upload{width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;min-height:44px;box-sizing:border-box;border-radius:11px;border:1px dashed var(--line, rgba(128,128,128,.4));background:transparent;color:inherit;font-family:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+        `}</style>
       </div>
       <div className="ev-field">
         <label>Description</label>

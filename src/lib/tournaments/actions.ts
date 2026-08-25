@@ -193,6 +193,30 @@ export async function listTournamentPayments(tournamentId: string): Promise<
 
 // ── Vendor / super-admin lifecycle RPCs ─────────────────────────────
 
+// Uploads happen before the tournament row exists (creation is a multi-step
+// draft), so the storage path is keyed by the uploader's own id rather than
+// a tournament id — same convention as uploadHostQr() in
+// src/lib/playTogether/actions.ts. Targets the public 'tournament-banners'
+// bucket (see supabase/tournament_banner_storage.sql).
+export async function uploadTournamentBanner(file: File): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const okTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!okTypes.includes(file.type)) return actionError("Upload a JPG, PNG or WebP image.");
+  if (file.size > 5 * 1024 * 1024) return actionError("Image must be under 5 MB.");
+
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const ext = extMap[file.type];
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const { error } = await sb.storage.from("tournament-banners").upload(path, file, { upsert: false });
+  if (error) return actionError(error.message);
+
+  const { data: pub } = sb.storage.from("tournament-banners").getPublicUrl(path);
+  return pub.publicUrl;
+}
+
 export async function createTournament(input: TournamentDraftInput): Promise<Tournament | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");

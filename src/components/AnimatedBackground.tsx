@@ -28,6 +28,14 @@ export default function AnimatedBackground({
 
     let W = 0, H = 0, raf = 0;
 
+    // Phones report devicePixelRatio 2-3.5, so an uncapped canvas.width is
+    // 6-12x the actual pixel count of a desktop window that size — every
+    // gradient fill below has to rasterize that many pixels, every frame.
+    // Capping it is the single biggest lever on mobile paint cost; the visual
+    // loss is invisible on blurry gradients/dots at this size.
+    const isSmallScreen = window.innerWidth < 768;
+    const dpr = Math.min(window.devicePixelRatio || 1, isSmallScreen ? 1.5 : 2);
+
     /* ── parse hex to [r,g,b] ── */
     const hex2rgb = (hex: string): [number, number, number] => {
       const h = hex.replace("#", "");
@@ -43,20 +51,28 @@ export default function AnimatedBackground({
     const c3 = hex2rgb(accent3);
 
     /* ── orb definitions ── */
-    const orbs = [
+    // Fewer orbs on phones: each is a full-canvas radial gradient fill, and
+    // that's the other big-ticket cost alongside devicePixelRatio above.
+    const allOrbs = [
       { x: 0.15, y: 0.2,  r: 0.55, rgb: c1, speed: 0.00018, ox: 0, oy: 0, phase: 0 },
       { x: 0.82, y: 0.15, r: 0.45, rgb: c2, speed: 0.00014, ox: 0, oy: 0, phase: 2.1 },
       { x: 0.5,  y: 0.75, r: 0.5,  rgb: c3, speed: 0.00016, ox: 0, oy: 0, phase: 4.2 },
       { x: 0.88, y: 0.7,  r: 0.35, rgb: c1, speed: 0.0002,  ox: 0, oy: 0, phase: 1.0 },
       { x: 0.1,  y: 0.82, r: 0.3,  rgb: c2, speed: 0.00012, ox: 0, oy: 0, phase: 3.5 },
     ];
+    const orbs = isSmallScreen ? allOrbs.slice(0, 3) : allOrbs;
 
     /* ── grid dots ── */
+    // The dot grid is a decorative nice-to-have but its per-frame cost is
+    // nested (orbs × dots, each a distance calc + its own arc()+fill() call
+    // — canvas state changes are the expensive part, not the math), so it's
+    // skipped entirely on phones rather than just thinned out.
     const CELL = 44;
     const DOTS: { x: number; y: number }[] = [];
 
     const buildDots = () => {
       DOTS.length = 0;
+      if (isSmallScreen) return;
       for (let x = 0; x < W; x += CELL) {
         for (let y = 0; y < H; y += CELL) {
           DOTS.push({ x, y });
@@ -70,8 +86,8 @@ export default function AnimatedBackground({
       // line NaN and crashes createLinearGradient.
       const nextW = canvas.offsetWidth || window.innerWidth || 1;
       const nextH = canvas.offsetHeight || window.innerHeight || 1;
-      const nextPxW = Math.round(nextW * devicePixelRatio);
-      const nextPxH = Math.round(nextH * devicePixelRatio);
+      const nextPxW = Math.round(nextW * dpr);
+      const nextPxH = Math.round(nextH * dpr);
       // Reassigning canvas.width/height clears the bitmap even when the
       // value is unchanged. Mobile browsers fire ResizeObserver repeatedly
       // while their address bar collapses/expands during scroll — without
@@ -83,7 +99,7 @@ export default function AnimatedBackground({
       canvas.width  = nextPxW;
       canvas.height = nextPxH;
       ctx.setTransform(1, 0, 0, 1, 0, 0);   // reset before scaling again
-      ctx.scale(devicePixelRatio, devicePixelRatio);
+      ctx.scale(dpr, dpr);
       buildDots();
       last = 0; // force the next already-scheduled frame to repaint immediately
     };
@@ -92,10 +108,10 @@ export default function AnimatedBackground({
     ro.observe(canvas);
     W = canvas.offsetWidth || window.innerWidth || 1;
     H = canvas.offsetHeight || window.innerHeight || 1;
-    canvas.width  = W * devicePixelRatio;
-    canvas.height = H * devicePixelRatio;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.scale(devicePixelRatio, devicePixelRatio);
+    ctx.scale(dpr, dpr);
     buildDots();
 
     /* ── mouse parallax ── */
@@ -109,11 +125,15 @@ export default function AnimatedBackground({
     // Blurred elements (header, dock) sit on top of this canvas and have to
     // resample it every frame it changes. At 60fps that's expensive enough
     // on weaker mobile GPUs to drop frames and read as a visible flicker —
-    // capping to ~30fps halves that compositing cost with no visible loss
-    // since the drift here is slow to begin with.
+    // capping to ~30fps (~20fps on phones) halves that compositing cost with
+    // no visible loss since the drift here is slow to begin with.
+    const frameBudget = isSmallScreen ? 48 : 32;
     let last = 0;
     const draw = (ts: number) => {
-      if (ts - last < 32) { raf = requestAnimationFrame(draw); return; }
+      // A backgrounded tab still gets rAF callbacks on some mobile browsers;
+      // skip the work entirely rather than paint frames nobody sees.
+      if (document.hidden) { raf = requestAnimationFrame(draw); return; }
+      if (ts - last < frameBudget) { raf = requestAnimationFrame(draw); return; }
       last = ts;
       ctx.clearRect(0, 0, W, H);
 

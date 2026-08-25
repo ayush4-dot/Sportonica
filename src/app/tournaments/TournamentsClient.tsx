@@ -74,7 +74,15 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
             {shown.map((item) => {
               const href = item.kind === "tournament" ? `/tournaments/${item.id}` : `/game/${item.id}`;
               return (
-                <Link key={`${item.kind}-${item.id}`} href={href} className="rc rc-event" style={{ ["--rc-accent" as string]: item.sportColor }}>
+                <Link key={`${item.kind}-${item.id}`} href={href} className="rc rc-event rc-venue" style={{ ["--rc-accent" as string]: item.sportColor }}>
+                  <div className="rc-img">
+                    {item.bannerUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={item.bannerUrl} alt="" loading="lazy" />
+                    ) : (
+                      <div className="rc-img-empty"><Trophy size={28} /></div>
+                    )}
+                  </div>
                   <div className="rc-badge" style={
                     item.kind === "tournament"
                       ? { color: "#006241", borderColor: "rgba(0,98,65,.4)", background: "rgba(0,98,65,.12)" }
@@ -115,8 +123,16 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
         }
         .tourn-chip:hover { border-color: rgba(0,98,65,0.4); color: var(--paper); }
         .tourn-chip.on { border-color: #006241; color: #006241; background: rgba(0,98,65,0.12); }
-        .tourn-grid { display: flex; flex-wrap: wrap; gap: 16px; }
-        .tourn-grid .rc { flex: 0 1 272px; }
+        .tourn-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
+          gap: 16px;
+        }
+        .tourn-grid .rc { width: auto; }
+        @media (max-width: 560px) {
+          .tourn-grid { grid-template-columns: 1fr; gap: 14px; }
+          .tourn-grid .rc-img { height: 168px; }
+        }
       `}</style>
     </div>
   );
