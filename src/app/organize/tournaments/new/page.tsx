@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { Trophy } from "lucide-react";
-import { getMyPartneredVenues } from "@/lib/organizer/actions";
+import { getMyPartneredVenues, listMyPartnerships } from "@/lib/organizer/actions";
 import { isActionError } from "@/lib/actionError";
 import TournamentForm from "@/components/tournaments/TournamentForm";
+import PartnershipsClient from "../../partnerships/PartnershipsClient";
 import "@/app/platform/events/events.css";
 
 export default async function NewOrganizerTournamentPage() {
@@ -10,12 +10,15 @@ export default async function NewOrganizerTournamentPage() {
   const rows = isActionError(venues) ? [] : venues;
 
   if (rows.length === 0) {
+    const partnerships = await listMyPartnerships();
     return (
-      <div className="adm-empty">
-        <div className="adm-empty-icon"><Trophy size={22} /></div>
-        <h3>Partner with a venue first</h3>
-        <p>You need an active partnership with at least one venue before you can create a tournament there.</p>
-        <Link href="/organize/partnerships" className="adm-btn primary">Find a venue to partner with</Link>
+      <div>
+        <div className="adm-empty" style={{ marginBottom: 4 }}>
+          <div className="adm-empty-icon"><Trophy size={22} /></div>
+          <h3>You&apos;ll need a venue to host at</h3>
+          <p>Search for one below and send an invite — once they accept, you can create a tournament there.</p>
+        </div>
+        <PartnershipsClient initial={isActionError(partnerships) ? [] : partnerships} />
       </div>
     );
   }

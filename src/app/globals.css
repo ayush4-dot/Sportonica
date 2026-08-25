@@ -180,3 +180,15 @@ html, body { max-width: 100%; overflow-x: hidden; }
 @media (display-mode: standalone) {
   body { padding-top: env(safe-area-inset-top, 0px); }
 }
+
+/* ── Accessibility floor: a visible keyboard-focus ring everywhere ──
+   Several stylesheets set `outline: none` on inputs/buttons and rely on a
+   custom :focus style (border-color/box-shadow) instead — fine for a
+   mouse click, but :focus-visible (keyboard-only) needs its own
+   guarantee so tabbing through the app never goes invisible. This is
+   deliberately global and low-specificity: it fills the gap without
+   fighting any element that already defines its own focus-visible style. */
+:focus-visible {
+  outline: 2px solid var(--color-primary, #006241);
+  outline-offset: 2px;
+}

@@ -25,7 +25,7 @@ export default function OrganizeLayout({ children }: { children: React.ReactNode
         </div>
         <nav className="plt-nav">
           <Link href="/organize">Tournaments</Link>
-          <Link href="/organize/partnerships">Partnerships</Link>
+          <Link href="/organize/partnerships">Venues</Link>
           <Link href="/organize/tournaments/new">+ Tournament</Link>
           <Link href="/discover">↗ App</Link>
         </nav>

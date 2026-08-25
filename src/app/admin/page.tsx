@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Building2, Plus, CalendarClock } from "lucide-react";
 import { getMyVenues, getCourtsForVenues, getUpcomingBookings } from "@/lib/admin/queries";
 import { Topbar, Stat, BookingBadge, money, timeRange, dayLabel, VerifyBadge } from "./ui";
+import RoleExplainerBanner from "@/components/RoleExplainerBanner";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,11 @@ export default async function AdminOverview() {
         action={<Link href="/admin/venues/new" className="adm-btn primary"><Plus size={15} /> Add venue</Link>}
       />
       <div className="adm-body">
+        <RoleExplainerBanner
+          storageKey="vendor-dashboard-explainer-dismissed"
+          title="You're viewing the Vendor console"
+          body="As a Vendor, you manage your venue — courts, pricing, availability. Tournaments are run by Organizers; you just say yes or no when one wants to host at your venue, under Organizers and Venue bookings."
+        />
         <div className="adm-stats">
           <Stat label="Venues" value={venues.length} accent="var(--a-accent)" />
           <Stat label="Courts" value={courts.length} accent="var(--a-turf)" />
@@ -60,7 +66,7 @@ export default async function AdminOverview() {
             </div>
             {upcoming.length === 0 ? (
               <div className="adm-dim" style={{ fontSize: 13, padding: "20px 0" }}>
-                No upcoming bookings yet. They'll appear here as players book.
+                No upcoming bookings yet. They&apos;ll appear here as players book.
               </div>
             ) : (
               <table className="adm-table">

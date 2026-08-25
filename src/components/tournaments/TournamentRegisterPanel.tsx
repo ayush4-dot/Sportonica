@@ -95,7 +95,7 @@ export default function TournamentRegisterPanel({
 
       {team.status === "confirmed" && (
         <p style={{ fontSize: 13.5, color: "#006241", fontWeight: 600, margin: "8px 0 16px", display: "flex", alignItems: "center", gap: 6 }}>
-          <Check size={15} /> Your team's spot is confirmed.
+          <Check size={15} /> Your team&apos;s spot is confirmed.
         </p>
       )}
       {team.status === "verification_pending" && (
@@ -142,11 +142,15 @@ export default function TournamentRegisterPanel({
                 <div style={{ flex: 1, fontSize: 13.5 }}>{p.name} {p.role === "captain" && <span style={{ opacity: 0.5, fontSize: 11 }}>(captain)</span>}</div>
                 {p.role !== "captain" && (team.status === "pending" || team.status === "payment_pending") && (
                   <button
-                    onClick={() => startTransition(async () => {
-                      await removeTeamPlayer(team.id, p.user_id);
-                      const r = await getTeamRoster(team.id);
-                      if (!isActionError(r)) setRoster(r);
-                    })}
+                    aria-label={`Remove ${p.name} from the team`}
+                    onClick={() => {
+                      if (!window.confirm(`Remove ${p.name} from the team?`)) return;
+                      startTransition(async () => {
+                        await removeTeamPlayer(team.id, p.user_id);
+                        const r = await getTeamRoster(team.id);
+                        if (!isActionError(r)) setRoster(r);
+                      });
+                    }}
                     style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", opacity: 0.7 }}
                   ><UserMinus size={15} /></button>
                 )}
@@ -213,7 +217,7 @@ function InviteModal({ teamId, onClose, onAdded }: { teamId: string; onClose: ()
       <div onClick={(e) => e.stopPropagation()} className="tim-card">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Add a player</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
         </div>
         <div className="tim-search">
           <Search size={15} style={{ opacity: 0.6 }} />

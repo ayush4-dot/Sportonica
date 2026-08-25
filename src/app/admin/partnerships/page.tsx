@@ -10,17 +10,14 @@ export default async function AdminPartnershipsPage() {
 
   return (
     <>
-      <Topbar title="Partnerships" crumb="OPERATE / PARTNERSHIPS" />
+      <Topbar title="Organizers" crumb="OPERATE / ORGANIZERS" />
       <div className="adm-body" style={{ maxWidth: 780 }}>
         <p style={{ opacity: 0.6, fontSize: 13.5, marginBottom: 20, maxWidth: 560 }}>
-          Organizers who want to run tournaments at your venue. Accept once and every tournament
-          they later propose at your venue still needs your confirmation from Venue bookings.
+          People who want to run tournaments at your venue. Accepting is a standing yes to being
+          picked — you still confirm or decline each tournament on its own from Venue bookings.
         </p>
         <div className="adm-card">
-          <div className="adm-card-t">Invites</div>
-          <div style={{ marginTop: 12 }}>
-            <PartnershipInvitesClient initial={isActionError(invites) ? [] : invites} />
-          </div>
+          <PartnershipInvitesClient initial={isActionError(invites) ? [] : invites} />
         </div>
       </div>
     </>

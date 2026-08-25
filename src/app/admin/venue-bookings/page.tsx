@@ -13,8 +13,9 @@ export default async function AdminVenueBookingsPage() {
       <Topbar title="Venue bookings" crumb="OPERATE / VENUE BOOKINGS" />
       <div className="adm-body">
         <p style={{ opacity: 0.6, fontSize: 13.5, marginBottom: 20, maxWidth: 560 }}>
-          Every tournament scheduled at your venue, whoever&apos;s organizing it. A draft tournament
-          needs your confirmation before its organizer can submit it for review.
+          Every tournament proposed at your venue, one at a time — even from an organizer you&apos;ve
+          already partnered with. Nothing here is automatic: each one needs your own yes before it
+          can go any further.
         </p>
         <div className="adm-card">
           <VenueBookingsClient initial={isActionError(bookings) ? [] : bookings} />

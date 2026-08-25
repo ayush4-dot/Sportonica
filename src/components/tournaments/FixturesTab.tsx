@@ -229,8 +229,14 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
             {match.status === "scheduled" && (
               <button className="tc-btn" disabled={pending} onClick={onUnschedule} style={{ padding: "6px 10px" }}>Unschedule</button>
             )}
-            <input type="number" placeholder="A" value={scoreA} onChange={(e) => setScoreA(e.target.value)} style={{ ...inputStyle, width: 44 }} />
-            <input type="number" placeholder="B" value={scoreB} onChange={(e) => setScoreB(e.target.value)} style={{ ...inputStyle, width: 44 }} />
+            <input
+              type="number" placeholder="A" value={scoreA} onChange={(e) => setScoreA(e.target.value)}
+              style={{ ...inputStyle, width: 44 }} aria-label={`${teamName(match.team_a_id)} score`}
+            />
+            <input
+              type="number" placeholder="B" value={scoreB} onChange={(e) => setScoreB(e.target.value)}
+              style={{ ...inputStyle, width: 44 }} aria-label={`${teamName(match.team_b_id)} score`}
+            />
             <button
               className="tc-btn primary" disabled={pending || scoreA === "" || scoreB === ""} style={{ padding: "6px 10px" }}
               onClick={() => onResult(Number(scoreA), Number(scoreB))}
@@ -239,10 +245,22 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
             </button>
             {match.team_a_id && match.team_b_id && (
               <>
-                <button className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }} onClick={() => onResult(null, null, match.team_a_id!)}>
+                <button
+                  className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
+                  onClick={() => {
+                    if (!window.confirm(`Record a walkover win for ${teamName(match.team_a_id)}? No score is recorded and this can't be undone.`)) return;
+                    onResult(null, null, match.team_a_id!);
+                  }}
+                >
                   Walkover A
                 </button>
-                <button className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }} onClick={() => onResult(null, null, match.team_b_id!)}>
+                <button
+                  className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
+                  onClick={() => {
+                    if (!window.confirm(`Record a walkover win for ${teamName(match.team_b_id)}? No score is recorded and this can't be undone.`)) return;
+                    onResult(null, null, match.team_b_id!);
+                  }}
+                >
                   Walkover B
                 </button>
               </>

@@ -7,9 +7,9 @@ export default async function OrganizePartnershipsPage() {
 
   return (
     <div>
-      <h1 className="plt-h1">Partnerships</h1>
+      <h1 className="plt-h1">Venues</h1>
       <p className="plt-sub2" style={{ marginBottom: 20 }}>
-        Only venues you have an active partnership with show up when you create a tournament.
+        You can only pick a venue for a tournament once its owner has said yes to your invite.
       </p>
       <PartnershipsClient initial={isActionError(partnerships) ? [] : partnerships} />
     </div>

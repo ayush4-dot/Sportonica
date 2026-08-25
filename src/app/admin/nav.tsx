@@ -18,8 +18,8 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/admin", label: "Overview", desc: "Today's bookings, revenue and venue health at a glance.", icon: <LayoutDashboard size={16} /> },
       { href: "/admin/calendar", label: "Calendar", desc: "See every court's day laid out hour by hour.", icon: <CalendarClock size={16} /> },
-      { href: "/admin/partnerships", label: "Partnerships", desc: "Organizers who want to run tournaments at your venue.", icon: <Handshake size={16} /> },
-      { href: "/admin/venue-bookings", label: "Venue bookings", desc: "Tournaments scheduled at your venue — confirm or decline hosting.", icon: <CalendarCheck size={16} /> },
+      { href: "/admin/partnerships", label: "Organizers", desc: "People who want to run tournaments at your venue.", icon: <Handshake size={16} /> },
+      { href: "/admin/venue-bookings", label: "Venue bookings", desc: "Confirm or decline hosting each tournament, one at a time.", icon: <CalendarCheck size={16} /> },
       { href: "/admin/bookings", label: "Bookings", desc: "Every reservation across all your venues.", icon: <Ticket size={16} /> },
     ],
   },

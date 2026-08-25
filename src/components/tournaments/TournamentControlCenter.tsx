@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent,
@@ -57,16 +58,22 @@ export default function TournamentControlCenter({
   const [pending, startTransition] = useTransition();
   const [tab, setTab] = useState<(typeof TABS)[number]>("Overview");
   const [err, setErr] = useState<string | null>(null);
+  const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<ReviewPaymentRow | null>(null);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
 
-  function run(action: () => Promise<unknown>) {
+  // Every state-changing button passes its own confirmation text, in the
+  // same verb as the button — "Open registration" confirms "Registration
+  // is open.", not a generic "Done."
+  function run(action: () => Promise<unknown>, successMsg?: string) {
     setErr(null);
+    setConfirmMsg(null);
     startTransition(async () => {
       const res = await action();
       if (isActionError(res)) { setErr(res.message); return; }
+      if (successMsg) { setConfirmMsg(successMsg); setTimeout(() => setConfirmMsg(null), 4000); }
       router.refresh();
     });
   }
@@ -99,7 +106,12 @@ export default function TournamentControlCenter({
         ))}
       </div>
 
-      {err && <div className="tc-err">{err}</div>}
+      {err && <div className="tc-err" role="alert">{err}</div>}
+      {confirmMsg && (
+        <div role="status" style={{ display: "flex", alignItems: "center", gap: 6, color: "#006241", fontSize: 13, fontWeight: 600, margin: "0 0 12px" }}>
+          <Check size={14} /> {confirmMsg}
+        </div>
+      )}
 
       {tab === "Overview" && (
         <div className="tc-card">
@@ -108,29 +120,54 @@ export default function TournamentControlCenter({
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 16 }}>
             {tournament.status === "pending_approval" && viewer === "super_admin" && (
               <>
-                <button className="tc-btn primary" disabled={pending} onClick={() => run(() => approveTournament(tournament.id, true))}>Approve & publish</button>
-                <button className="tc-btn danger" disabled={pending} onClick={() => run(() => approveTournament(tournament.id, false, "Needs changes"))}>Send back to draft</button>
+                <button className="tc-btn primary" disabled={pending} onClick={() => run(() => approveTournament(tournament.id, true), "Published — this tournament is now public.")}>Approve & publish</button>
+                <button
+                  className="tc-btn danger" disabled={pending}
+                  onClick={() => {
+                    if (!window.confirm(`Send "${tournament.name}" back to draft? Its organizer will need to fix it and resubmit.`)) return;
+                    run(() => approveTournament(tournament.id, false, "Needs changes"), "Sent back to draft.");
+                  }}
+                >
+                  Send back to draft
+                </button>
               </>
             )}
             {tournament.status === "pending_approval" && viewer !== "super_admin" && (
               <div className="tc-dim" style={{ fontSize: 13 }}>Waiting for Sportonica to review and publish this tournament.</div>
             )}
             {tournament.status === "published" && (
-              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => openTournamentRegistration(tournament.id))}>Open registration</button>
+              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => openTournamentRegistration(tournament.id), "Registration is open.")}>Open registration</button>
             )}
             {tournament.status === "registration_open" && (
-              <button className="tc-btn" disabled={pending} onClick={() => run(() => closeTournamentRegistration(tournament.id))}>Close registration</button>
+              <button className="tc-btn" disabled={pending} onClick={() => run(() => closeTournamentRegistration(tournament.id), "Registration is closed.")}>Close registration</button>
             )}
             {tournament.format === "single_event" && tournament.status === "registration_closed" && (
-              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => startSingleEvent(tournament.id))}>Start event</button>
+              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => startSingleEvent(tournament.id), "The event has started.")}>Start event</button>
             )}
             {tournament.status === "live" && (
-              <button className="tc-btn primary" disabled={pending} onClick={() => run(() => completeTournament(tournament.id))}>Complete tournament</button>
+              <button
+                className="tc-btn primary" disabled={pending}
+                onClick={() => {
+                  if (!window.confirm(`Complete "${tournament.name}"? This locks in the final results — you won't be able to record any more scores.`)) return;
+                  run(() => completeTournament(tournament.id), "Tournament completed.");
+                }}
+              >
+                Complete tournament
+              </button>
             )}
             {!["completed", "cancelled"].includes(tournament.status) && (
               <button
                 className="tc-btn danger" disabled={pending}
-                onClick={() => run(() => cancelTournament(tournament.id, viewer === "super_admin" ? "Cancelled by Sportonica" : "Cancelled by organizer"))}
+                onClick={() => {
+                  const consequence = confirmedTeams > 0
+                    ? `${confirmedTeams} confirmed team${confirmedTeams === 1 ? "" : "s"} will be notified and any payments already made will need refunding separately.`
+                    : "This can't be undone.";
+                  if (!window.confirm(`Cancel "${tournament.name}"? ${consequence}`)) return;
+                  run(
+                    () => cancelTournament(tournament.id, viewer === "super_admin" ? "Cancelled by Sportonica" : "Cancelled by organizer"),
+                    "Tournament cancelled."
+                  );
+                }}
               >
                 Cancel tournament
               </button>
@@ -193,7 +230,7 @@ export default function TournamentControlCenter({
             <ReviewPaymentModal
               payment={reviewing}
               onClose={() => setReviewing(null)}
-              onReviewed={() => { setReviewing(null); router.refresh(); }}
+              onReviewed={() => { setReviewing(null); setConfirmMsg("Payment reviewed."); setTimeout(() => setConfirmMsg(null), 4000); router.refresh(); }}
             />
           )}
         </div>
