@@ -9,6 +9,7 @@ import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import { telHref } from "@/lib/playTogether/types";
 import TournamentRegisterPanel from "@/components/tournaments/TournamentRegisterPanel";
+import TournamentShareBar from "@/components/tournaments/TournamentShareBar";
 import BracketView from "@/components/tournaments/BracketView";
 import StandingsTab from "@/components/tournaments/StandingsTab";
 import "@/app/(play)/play.css";
@@ -59,7 +60,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
         <Link href="/tournaments" className="bk-back"><ChevronLeft size={16} /> All tournaments</Link>
 
         <div className="bk-hero">
-          {tournament.banner_url ? (
+          {/* banner_url used to be a freeform text field — an old row can hold
+              a bare filename instead of a real URL, which just renders as a
+              broken image rather than falling back cleanly. */}
+          {tournament.banner_url && /^https?:\/\//i.test(tournament.banner_url) ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={tournament.banner_url} alt="" />
           ) : (
@@ -76,6 +80,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             </div>
           </div>
         </div>
+
+        <TournamentShareBar id={tournament.id} name={tournament.name} />
 
         <div className="bk-layout">
           <div>

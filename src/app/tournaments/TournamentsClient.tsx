@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MapPin, Star, Check, Trophy, Users } from "lucide-react";
 import type { TournamentBrowseItem } from "@/lib/play/tournaments";
+import CardShareButton from "@/components/tournaments/CardShareButton";
 
 const KTM = "Asia/Kathmandu";
 
@@ -75,8 +76,9 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
               const href = item.kind === "tournament" ? `/tournaments/${item.id}` : `/game/${item.id}`;
               return (
                 <Link key={`${item.kind}-${item.id}`} href={href} className="rc rc-event rc-venue" style={{ ["--rc-accent" as string]: item.sportColor }}>
+                  <CardShareButton href={href} title={`${item.title} · Sportonica`} />
                   <div className="rc-img">
-                    {item.bannerUrl ? (
+                    {item.bannerUrl && /^https?:\/\//i.test(item.bannerUrl) ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={item.bannerUrl} alt="" loading="lazy" />
                     ) : (
