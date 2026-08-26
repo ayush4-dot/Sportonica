@@ -113,7 +113,7 @@ export default function SquadsClient({
 
                   <button
                     className={`play-btn ${isIn ? "" : "ghost"}`}
-                    style={{ width: "100%", justifyContent: "center", marginTop: 18 }}
+                    style={{ width: "100%", justifyContent: "center", marginTop: 18, ...(isIn ? { color: "#fff" } : {}) }}
                     onClick={() => toggle(g)}
                     disabled={pending}
                   >
