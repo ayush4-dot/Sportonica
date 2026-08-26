@@ -191,8 +191,38 @@ function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; st
 }
 
 // ── Knockout — geometry-precise connector-line bracket ────────────
-const MATCH_H = 66;
+const MATCH_H = 108;
 const SLOT_GAP = 22;
+
+// "Quarterfinal" -> "QF", "Round of 16" -> "R16", anything unrecognised
+// falls back to initials — a per-card label distinguishing matches
+// within the same round, on top of the round's own column header.
+function roundShortCode(label: string): string {
+  const l = label.toLowerCase();
+  if (l.includes("final") && !l.includes("semi") && !l.includes("quarter")) return "F";
+  if (l.includes("semi")) return "SF";
+  if (l.includes("quarter")) return "QF";
+  const roundOf = l.match(/round of\s*(\d+)/);
+  if (roundOf) return `R${roundOf[1]}`;
+  const words = label.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return words.map((w) => w[0]).join("").toUpperCase().slice(0, 3);
+}
+
+function matchStatusPill(m: TournamentMatch): { label: string; cls: string; live?: boolean } | null {
+  if (m.status === "live") return { label: "Live", cls: "live", live: true };
+  if (m.status === "scheduled") return { label: "Scheduled", cls: "scheduled" };
+  if (m.status === "postponed") return { label: "Postponed", cls: "postponed" };
+  if (m.status === "cancelled") return { label: "Cancelled", cls: "cancelled" };
+  return null;
+}
+
+function matchWhen(m: TournamentMatch): string {
+  const when = m.starts_at
+    ? new Date(m.starts_at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: KTM })
+    : "Date TBD";
+  return m.court_label ? `${when} · ${m.court_label}` : when;
+}
 
 // Matches are now added by hand (no auto-generated pairing tree), so
 // there's no guaranteed relationship between a round's matches and
@@ -203,6 +233,7 @@ const SLOT_GAP = 22;
 // centered column; a plain chevron between columns shows the flow
 // left-to-right without claiming a precision the data can't back up.
 function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+  const [selected, setSelected] = useState<TournamentMatch | null>(null);
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
   if (knockout.length === 0) return <div className="ev2-empty">No knockout matches added yet.</div>;
 
@@ -220,18 +251,38 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
             <div className="ev2-bracket-round">
               <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
               <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
-                {ms.map((m) => (
-                  <div key={m.id} className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`} style={{ height: MATCH_H }}>
-                    <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
-                    <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
-                  </div>
+                {ms.map((m, i) => (
+                  <BracketMatchCard
+                    key={m.id} match={m} teamName={teamName}
+                    code={ms.length > 1 ? `${roundShortCode(m.round_label)}${i + 1}` : roundShortCode(m.round_label)}
+                    onClick={() => setSelected(m)}
+                  />
                 ))}
               </div>
             </div>
           </div>
         ))}
       </div>
+      {selected && <MatchDetailModal match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
     </div>
+  );
+}
+
+function BracketMatchCard({ match: m, code, teamName, onClick }: {
+  match: TournamentMatch; code: string; teamName: (id: string | null) => string; onClick: () => void;
+}) {
+  const pill = matchStatusPill(m);
+  return (
+    <button type="button" className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`} style={{ minHeight: MATCH_H }} onClick={onClick}>
+      <div className="ev2-bracket-match-head">
+        <span className="ev2-bracket-code">{code}</span>
+        {pill && <span className={`ev2-bracket-pill ${pill.cls}`}>{pill.live && <i className="ev2-live-dot" />}{pill.label}</span>}
+        {m.status === "walkover" && <span className="ev2-bracket-pill walkover">Walkover</span>}
+      </div>
+      <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
+      <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+      <div className="ev2-bracket-meta">{matchWhen(m)}</div>
+    </button>
   );
 }
 
@@ -247,6 +298,43 @@ function BracketSlot({ name, winner, score }: { name: string; winner: boolean; s
         <span className="ev2-bracket-name">{name}</span>
       </span>
       {score != null && <span className="ev2-bracket-score">{score}</span>}
+    </div>
+  );
+}
+
+function MatchDetailModal({ match: m, teamName, onClose }: {
+  match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
+}) {
+  const pill = matchStatusPill(m);
+  return (
+    <div className="ev2-scrim" onClick={onClose}>
+      <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <div>
+            <div className="ev2-bracket-round-label" style={{ marginBottom: 4, textAlign: "left" }}>{m.round_label}</div>
+            {pill && <span className={`ev2-bracket-pill ${pill.cls}`}>{pill.live && <i className="ev2-live-dot" />}{pill.label}</span>}
+          </div>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+
+        <div style={{ marginTop: 12, border: "1px solid rgba(242,237,230,0.1)", borderRadius: 12, overflow: "hidden" }}>
+          <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
+          <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+        </div>
+
+        {m.status === "walkover" && (
+          <div className="ev2-empty" style={{ padding: "10px 0 0", textAlign: "left" }}>Walkover — {teamName(m.winner_team_id)}</div>
+        )}
+        {(m.score_a_et != null && m.score_b_et != null) && (
+          <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 8 }}>Extra time: {m.score_a_et} – {m.score_b_et}</div>
+        )}
+        {(m.score_a_pens != null && m.score_b_pens != null) && (
+          <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 4 }}>Penalties: {m.score_a_pens} – {m.score_b_pens}</div>
+        )}
+
+        <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 14 }}>{matchWhen(m)}</div>
+        {m.notes && <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 6 }}>{m.notes}</div>}
+      </div>
     </div>
   );
 }
