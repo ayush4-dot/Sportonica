@@ -456,6 +456,11 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
         )}
         {match.status === "walkover" && <span className="tc-badge warn">Walkover — {teamName(match.winner_team_id)}</span>}
         {match.status === "completed" && match.team_b_id === null && <span className="tc-badge ok">Bye</span>}
+        {match.status === "completed" && match.team_b_id !== null && (
+          match.winner_team_id
+            ? <span className="tc-badge ok">Won — {teamName(match.winner_team_id)}</span>
+            : <span className="tc-badge neutral">Draw</span>
+        )}
       </td>
       <td className="tc-dim" style={{ fontSize: 12.5 }}>
         {editingTime ? (
