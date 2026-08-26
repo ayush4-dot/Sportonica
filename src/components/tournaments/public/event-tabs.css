@@ -21,12 +21,18 @@
 }
 
 /* Hints there's more to scroll to, on phones where the tab row never
-   fully fits — purely decorative, doesn't affect layout/overflow. */
+   fully fits — only rendered while the row is actually scrollable
+   (not just decorative), with a nudging chevron so "3 tabs" never
+   reads as the whole set when there are really 5 or 6. */
 .ev2-tabbar-fade {
-  position: absolute; top: 1px; bottom: 1px; right: 1px; width: 30px; border-radius: 0 17px 17px 0;
-  pointer-events: none; background: linear-gradient(to right, transparent, rgba(20,23,30,0.5) 70%);
+  position: absolute; top: 1px; bottom: 1px; right: 1px; width: 34px; border-radius: 0 17px 17px 0;
+  display: flex; align-items: center; justify-content: flex-end; padding-right: 6px;
+  pointer-events: none; background: linear-gradient(to right, transparent, rgba(20,23,30,0.6) 55%);
 }
-[data-theme="paper"] .ev2-tabbar-fade { background: linear-gradient(to right, transparent, rgba(255,255,255,0.75) 70%); }
+[data-theme="paper"] .ev2-tabbar-fade { background: linear-gradient(to right, transparent, rgba(255,255,255,0.85) 55%); }
+.ev2-tabbar-more-icon { color: #00875a; animation: ev2-tab-nudge 1.6s ease-in-out infinite; }
+[data-theme="paper"] .ev2-tabbar-more-icon { color: #006241; }
+@keyframes ev2-tab-nudge { 0%, 100% { transform: translateX(0); opacity: 0.7; } 50% { transform: translateX(3px); opacity: 1; } }
 
 /* Floating pill that slides beneath whichever tab is active, tracked
    via each button's measured offset/width — a live indicator rather

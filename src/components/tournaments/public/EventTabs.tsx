@@ -55,26 +55,50 @@ export default function EventTabs({
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
 
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
+  const barRef = useRef<HTMLDivElement | null>(null);
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
 
   useLayoutEffect(() => {
     const el = tabRefs.current[activeTab];
     if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
   }, [activeTab, visibleTabs.length]);
 
+  // A quick nudge-and-settle on first load — the clearest possible
+  // signal that this row scrolls, so "only 3 tabs" is never the
+  // takeaway when there are really 5 or 6.
   useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const overflowing = bar.scrollWidth - bar.clientWidth > 4;
+    setHasOverflow(overflowing);
+    if (!overflowing) return;
+    bar.scrollTo({ left: 36, behavior: "smooth" });
+    const t = setTimeout(() => bar.scrollTo({ left: 0, behavior: "smooth" }), 480);
+    return () => clearTimeout(t);
+  }, [visibleTabs.length]);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const onScroll = () => setHasOverflow(bar.scrollWidth - bar.scrollLeft - bar.clientWidth > 4);
     const onResize = () => {
+      onScroll();
       const el = tabRefs.current[activeTab];
       if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
     };
+    bar.addEventListener("scroll", onScroll);
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      bar.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onResize);
+    };
   }, [activeTab]);
 
   return (
     <div>
       <div className="ev2-tabbar-wrap">
-        <div className="ev2-tabbar">
+        <div className="ev2-tabbar" ref={barRef}>
           {indicator && <div className="ev2-tab-indicator" style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }} />}
           {visibleTabs.map((t) => {
             const Icon = TAB_ICON[t];
@@ -88,7 +112,11 @@ export default function EventTabs({
             );
           })}
         </div>
-        <div className="ev2-tabbar-fade" aria-hidden="true" />
+        {hasOverflow && (
+          <div className="ev2-tabbar-fade" aria-hidden="true">
+            <ChevronRight size={14} className="ev2-tabbar-more-icon" />
+          </div>
+        )}
       </div>
 
       {activeTab === "Overview" && (
