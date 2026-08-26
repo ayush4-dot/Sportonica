@@ -56,15 +56,18 @@ export default function EventTabs({
 
   return (
     <div>
-      <div className="ev2-tabbar">
-        {visibleTabs.map((t) => {
-          const Icon = TAB_ICON[t];
-          return (
-            <button key={t} className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}>
-              <Icon size={15} /> {t}
-            </button>
-          );
-        })}
+      <div className="ev2-tabbar-wrap">
+        <div className="ev2-tabbar">
+          {visibleTabs.map((t) => {
+            const Icon = TAB_ICON[t];
+            return (
+              <button key={t} className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}>
+                <Icon size={15} /> {t}
+              </button>
+            );
+          })}
+        </div>
+        <div className="ev2-tabbar-fade" aria-hidden="true" />
       </div>
 
       {activeTab === "Overview" && (

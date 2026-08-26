@@ -5,15 +5,24 @@
    and players actually see.
    ================================================================ */
 
+.ev2-tabbar-wrap { position: relative; min-width: 0; max-width: 100%; margin: 22px 0; }
 .ev2-tabbar {
-  position: sticky; top: 0; z-index: 20;
+  position: sticky; top: 0; z-index: 20; min-width: 0; max-width: 100%;
   display: flex; gap: 4px; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
-  padding: 6px; margin: 22px 0 22px;
+  padding: 6px;
   background: rgba(20,23,30,0.55); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: 1px solid rgba(242,237,230,0.1); border-radius: 16px;
 }
 .ev2-tabbar::-webkit-scrollbar { display: none; }
 [data-theme="paper"] .ev2-tabbar { background: rgba(255,255,255,0.75); border-color: rgba(20,23,30,0.08); box-shadow: 0 1px 3px rgba(20,23,30,0.06); }
+
+/* Hints there's more to scroll to, on phones where the tab row never
+   fully fits — purely decorative, doesn't affect layout/overflow. */
+.ev2-tabbar-fade {
+  position: absolute; top: 1px; bottom: 1px; right: 1px; width: 36px; border-radius: 0 15px 15px 0;
+  pointer-events: none; background: linear-gradient(to right, transparent, rgba(20,23,30,0.55) 65%);
+}
+[data-theme="paper"] .ev2-tabbar-fade { background: linear-gradient(to right, transparent, rgba(255,255,255,0.8) 65%); }
 
 .ev2-tab {
   display: flex; align-items: center; gap: 7px; white-space: nowrap;
