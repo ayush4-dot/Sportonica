@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getTournament, getTournamentVenueName } from "@/lib/tournaments/actions";
+import { getTournament, getDisplayVenueName } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import { sportColor } from "@/lib/sports";
@@ -38,7 +38,7 @@ export async function GET(
     );
   }
 
-  const venueName = await getTournamentVenueName(tournament.venue_id);
+  const venueName = await getDisplayVenueName(tournament);
   const accent = sportColor(tournament.sport);
 
   const C = theme === "paper"

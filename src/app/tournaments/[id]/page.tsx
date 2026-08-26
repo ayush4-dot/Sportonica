@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
-  getTournament, getTournamentVenueName, getMyTeamForTournament, getTournamentMatches, listTournamentTeams,
+  getTournament, getDisplayVenueName, getMyTeamForTournament, getTournamentMatches, listTournamentTeams,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
@@ -37,7 +37,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
   const isLiveOrDone = tournament.status === "live" || tournament.status === "completed";
   const [venueName, myTeam, matchesRes, teamsRes] = await Promise.all([
-    getTournamentVenueName(tournament.venue_id),
+    getDisplayVenueName(tournament),
     user ? getMyTeamForTournament(id) : Promise.resolve(null),
     isLiveOrDone ? getTournamentMatches(id) : Promise.resolve([]),
     isLiveOrDone ? listTournamentTeams(id) : Promise.resolve([]),
@@ -74,7 +74,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             <span className="bk-sport-pill">{tournament.sport}</span>
             <h1>{tournament.name}</h1>
             <div className="sub">
-              <span>{venueName ?? "—"}</span>
+              <span>{venueName}</span>
               <span>{FORMAT_LABELS[tournament.format]}</span>
               <span>{when(tournament.starts_at)}</span>
             </div>

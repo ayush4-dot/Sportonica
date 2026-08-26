@@ -31,31 +31,49 @@ export async function getMyRole(): Promise<string | null> {
   return data?.role ?? null;
 }
 
-// Self-serve, instant — mirrors how listing a venue works today
-// (verification_status: 'unverified', can operate immediately). The
-// tournament's own pending_approval review stays the real safety net;
-// this just unlocks the ability to send partnership invites and create
-// tournaments at all. The DB trigger guard_profile_role_change() is what
-// actually enforces this can only ever go player -> organizer for a
-// client session — this action is a thin, readable wrapper around that.
-export async function becomeOrganizer(): Promise<void | ActionError> {
+// Request, not grant — sets role to 'organizer_pending', which
+// is_organizer() does NOT satisfy, so it unlocks nothing by itself. A
+// Super Admin has to call approveOrganizerRequest() below before
+// anything organizer-related actually works. The DB trigger
+// guard_profile_role_change() is what enforces this is the only
+// self-serve transition a client session can make — this action is a
+// thin, readable wrapper around that.
+export async function requestOrganizerAccess(): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { error } = await sb.from("profiles").update({ role: "organizer" }).eq("id", user.id);
+  const { error } = await sb.from("profiles").update({ role: "organizer_pending" }).eq("id", user.id);
   if (error) return actionError(friendlyTournamentError(error.message));
-
-  // Best-effort mirror into user_metadata, same as setMyRole() in
-  // src/lib/profile/actions.ts — nothing in /organize actually gates on
-  // this (it reads profiles.role directly), but other client-side reads
-  // (useProfile()) do, so keep them in step regardless.
-  try {
-    await sb.auth.updateUser({ data: { role: "organizer" } });
-  } catch (e) {
-    console.error("[becomeOrganizer] metadata sync failed:", e);
-  }
-
   revalidatePath("/profile");
   revalidatePath("/organize");
+}
+
+// Super-admin-only — see approve_organizer_request() in
+// supabase/organizer_approval_and_own_venue.sql for why this has to be a
+// security-definer RPC rather than a plain client update() the way
+// setUserRole() in src/lib/platform/actions.ts does it: profiles' only
+// update policy is "id = auth.uid()", so a super_admin acting on someone
+// ELSE's row needs RLS bypassed properly, not assumed away.
+export async function approveOrganizerRequest(userId: string, approve: boolean): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("approve_organizer_request", { p_user_id: userId, p_approve: approve });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath("/platform/users");
+}
+
+export async function listPendingOrganizerRequests(): Promise<
+  { id: string; name: string }[] | ActionError
+> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  // profiles' select policy is public ("viewable by everyone"), so this
+  // needs its own super-admin check — nothing else here scopes it.
+  const { data: isSuperAdmin } = await sb.rpc("is_super_admin");
+  if (!isSuperAdmin) return actionError("FORBIDDEN");
+  const { data, error } = await sb
+    .from("profiles").select("id, full_name, name, username").eq("role", "organizer_pending");
+  if (error) return actionError(error.message);
+  return (data ?? []).map((p) => ({ id: p.id, name: p.full_name ?? p.name ?? p.username ?? "Player" }));
 }
 
 // Search PUBLIC venues by name — this is how an Organizer finds a Vendor

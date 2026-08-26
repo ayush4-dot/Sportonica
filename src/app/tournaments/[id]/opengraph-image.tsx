@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { getTournament, getTournamentVenueName } from "@/lib/tournaments/actions";
+import { getTournament, getDisplayVenueName } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import { sportColor } from "@/lib/sports";
@@ -31,7 +31,7 @@ export default async function OG({ params }: { params: Promise<{ id: string }> }
     );
   }
 
-  const venueName = await getTournamentVenueName(tournament.venue_id);
+  const venueName = await getDisplayVenueName(tournament);
   const accent = sportColor(tournament.sport);
   // Absolute-URL check matters here, not just the extension: banner_url
   // used to be a freeform text field (pre file-upload), so old rows can

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Trophy, Upload, X, Users, User } from "lucide-react";
+import { Check, Trophy, Upload, X, Users, User, Handshake, MapPin } from "lucide-react";
 import { SPORT_NAMES as SPORTS } from "@/lib/sports";
 import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -29,6 +29,17 @@ export default function TournamentForm({
   const [name, setName] = useState(existing?.name ?? "");
   const [sport, setSport] = useState(existing?.sport ?? "Futsal");
   const [venueId, setVenueId] = useState(existing?.venue_id ?? venues[0]?.id ?? "");
+  // Organizer-only: their own ground (name + optional location pin) as an
+  // alternative to picking a partnered Sportonica venue — no vendor
+  // involved, so no partnership/booking-confirmation step for these.
+  const [venueMode, setVenueMode] = useState<"partnered" | "own">(
+    existing?.own_venue_name ? "own" : "partnered"
+  );
+  const [ownVenueName, setOwnVenueName] = useState(existing?.own_venue_name ?? "");
+  const [ownVenueAddress, setOwnVenueAddress] = useState(existing?.own_venue_address ?? "");
+  const [ownVenueLat, setOwnVenueLat] = useState<number | null>(existing?.own_venue_lat ?? null);
+  const [ownVenueLng, setOwnVenueLng] = useState<number | null>(existing?.own_venue_lng ?? null);
+  const [locating, setLocating] = useState(false);
   const [organizerType, setOrganizerType] = useState<"venue" | "platform">(
     existing?.organizer_type ?? (mode === "platform" ? "platform" : "venue")
   );
@@ -125,8 +136,13 @@ export default function TournamentForm({
 
   function payload() {
     const isSingleEvent = format === "single_event";
+    const useOwnVenue = mode === "organizer" && venueMode === "own";
     return {
-      venue_id: venueId,
+      venue_id: useOwnVenue ? undefined : venueId,
+      own_venue_name: useOwnVenue ? ownVenueName.trim() : undefined,
+      own_venue_address: useOwnVenue ? (ownVenueAddress.trim() || undefined) : undefined,
+      own_venue_lat: useOwnVenue ? (ownVenueLat ?? undefined) : undefined,
+      own_venue_lng: useOwnVenue ? (ownVenueLng ?? undefined) : undefined,
       organizer_type: organizerType,
       organizer_name: organizerName.trim() || undefined,
       name: name.trim(),
@@ -162,7 +178,11 @@ export default function TournamentForm({
 
   function validate(): string | null {
     if (!name.trim()) return "Give the tournament a name.";
-    if (!venueId) return "Pick a venue.";
+    if (mode === "organizer" && venueMode === "own") {
+      if (!ownVenueName.trim()) return "Give your venue a name.";
+    } else if (!venueId) {
+      return "Pick a venue.";
+    }
     if (!startsDate || !endsDate) return "Set a start and end date.";
     if (!regOpenDate || !regCloseDate) return "Set when registration opens and closes.";
     if (combine(endsDate, endsTime) <= combine(startsDate, startsTime)) return "End time must be after the start time.";
@@ -244,13 +264,61 @@ export default function TournamentForm({
             {SPORTS.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        <div className="ev-field">
-          <label>{mode === "organizer" ? "Venue (from your partnerships)" : "Venue"}</label>
-          <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
-            {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
-          </select>
-        </div>
+        {mode !== "organizer" && (
+          <div className="ev-field">
+            <label>Venue</label>
+            <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
+              {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+            </select>
+          </div>
+        )}
       </div>
+      {mode === "organizer" && (
+        <div className="ev-field">
+          <label>Venue</label>
+          <div className="ev-entry-toggle">
+            <button type="button" className={venueMode === "partnered" ? "on" : ""} onClick={() => setVenueMode("partnered")}>
+              <Handshake size={15} />
+              <span>Partnered venue<small>Pick from venues that have accepted your invite</small></span>
+            </button>
+            <button type="button" className={venueMode === "own" ? "on" : ""} onClick={() => setVenueMode("own")}>
+              <MapPin size={15} />
+              <span>My own venue<small>Name and location only — no vendor involved</small></span>
+            </button>
+          </div>
+          {venueMode === "partnered" ? (
+            venues.length === 0 ? (
+              <p style={{ fontSize: 12.5, opacity: 0.7, marginTop: 10 }}>
+                No partnered venues yet — <a href="/organize/partnerships" style={{ color: "#006241" }}>invite one</a>, or switch to &quot;My own venue&quot; above.
+              </p>
+            ) : (
+              <select value={venueId} onChange={(e) => setVenueId(e.target.value)} style={{ marginTop: 10 }}>
+                {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+              </select>
+            )
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
+              <input value={ownVenueName} onChange={(e) => setOwnVenueName(e.target.value)} placeholder="Venue name" />
+              <input value={ownVenueAddress} onChange={(e) => setOwnVenueAddress(e.target.value)} placeholder="Address (optional)" />
+              <button
+                type="button" className="ev-btn" disabled={locating}
+                style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)", alignSelf: "flex-start" }}
+                onClick={() => {
+                  setLocating(true);
+                  navigator.geolocation.getCurrentPosition(
+                    (pos) => { setOwnVenueLat(pos.coords.latitude); setOwnVenueLng(pos.coords.longitude); setLocating(false); },
+                    () => setLocating(false)
+                  );
+                }}
+              >
+                <MapPin size={14} />
+                {locating ? "Getting location…" : ownVenueLat != null ? "Location pinned" : "Pin my location"}
+                {ownVenueLat != null && !locating && <Check size={13} />}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
       {mode === "platform" && (
         <div className="ev-row">
           <div className="ev-field">

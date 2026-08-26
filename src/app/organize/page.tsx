@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { Trophy, Plus } from "lucide-react";
+import { Trophy, Plus, Clock } from "lucide-react";
 import { getMyOrganizerTournaments, getMyRole } from "@/lib/organizer/actions";
 import { isActionError } from "@/lib/actionError";
 import { STATUS_LABELS, type TournamentStatus } from "@/lib/tournaments/types";
 import RoleExplainerBanner from "@/components/RoleExplainerBanner";
-import BecomeOrganizerButton from "./BecomeOrganizerButton";
+import RequestOrganizerButton from "./RequestOrganizerButton";
 
 const STATUS_BADGE: Record<TournamentStatus, string> = {
   draft: "neutral", pending_approval: "warn", published: "ok", registration_open: "ok",
@@ -14,16 +14,27 @@ const STATUS_BADGE: Record<TournamentStatus, string> = {
 export default async function OrganizePage() {
   const role = await getMyRole();
 
+  if (role === "organizer_pending") {
+    return (
+      <div className="adm-empty">
+        <div className="adm-empty-icon"><Clock size={22} /></div>
+        <h3>Waiting for review</h3>
+        <p>Sportonica is reviewing your request to become an organizer — check back soon.</p>
+      </div>
+    );
+  }
+
   if (role !== "organizer" && role !== "super_admin") {
     return (
       <div className="adm-empty">
         <div className="adm-empty-icon"><Trophy size={22} /></div>
         <h3>Run your own tournaments</h3>
         <p>
-          You don&apos;t need to own a venue — invite one to host, and once they say yes you can
-          set up a tournament there. Sportonica reviews it the same as any other, then it goes live.
+          Bring your own venue, or invite one to host — either way, Sportonica reviews your
+          tournament the same as any other before it goes live. Requesting access needs a quick
+          approval from Sportonica first.
         </p>
-        <BecomeOrganizerButton />
+        <RequestOrganizerButton />
       </div>
     );
   }
@@ -36,7 +47,7 @@ export default async function OrganizePage() {
       <RoleExplainerBanner
         storageKey="organizer-dashboard-explainer-dismissed"
         title="You're viewing the Organizer dashboard"
-        body="As an Organizer, you set up and run tournaments — fixtures, teams, results, announcements. You don't own the venue; the venue's owner (a Vendor) confirms hosting each tournament separately."
+        body="As an Organizer, you set up and run tournaments — fixtures, teams, results, announcements. Use your own venue directly, or invite a Sportonica venue's owner (a Vendor) to host — they confirm each tournament separately."
       />
       <div className="adm-between" style={{ marginBottom: 20 }}>
         <div>
@@ -50,8 +61,8 @@ export default async function OrganizePage() {
         <div className="adm-empty">
           <div className="adm-empty-icon"><Trophy size={22} /></div>
           <h3>No tournaments yet</h3>
-          <p>Invite a venue to host, then create your first tournament once they say yes.</p>
-          <Link href="/organize/partnerships" className="adm-btn primary">Find a venue</Link>
+          <p>Create one at your own venue, or invite a Sportonica venue to host.</p>
+          <Link href="/organize/tournaments/new" className="adm-btn primary">New tournament</Link>
         </div>
       ) : (
         <table className="adm-table">

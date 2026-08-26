@@ -44,7 +44,15 @@ export const TEAM_STATUS_LABELS: Record<TeamStatus, string> = {
 
 export interface Tournament {
   id: string;
-  venue_id: string;
+  // Exactly one of venue_id or own_venue_name is set — a real, listed
+  // Sportonica venue (reached via an Organizer/Vendor partnership) or an
+  // Organizer's own venue (name + location pin only, no courts, no
+  // court-conflict-checked scheduling).
+  venue_id: string | null;
+  own_venue_name: string | null;
+  own_venue_address: string | null;
+  own_venue_lat: number | null;
+  own_venue_lng: number | null;
   owner_id: string | null;
   organizer_type: "venue" | "platform";
   organizer_name: string | null;
@@ -162,6 +170,10 @@ export interface TournamentTeamPlayer {
 // as a single jsonb blob, matching the RPC signatures in tournaments.sql.
 export type TournamentDraftInput = Partial<{
   venue_id: string;
+  own_venue_name: string;
+  own_venue_address: string;
+  own_venue_lat: number;
+  own_venue_lng: number;
   organizer_type: "venue" | "platform";
   organizer_name: string;
   name: string;

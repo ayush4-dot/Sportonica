@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { getCourts } from "@/lib/admin/queries";
 import { getMyPartneredVenues } from "@/lib/organizer/actions";
 import {
-  getTournament, getTournamentVenueName, listTournamentTeamsWithRosterCount, listTournamentPayments,
+  getTournament, getDisplayVenueName, listTournamentTeamsWithRosterCount, listTournamentPayments,
   getTournamentMatches, getTournamentAnnouncements,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -21,7 +21,7 @@ export default async function OrganizerTournamentDetailPage({ params }: { params
   }
 
   const [venueName, teams, payments, matches, announcements, courts] = await Promise.all([
-    getTournamentVenueName(tournament.venue_id),
+    getDisplayVenueName(tournament),
     listTournamentTeamsWithRosterCount(id),
     listTournamentPayments(id),
     getTournamentMatches(id),
@@ -32,7 +32,7 @@ export default async function OrganizerTournamentDetailPage({ params }: { params
   return (
     <TournamentControlCenter
       tournament={tournament}
-      venueName={venueName ?? "—"}
+      venueName={venueName}
       teams={isActionError(teams) ? [] : teams}
       payments={isActionError(payments) ? [] : payments}
       matches={isActionError(matches) ? [] : matches}

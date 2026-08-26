@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listAllTournaments, getTournamentVenueName } from "@/lib/tournaments/actions";
+import { listAllTournaments, getDisplayVenueName } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { STATUS_LABELS } from "@/lib/tournaments/types";
 import "@/components/tournaments/tournament-console.css";
@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function PlatformTournamentsPage() {
   const tournaments = await listAllTournaments();
   const rows = isActionError(tournaments) ? [] : tournaments;
-  const venueNames = await Promise.all(rows.map((t) => getTournamentVenueName(t.venue_id)));
+  const venueNames = await Promise.all(rows.map((t) => getDisplayVenueName(t)));
 
   const pendingCount = rows.filter((t) => t.status === "pending_approval").length;
 
@@ -17,7 +17,7 @@ export default async function PlatformTournamentsPage() {
     <>
       <h1 className="plt-h1">Tournaments</h1>
       <p className="plt-sub2">
-        Every tournament across all venues, plus any Sportonica runs itself. Approve a vendor's
+        Every tournament across all venues, plus any Sportonica runs itself. Approve a vendor&apos;s
         draft to publish it, or cancel one outright. Payment verification for tournament
         registrations happens in Payments, exactly like every other booking.
       </p>
@@ -38,7 +38,7 @@ export default async function PlatformTournamentsPage() {
             {rows.map((t, i) => (
               <tr key={t.id}>
                 <td><Link href={`/platform/tournaments/${t.id}`} style={{ fontWeight: 700, color: "inherit" }}>{t.name}</Link></td>
-                <td className="tc-dim">{venueNames[i] ?? "—"}</td>
+                <td className="tc-dim">{venueNames[i]}</td>
                 <td className="tc-dim">{t.sport}</td>
                 <td className="tc-num tc-dim" style={{ fontSize: 12 }}>
                   {new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}

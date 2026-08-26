@@ -25,7 +25,10 @@ export async function getVenue(id: string): Promise<Venue | null> {
   return (data as Venue) ?? null;
 }
 
-export async function getCourts(venueId: string): Promise<Court[]> {
+export async function getCourts(venueId: string | null): Promise<Court[]> {
+  // An "own venue" tournament (no real venues row) has no courts to
+  // schedule against — nothing to look up.
+  if (!venueId) return [];
   const sb = await createClient();
   const { data } = await sb.from("courts").select("*").eq("venue_id", venueId).order("name");
   return (data as Court[]) ?? [];

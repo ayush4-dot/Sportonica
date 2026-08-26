@@ -40,10 +40,21 @@ export async function getTournament(id: string): Promise<Tournament | null | Act
   return data as Tournament | null;
 }
 
-export async function getTournamentVenueName(venueId: string): Promise<string | null> {
+export async function getTournamentVenueName(venueId: string | null): Promise<string | null> {
+  if (!venueId) return null;
   const sb = await createClient();
   const { data } = await sb.from("venues").select("name").eq("id", venueId).maybeSingle();
   return data?.name ?? null;
+}
+
+// Every display site needs the same fallback — a real, listed venue's
+// name, or an Organizer's own venue name — so it lives in one place
+// rather than repeating the ternary at every call site.
+export async function getDisplayVenueName(
+  tournament: Pick<Tournament, "venue_id" | "own_venue_name">
+): Promise<string> {
+  if (tournament.venue_id) return (await getTournamentVenueName(tournament.venue_id)) ?? "—";
+  return tournament.own_venue_name ?? "—";
 }
 
 // Everything a player can browse/register for — published and later,
@@ -62,7 +73,7 @@ export async function listPublicTournaments(): Promise<(Tournament & { venue_nam
   if (error) return actionError(error.message);
   return ((data ?? []) as unknown as (Tournament & { venues: { name: string } | null })[]).map((t) => {
     const { venues, ...rest } = t;
-    return { ...rest, venue_name: venues?.name ?? "—" };
+    return { ...rest, venue_name: venues?.name ?? t.own_venue_name ?? "—" };
   });
 }
 
