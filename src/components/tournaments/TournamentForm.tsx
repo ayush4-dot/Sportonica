@@ -11,6 +11,12 @@ import { FORMAT_LABELS, TOURNAMENT_FORMATS } from "@/lib/tournaments/types";
 import type { Tournament, TournamentFormat } from "@/lib/tournaments/types";
 
 const KTM_OFFSET = "+05:45";
+const todayKTM = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+const tomorrowKTM = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+};
 const toLocalDate = (iso: string | null | undefined) => (iso ? iso.slice(0, 10) : "");
 const toLocalTime = (iso: string | null | undefined) => (iso ? new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" }) : "");
 const combine = (date: string, time: string) => (date && time ? `${date}T${time}:00${KTM_OFFSET}` : "");
@@ -57,13 +63,13 @@ export default function TournamentForm({
   const [description, setDescription] = useState(existing?.description ?? "");
   const [contactPhone, setContactPhone] = useState(existing?.contact_phone ?? "");
 
-  const [startsDate, setStartsDate] = useState(toLocalDate(existing?.starts_at));
+  const [startsDate, setStartsDate] = useState(toLocalDate(existing?.starts_at) || tomorrowKTM());
   const [startsTime, setStartsTime] = useState(toLocalTime(existing?.starts_at) || "09:00");
-  const [endsDate, setEndsDate] = useState(toLocalDate(existing?.ends_at));
+  const [endsDate, setEndsDate] = useState(toLocalDate(existing?.ends_at) || tomorrowKTM());
   const [endsTime, setEndsTime] = useState(toLocalTime(existing?.ends_at) || "18:00");
-  const [regOpenDate, setRegOpenDate] = useState(toLocalDate(existing?.registration_opens_at));
+  const [regOpenDate, setRegOpenDate] = useState(toLocalDate(existing?.registration_opens_at) || todayKTM());
   const [regOpenTime, setRegOpenTime] = useState(toLocalTime(existing?.registration_opens_at) || "09:00");
-  const [regCloseDate, setRegCloseDate] = useState(toLocalDate(existing?.registration_closes_at));
+  const [regCloseDate, setRegCloseDate] = useState(toLocalDate(existing?.registration_closes_at) || todayKTM());
   const [regCloseTime, setRegCloseTime] = useState(toLocalTime(existing?.registration_closes_at) || "18:00");
   const [matchMins, setMatchMins] = useState(existing?.match_duration_mins ?? 45);
 
@@ -205,8 +211,10 @@ export default function TournamentForm({
     } else if (!venueId) {
       return "Pick a venue.";
     }
-    if (!startsDate || !endsDate) return "Set a start and end date.";
-    if (!regOpenDate || !regCloseDate) return "Set when registration opens and closes.";
+    if (!startsDate) return "Set a start date.";
+    if (!endsDate) return "Set an end date.";
+    if (!regOpenDate) return "Set when registration opens.";
+    if (!regCloseDate) return "Set when registration closes.";
     if (combine(endsDate, endsTime) <= combine(startsDate, startsTime)) return "End time must be after the start time.";
     if (combine(regCloseDate, regCloseTime) > combine(startsDate, startsTime)) return "Registration must close before the tournament starts.";
     // A tournament that already ended (or whose registration window
