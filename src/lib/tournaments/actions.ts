@@ -65,11 +65,16 @@ export async function getDisplayVenueName(
 // src/lib/play/tournaments.ts), and to feed the detail page.
 export async function listPublicTournaments(): Promise<(Tournament & { venue_name: string })[] | ActionError> {
   const sb = await createClient();
+  const nowIso = new Date().toISOString();
   const { data, error } = await sb
     .from("tournaments")
     .select("*, venues(name)")
-    .in("status", ["published", "registration_open", "registration_closed", "live"])
-    .gte("ends_at", new Date().toISOString())
+    .in("status", ["published", "registration_open", "registration_closed", "live", "completed"])
+    // Upcoming/ongoing tournaments still need the ends_at guard (a
+    // published tournament whose dates slipped into the past without a
+    // status change shouldn't linger); completed ones are exempt since
+    // they're meant to stay browsable as a result, not a listing.
+    .or(`ends_at.gte.${nowIso},status.eq.completed`)
     .order("starts_at", { ascending: true })
     .limit(100);
   if (error) return actionError(error.message);

@@ -74,8 +74,12 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
           <div className="tourn-grid">
             {shown.map((item) => {
               const href = item.kind === "tournament" ? `/tournaments/${item.id}` : `/game/${item.id}`;
+              const completed = item.kind === "tournament" && item.completed;
               return (
-                <Link key={`${item.kind}-${item.id}`} href={href} className="rc rc-event rc-venue" style={{ ["--rc-accent" as string]: item.sportColor }}>
+                <Link
+                  key={`${item.kind}-${item.id}`} href={href} className="rc rc-event rc-venue"
+                  style={{ ["--rc-accent" as string]: item.sportColor, opacity: completed ? 0.72 : 1 }}
+                >
                   <CardShareButton href={href} title={`${item.title} · Sportonica`} />
                   <div className="rc-img">
                     {item.bannerUrl && /^https?:\/\//i.test(item.bannerUrl) ? (
@@ -86,7 +90,9 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
                     )}
                   </div>
                   <div className="rc-badge" style={
-                    item.kind === "tournament"
+                    completed
+                      ? { color: "#8a8a8a", borderColor: "rgba(128,128,128,.4)", background: "rgba(128,128,128,.14)" }
+                      : item.kind === "tournament"
                       ? { color: "#006241", borderColor: "rgba(0,98,65,.4)", background: "rgba(0,98,65,.12)" }
                       : {
                           color: item.badge === "platform" ? "#006241" : "#2E7D5B",
@@ -94,7 +100,9 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
                           background: item.badge === "platform" ? "rgba(0,98,65,.12)" : "rgba(46,125,91,.12)",
                         }
                   }>
-                    {item.kind === "tournament"
+                    {completed
+                      ? <><Check size={10} /> Completed</>
+                      : item.kind === "tournament"
                       ? <><Trophy size={10} /> Tournament</>
                       : item.badge === "platform" ? <><Star size={10} /> Sportonica</> : <><Check size={10} /> Official</>}
                   </div>
@@ -102,7 +110,7 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
                   <div className="rc-title">{item.title}</div>
                   {item.organizerName && <div className="rc-by">by {item.organizerName}</div>}
                   <div className="rc-meta"><MapPin size={11} /> {item.venue}</div>
-                  <div className="rc-when">{when(item.when)}</div>
+                  <div className="rc-when">{completed ? "Completed" : when(item.when)}</div>
                   <div className="rc-foot">
                     {item.kind === "tournament"
                       ? <span style={{ color: item.sportColor, display: "inline-flex", alignItems: "center", gap: 4 }}><Users size={11} /> Up to {item.maxTeams} teams</span>

@@ -10,7 +10,7 @@ import type { RailEvent } from "@/lib/play/homeRails";
 // uses for events + Play Together games.
 export type TournamentBrowseItem =
   | { kind: "event"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; slotsRemaining: number; fee: number; badge: "official" | "platform"; bannerUrl: string | null }
-  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; maxTeams: number; fee: number; bannerUrl: string | null };
+  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; maxTeams: number; fee: number; bannerUrl: string | null; completed: boolean };
 
 async function listOfficialEvents(): Promise<RailEvent[]> {
   const sb = await createClient();
@@ -38,7 +38,14 @@ export async function listTournaments(): Promise<TournamentBrowseItem[]> {
     kind: "tournament", id: t.id, sport: t.sport, sportColor: sportColor(t.sport),
     title: t.name, organizerName: t.organizer_name, venue: t.venue_name, when: t.starts_at,
     maxTeams: t.max_teams, fee: Number(t.fee), bannerUrl: t.banner_url ?? null,
+    completed: t.status === "completed",
   }));
 
-  return [...eventItems, ...tournamentItems].sort((a, b) => a.when.localeCompare(b.when));
+  // Upcoming/live first (soonest first); completed tournaments sink to
+  // the bottom, most-recently-finished first, so the browse page reads
+  // as "what's on" rather than a mixed timeline of past and future.
+  const isDone = (i: TournamentBrowseItem) => i.kind === "tournament" && i.completed;
+  const active = [...eventItems, ...tournamentItems].filter((i) => !isDone(i)).sort((a, b) => a.when.localeCompare(b.when));
+  const done = tournamentItems.filter(isDone).sort((a, b) => b.when.localeCompare(a.when));
+  return [...active, ...done];
 }
