@@ -60,7 +60,11 @@ $$;
 grant execute on function public.record_match_player_stats(uuid,jsonb) to authenticated;
 
 -- ── Standings: add goals for/against/diff, use GD then GF as the
--- standard football tiebreak after points. ─────────────────────────
+-- standard football tiebreak after points. A wider return row (new
+-- OUT columns) isn't something `create or replace` can do in place —
+-- Postgres requires dropping the old signature first. ───────────────
+drop function if exists public.tournament_standings(uuid,text);
+
 create or replace function public.tournament_standings(p_tournament_id uuid, p_group_name text default null)
 returns table(
   team_id uuid, team_name text, played int, won int, drawn int, lost int,
