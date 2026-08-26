@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import {
   setTeamSeed, generateKnockoutBracket, generateLeagueFixtures, generateGroupFixtures,
-  generateKnockoutFromGroups, recordMatchResult,
+  generateKnockoutFromGroups, recordMatchResult, setMatchTime,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -15,6 +15,18 @@ const inputStyle: React.CSSProperties = {
   padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(242,237,230,0.15)",
   background: "transparent", color: "inherit", fontFamily: "inherit",
 };
+
+const KTM_TZ = "Asia/Kathmandu";
+// Fixed +05:45 offset (no DST) — same convention as BookingFlow.tsx.
+function ktmIso(dateStr: string, timeStr: string) {
+  return `${dateStr}T${timeStr}:00+05:45`;
+}
+function toLocalDate(iso: string | null) {
+  return iso ? new Date(iso).toLocaleDateString("en-CA", { timeZone: KTM_TZ }) : "";
+}
+function toLocalTime(iso: string | null) {
+  return iso ? new Date(iso).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: KTM_TZ }) : "";
+}
 
 const DONE = new Set(["completed", "walkover", "cancelled"]);
 
@@ -179,13 +191,14 @@ export default function FixturesTab({
         <div key={label} style={{ marginBottom: 22 }}>
           <div className="tc-card-sub" style={{ fontWeight: 700, opacity: 0.8, marginBottom: 8 }}>{label}</div>
           <table className="tc-table">
-            <thead><tr><th>Match</th><th>Score</th><th></th></tr></thead>
+            <thead><tr><th>Match</th><th>When</th><th>Score</th><th></th></tr></thead>
             <tbody>
               {ms.map((m) => (
                 <MatchRow
                   key={m.id} match={m} teamName={teamName} pending={pending}
                   onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
                   onRecordStats={() => setRecordingStats(m)}
+                  onSetTime={(startsAt, endsAt) => run(() => setMatchTime(m.id, startsAt, endsAt))}
                 />
               ))}
             </tbody>
@@ -207,7 +220,7 @@ export default function FixturesTab({
   );
 }
 
-function MatchRow({ match, teamName, onResult, onRecordStats, pending }: {
+function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, pending }: {
   match: TournamentMatch;
   teamName: (id: string | null) => string;
   onResult: (
@@ -215,8 +228,12 @@ function MatchRow({ match, teamName, onResult, onRecordStats, pending }: {
     extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number }
   ) => void;
   onRecordStats: () => void;
+  onSetTime: (startsAt: string | null, endsAt: string | null) => void;
   pending: boolean;
 }) {
+  const [editingTime, setEditingTime] = useState(false);
+  const [dateStr, setDateStr] = useState(toLocalDate(match.starts_at));
+  const [timeStr, setTimeStr] = useState(toLocalTime(match.starts_at) || "17:00");
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
   const [scoreB, setScoreB] = useState(match.score_b?.toString() ?? "");
   const [scoreAEt, setScoreAEt] = useState(match.score_a_et?.toString() ?? "");
@@ -253,6 +270,37 @@ function MatchRow({ match, teamName, onResult, onRecordStats, pending }: {
         <div style={{ fontWeight: 600 }}>{teamName(match.team_a_id)} <span className="tc-dim">vs</span> {teamName(match.team_b_id)}</div>
         {match.status === "walkover" && <span className="tc-badge warn">Walkover — {teamName(match.winner_team_id)}</span>}
         {match.status === "completed" && match.team_b_id === null && <span className="tc-badge ok">Bye</span>}
+      </td>
+      <td className="tc-dim" style={{ fontSize: 12.5 }}>
+        {editingTime ? (
+          <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+            <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} style={{ ...inputStyle, width: 130 }} />
+            <input type="time" value={timeStr} onChange={(e) => setTimeStr(e.target.value)} style={{ ...inputStyle, width: 90 }} />
+            <button
+              className="tc-btn primary" disabled={pending || !dateStr} style={{ padding: "5px 8px", fontSize: 11.5 }}
+              onClick={() => { onSetTime(ktmIso(dateStr, timeStr), null); setEditingTime(false); }}
+            >
+              Save
+            </button>
+            {match.starts_at && (
+              <button
+                className="tc-btn" disabled={pending} style={{ padding: "5px 8px", fontSize: 11.5 }}
+                onClick={() => { onSetTime(null, null); setEditingTime(false); }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditingTime(true)}
+            style={{ background: "none", border: "none", color: "inherit", cursor: "pointer", padding: 0, font: "inherit", textAlign: "left" }}
+          >
+            {match.starts_at
+              ? new Date(match.starts_at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: KTM_TZ })
+              : <span style={{ textDecoration: "underline dotted" }}>Set date &amp; time</span>}
+          </button>
+        )}
       </td>
       <td className="tc-num">
         {match.status === "completed" && match.score_a !== null && match.score_b !== null ? (
@@ -398,6 +446,7 @@ function MatchPlayerStatsModal({
   const [loading, setLoading] = useState(true);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [goals, setGoals] = useState<Record<string, string>>({});
+  const [assists, setAssists] = useState<Record<string, string>>({});
   const [yellows, setYellows] = useState<Record<string, string>>({});
   const [reds, setReds] = useState<Record<string, boolean>>({});
   const [mom, setMom] = useState<string | null>(null);
@@ -418,16 +467,19 @@ function MatchPlayerStatsModal({
       setRoster([...rosterA, ...rosterB]);
       if (!isActionError(stats)) {
         const g: Record<string, string> = {};
+        const asst: Record<string, string> = {};
         const y: Record<string, string> = {};
         const r: Record<string, boolean> = {};
         let m: string | null = null;
         for (const s of stats as TournamentMatchPlayerStat[]) {
           g[s.team_player_id] = String(s.goals);
+          asst[s.team_player_id] = String(s.assists);
           y[s.team_player_id] = String(s.yellow_cards);
           r[s.team_player_id] = s.red_card;
           if (s.is_mom) m = s.team_player_id;
         }
         setGoals(g);
+        setAssists(asst);
         setYellows(y);
         setReds(r);
         setMom(m);
@@ -450,6 +502,7 @@ function MatchPlayerStatsModal({
       const stats = roster.map((p) => ({
         team_player_id: p.id,
         goals: Number(goals[p.id]) || 0,
+        assists: Number(assists[p.id]) || 0,
         is_mom: p.id === mom,
         yellow_cards: Math.min(Number(yellows[p.id]) || 0, 2),
         red_card: !!reds[p.id],
@@ -477,11 +530,11 @@ function MatchPlayerStatsModal({
           <div className="tc-empty">Neither team has a roster to record stats for.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <div style={{ display: "grid", gridTemplateColumns: `1.4fr 60px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 420 }}>
-              <div>Player</div><div>Goals</div><div>Yellow</div><div>Red</div><div>MOM</div>{trackingFines && <div>Fine</div>}
+            <div style={{ display: "grid", gridTemplateColumns: `1.4fr 55px 55px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 470 }}>
+              <div>Player</div><div>Goals</div><div>Assists</div><div>Yellow</div><div>Red</div><div>MOM</div>{trackingFines && <div>Fine</div>}
             </div>
             {roster.map((p) => (
-              <div key={p.id} style={{ display: "grid", gridTemplateColumns: `1.4fr 60px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, alignItems: "center", padding: "6px 0", minWidth: 420 }}>
+              <div key={p.id} style={{ display: "grid", gridTemplateColumns: `1.4fr 55px 55px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, alignItems: "center", padding: "6px 0", minWidth: 470 }}>
                 <div style={{ fontSize: 13.5 }}>
                   {p.name}
                   {suspended.has(p.id) && <span className="tc-badge danger" style={{ marginLeft: 6, fontSize: 10 }}>Suspended next</span>}
@@ -490,6 +543,11 @@ function MatchPlayerStatsModal({
                   type="number" min={0} value={goals[p.id] ?? ""}
                   onChange={(e) => setGoals((g) => ({ ...g, [p.id]: e.target.value }))}
                   style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} goals`}
+                />
+                <input
+                  type="number" min={0} value={assists[p.id] ?? ""}
+                  onChange={(e) => setAssists((a) => ({ ...a, [p.id]: e.target.value }))}
+                  style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} assists`}
                 />
                 <input
                   type="number" min={0} max={2} value={yellows[p.id] ?? ""}

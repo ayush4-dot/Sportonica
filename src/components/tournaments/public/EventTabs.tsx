@@ -1,0 +1,398 @@
+"use client";
+
+import { useEffect, useState, type ComponentType } from "react";
+import {
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal,
+} from "lucide-react";
+import { getTeamRoster } from "@/lib/tournaments/actions";
+import { isActionError } from "@/lib/actionError";
+import {
+  FORMAT_LABELS,
+  type Tournament, type TournamentTeam, type TournamentMatch,
+  type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
+} from "@/lib/tournaments/types";
+import "./event-tabs.css";
+
+const KTM = "Asia/Kathmandu";
+const NOT_FOR_SINGLE_EVENT = new Set(["Table", "Knockout", "Fixtures", "Player Stats"]);
+const TABS = ["Overview", "Table", "Knockout", "Fixtures", "Player Stats", "Teams"] as const;
+type Tab = (typeof TABS)[number];
+
+const TAB_ICON: Record<Tab, ComponentType<{ size?: number }>> = {
+  Overview: LayoutGrid, Table: Table2, Knockout: GitBranch, Fixtures: CalendarDays,
+  "Player Stats": BarChart3, Teams: Users,
+};
+
+function statusInfo(status: Tournament["status"]): { label: string; cls: string } {
+  if (status === "live") return { label: "Ongoing", cls: "ongoing" };
+  if (status === "completed") return { label: "Completed", cls: "completed" };
+  if (status === "cancelled") return { label: "Cancelled", cls: "cancelled" };
+  return { label: "Upcoming", cls: "upcoming" };
+}
+
+export default function EventTabs({
+  tournament, teams, matches, standingsByGroup, playerStats, awards,
+}: {
+  tournament: Tournament;
+  teams: TournamentTeam[];
+  matches: TournamentMatch[];
+  standingsByGroup: Record<string, TournamentStanding[]>;
+  playerStats: TournamentPlayerStatRow[];
+  awards: TournamentAwards;
+}) {
+  const confirmedTeams = teams.filter((t) => t.status === "confirmed");
+  const hasKnockout = matches.some((m) => m.stage === "knockout");
+  const hasStandings = tournament.format === "league" || tournament.format === "group_knockout";
+  const isSingleEvent = tournament.format === "single_event";
+
+  const visibleTabs = TABS.filter((t) => {
+    if (isSingleEvent && NOT_FOR_SINGLE_EVENT.has(t)) return false;
+    if (t === "Table" && !hasStandings) return false;
+    if (t === "Knockout" && !hasKnockout) return false;
+    return true;
+  });
+  const [tab, setTab] = useState<Tab>("Overview");
+  const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
+
+  return (
+    <div>
+      <div className="ev2-tabbar">
+        {visibleTabs.map((t) => {
+          const Icon = TAB_ICON[t];
+          return (
+            <button key={t} className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}>
+              <Icon size={15} /> {t}
+            </button>
+          );
+        })}
+      </div>
+
+      {activeTab === "Overview" && (
+        <OverviewTab tournament={tournament} teams={teams} matches={matches} awards={awards} />
+      )}
+      {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
+      {activeTab === "Knockout" && <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
+      {activeTab === "Fixtures" && <FixturesPublicTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
+      {activeTab === "Player Stats" && <PlayerStatsTab rows={playerStats} />}
+      {activeTab === "Teams" && <TeamsTab teams={confirmedTeams} />}
+    </div>
+  );
+}
+
+// ── Overview ─────────────────────────────────────────────────────
+function OverviewTab({ tournament, teams, matches, awards }: {
+  tournament: Tournament; teams: TournamentTeam[]; matches: TournamentMatch[]; awards: TournamentAwards;
+}) {
+  const confirmed = teams.filter((t) => t.status === "confirmed");
+  const groups = [...new Set(teams.map((t) => t.group_name).filter((g): g is string => !!g))].sort();
+  const st = statusInfo(tournament.status);
+  const hasAwards = awards.winner || awards.runnerUp || awards.semifinalists.length > 0;
+
+  return (
+    <div>
+      <div className="ev2-stats">
+        <div className="ev2-stat"><div className="ev2-stat-v">{confirmed.length}</div><div className="ev2-stat-l">Teams</div></div>
+        <div className="ev2-stat"><div className="ev2-stat-v">{matches.length}</div><div className="ev2-stat-l">Matches</div></div>
+        {groups.length > 0 && <div className="ev2-stat"><div className="ev2-stat-v">{groups.length}</div><div className="ev2-stat-l">Groups</div></div>}
+        <div className="ev2-stat"><div className="ev2-stat-v" style={{ fontSize: 15 }}>{FORMAT_LABELS[tournament.format]}</div><div className="ev2-stat-l">Format</div></div>
+      </div>
+
+      <div className="ev2-card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: tournament.description ? 14 : 0 }}>
+          <div className="ev2-card-t" style={{ marginBottom: 0 }}>Tournament</div>
+          <span className={`ev2-status-pill ${st.cls}`}>{st.label}</span>
+        </div>
+        {tournament.description && <p style={{ fontSize: 14, opacity: 0.8, lineHeight: 1.65, margin: 0 }}>{tournament.description}</p>}
+        {tournament.organizer_name && (
+          <div style={{ marginTop: 14, fontSize: 12.5, opacity: 0.6 }}>Organised by <b style={{ opacity: 1 }}>{tournament.organizer_name}</b></div>
+        )}
+      </div>
+
+      {hasAwards && (
+        <div className="ev2-card">
+          <div className="ev2-card-t">Awards</div>
+          <div className="ev2-awards">
+            {awards.winner && (
+              <div className="ev2-award">
+                <Trophy size={20} color="#ffc107" style={{ marginBottom: 8 }} />
+                <div className="ev2-award-l">Winner</div>
+                <div className="ev2-award-v">{awards.winner}</div>
+              </div>
+            )}
+            {awards.runnerUp && (
+              <div className="ev2-award silver">
+                <Medal size={20} color="#b0b0b0" style={{ marginBottom: 8 }} />
+                <div className="ev2-award-l">Runner-up</div>
+                <div className="ev2-award-v">{awards.runnerUp}</div>
+              </div>
+            )}
+            {awards.semifinalists.map((name) => (
+              <div className="ev2-award bronze" key={name}>
+                <Medal size={20} color="#b47846" style={{ marginBottom: 8 }} />
+                <div className="ev2-award-l">Semi-finalist</div>
+                <div className="ev2-award-v">{name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Table ────────────────────────────────────────────────────────
+function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; standingsByGroup: Record<string, TournamentStanding[]> }) {
+  const groups = Object.keys(standingsByGroup).sort();
+  if (groups.length === 0 || groups.every((g) => standingsByGroup[g].length === 0)) {
+    return <div className="ev2-empty">No results yet.</div>;
+  }
+  return (
+    <div>
+      {groups.map((g) => {
+        const rows = standingsByGroup[g];
+        if (rows.length === 0) return null;
+        return (
+          <div key={g} className="ev2-card">
+            {tournament.format === "group_knockout" && <div className="ev2-card-t">Group {g}</div>}
+            <div style={{ overflowX: "auto" }}>
+              <table className="ev2-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>Team</th><th className="num">P</th><th className="num">W</th><th className="num">D</th>
+                    <th className="num">L</th><th className="num">GF</th><th className="num">GA</th><th className="num">GD</th><th className="num">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((r, i) => (
+                    <tr key={r.team_id} className={i < 2 ? "top3" : ""}>
+                      <td className="num"><span className="ev2-rank">{i + 1}</span></td>
+                      <td style={{ fontWeight: 700 }}>{r.team_name}</td>
+                      <td className="num">{r.played}</td>
+                      <td className="num">{r.won}</td>
+                      <td className="num">{r.drawn}</td>
+                      <td className="num">{r.lost}</td>
+                      <td className="num">{r.goals_for}</td>
+                      <td className="num">{r.goals_against}</td>
+                      <td className="num">{r.goal_diff > 0 ? `+${r.goal_diff}` : r.goal_diff}</td>
+                      <td className="num" style={{ fontWeight: 800 }}>{r.points}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Knockout — geometry-precise connector-line bracket ────────────
+const MATCH_H = 66;
+const SLOT_GAP = 26;
+
+function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+  const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
+  if (knockout.length === 0) return <div className="ev2-empty">The bracket hasn&apos;t been generated yet.</div>;
+
+  const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
+  const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
+  const unit = MATCH_H + SLOT_GAP;
+  const n0 = byRound[0].length;
+  const totalHeight = unit * n0;
+  const centerOf = (r: number, i: number) => unit * Math.pow(2, r - 1) * (2 * i + 1);
+
+  return (
+    <div className="ev2-bracket-wrap">
+      <div className="ev2-bracket">
+        {byRound.map((ms, r) => (
+          <div key={r} style={{ display: "flex" }}>
+            {r > 0 && (
+              <div className="ev2-bracket-conn" style={{ height: totalHeight }}>
+                {ms.map((_, i) => {
+                  const y1 = centerOf(r - 1, i * 2);
+                  const y2 = centerOf(r - 1, i * 2 + 1);
+                  const yMid = centerOf(r, i);
+                  return (
+                    <div key={i}>
+                      <div className="ev2-bracket-conn-line" style={{ left: 0, top: y1, width: 18, borderTop: "2px solid" }} />
+                      <div className="ev2-bracket-conn-line" style={{ left: 0, top: y2, width: 18, borderTop: "2px solid" }} />
+                      <div className="ev2-bracket-conn-line" style={{ left: 18, top: Math.min(y1, y2), height: Math.abs(y2 - y1), borderLeft: "2px solid" }} />
+                      <div className="ev2-bracket-conn-line" style={{ left: 18, top: yMid, width: 18, borderTop: "2px solid" }} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <div className="ev2-bracket-round" style={{ height: totalHeight + 30 }}>
+              <div className="ev2-bracket-round-label" style={{ position: "absolute", top: 0, width: "100%" }}>{ms[0]?.round_label}</div>
+              {ms.map((m, i) => (
+                <div
+                  key={m.id}
+                  className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`}
+                  style={{ top: 30 + centerOf(r, i) - MATCH_H / 2, height: MATCH_H }}
+                >
+                  <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
+                  <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function BracketSlot({ name, winner, score }: { name: string; winner: boolean; score: number | null }) {
+  const tbd = name === "TBD";
+  return (
+    <div className={`ev2-bracket-slot ${winner ? "winner" : ""} ${tbd ? "tbd" : ""}`}>
+      <span className="ev2-bracket-name">{name}</span>
+      {score != null && <span className="ev2-bracket-score">{score}</span>}
+    </div>
+  );
+}
+
+// ── Fixtures (public, read-only, by date) ──────────────────────────
+function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+  if (matches.length === 0) return <div className="ev2-empty">Fixtures haven&apos;t been generated yet.</div>;
+
+  const sorted = [...matches].sort((a, b) => {
+    if (!a.starts_at && !b.starts_at) return a.created_at.localeCompare(b.created_at);
+    if (!a.starts_at) return 1;
+    if (!b.starts_at) return -1;
+    return a.starts_at.localeCompare(b.starts_at);
+  });
+
+  const groups = new Map<string, TournamentMatch[]>();
+  for (const m of sorted) {
+    const key = m.starts_at
+      ? new Date(m.starts_at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM })
+      : "Date to be announced";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(m);
+  }
+
+  return (
+    <div className="ev2-card">
+      {[...groups.entries()].map(([date, ms]) => (
+        <div key={date}>
+          <div className="ev2-fixture-date">{date}</div>
+          {ms.map((m) => (
+            <div key={m.id} className="ev2-fixture">
+              <div className="ev2-fixture-time">
+                {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
+              </div>
+              <div className="ev2-fixture-teams">
+                <span>{m.team_a_id ? teamName(m.team_a_id) : "TBD"}</span>
+                {m.status === "walkover" ? (
+                  <span className="score">w/o</span>
+                ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
+                  <span className="score">{m.score_a} – {m.score_b}</span>
+                ) : <span style={{ opacity: 0.4 }}>vs</span>}
+                <span>{m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"}</span>
+              </div>
+              <div className="ev2-fixture-round">{m.round_label}</div>
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Player stats leaderboard ────────────────────────────────────
+function PlayerStatsTab({ rows }: { rows: TournamentPlayerStatRow[] }) {
+  if (rows.length === 0) return <div className="ev2-empty">No player stats recorded yet.</div>;
+  return (
+    <div className="ev2-card">
+      <div style={{ overflowX: "auto" }}>
+        <table className="ev2-table">
+          <thead>
+            <tr>
+              <th>#</th><th>Player</th><th>Team</th>
+              <th className="num">G</th><th className="num">A</th><th className="num">Y</th><th className="num">R</th><th className="num">MOM</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr key={r.team_player_id}>
+                <td className="num"><span className="ev2-rank">{i + 1}</span></td>
+                <td style={{ fontWeight: 700 }}>{r.player_name}</td>
+                <td style={{ opacity: 0.65 }}>{r.team_name}</td>
+                <td className="num" style={{ fontWeight: 800 }}>{r.goals}</td>
+                <td className="num">{r.assists}</td>
+                <td className="num">{r.yellow_cards > 0 ? <span style={{ color: "#d97706" }}>{r.yellow_cards}</span> : "—"}</td>
+                <td className="num">{r.red_cards > 0 ? <span style={{ color: "#ef4444" }}>{r.red_cards}</span> : "—"}</td>
+                <td className="num">{r.mom_count > 0 ? <span className="ev2-mom-star">{"★".repeat(Math.min(r.mom_count, 3))}</span> : "—"}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ── Teams + squad viewer ────────────────────────────────────────
+type RosterPlayer = { id: string; role: string; name: string };
+
+function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
+  const [open, setOpen] = useState<TournamentTeam | null>(null);
+  if (teams.length === 0) return <div className="ev2-empty">No confirmed teams yet.</div>;
+
+  return (
+    <div>
+      <div className="ev2-team-grid">
+        {teams.map((t) => (
+          <button key={t.id} className="ev2-team-card" onClick={() => setOpen(t)}>
+            <div className="ev2-team-card-name">{t.name}</div>
+            <div className="ev2-team-card-sub">Tap to view squad</div>
+          </button>
+        ))}
+      </div>
+      {open && <SquadModal team={open} onClose={() => setOpen(null)} />}
+    </div>
+  );
+}
+
+function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => void }) {
+  const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getTeamRoster(team.id).then((res) => {
+      if (cancelled) return;
+      if (!isActionError(res)) setRoster(res);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [team.id]);
+
+  return (
+    <div className="ev2-scrim" onClick={onClose}>
+      <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name}</h3>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+        {loading ? (
+          <div className="ev2-empty">Loading squad…</div>
+        ) : roster.length === 0 ? (
+          <div className="ev2-empty">No roster on file yet.</div>
+        ) : (
+          roster.map((p) => (
+            <div key={p.id} className="ev2-squad-row">
+              <span className="ev2-squad-av">{p.name.charAt(0).toUpperCase()}</span>
+              <span style={{ flex: 1, fontSize: 13.5 }}>{p.name}</span>
+              {p.role === "captain" && <Star size={13} style={{ opacity: 0.6 }} />}
+              {p.role === "substitute" && <span style={{ fontSize: 11, opacity: 0.5 }}>Sub</span>}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

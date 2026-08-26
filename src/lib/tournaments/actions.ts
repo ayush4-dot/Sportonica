@@ -7,7 +7,7 @@ import { friendlyTournamentError } from "./types";
 import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
-  TournamentMatchPlayerStat, PlayerScorecard,
+  TournamentMatchPlayerStat, PlayerScorecard, TournamentPlayerStatRow, TournamentAwards,
 } from "./types";
 
 async function requireUser() {
@@ -475,12 +475,59 @@ export async function getMatchPlayerStats(matchId: string): Promise<TournamentMa
 
 export async function recordMatchPlayerStats(
   matchId: string,
-  stats: { team_player_id: string; goals: number; is_mom: boolean; yellow_cards: number; red_card: boolean }[]
+  stats: { team_player_id: string; goals: number; assists: number; is_mom: boolean; yellow_cards: number; red_card: boolean }[]
 ): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.rpc("record_match_player_stats", { p_match_id: matchId, p_stats: stats });
   if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// Tournament-wide leaderboard — public, no login required (matches how
+// tournament results/scores are already public elsewhere on this page).
+export async function getTournamentPlayerStats(tournamentId: string): Promise<TournamentPlayerStatRow[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("get_tournament_player_stats", { p_tournament_id: tournamentId });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentPlayerStatRow[];
+}
+
+// "When", not "where" — venue is already fixed for the whole
+// tournament, so this just sets a match's date/time for the public
+// Fixtures list, no court or conflict-checking involved.
+export async function setMatchTime(matchId: string, startsAt: string | null, endsAt: string | null): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_match_time", { p_match_id: matchId, p_starts_at: startsAt, p_ends_at: endsAt });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+// Winner/runner-up/semifinalists, derived from the Final and Semifinal
+// knockout matches — nothing new to store, just read off the bracket.
+export async function getTournamentAwards(tournamentId: string): Promise<TournamentAwards | ActionError> {
+  const sb = await createClient();
+  const [{ data: matches, error: mErr }, teamsRes] = await Promise.all([
+    sb.from("tournament_matches").select("*").eq("tournament_id", tournamentId).in("round_label", ["Final", "Semifinal"]),
+    listTournamentTeams(tournamentId),
+  ]);
+  if (mErr) return actionError(mErr.message);
+  const teams = isActionError(teamsRes) ? [] : teamsRes;
+  const nameOf = (id: string | null) => teams.find((t) => t.id === id)?.name ?? null;
+
+  const final = (matches ?? []).find((m) => m.round_label === "Final");
+  const semis = (matches ?? []).filter((m) => m.round_label === "Semifinal");
+
+  const winner = final?.status === "completed" || final?.status === "walkover" ? nameOf(final.winner_team_id) : null;
+  const runnerUp = final && winner
+    ? nameOf(final.team_a_id === final.winner_team_id ? final.team_b_id : final.team_a_id)
+    : null;
+  const semifinalists = semis
+    .filter((m) => (m.status === "completed" || m.status === "walkover") && m.winner_team_id)
+    .map((m) => nameOf(m.team_a_id === m.winner_team_id ? m.team_b_id : m.team_a_id))
+    .filter((n): n is string => !!n);
+
+  return { winner, runnerUp, semifinalists };
 }
 
 // Total disciplinary fine owed per team (yellow/red cards × the

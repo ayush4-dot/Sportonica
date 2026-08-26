@@ -163,7 +163,28 @@ export interface TournamentStanding {
   won: number;
   drawn: number;
   lost: number;
+  goals_for: number;
+  goals_against: number;
+  goal_diff: number;
   points: number;
+}
+
+export interface TournamentPlayerStatRow {
+  team_player_id: string;
+  player_name: string;
+  team_id: string;
+  team_name: string;
+  goals: number;
+  assists: number;
+  yellow_cards: number;
+  red_cards: number;
+  mom_count: number;
+}
+
+export interface TournamentAwards {
+  winner: string | null;
+  runnerUp: string | null;
+  semifinalists: string[];
 }
 
 export interface TournamentTeamPlayer {
@@ -184,6 +205,7 @@ export interface TournamentMatchPlayerStat {
   match_id: string;
   team_player_id: string;
   goals: number;
+  assists: number;
   is_mom: boolean;
   yellow_cards: number;
   red_card: boolean;
