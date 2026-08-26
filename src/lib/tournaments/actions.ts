@@ -137,6 +137,16 @@ export async function getTeamRoster(teamId: string): Promise<
   });
 }
 
+// Public-safe roster for the event page's Teams tab — name + role only,
+// via a security-definer RPC (the raw table has no public read policy
+// since it holds walk-in guest_phone/guest_email). Confirmed teams only.
+export async function getTeamRosterPublic(teamId: string): Promise<{ id: string; name: string; role: string }[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("get_team_roster_public", { p_team_id: teamId });
+  if (error) return actionError(error.message);
+  return (data ?? []) as { id: string; name: string; role: string }[];
+}
+
 // Search players to add to a team roster — same shape/behavior as
 // searchPlayers() in src/lib/squads/actions.ts, scoped to one team's
 // existing roster instead of a squad's membership.

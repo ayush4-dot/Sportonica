@@ -4,7 +4,7 @@ import { useEffect, useState, type ComponentType } from "react";
 import {
   LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal,
 } from "lucide-react";
-import { getTeamRoster } from "@/lib/tournaments/actions";
+import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
   FORMAT_LABELS,
@@ -363,7 +363,7 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
 
   useEffect(() => {
     let cancelled = false;
-    getTeamRoster(team.id).then((res) => {
+    getTeamRosterPublic(team.id).then((res) => {
       if (cancelled) return;
       if (!isActionError(res)) setRoster(res);
       setLoading(false);
