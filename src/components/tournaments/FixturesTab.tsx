@@ -6,6 +6,7 @@ import { Plus, Trash2, X, History, Pencil } from "lucide-react";
 import {
   recordMatchResult, setMatchTime, createMatch, deleteMatch, updateMatchTeams, getMatchAudit,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
+  generateKnockoutBracket, setTeamSeed, setMatchStatus,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat, MatchAuditEntry } from "@/lib/tournaments/types";
@@ -93,6 +94,8 @@ export default function FixturesTab({
   }
 
   const canAddMatches = (tournament.status === "registration_closed" || tournament.status === "live") && teams.length >= 1;
+  const canGenerateBracket =
+    tournament.format === "knockout" && tournament.status === "registration_closed" && matches.length === 0 && teams.length >= 2;
 
   if (!canAddMatches && matches.length === 0) {
     return <div className="tc-empty">Close registration to start adding matches.</div>;
@@ -109,6 +112,17 @@ export default function FixturesTab({
       <div className="tc-card-t">Fixtures</div>
       <div className="tc-card-sub">Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it&apos;s added.</div>
       {err && <div className="tc-err">{err}</div>}
+
+      {canGenerateBracket && (
+        <GenerateBracketPanel
+          teams={teams} pending={pending}
+          onSeed={(teamId, seed) => run(() => setTeamSeed(teamId, seed))}
+          onGenerate={() => {
+            if (!window.confirm(`Auto-generate the bracket for ${teams.length} teams? Byes are assigned automatically for any round that doesn't divide evenly. You can still edit any match by hand afterwards.`)) return;
+            run(() => generateKnockoutBracket(tournament.id));
+          }}
+        />
+      )}
 
       {canAddMatches && (
         <AddMatchForm
@@ -129,9 +143,10 @@ export default function FixturesTab({
                 {ms.map((m) => (
                   <MatchRow
                     key={m.id} match={m} teams={teams} matches={matches} teamName={teamName} pending={pending}
-                    onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
+                    onResult={(a, b, winnerId, et, pens, confirmCascade) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens, confirmCascade))}
                     onRecordStats={() => setRecordingStats(m)}
-                    onSetTime={(startsAt, endsAt) => run(() => setMatchTime(m.id, startsAt, endsAt))}
+                    onSetTime={(startsAt, endsAt, courtLabel, notes) => run(() => setMatchTime(m.id, startsAt, endsAt, courtLabel, notes))}
+                    onSetStatus={(status) => run(() => setMatchStatus(m.id, status))}
                     onUpdateTeams={(teamAId, teamBId) => run(() => updateMatchTeams(m.id, teamAId, teamBId))}
                     onDelete={() => {
                       if (!window.confirm(`Delete ${teamName(m.team_a_id)} vs ${teamName(m.team_b_id)}? This can't be undone.`)) return;
@@ -259,17 +274,61 @@ function AddMatchForm({ tournament, teams, matches, teamName, pending, onAdd }: 
   );
 }
 
-function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, onSetTime, onUpdateTeams, onDelete, pending }: {
+// Seed list + one-click auto-build — the alternative to hand-building
+// fixtures via AddMatchForm. Byes/pairing/round wiring are all handled
+// server-side (generate_knockout_bracket / build_knockout_bracket); this
+// panel only collects seeds and fires the RPC.
+function GenerateBracketPanel({ teams, pending, onSeed, onGenerate }: {
+  teams: TournamentTeam[];
+  pending: boolean;
+  onSeed: (teamId: string, seed: number) => void;
+  onGenerate: () => void;
+}) {
+  const sorted = [...teams].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999) || a.name.localeCompare(b.name));
+  return (
+    <div style={{ background: "rgba(0,98,65,0.06)", borderRadius: 12, padding: 16, marginTop: 12, marginBottom: 12, border: "1px solid rgba(0,98,65,0.15)" }}>
+      <div style={{ fontWeight: 700, marginBottom: 4 }}>Generate bracket</div>
+      <div className="tc-dim" style={{ fontSize: 12.5, marginBottom: 12 }}>
+        Optionally set seeds below (unseeded teams are ordered by signup date), then auto-build the full knockout tree — byes are assigned automatically. Or skip this and add matches by hand below instead.
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, maxWidth: 340 }}>
+        {sorted.map((t, i) => (
+          <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              type="number" min={1} defaultValue={t.seed ?? undefined} placeholder={String(i + 1)}
+              onBlur={(e) => { const v = Number(e.target.value); if (v > 0) onSeed(t.id, v); }}
+              style={{ ...inputStyle, width: 50 }} aria-label={`${t.name} seed`}
+            />
+            <span style={{ fontSize: 13.5 }}>{t.name}</span>
+          </div>
+        ))}
+      </div>
+      <button className="tc-btn primary" disabled={pending || teams.length < 2} style={{ padding: "9px 14px" }} onClick={onGenerate}>
+        Generate bracket ({teams.length} teams)
+      </button>
+    </div>
+  );
+}
+
+type SettableStatus = "unscheduled" | "scheduled" | "live" | "postponed" | "cancelled";
+const STATUS_OPTIONS: SettableStatus[] = ["unscheduled", "scheduled", "live", "postponed", "cancelled"];
+const STATUS_LABEL: Record<SettableStatus, string> = {
+  unscheduled: "Unscheduled", scheduled: "Scheduled", live: "Live", postponed: "Postponed", cancelled: "Cancelled",
+};
+
+function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, onSetTime, onSetStatus, onUpdateTeams, onDelete, pending }: {
   match: TournamentMatch;
   teams: TournamentTeam[];
   matches: TournamentMatch[];
   teamName: (id: string | null) => string;
   onResult: (
     a: number | null, b: number | null, winnerId?: string,
-    extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number }
+    extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number },
+    confirmCascade?: boolean
   ) => void;
   onRecordStats: () => void;
-  onSetTime: (startsAt: string | null, endsAt: string | null) => void;
+  onSetTime: (startsAt: string | null, endsAt: string | null, courtLabel?: string, notes?: string) => void;
+  onSetStatus: (status: SettableStatus) => void;
   onUpdateTeams: (teamAId: string, teamBId?: string) => void;
   onDelete: () => void;
   pending: boolean;
@@ -281,6 +340,8 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
   const [teamBId, setTeamBId] = useState(match.team_b_id ?? "");
   const [dateStr, setDateStr] = useState(toLocalDate(match.starts_at));
   const [timeStr, setTimeStr] = useState(toLocalTime(match.starts_at) || "17:00");
+  const [courtLabel, setCourtLabel] = useState(match.court_label ?? "");
+  const [notes, setNotes] = useState(match.notes ?? "");
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
   const [scoreB, setScoreB] = useState(match.score_b?.toString() ?? "");
   const [scoreAEt, setScoreAEt] = useState(match.score_a_et?.toString() ?? "");
@@ -314,10 +375,47 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
     || (scoreAPens !== "" && scoreBPens !== "" && Number(scoreAPens) !== Number(scoreBPens));
   const canSave = scoreA !== "" && scoreB !== "" && (!needsDecisiveWinner || decisive);
 
+  // The bracket only has a fixed next-match slot to overwrite when this
+  // match was created via Generate Bracket (or manually opted in) — most
+  // hand-built fixtures have no next_match_id, so this is a no-op for them.
+  function computeWinner(): string | null {
+    if (scoreA === "" || scoreB === "") return null;
+    const a = Number(scoreA), b = Number(scoreB);
+    if (a !== b) return a > b ? match.team_a_id : match.team_b_id;
+    if (scoreAEt !== "" && scoreBEt !== "") {
+      const ae = Number(scoreAEt), be = Number(scoreBEt);
+      if (ae !== be) return ae > be ? match.team_a_id : match.team_b_id;
+    }
+    if (scoreAPens !== "" && scoreBPens !== "") {
+      const ap = Number(scoreAPens), bp = Number(scoreBPens);
+      if (ap !== bp) return ap > bp ? match.team_a_id : match.team_b_id;
+    }
+    return null;
+  }
+
+  function cascadeConflict(winnerId: string | null): TournamentMatch | null {
+    if (!winnerId || !match.next_match_id) return null;
+    const next = matches.find((m) => m.id === match.next_match_id);
+    if (!next) return null;
+    const currentSlotTeam = match.next_match_slot === "a" ? next.team_a_id : next.team_b_id;
+    return currentSlotTeam && currentSlotTeam !== winnerId ? next : null;
+  }
+
+  function confirmCascadeIfNeeded(winnerId: string | null): boolean {
+    const conflict = cascadeConflict(winnerId);
+    if (!conflict) return true;
+    const conflictTeam = match.next_match_slot === "a" ? conflict.team_a_id : conflict.team_b_id;
+    return window.confirm(
+      `${teamName(conflictTeam)} already advanced to ${conflict.round_label} based on the previous result. Changing this will reset that match (and anything it already fed into). Continue?`
+    );
+  }
+
   function save() {
     const et = scoreAEt !== "" && scoreBEt !== "" ? { scoreA: Number(scoreAEt), scoreB: Number(scoreBEt) } : undefined;
     const pens = scoreAPens !== "" && scoreBPens !== "" ? { scoreA: Number(scoreAPens), scoreB: Number(scoreBPens) } : undefined;
-    onResult(Number(scoreA), Number(scoreB), undefined, et, pens);
+    const winner = computeWinner();
+    if (!confirmCascadeIfNeeded(winner)) return;
+    onResult(Number(scoreA), Number(scoreB), undefined, et, pens, true);
   }
 
   return (
@@ -361,21 +459,29 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
       </td>
       <td className="tc-dim" style={{ fontSize: 12.5 }}>
         {editingTime ? (
-          <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", flexWrap: "wrap", maxWidth: 300 }}>
             <input type="date" value={dateStr} onChange={(e) => setDateStr(e.target.value)} style={{ ...inputStyle, width: 130 }} />
             <input type="time" value={timeStr} onChange={(e) => setTimeStr(e.target.value)} style={{ ...inputStyle, width: 90 }} />
+            <input
+              value={courtLabel} onChange={(e) => setCourtLabel(e.target.value)} placeholder="Court / ground"
+              style={{ ...inputStyle, width: 130 }} aria-label="Court or ground"
+            />
+            <input
+              value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notes"
+              style={{ ...inputStyle, width: 130 }} aria-label="Match notes"
+            />
             <button
               className="tc-btn primary" disabled={pending || !dateStr} style={{ padding: "5px 8px", fontSize: 11.5 }}
-              onClick={() => { onSetTime(ktmIso(dateStr, timeStr), null); setEditingTime(false); }}
+              onClick={() => { onSetTime(ktmIso(dateStr, timeStr), null, courtLabel.trim() || undefined, notes.trim() || undefined); setEditingTime(false); }}
             >
               Save
             </button>
             {match.starts_at && (
               <button
                 className="tc-btn" disabled={pending} style={{ padding: "5px 8px", fontSize: 11.5 }}
-                onClick={() => { onSetTime(null, null); setEditingTime(false); }}
+                onClick={() => { onSetTime(null, null, courtLabel.trim() || undefined, notes.trim() || undefined); setEditingTime(false); }}
               >
-                Clear
+                Clear time
               </button>
             )}
           </div>
@@ -387,6 +493,7 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
             {match.starts_at
               ? new Date(match.starts_at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: KTM_TZ })
               : <span style={{ textDecoration: "underline dotted" }}>Set date &amp; time</span>}
+            {match.court_label && <span className="tc-dim"> · {match.court_label}</span>}
           </button>
         )}
       </td>
@@ -417,6 +524,15 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
           <button aria-label="Delete match" disabled={pending} onClick={onDelete} style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.7, cursor: "pointer", padding: 6 }}>
             <Trash2 size={14} />
           </button>
+        )}
+        {!done && (
+          <select
+            value={match.status} disabled={pending} aria-label="Match status"
+            onChange={(e) => onSetStatus(e.target.value as SettableStatus)}
+            style={{ ...inputStyle, padding: "5px 6px", fontSize: 11.5, marginLeft: 4 }}
+          >
+            {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}
+          </select>
         )}
         {showHistory && <MatchHistoryPanel matchId={match.id} />}
         {done || match.team_b_id === null ? null : !bothSet ? (
@@ -506,7 +622,8 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
                   className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
                   onClick={() => {
                     if (!window.confirm(`Record a walkover win for ${teamName(match.team_a_id)}? No score is recorded and this can't be undone.`)) return;
-                    onResult(null, null, match.team_a_id!);
+                    if (!confirmCascadeIfNeeded(match.team_a_id)) return;
+                    onResult(null, null, match.team_a_id!, undefined, undefined, true);
                   }}
                 >
                   {teamName(match.team_a_id)} wins
@@ -515,7 +632,8 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
                   className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
                   onClick={() => {
                     if (!window.confirm(`Record a walkover win for ${teamName(match.team_b_id)}? No score is recorded and this can't be undone.`)) return;
-                    onResult(null, null, match.team_b_id!);
+                    if (!confirmCascadeIfNeeded(match.team_b_id)) return;
+                    onResult(null, null, match.team_b_id!, undefined, undefined, true);
                   }}
                 >
                   {teamName(match.team_b_id)} wins

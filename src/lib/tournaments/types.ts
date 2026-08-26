@@ -110,12 +110,14 @@ export interface TournamentTeam {
 export const MATCH_STAGES = ["group", "league", "knockout"] as const;
 export type MatchStage = (typeof MATCH_STAGES)[number];
 
-export const MATCH_STATUS = ["unscheduled", "scheduled", "completed", "walkover", "cancelled"] as const;
+export const MATCH_STATUS = ["unscheduled", "scheduled", "live", "postponed", "completed", "walkover", "cancelled"] as const;
 export type MatchStatus = (typeof MATCH_STATUS)[number];
 
 export const MATCH_STATUS_LABELS: Record<MatchStatus, string> = {
   unscheduled: "Unscheduled",
   scheduled: "Scheduled",
+  live: "Live",
+  postponed: "Postponed",
   completed: "Completed",
   walkover: "Walkover",
   cancelled: "Cancelled",
@@ -133,6 +135,8 @@ export interface TournamentMatch {
   next_match_id: string | null;
   next_match_slot: "a" | "b" | null;
   court_id: string | null;
+  court_label: string | null;
+  notes: string | null;
   starts_at: string | null;
   ends_at: string | null;
   status: MatchStatus;
@@ -323,6 +327,9 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   TEAM_NAME_TAKEN: "A team with that name is already registered for this tournament.",
   INVALID_STAGE: "That's not a valid stage.",
   SAME_TEAM: "Pick two different teams.",
+  CASCADE_CONFIRMATION_REQUIRED: "This would change a team that's already advanced further in the bracket — confirm to continue.",
+  INVALID_SLOT: "Pick which side (A or B) this feeds into.",
+  SAME_MATCH: "A match can't advance into itself.",
 };
 
 export function friendlyTournamentError(message: string): string {

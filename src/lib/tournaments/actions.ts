@@ -476,7 +476,8 @@ export async function getMatchAudit(matchId: string): Promise<(MatchAuditEntry &
 export async function recordMatchResult(
   matchId: string, scoreA: number | null, scoreB: number | null, winnerTeamId?: string,
   extraTime?: { scoreA: number; scoreB: number },
-  penalties?: { scoreA: number; scoreB: number }
+  penalties?: { scoreA: number; scoreB: number },
+  confirmCascade?: boolean
 ): Promise<TournamentMatch | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
@@ -484,6 +485,7 @@ export async function recordMatchResult(
     p_match_id: matchId, p_score_a: scoreA, p_score_b: scoreB, p_winner_team_id: winnerTeamId ?? null,
     p_score_a_et: extraTime?.scoreA ?? null, p_score_b_et: extraTime?.scoreB ?? null,
     p_score_a_pens: penalties?.scoreA ?? null, p_score_b_pens: penalties?.scoreB ?? null,
+    p_confirm_cascade: confirmCascade ?? false,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentMatch;
@@ -518,12 +520,56 @@ export async function getTournamentPlayerStats(tournamentId: string): Promise<To
 // "When", not "where" — venue is already fixed for the whole
 // tournament, so this just sets a match's date/time for the public
 // Fixtures list, no court or conflict-checking involved.
-export async function setMatchTime(matchId: string, startsAt: string | null, endsAt: string | null): Promise<TournamentMatch | ActionError> {
+export async function setMatchTime(
+  matchId: string, startsAt: string | null, endsAt: string | null, courtLabel?: string, notes?: string
+): Promise<TournamentMatch | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("set_match_time", { p_match_id: matchId, p_starts_at: startsAt, p_ends_at: endsAt });
+  const { data, error } = await sb.rpc("set_match_time", {
+    p_match_id: matchId, p_starts_at: startsAt, p_ends_at: endsAt,
+    p_court_label: courtLabel ?? null, p_notes: notes ?? null,
+  });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentMatch;
+}
+
+export async function setMatchStatus(matchId: string, status: "unscheduled" | "scheduled" | "live" | "postponed" | "cancelled"): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_match_status", { p_match_id: matchId, p_status: status });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+export async function setMatchAdvancement(matchId: string, nextMatchId: string, nextMatchSlot: "a" | "b"): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_match_advancement", {
+    p_match_id: matchId, p_next_match_id: nextMatchId, p_next_match_slot: nextMatchSlot,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+// Opt-in starting point — only usable while zero matches exist yet for
+// this tournament, so it can never clobber a hand-built fixture list.
+export async function generateKnockoutBracket(tournamentId: string): Promise<Tournament | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("generate_knockout_bracket", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/organize/tournaments/${tournamentId}`);
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as Tournament;
+}
+
+export async function setTeamSeed(teamId: string, seed: number, groupName?: string): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_team_seed", { p_team_id: teamId, p_seed: seed, p_group_name: groupName ?? null });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeam;
 }
 
 // Winner/runner-up/semifinalists, derived from the Final and Semifinal
