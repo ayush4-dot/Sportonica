@@ -127,7 +127,7 @@ export default function TournamentRegisterPanel({
             <div style={{ fontSize: 12.5, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em" }}>
               Roster ({roster.length}/{tournament.max_players_per_team})
             </div>
-            {(team.status === "pending" || team.status === "payment_pending") && roster.length < tournament.max_players_per_team && (
+            {tournament.status === "registration_open" && roster.length < tournament.max_players_per_team && (
               <button className="play-btn" style={{ padding: "9px 13px", fontSize: 12.5 }} onClick={() => setShowInvite(true)}>
                 <UserPlus size={13} /> Add player
               </button>
@@ -140,7 +140,7 @@ export default function TournamentRegisterPanel({
                   {p.name.charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1, fontSize: 13.5 }}>{p.name} {p.role === "captain" && <span style={{ opacity: 0.5, fontSize: 11 }}>(captain)</span>}</div>
-                {p.role !== "captain" && (team.status === "pending" || team.status === "payment_pending") && (
+                {p.role !== "captain" && tournament.status === "registration_open" && (
                   <button
                     aria-label={`Remove ${p.name} from the team`}
                     onClick={() => {
