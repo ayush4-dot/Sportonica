@@ -230,37 +230,52 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
       <td className="tc-dim" style={{ fontSize: 12.5 }}>
         {when ? <>{when}{courtName ? ` · ${courtName}` : ""}</> : bothSet && !done ? "Not scheduled" : "—"}
       </td>
-      <td className="tc-num">{match.status === "completed" ? `${match.score_a} – ${match.score_b}` : "—"}</td>
+      <td className="tc-num">
+        {match.status === "completed" && match.score_a !== null && match.score_b !== null
+          ? `${match.score_a} – ${match.score_b}` : "—"}
+      </td>
       <td>
-        {match.status === "completed" && (
+        {match.status === "completed" && match.team_a_id && match.team_b_id && match.score_a !== null && match.score_b !== null && (
           <button className="tc-btn" disabled={pending} onClick={onRecordStats} style={{ padding: "6px 10px" }}>Player stats</button>
         )}
         {done || match.team_b_id === null ? null : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
-          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
             {match.status === "unscheduled" && (
               <button className="tc-btn" disabled={pending} onClick={onSchedule} style={{ padding: "6px 10px" }}>Schedule</button>
             )}
             {match.status === "scheduled" && (
               <button className="tc-btn" disabled={pending} onClick={onUnschedule} style={{ padding: "6px 10px" }}>Unschedule</button>
             )}
-            <input
-              type="number" placeholder="A" value={scoreA} onChange={(e) => setScoreA(e.target.value)}
-              style={{ ...inputStyle, width: 44 }} aria-label={`${teamName(match.team_a_id)} score`}
-            />
-            <input
-              type="number" placeholder="B" value={scoreB} onChange={(e) => setScoreB(e.target.value)}
-              style={{ ...inputStyle, width: 44 }} aria-label={`${teamName(match.team_b_id)} score`}
-            />
-            <button
-              className="tc-btn primary" disabled={pending || scoreA === "" || scoreB === ""} style={{ padding: "6px 10px" }}
-              onClick={() => onResult(Number(scoreA), Number(scoreB))}
-            >
-              Save
-            </button>
+
+            <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_a_id)}</span>
+                <input
+                  type="number" placeholder="0" value={scoreA} onChange={(e) => setScoreA(e.target.value)}
+                  style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_a_id)} score`}
+                />
+              </label>
+              <span className="tc-dim" style={{ alignSelf: "flex-end", marginBottom: 8 }}>–</span>
+              <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_b_id)}</span>
+                <input
+                  type="number" placeholder="0" value={scoreB} onChange={(e) => setScoreB(e.target.value)}
+                  style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_b_id)} score`}
+                />
+              </label>
+              <button
+                className="tc-btn primary" disabled={pending || scoreA === "" || scoreB === ""} style={{ padding: "6px 10px", alignSelf: "flex-end" }}
+                onClick={() => onResult(Number(scoreA), Number(scoreB))}
+              >
+                Save score
+              </button>
+            </div>
+
             {match.team_a_id && match.team_b_id && (
-              <>
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="tc-dim" style={{ fontSize: 11 }}>Or record a walkover:</span>
                 <button
                   className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
                   onClick={() => {
@@ -268,7 +283,7 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
                     onResult(null, null, match.team_a_id!);
                   }}
                 >
-                  Walkover A
+                  {teamName(match.team_a_id)} wins
                 </button>
                 <button
                   className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
@@ -277,9 +292,9 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
                     onResult(null, null, match.team_b_id!);
                   }}
                 >
-                  Walkover B
+                  {teamName(match.team_b_id)} wins
                 </button>
-              </>
+              </div>
             )}
           </div>
         )}
