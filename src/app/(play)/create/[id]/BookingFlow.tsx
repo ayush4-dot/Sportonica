@@ -325,6 +325,11 @@ export default function BookingFlow({
     return (
       <div className="bkw">
         <div className="bk-panel">
+          {needPlayers && (
+            <p className="hint" style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 10, background: "rgba(217,119,6,.12)", color: "#d97706" }}>
+              Your game won&apos;t appear in Play Together or the home page&apos;s &quot;Play socially&quot; list until we verify this payment — usually within a few hours.
+            </p>
+          )}
           <PaymentStep
             bookingType="court_booking"
             bookingId={awaitingPayment.id}
@@ -470,7 +475,7 @@ export default function BookingFlow({
                   <Users size={15} style={{ display: "inline", verticalAlign: -2, marginRight: 6 }} />Need more players?
                 </h3>
                 <p className="hint" style={{ margin: "2px 0 0" }}>
-                  Open your game so others can join and split the cost.
+                  Lists your game on Play Together and the home page&apos;s &quot;Play socially&quot; so others can join and split the cost.
                 </p>
               </div>
             </div>
