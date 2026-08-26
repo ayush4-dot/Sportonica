@@ -2,14 +2,17 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList, Trophy } from "lucide-react";
 import { useProfile } from "@/lib/hooks/useProfile";
 import { CITIES, useCity, greeting, nearestCity, nearestArea, type City, type Area } from "@/lib/city";
+import { getMyRole } from "@/lib/organizer/actions";
 import NotificationBell from "./NotificationBell";
+import OrganizerAccessModal from "./OrganizerAccessModal";
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const { profile } = useProfile();
   const { city, area, setCity, ready } = useCity();
   const [step, setStep] = useState<City | null>(null);   // city whose areas are showing
@@ -17,6 +20,8 @@ export default function AppHeader() {
   const [open, setOpen] = useState(false);
   const [ask, setAsk] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [checkingOrganizer, setCheckingOrganizer] = useState(false);
+  const [showOrganizerModal, setShowOrganizerModal] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const hidden =
@@ -60,6 +65,21 @@ export default function AppHeader() {
   function pickArea(c: City, a: Area | null) {
     setCity(c, a);
     setStep(null); setQ(""); setAsk(false); setOpen(false);
+  }
+
+  // Already organizer/super_admin: skip the popup, go straight to the
+  // dashboard. Anyone else gets the request/pending popup instead of a
+  // page navigation — checked fresh each click (profiles.role, server
+  // truth), not the client-side useProfile() hook (mirrors auth
+  // user_metadata, which organizer status was never wired into).
+  function onOrganizeClick() {
+    setCheckingOrganizer(true);
+    getMyRole()
+      .then((role) => {
+        if (role === "organizer" || role === "super_admin") router.push("/organize");
+        else setShowOrganizerModal(true);
+      })
+      .finally(() => setCheckingOrganizer(false));
   }
 
   // Search runs across every area in every city, so "Maitidevi" just works.
@@ -182,14 +202,16 @@ export default function AppHeader() {
             >
               <ClipboardList size={19} />
             </Link>
-            <Link
-              href="/organize"
+            <button
+              type="button"
               className={`ah-btn ${pathname.startsWith("/organize") ? "on" : ""}`}
               aria-label="Organize a tournament"
               title="Organize a tournament"
+              onClick={onOrganizeClick}
+              disabled={checkingOrganizer}
             >
               <Trophy size={19} />
-            </Link>
+            </button>
             <NotificationBell inline />
           </div>
         </div>
@@ -218,6 +240,8 @@ export default function AppHeader() {
           </div>
         </div>
       )}
+
+      {showOrganizerModal && <OrganizerAccessModal onClose={() => setShowOrganizerModal(false)} />}
 
       <style>{`
         .ah {
@@ -281,6 +305,7 @@ export default function AppHeader() {
         [data-theme="paper"] .ah-btn { border-color:rgba(20,23,30,.14); }
         .ah-btn:hover { transform:translateY(-1px); border-color:rgba(0,98,65,.55); }
         .ah-btn.on { border-color:#006241; color:#006241; background:rgba(0,98,65,.12); }
+        .ah-btn:disabled { opacity:.5; cursor:default; }
 
         .ah-menu {
           position:absolute; top:calc(100% + 10px); left:0; z-index:60;

@@ -1,40 +1,28 @@
 import Link from "next/link";
-import { Trophy, Plus, Clock } from "lucide-react";
+import { Trophy, Plus } from "lucide-react";
 import { getMyOrganizerTournaments, getMyRole } from "@/lib/organizer/actions";
 import { isActionError } from "@/lib/actionError";
 import { STATUS_LABELS, type TournamentStatus } from "@/lib/tournaments/types";
 import RoleExplainerBanner from "@/components/RoleExplainerBanner";
-import RequestOrganizerButton from "./RequestOrganizerButton";
 
 const STATUS_BADGE: Record<TournamentStatus, string> = {
   draft: "neutral", pending_approval: "warn", published: "ok", registration_open: "ok",
   registration_closed: "warn", live: "ok", completed: "neutral", cancelled: "danger",
 };
 
+// Requesting/checking organizer access happens in the popup behind the
+// header's trophy icon (OrganizerAccessModal.tsx) now, not here — this
+// page assumes access and only needs a short fallback for anyone who
+// lands here directly without it (bookmark, back button, shared link).
 export default async function OrganizePage() {
   const role = await getMyRole();
-
-  if (role === "organizer_pending") {
-    return (
-      <div className="adm-empty">
-        <div className="adm-empty-icon"><Clock size={22} /></div>
-        <h3>Waiting for review</h3>
-        <p>Sportonica is reviewing your request to become an organizer — check back soon.</p>
-      </div>
-    );
-  }
 
   if (role !== "organizer" && role !== "super_admin") {
     return (
       <div className="adm-empty">
         <div className="adm-empty-icon"><Trophy size={22} /></div>
-        <h3>Run your own tournaments</h3>
-        <p>
-          Bring your own venue, or invite one to host — either way, Sportonica reviews your
-          tournament the same as any other before it goes live. Requesting access needs a quick
-          approval from Sportonica first.
-        </p>
-        <RequestOrganizerButton />
+        <h3>Organizer access needed</h3>
+        <p>Use the trophy icon in the header to request or check your organizer access.</p>
       </div>
     );
   }
