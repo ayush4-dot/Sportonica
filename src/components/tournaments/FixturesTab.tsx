@@ -75,13 +75,34 @@ export default function FixturesTab({
       });
     }
 
+    function shuffle() {
+      const reordered = [...sorted];
+      for (let i = reordered.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [reordered[i], reordered[j]] = [reordered[j], reordered[i]];
+      }
+      run(async () => {
+        for (let i = 0; i < reordered.length; i++) {
+          const res = await setTeamSeed(reordered[i].id, i + 1, reordered[i].group_name ?? undefined);
+          if (isActionError(res)) return res;
+        }
+      });
+    }
+
     return (
       <div className="tc-card">
-        <div className="tc-card-t">Seed teams</div>
-        <div className="tc-card-sub">
-          {tournament.format === "group_knockout"
-            ? "Set each team's group, then generate group fixtures."
-            : "Order determines bracket/schedule position — reorder before generating."}
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+          <div>
+            <div className="tc-card-t">Seed teams</div>
+            <div className="tc-card-sub">
+              {tournament.format === "group_knockout"
+                ? "Set each team's group, then generate group fixtures."
+                : "Order determines bracket/schedule position — reorder before generating, or shuffle for a random draw."}
+            </div>
+          </div>
+          {tournament.format === "knockout" && (
+            <button className="tc-btn" disabled={pending} style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={shuffle}>Shuffle randomly</button>
+          )}
         </div>
         <table className="tc-table" style={{ marginTop: 12 }}>
           <thead>
@@ -169,7 +190,7 @@ export default function FixturesTab({
                   key={m.id} match={m} teamName={teamName} courts={courts} pending={pending}
                   onSchedule={() => setScheduling(m)}
                   onUnschedule={() => run(() => unscheduleMatch(m.id))}
-                  onResult={(a, b, winnerId) => run(() => recordMatchResult(m.id, a, b, winnerId))}
+                  onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
                   onRecordStats={() => setRecordingStats(m)}
                 />
               ))}
@@ -208,15 +229,43 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
   courts: CourtOption[];
   onSchedule: () => void;
   onUnschedule: () => void;
-  onResult: (a: number | null, b: number | null, winnerId?: string) => void;
+  onResult: (
+    a: number | null, b: number | null, winnerId?: string,
+    extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number }
+  ) => void;
   onRecordStats: () => void;
   pending: boolean;
 }) {
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
   const [scoreB, setScoreB] = useState(match.score_b?.toString() ?? "");
+  const [scoreAEt, setScoreAEt] = useState(match.score_a_et?.toString() ?? "");
+  const [scoreBEt, setScoreBEt] = useState(match.score_b_et?.toString() ?? "");
+  const [scoreAPens, setScoreAPens] = useState(match.score_a_pens?.toString() ?? "");
+  const [scoreBPens, setScoreBPens] = useState(match.score_b_pens?.toString() ?? "");
   const bothSet = !!match.team_a_id && !!match.team_b_id;
   const done = DONE.has(match.status);
   const courtName = courts.find((c) => c.id === match.court_id)?.name;
+
+  // A knockout match can't end level — group/league draws are a valid
+  // result on their own. When regulation is tied, reveal extra time;
+  // if that's also tied, reveal penalties — same fallback order the
+  // server enforces in record_match_result().
+  const needsDecisiveWinner = match.stage === "knockout";
+  const regTied = scoreA !== "" && scoreB !== "" && Number(scoreA) === Number(scoreB);
+  const etTied = scoreAEt !== "" && scoreBEt !== "" && Number(scoreAEt) === Number(scoreBEt);
+  const showEt = needsDecisiveWinner && regTied;
+  const showPens = showEt && (etTied || (scoreAEt === "" && scoreBEt === ""));
+  const decisive =
+    !regTied
+    || (scoreAEt !== "" && scoreBEt !== "" && !etTied)
+    || (scoreAPens !== "" && scoreBPens !== "" && Number(scoreAPens) !== Number(scoreBPens));
+  const canSave = scoreA !== "" && scoreB !== "" && (!needsDecisiveWinner || decisive);
+
+  function save() {
+    const et = scoreAEt !== "" && scoreBEt !== "" ? { scoreA: Number(scoreAEt), scoreB: Number(scoreBEt) } : undefined;
+    const pens = scoreAPens !== "" && scoreBPens !== "" ? { scoreA: Number(scoreAPens), scoreB: Number(scoreBPens) } : undefined;
+    onResult(Number(scoreA), Number(scoreB), undefined, et, pens);
+  }
 
   const when = match.starts_at
     ? new Date(match.starts_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" })
@@ -233,8 +282,17 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
         {when ? <>{when}{courtName ? ` · ${courtName}` : ""}</> : bothSet && !done ? "Not scheduled" : "—"}
       </td>
       <td className="tc-num">
-        {match.status === "completed" && match.score_a !== null && match.score_b !== null
-          ? `${match.score_a} – ${match.score_b}` : "—"}
+        {match.status === "completed" && match.score_a !== null && match.score_b !== null ? (
+          <>
+            {match.score_a} – {match.score_b}
+            {match.score_a_pens !== null && match.score_b_pens !== null && (
+              <div className="tc-dim" style={{ fontSize: 11, fontWeight: 400 }}>pens {match.score_a_pens}–{match.score_b_pens}</div>
+            )}
+            {match.score_a_pens === null && match.score_a_et !== null && match.score_b_et !== null && (
+              <div className="tc-dim" style={{ fontSize: 11, fontWeight: 400 }}>aet {match.score_a_et}–{match.score_b_et}</div>
+            )}
+          </>
+        ) : "—"}
       </td>
       <td>
         {match.status === "completed" && match.team_a_id && match.team_b_id && match.score_a !== null && match.score_b !== null && (
@@ -267,13 +325,65 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
                   style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_b_id)} score`}
                 />
               </label>
-              <button
-                className="tc-btn primary" disabled={pending || scoreA === "" || scoreB === ""} style={{ padding: "6px 10px", alignSelf: "flex-end" }}
-                onClick={() => onResult(Number(scoreA), Number(scoreB))}
-              >
-                Save score
-              </button>
+              {!showEt && (
+                <button
+                  className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }}
+                  onClick={save}
+                >
+                  Save score
+                </button>
+              )}
             </div>
+
+            {showEt && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="tc-dim" style={{ fontSize: 11, width: "100%" }}>Level after regulation — extra time score:</span>
+                <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_a_id)} (ET)</span>
+                  <input
+                    type="number" placeholder="0" value={scoreAEt} onChange={(e) => setScoreAEt(e.target.value)}
+                    style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_a_id)} extra time score`}
+                  />
+                </label>
+                <span className="tc-dim" style={{ alignSelf: "flex-end", marginBottom: 8 }}>–</span>
+                <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_b_id)} (ET)</span>
+                  <input
+                    type="number" placeholder="0" value={scoreBEt} onChange={(e) => setScoreBEt(e.target.value)}
+                    style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_b_id)} extra time score`}
+                  />
+                </label>
+                {!showPens && (
+                  <button className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }} onClick={save}>
+                    Save score
+                  </button>
+                )}
+              </div>
+            )}
+
+            {showPens && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="tc-dim" style={{ fontSize: 11, width: "100%" }}>Still level — penalty shootout score:</span>
+                <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_a_id)} (pens)</span>
+                  <input
+                    type="number" placeholder="0" value={scoreAPens} onChange={(e) => setScoreAPens(e.target.value)}
+                    style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_a_id)} penalty score`}
+                  />
+                </label>
+                <span className="tc-dim" style={{ alignSelf: "flex-end", marginBottom: 8 }}>–</span>
+                <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_b_id)} (pens)</span>
+                  <input
+                    type="number" placeholder="0" value={scoreBPens} onChange={(e) => setScoreBPens(e.target.value)}
+                    style={{ ...inputStyle, width: 50 }} aria-label={`${teamName(match.team_b_id)} penalty score`}
+                  />
+                </label>
+                <button className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }} onClick={save}>
+                  Save score
+                </button>
+              </div>
+            )}
 
             {match.team_a_id && match.team_b_id && (
               <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>

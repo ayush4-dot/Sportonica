@@ -138,6 +138,10 @@ export interface TournamentMatch {
   status: MatchStatus;
   score_a: number | null;
   score_b: number | null;
+  score_a_et: number | null;
+  score_b_et: number | null;
+  score_a_pens: number | null;
+  score_b_pens: number | null;
   winner_team_id: string | null;
   created_at: string;
   updated_at: string;

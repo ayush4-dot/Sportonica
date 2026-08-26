@@ -467,12 +467,16 @@ export async function unscheduleMatch(matchId: string): Promise<TournamentMatch 
 }
 
 export async function recordMatchResult(
-  matchId: string, scoreA: number | null, scoreB: number | null, winnerTeamId?: string
+  matchId: string, scoreA: number | null, scoreB: number | null, winnerTeamId?: string,
+  extraTime?: { scoreA: number; scoreB: number },
+  penalties?: { scoreA: number; scoreB: number }
 ): Promise<TournamentMatch | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("record_match_result", {
     p_match_id: matchId, p_score_a: scoreA, p_score_b: scoreB, p_winner_team_id: winnerTeamId ?? null,
+    p_score_a_et: extraTime?.scoreA ?? null, p_score_b_et: extraTime?.scoreB ?? null,
+    p_score_a_pens: penalties?.scoreA ?? null, p_score_b_pens: penalties?.scoreB ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentMatch;
