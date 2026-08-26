@@ -450,22 +450,6 @@ export async function generateKnockoutFromGroups(tournamentId: string, advancePe
   return data as Tournament;
 }
 
-export async function scheduleMatch(matchId: string, courtId: string, startsAt: string, endsAt: string): Promise<TournamentMatch | ActionError> {
-  const { sb, user } = await requireUser();
-  if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("schedule_match", { p_match_id: matchId, p_court_id: courtId, p_starts_at: startsAt, p_ends_at: endsAt });
-  if (error) return actionError(friendlyTournamentError(error.message));
-  return data as TournamentMatch;
-}
-
-export async function unscheduleMatch(matchId: string): Promise<TournamentMatch | ActionError> {
-  const { sb, user } = await requireUser();
-  if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("unschedule_match", { p_match_id: matchId });
-  if (error) return actionError(friendlyTournamentError(error.message));
-  return data as TournamentMatch;
-}
-
 export async function recordMatchResult(
   matchId: string, scoreA: number | null, scoreB: number | null, winnerTeamId?: string,
   extraTime?: { scoreA: number; scoreB: number },

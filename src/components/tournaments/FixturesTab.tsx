@@ -5,33 +5,29 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowDown, X } from "lucide-react";
 import {
   setTeamSeed, generateKnockoutBracket, generateLeagueFixtures, generateGroupFixtures,
-  generateKnockoutFromGroups, recordMatchResult, unscheduleMatch,
+  generateKnockoutFromGroups, recordMatchResult,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat } from "@/lib/tournaments/types";
-import ScheduleMatchModal from "./ScheduleMatchModal";
 
 const inputStyle: React.CSSProperties = {
   padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(242,237,230,0.15)",
   background: "transparent", color: "inherit", fontFamily: "inherit",
 };
 
-type CourtOption = { id: string; name: string };
 const DONE = new Set(["completed", "walkover", "cancelled"]);
 
 export default function FixturesTab({
-  tournament, teams, matches, courts,
+  tournament, teams, matches,
 }: {
   tournament: Tournament;
   teams: TournamentTeam[]; // confirmed teams only
   matches: TournamentMatch[];
-  courts: CourtOption[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
-  const [scheduling, setScheduling] = useState<TournamentMatch | null>(null);
   const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
   const [advancePerGroup, setAdvancePerGroup] = useState(2);
 
@@ -183,13 +179,11 @@ export default function FixturesTab({
         <div key={label} style={{ marginBottom: 22 }}>
           <div className="tc-card-sub" style={{ fontWeight: 700, opacity: 0.8, marginBottom: 8 }}>{label}</div>
           <table className="tc-table">
-            <thead><tr><th>Match</th><th>When / Where</th><th>Score</th><th></th></tr></thead>
+            <thead><tr><th>Match</th><th>Score</th><th></th></tr></thead>
             <tbody>
               {ms.map((m) => (
                 <MatchRow
-                  key={m.id} match={m} teamName={teamName} courts={courts} pending={pending}
-                  onSchedule={() => setScheduling(m)}
-                  onUnschedule={() => run(() => unscheduleMatch(m.id))}
+                  key={m.id} match={m} teamName={teamName} pending={pending}
                   onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
                   onRecordStats={() => setRecordingStats(m)}
                 />
@@ -198,16 +192,6 @@ export default function FixturesTab({
           </table>
         </div>
       ))}
-
-      {scheduling && (
-        <ScheduleMatchModal
-          match={scheduling}
-          courts={courts}
-          durationMins={tournament.match_duration_mins ?? 60}
-          onClose={() => setScheduling(null)}
-          onScheduled={() => { setScheduling(null); router.refresh(); }}
-        />
-      )}
 
       {recordingStats && (
         <MatchPlayerStatsModal
@@ -223,12 +207,9 @@ export default function FixturesTab({
   );
 }
 
-function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult, onRecordStats, pending }: {
+function MatchRow({ match, teamName, onResult, onRecordStats, pending }: {
   match: TournamentMatch;
   teamName: (id: string | null) => string;
-  courts: CourtOption[];
-  onSchedule: () => void;
-  onUnschedule: () => void;
   onResult: (
     a: number | null, b: number | null, winnerId?: string,
     extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number }
@@ -244,7 +225,6 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
   const [scoreBPens, setScoreBPens] = useState(match.score_b_pens?.toString() ?? "");
   const bothSet = !!match.team_a_id && !!match.team_b_id;
   const done = DONE.has(match.status);
-  const courtName = courts.find((c) => c.id === match.court_id)?.name;
 
   // A knockout match can't end level — group/league draws are a valid
   // result on their own. When regulation is tied, reveal extra time;
@@ -267,19 +247,12 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
     onResult(Number(scoreA), Number(scoreB), undefined, et, pens);
   }
 
-  const when = match.starts_at
-    ? new Date(match.starts_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu" })
-    : null;
-
   return (
     <tr>
       <td>
         <div style={{ fontWeight: 600 }}>{teamName(match.team_a_id)} <span className="tc-dim">vs</span> {teamName(match.team_b_id)}</div>
         {match.status === "walkover" && <span className="tc-badge warn">Walkover — {teamName(match.winner_team_id)}</span>}
         {match.status === "completed" && match.team_b_id === null && <span className="tc-badge ok">Bye</span>}
-      </td>
-      <td className="tc-dim" style={{ fontSize: 12.5 }}>
-        {when ? <>{when}{courtName ? ` · ${courtName}` : ""}</> : bothSet && !done ? "Not scheduled" : "—"}
       </td>
       <td className="tc-num">
         {match.status === "completed" && match.score_a !== null && match.score_b !== null ? (
@@ -302,13 +275,6 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
-            {match.status === "unscheduled" && (
-              <button className="tc-btn" disabled={pending} onClick={onSchedule} style={{ padding: "6px 10px" }}>Schedule</button>
-            )}
-            {match.status === "scheduled" && (
-              <button className="tc-btn" disabled={pending} onClick={onUnschedule} style={{ padding: "6px 10px" }}>Unschedule</button>
-            )}
-
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <span className="tc-dim" style={{ fontSize: 10.5 }}>{teamName(match.team_a_id)}</span>

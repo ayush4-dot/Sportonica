@@ -34,10 +34,8 @@ const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "
 // A single_event tournament is captain-only, no bracket — those three tabs
 // don't apply and are dropped rather than shown locked.
 const NOT_FOR_SINGLE_EVENT = new Set<(typeof TABS)[number]>(["Fixtures", "Bracket", "Standings"]);
-type CourtOption = { id: string; name: string };
-
 export default function TournamentControlCenter({
-  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref, reviewPayments, teamFines,
+  tournament, venueName, teams, payments, matches, announcements, viewer, backHref, reviewPayments, teamFines,
 }: {
   tournament: Tournament;
   venueName: string;
@@ -45,7 +43,6 @@ export default function TournamentControlCenter({
   payments: PaymentRow[];
   matches: TournamentMatch[];
   announcements: TournamentAnnouncement[];
-  courts: CourtOption[];
   viewer: "vendor" | "organizer" | "super_admin";
   backHref: string;
   // Only fetched (and only usable) for viewer === "super_admin" — approving
@@ -320,7 +317,6 @@ export default function TournamentControlCenter({
           tournament={tournament}
           teams={teams.filter((t) => t.status === "confirmed")}
           matches={matches}
-          courts={courts}
         />
       )}
 

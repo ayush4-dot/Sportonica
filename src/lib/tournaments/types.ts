@@ -288,6 +288,7 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   NOT_PENDING_PAYMENT: "This team isn't waiting on a payment.",
   MATCH_NOT_COMPLETED: "Enter the match score before recording player stats.",
   PLAYER_NOT_IN_MATCH: "That player isn't on either team in this match.",
+  TEAM_NAME_TAKEN: "A team with that name is already registered for this tournament.",
 };
 
 export function friendlyTournamentError(message: string): string {
