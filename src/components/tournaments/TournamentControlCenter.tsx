@@ -37,7 +37,7 @@ const NOT_FOR_SINGLE_EVENT = new Set<(typeof TABS)[number]>(["Fixtures", "Bracke
 type CourtOption = { id: string; name: string };
 
 export default function TournamentControlCenter({
-  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref, reviewPayments,
+  tournament, venueName, teams, payments, matches, announcements, courts, viewer, backHref, reviewPayments, teamFines,
 }: {
   tournament: Tournament;
   venueName: string;
@@ -53,6 +53,7 @@ export default function TournamentControlCenter({
   // booking type, just reachable from here too instead of only
   // /platform/payments.
   reviewPayments?: ReviewPaymentRow[];
+  teamFines?: { team_id: string; total_fine: number }[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -63,6 +64,8 @@ export default function TournamentControlCenter({
   const [showWalkinModal, setShowWalkinModal] = useState(false);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
+  const finesByTeam = new Map((teamFines ?? []).map((f) => [f.team_id, f.total_fine]));
+  const trackingFines = tournament.yellow_card_fine > 0 || tournament.red_card_fine > 0;
   const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
 
   // Every state-changing button passes its own confirmation text, in the
@@ -195,7 +198,7 @@ export default function TournamentControlCenter({
             <div className="tc-empty">No teams have registered yet.</div>
           ) : (
             <table className="tc-table">
-              <thead><tr><th>Team</th><th>Roster</th><th>Status</th><th></th></tr></thead>
+              <thead><tr><th>Team</th><th>Roster</th><th>Status</th>{trackingFines && <th>Fines</th>}<th></th></tr></thead>
               <tbody>
                 {teams.map((t) => (
                   <tr key={t.id}>
@@ -205,6 +208,9 @@ export default function TournamentControlCenter({
                     </td>
                     <td className="tc-num">{t.roster_count}</td>
                     <td><span className={`tc-badge ${teamBadgeClass(t.status)}`}>{TEAM_STATUS_LABELS[t.status]}</span></td>
+                    {trackingFines && (
+                      <td className="tc-num">{(finesByTeam.get(t.id) ?? 0) > 0 ? money(finesByTeam.get(t.id) ?? 0) : "—"}</td>
+                    )}
                     <td>
                       {t.is_walkin && t.status === "payment_pending" && (
                         <button

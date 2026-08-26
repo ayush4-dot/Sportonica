@@ -487,12 +487,23 @@ export async function getMatchPlayerStats(matchId: string): Promise<TournamentMa
 
 export async function recordMatchPlayerStats(
   matchId: string,
-  stats: { team_player_id: string; goals: number; is_mom: boolean }[]
+  stats: { team_player_id: string; goals: number; is_mom: boolean; yellow_cards: number; red_card: boolean }[]
 ): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.rpc("record_match_player_stats", { p_match_id: matchId, p_stats: stats });
   if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// Total disciplinary fine owed per team (yellow/red cards × the
+// tournament's own Rs-per-card rates) — for whoever manages the
+// tournament to see what to collect.
+export async function getTournamentTeamFines(tournamentId: string): Promise<{ team_id: string; total_fine: number }[] | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("get_tournament_team_fines", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return (data ?? []) as { team_id: string; total_fine: number }[];
 }
 
 // Career totals for a linked account, across every tournament they've

@@ -100,6 +100,11 @@ export default function TournamentForm({
   const [paymentInstructions, setPaymentInstructions] = useState(existing?.payment_instructions ?? "");
   const [refundPolicy, setRefundPolicy] = useState(existing?.refund_policy ?? "");
 
+  // Optional — leave at 0 to skip tracking cards/fines entirely for
+  // sports/tournaments that don't use them.
+  const [yellowCardFine, setYellowCardFine] = useState(existing?.yellow_card_fine ?? 0);
+  const [redCardFine, setRedCardFine] = useState(existing?.red_card_fine ?? 0);
+
   const [prizeWinner, setPrizeWinner] = useState(existing?.prize_winner ?? "");
   const [prizeRunnerUp, setPrizeRunnerUp] = useState(existing?.prize_runner_up ?? "");
   const [prizeMvp, setPrizeMvp] = useState(existing?.prize_mvp ?? "");
@@ -194,6 +199,8 @@ export default function TournamentForm({
       fee,
       payment_instructions: paymentInstructions.trim() || undefined,
       refund_policy: refundPolicy.trim() || undefined,
+      yellow_card_fine: yellowCardFine,
+      red_card_fine: redCardFine,
       prize_winner: prizeWinner.trim() || undefined,
       prize_runner_up: prizeRunnerUp.trim() || undefined,
       prize_mvp: prizeMvp.trim() || undefined,
@@ -577,7 +584,17 @@ export default function TournamentForm({
       <SectionTitle>Rules (optional)</SectionTitle>
       <div className="ev-field">
         <label>Tournament rules</label>
-        <textarea rows={3} value={rulesText} onChange={(e) => setRulesText(e.target.value)} />
+        <textarea rows={3} value={rulesText} onChange={(e) => setRulesText(e.target.value)} placeholder="Paste your full rules & regulations here — shown to every registered team." />
+      </div>
+      <div className="ev-row">
+        <div className="ev-field">
+          <label>Yellow card fine (Rs)</label>
+          <input type="number" min={0} value={yellowCardFine} onChange={(e) => setYellowCardFine(Number(e.target.value))} placeholder="0 = not tracked" />
+        </div>
+        <div className="ev-field">
+          <label>Red card fine (Rs)</label>
+          <input type="number" min={0} value={redCardFine} onChange={(e) => setRedCardFine(Number(e.target.value))} placeholder="0 = not tracked" />
+        </div>
       </div>
       <div className="ev-field">
         <label>Equipment notes</label>

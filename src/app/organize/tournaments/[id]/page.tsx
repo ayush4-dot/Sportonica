@@ -3,7 +3,7 @@ import { getCourts } from "@/lib/admin/queries";
 import { getMyPartneredVenues } from "@/lib/organizer/actions";
 import {
   getTournament, getDisplayVenueName, listTournamentTeamsWithRosterCount, listTournamentPayments,
-  getTournamentMatches, getTournamentAnnouncements,
+  getTournamentMatches, getTournamentAnnouncements, getTournamentTeamFines,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import TournamentForm from "@/components/tournaments/TournamentForm";
@@ -20,13 +20,14 @@ export default async function OrganizerTournamentDetailPage({ params }: { params
     return <TournamentForm venues={isActionError(venues) ? [] : venues} existing={tournament} mode="organizer" />;
   }
 
-  const [venueName, teams, payments, matches, announcements, courts] = await Promise.all([
+  const [venueName, teams, payments, matches, announcements, courts, teamFines] = await Promise.all([
     getDisplayVenueName(tournament),
     listTournamentTeamsWithRosterCount(id),
     listTournamentPayments(id),
     getTournamentMatches(id),
     getTournamentAnnouncements(id),
     getCourts(tournament.venue_id),
+    getTournamentTeamFines(id),
   ]);
 
   return (
@@ -38,6 +39,7 @@ export default async function OrganizerTournamentDetailPage({ params }: { params
       matches={isActionError(matches) ? [] : matches}
       announcements={isActionError(announcements) ? [] : announcements}
       courts={courts.map((c) => ({ id: c.id, name: c.name }))}
+      teamFines={isActionError(teamFines) ? [] : teamFines}
       viewer="organizer"
       backHref="/organize"
     />

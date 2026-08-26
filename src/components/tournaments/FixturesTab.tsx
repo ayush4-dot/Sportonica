@@ -192,6 +192,8 @@ export default function FixturesTab({
         <MatchPlayerStatsModal
           match={recordingStats}
           teamName={teamName}
+          yellowCardFine={tournament.yellow_card_fine}
+          redCardFine={tournament.red_card_fine}
           onClose={() => setRecordingStats(null)}
           onSaved={() => { setRecordingStats(null); router.refresh(); }}
         />
@@ -305,20 +307,27 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
 
 type RosterPlayer = { id: string; user_id: string | null; guest_name: string | null; name: string };
 
+const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
+
 function MatchPlayerStatsModal({
-  match, teamName, onClose, onSaved,
+  match, teamName, yellowCardFine, redCardFine, onClose, onSaved,
 }: {
   match: TournamentMatch;
   teamName: (id: string | null) => string;
+  yellowCardFine: number;
+  redCardFine: number;
   onClose: () => void;
   onSaved: () => void;
 }) {
   const [loading, setLoading] = useState(true);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
   const [goals, setGoals] = useState<Record<string, string>>({});
+  const [yellows, setYellows] = useState<Record<string, string>>({});
+  const [reds, setReds] = useState<Record<string, boolean>>({});
   const [mom, setMom] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const trackingFines = yellowCardFine > 0 || redCardFine > 0;
 
   useEffect(() => {
     let cancelled = false;
@@ -333,18 +342,31 @@ function MatchPlayerStatsModal({
       setRoster([...rosterA, ...rosterB]);
       if (!isActionError(stats)) {
         const g: Record<string, string> = {};
+        const y: Record<string, string> = {};
+        const r: Record<string, boolean> = {};
         let m: string | null = null;
         for (const s of stats as TournamentMatchPlayerStat[]) {
           g[s.team_player_id] = String(s.goals);
+          y[s.team_player_id] = String(s.yellow_cards);
+          r[s.team_player_id] = s.red_card;
           if (s.is_mom) m = s.team_player_id;
         }
         setGoals(g);
+        setYellows(y);
+        setReds(r);
         setMom(m);
       }
       setLoading(false);
     });
     return () => { cancelled = true; };
   }, [match.id, match.team_a_id, match.team_b_id]);
+
+  function fineFor(p: RosterPlayer) {
+    const y = Math.min(Number(yellows[p.id]) || 0, 2);
+    return y * yellowCardFine + (reds[p.id] ? redCardFine : 0);
+  }
+  const totalFine = roster.reduce((sum, p) => sum + fineFor(p), 0);
+  const suspended = new Set(roster.filter((p) => (Number(yellows[p.id]) || 0) >= 2 || reds[p.id]).map((p) => p.id));
 
   function submit() {
     setErr(null);
@@ -353,6 +375,8 @@ function MatchPlayerStatsModal({
         team_player_id: p.id,
         goals: Number(goals[p.id]) || 0,
         is_mom: p.id === mom,
+        yellow_cards: Math.min(Number(yellows[p.id]) || 0, 2),
+        red_card: !!reds[p.id],
       }));
       const res = await recordMatchPlayerStats(match.id, stats);
       if (isActionError(res)) { setErr(res.message); return; }
@@ -376,25 +400,43 @@ function MatchPlayerStatsModal({
         ) : roster.length === 0 ? (
           <div className="tc-empty">Neither team has a roster to record stats for.</div>
         ) : (
-          <>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 60px", gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>
-              <div>Player</div><div>Goals</div><div>MOM</div>
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ display: "grid", gridTemplateColumns: `1.4fr 60px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 420 }}>
+              <div>Player</div><div>Goals</div><div>Yellow</div><div>Red</div><div>MOM</div>{trackingFines && <div>Fine</div>}
             </div>
             {roster.map((p) => (
-              <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1fr 70px 60px", gap: 8, alignItems: "center", padding: "6px 0" }}>
-                <div style={{ fontSize: 13.5 }}>{p.name}</div>
+              <div key={p.id} style={{ display: "grid", gridTemplateColumns: `1.4fr 60px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, alignItems: "center", padding: "6px 0", minWidth: 420 }}>
+                <div style={{ fontSize: 13.5 }}>
+                  {p.name}
+                  {suspended.has(p.id) && <span className="tc-badge danger" style={{ marginLeft: 6, fontSize: 10 }}>Suspended next</span>}
+                </div>
                 <input
                   type="number" min={0} value={goals[p.id] ?? ""}
                   onChange={(e) => setGoals((g) => ({ ...g, [p.id]: e.target.value }))}
-                  style={{ ...inputStyle, width: 60 }}
+                  style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} goals`}
+                />
+                <input
+                  type="number" min={0} max={2} value={yellows[p.id] ?? ""}
+                  onChange={(e) => setYellows((y) => ({ ...y, [p.id]: e.target.value }))}
+                  style={{ ...inputStyle, width: 45 }} aria-label={`${p.name} yellow cards`}
+                />
+                <input
+                  type="checkbox" checked={!!reds[p.id]} onChange={(e) => setReds((r) => ({ ...r, [p.id]: e.target.checked }))}
+                  style={{ justifySelf: "start", width: 18, height: 18 }} aria-label={`${p.name} red card`}
                 />
                 <input
                   type="radio" name="mom" checked={mom === p.id} onChange={() => setMom(p.id)}
                   style={{ justifySelf: "start", width: 18, height: 18 }} aria-label={`${p.name} is man of the match`}
                 />
+                {trackingFines && <div className="tc-num" style={{ fontSize: 12.5 }}>{fineFor(p) > 0 ? money(fineFor(p)) : "—"}</div>}
               </div>
             ))}
-          </>
+            {trackingFines && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, fontSize: 13, fontWeight: 700 }}>
+                Total fines: {money(totalFine)}
+              </div>
+            )}
+          </div>
         )}
 
         {err && <div className="tc-err" style={{ marginTop: 14 }}>{err}</div>}

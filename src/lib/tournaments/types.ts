@@ -85,6 +85,8 @@ export interface Tournament {
   rules_text: string | null;
   equipment_notes: string | null;
   venue_rules: string | null;
+  yellow_card_fine: number;
+  red_card_fine: number;
   status: TournamentStatus;
   cancel_reason: string | null;
   venue_booking_status: "pending" | "confirmed" | "declined";
@@ -179,6 +181,8 @@ export interface TournamentMatchPlayerStat {
   team_player_id: string;
   goals: number;
   is_mom: boolean;
+  yellow_cards: number;
+  red_card: boolean;
 }
 
 export interface PlayerScorecard {
@@ -227,6 +231,8 @@ export type TournamentDraftInput = Partial<{
   rules_text: string;
   equipment_notes: string;
   venue_rules: string;
+  yellow_card_fine: number;
+  red_card_fine: number;
 }>;
 
 export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
