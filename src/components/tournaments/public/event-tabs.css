@@ -187,6 +187,12 @@
 .ev2-bracket-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev2-bracket-score { font-variant-numeric: tabular-nums; font-weight: 800; flex-shrink: 0; }
 
+/* Touch feedback (no hover state on a phone) + swipe-to-next-round,
+   same idea as a native app's paged bracket view. */
+.ev2-bracket-match:active { transform: scale(0.98); border-color: rgba(0,98,65,0.5); }
+.ev2-bracket-wrap { scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.ev2-bracket-round { scroll-snap-align: start; }
+
 @media (max-width: 480px) {
   .ev2-card { padding: 16px; margin-bottom: 12px; }
   .ev2-card-t { font-size: 15px; }
@@ -200,4 +206,22 @@
   .ev2-fixture-round { width: auto; text-align: left; }
   .ev2-fixture-teams { font-size: 13px; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
   .ev2-table th, .ev2-table td { padding: 9px 8px; font-size: 12.5px; }
+
+  .ev2-tab { padding: 10px 14px; font-size: 13px; }
+  .ev2-tabbar-fade { width: 26px; }
+
+  /* Each round takes most of the viewport — one card's worth of focus
+     at a time — with just enough of the next column peeking in to
+     signal there's more to swipe to. */
+  .ev2-bracket-wrap { padding: 8px 2px 22px; }
+  .ev2-bracket-round { width: min(82vw, 260px); }
+  .ev2-bracket-arrow { margin: 0 2px; }
+  .ev2-bracket-round-label { font-size: 11.5px; margin-bottom: 10px; }
+  .ev2-bracket-match-head { padding: 8px 13px; }
+  .ev2-bracket-code { font-size: 11px; }
+  .ev2-bracket-pill { font-size: 10px; padding: 3px 8px; }
+  .ev2-bracket-slot { padding: 10px 13px; font-size: 13.5px; }
+  .ev2-bracket-av { width: 24px; height: 24px; font-size: 11px; }
+  .ev2-bracket-score { font-size: 14px; }
+  .ev2-bracket-meta { padding: 7px 13px 9px; font-size: 11px; }
 }
