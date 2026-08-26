@@ -14,10 +14,15 @@ export default async function PlatformPaymentsPage() {
     listPendingPayments(),
   ]);
   if (isActionError(methods) || isActionError(stats) || isActionError(pending)) {
-    throw new Error(
+    const message =
       (isActionError(methods) && methods.message) ||
       (isActionError(stats) && stats.message) ||
-      (isActionError(pending) && pending.message) || "Failed to load payments."
+      (isActionError(pending) && pending.message) || "Couldn't load payments.";
+    return (
+      <>
+        <h1 className="plt-h1">Payments</h1>
+        <p style={{ color: "#ef4444", fontSize: 14, marginTop: 16 }}>{message} — refresh the page to try again.</p>
+      </>
     );
   }
 

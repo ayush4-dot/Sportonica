@@ -6,7 +6,14 @@ export const dynamic = "force-dynamic";
 
 export default async function ReportsPage() {
   const reports = await allReports();
-  if (isActionError(reports)) throw new Error(reports.message);
+  if (isActionError(reports)) {
+    return (
+      <>
+        <h1 className="plt-h1">Reports</h1>
+        <p style={{ color: "#ef4444", fontSize: 14, marginTop: 16 }}>{reports.message} — refresh the page to try again.</p>
+      </>
+    );
+  }
   const open = reports.filter((r) => r.status === "open").length;
 
   return (

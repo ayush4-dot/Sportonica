@@ -8,7 +8,14 @@ const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
 
 export default async function RevenuePage() {
   const r = await platformRevenue();
-  if (isActionError(r)) throw new Error(r.message);
+  if (isActionError(r)) {
+    return (
+      <>
+        <h1 className="plt-h1">Revenue</h1>
+        <p style={{ color: "#ef4444", fontSize: 14, marginTop: 16 }}>{r.message} — refresh the page to try again.</p>
+      </>
+    );
+  }
 
   return (
     <>
