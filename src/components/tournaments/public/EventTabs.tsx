@@ -2,7 +2,7 @@
 
 import { useEffect, useState, type ComponentType } from "react";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -189,53 +189,41 @@ function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; st
 
 // ── Knockout — geometry-precise connector-line bracket ────────────
 const MATCH_H = 66;
-const SLOT_GAP = 26;
+const SLOT_GAP = 22;
 
+// Matches are now added by hand (no auto-generated pairing tree), so
+// there's no guaranteed relationship between a round's matches and
+// specific matches in the round before it — round 2 might not even
+// have exactly half of round 1's count. Rather than draw connector
+// lines that assume a strict binary tree (and misalign the moment
+// that assumption doesn't hold), each round is its own independently
+// centered column; a plain chevron between columns shows the flow
+// left-to-right without claiming a precision the data can't back up.
 function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
-  if (knockout.length === 0) return <div className="ev2-empty">The bracket hasn&apos;t been generated yet.</div>;
+  if (knockout.length === 0) return <div className="ev2-empty">No knockout matches added yet.</div>;
 
   const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
   const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
-  const unit = MATCH_H + SLOT_GAP;
-  const n0 = byRound[0].length;
-  const totalHeight = unit * n0;
-  const centerOf = (r: number, i: number) => unit * Math.pow(2, r - 1) * (2 * i + 1);
+  const maxCount = Math.max(...byRound.map((ms) => ms.length));
+  const columnHeight = maxCount * MATCH_H + (maxCount - 1) * SLOT_GAP;
 
   return (
     <div className="ev2-bracket-wrap">
       <div className="ev2-bracket">
         {byRound.map((ms, r) => (
-          <div key={r} style={{ display: "flex" }}>
-            {r > 0 && (
-              <div className="ev2-bracket-conn" style={{ height: totalHeight }}>
-                {ms.map((_, i) => {
-                  const y1 = centerOf(r - 1, i * 2);
-                  const y2 = centerOf(r - 1, i * 2 + 1);
-                  const yMid = centerOf(r, i);
-                  return (
-                    <div key={i}>
-                      <div className="ev2-bracket-conn-line" style={{ left: 0, top: y1, width: 18, borderTop: "2px solid" }} />
-                      <div className="ev2-bracket-conn-line" style={{ left: 0, top: y2, width: 18, borderTop: "2px solid" }} />
-                      <div className="ev2-bracket-conn-line" style={{ left: 18, top: Math.min(y1, y2), height: Math.abs(y2 - y1), borderLeft: "2px solid" }} />
-                      <div className="ev2-bracket-conn-line" style={{ left: 18, top: yMid, width: 18, borderTop: "2px solid" }} />
-                    </div>
-                  );
-                })}
+          <div key={r} style={{ display: "flex", alignItems: "center" }}>
+            {r > 0 && <ChevronRight className="ev2-bracket-arrow" size={18} />}
+            <div className="ev2-bracket-round">
+              <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
+                {ms.map((m) => (
+                  <div key={m.id} className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`} style={{ height: MATCH_H }}>
+                    <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
+                    <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+                  </div>
+                ))}
               </div>
-            )}
-            <div className="ev2-bracket-round" style={{ height: totalHeight + 30 }}>
-              <div className="ev2-bracket-round-label" style={{ position: "absolute", top: 0, width: "100%" }}>{ms[0]?.round_label}</div>
-              {ms.map((m, i) => (
-                <div
-                  key={m.id}
-                  className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`}
-                  style={{ top: 30 + centerOf(r, i) - MATCH_H / 2, height: MATCH_H }}
-                >
-                  <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
-                  <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
-                </div>
-              ))}
             </div>
           </div>
         ))}

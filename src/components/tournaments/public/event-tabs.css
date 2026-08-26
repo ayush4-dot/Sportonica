@@ -124,16 +124,15 @@
 
 /* ── Knockout bracket ── */
 .ev2-bracket-wrap { overflow-x: auto; padding: 10px 4px 24px; }
-.ev2-bracket { display: flex; }
-.ev2-bracket-round { position: relative; width: 220px; flex-shrink: 0; }
-.ev2-bracket-conn { position: relative; width: 36px; flex-shrink: 0; }
-.ev2-bracket-conn-line { position: absolute; border-color: rgba(0,135,90,0.45); }
+.ev2-bracket { display: flex; align-items: center; }
+.ev2-bracket-round { width: 220px; flex-shrink: 0; }
+.ev2-bracket-arrow { flex-shrink: 0; margin: 0 6px; opacity: 0.3; }
 .ev2-bracket-round-label {
   text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
   opacity: 0.6; margin-bottom: 14px;
 }
 .ev2-bracket-match {
-  position: absolute; width: 100%; border-radius: 12px; overflow: hidden;
+  width: 100%; border-radius: 12px; overflow: hidden;
   background: rgba(242,237,230,0.04); border: 1px solid rgba(242,237,230,0.1);
 }
 [data-theme="paper"] .ev2-bracket-match { background: #fff; border-color: rgba(20,23,30,0.09); box-shadow: 0 1px 4px rgba(20,23,30,0.06); }

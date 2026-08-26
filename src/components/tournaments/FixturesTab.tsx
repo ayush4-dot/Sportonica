@@ -143,6 +143,18 @@ function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
   const [roundLabel, setRoundLabel] = useState("");
   const [localErr, setLocalErr] = useState<string | null>(null);
 
+  // A team already paired in this same round (and, for group stage, the
+  // same group) shouldn't show up again while building the rest of that
+  // round — they're already accounted for. They become selectable again
+  // once you move on to a new round number.
+  const usedTeamIds = new Set(
+    matches
+      .filter((m) => m.stage === stage && m.round === round && (stage !== "group" || m.group_name === (groupName.trim() || null)))
+      .flatMap((m) => [m.team_a_id, m.team_b_id])
+      .filter((id): id is string => id !== null)
+  );
+  const availableTeams = teams.filter((t) => !usedTeamIds.has(t.id));
+
   function submit() {
     if (!teamAId) { setLocalErr("Pick team A."); return; }
     if (teamBId && teamBId === teamAId) { setLocalErr("Pick two different teams."); return; }
@@ -172,14 +184,14 @@ function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
           <span className="tc-dim" style={{ fontSize: 11 }}>Team A</span>
           <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
             <option value="">Select…</option>
-            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {availableTeams.filter((t) => t.id !== teamBId).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="tc-dim" style={{ fontSize: 11 }}>Team B</span>
           <select value={teamBId} onChange={(e) => setTeamBId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
             <option value="">TBD / bye</option>
-            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {availableTeams.filter((t) => t.id !== teamAId).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
         {stage === "group" && (
