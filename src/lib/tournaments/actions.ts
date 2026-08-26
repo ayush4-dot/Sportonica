@@ -7,6 +7,7 @@ import { friendlyTournamentError } from "./types";
 import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
+  TournamentMatchPlayerStat, PlayerScorecard,
 } from "./types";
 
 async function requireUser() {
@@ -120,16 +121,16 @@ export async function getTeamRoster(teamId: string): Promise<
     .from("tournament_team_players").select("*").eq("team_id", teamId).order("joined_at", { ascending: true });
   if (error) return actionError(error.message);
   const players = (rows ?? []) as TournamentTeamPlayer[];
-  const ids = players.map((p) => p.user_id);
+  const ids = players.map((p) => p.user_id).filter((id): id is string => id !== null);
   const { data: profiles } = ids.length
     ? await sb.from("profiles").select("id, full_name, name, username, avatar_url").in("id", ids)
     : { data: [] as { id: string; full_name: string | null; name: string | null; username: string | null; avatar_url: string | null }[] };
   const map = new Map((profiles ?? []).map((p) => [p.id, p]));
   return players.map((p) => {
-    const prof = map.get(p.user_id);
+    const prof = p.user_id ? map.get(p.user_id) : undefined;
     return {
       ...p,
-      name: prof?.full_name ?? prof?.name ?? prof?.username ?? "Player",
+      name: prof?.full_name ?? prof?.name ?? prof?.username ?? p.guest_name ?? "Player",
       username: prof?.username ?? null,
       avatar_url: prof?.avatar_url ?? null,
     };
@@ -475,6 +476,46 @@ export async function recordMatchResult(
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentMatch;
+}
+
+export async function getMatchPlayerStats(matchId: string): Promise<TournamentMatchPlayerStat[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.from("tournament_match_player_stats").select("*").eq("match_id", matchId);
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentMatchPlayerStat[];
+}
+
+export async function recordMatchPlayerStats(
+  matchId: string,
+  stats: { team_player_id: string; goals: number; is_mom: boolean }[]
+): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("record_match_player_stats", { p_match_id: matchId, p_stats: stats });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// Career totals for a linked account, across every tournament they've
+// played — used on their public profile. Safe for a logged-out visitor:
+// the RPC is granted to `anon` too, since it returns nothing more
+// revealing than a goals/matches counter.
+export async function getPlayerScorecard(userId: string): Promise<PlayerScorecard | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("get_player_scorecard", { p_user_id: userId }).maybeSingle();
+  if (error) return actionError(error.message);
+  return (data ?? { goals: 0, matches_played: 0, tournaments_played: 0, mom_count: 0 }) as PlayerScorecard;
+}
+
+// Links any walk-in roster spot whose guest phone/email matches the
+// caller's own account to that account — called right after sign-in and
+// after saving a profile phone number, so a claim happens automatically
+// without the player needing to do anything.
+export async function claimGuestTournamentEntries(): Promise<number | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("claim_guest_tournament_entries");
+  if (error) return actionError(error.message);
+  return (data ?? 0) as number;
 }
 
 export async function completeTournament(id: string): Promise<Tournament | ActionError> {

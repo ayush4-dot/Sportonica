@@ -7,6 +7,8 @@ import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList, Trophy 
 import { useProfile } from "@/lib/hooks/useProfile";
 import { CITIES, useCity, greeting, nearestCity, nearestArea, type City, type Area } from "@/lib/city";
 import { getMyRole } from "@/lib/organizer/actions";
+import { claimGuestTournamentEntries } from "@/lib/tournaments/actions";
+import { isActionError } from "@/lib/actionError";
 import NotificationBell from "./NotificationBell";
 import OrganizerAccessModal from "./OrganizerAccessModal";
 
@@ -31,6 +33,20 @@ export default function AppHeader() {
     pathname.startsWith("/signup");
 
   useEffect(() => { if (ready && !city && !hidden) setAsk(true); }, [ready, city, hidden]);
+
+  // Once per session per account: link any walk-in tournament roster
+  // spot registered with this account's phone/email — so a player who
+  // signed up in person and later logs in sees their goals/history show
+  // up on their own profile automatically.
+  useEffect(() => {
+    if (!profile?.id) return;
+    const key = `claimed-guest-entries:${profile.id}`;
+    if (sessionStorage.getItem(key)) return;
+    sessionStorage.setItem(key, "1");
+    claimGuestTournamentEntries().then((res) => {
+      if (isActionError(res)) sessionStorage.removeItem(key);
+    });
+  }, [profile?.id]);
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {

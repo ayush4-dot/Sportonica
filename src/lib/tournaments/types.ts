@@ -173,6 +173,21 @@ export interface TournamentTeamPlayer {
 
 export type WalkinMember = { name: string; phone: string; email?: string };
 
+export interface TournamentMatchPlayerStat {
+  id: string;
+  match_id: string;
+  team_player_id: string;
+  goals: number;
+  is_mom: boolean;
+}
+
+export interface PlayerScorecard {
+  goals: number;
+  matches_played: number;
+  tournaments_played: number;
+  mom_count: number;
+}
+
 // Everything create_tournament()/update_tournament_draft() accept — sent
 // as a single jsonb blob, matching the RPC signatures in tournaments.sql.
 export type TournamentDraftInput = Partial<{
@@ -261,6 +276,8 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   TOO_MANY_PLAYERS: "That's more members than this tournament allows per team.",
   NOT_A_WALKIN_TEAM: "That's not a walk-in team.",
   NOT_PENDING_PAYMENT: "This team isn't waiting on a payment.",
+  MATCH_NOT_COMPLETED: "Enter the match score before recording player stats.",
+  PLAYER_NOT_IN_MATCH: "That player isn't on either team in this match.",
 };
 
 export function friendlyTournamentError(message: string): string {

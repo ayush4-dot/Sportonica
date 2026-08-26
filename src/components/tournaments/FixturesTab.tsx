@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown } from "lucide-react";
+import { ArrowUp, ArrowDown, X } from "lucide-react";
 import {
   setTeamSeed, generateKnockoutBracket, generateLeagueFixtures, generateGroupFixtures,
   generateKnockoutFromGroups, recordMatchResult, unscheduleMatch,
+  getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
-import type { Tournament, TournamentTeam, TournamentMatch } from "@/lib/tournaments/types";
+import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat } from "@/lib/tournaments/types";
 import ScheduleMatchModal from "./ScheduleMatchModal";
 
 const inputStyle: React.CSSProperties = {
@@ -31,6 +32,7 @@ export default function FixturesTab({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [scheduling, setScheduling] = useState<TournamentMatch | null>(null);
+  const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
   const [advancePerGroup, setAdvancePerGroup] = useState(2);
 
   const teamsById = new Map(teams.map((t) => [t.id, t.name]));
@@ -168,6 +170,7 @@ export default function FixturesTab({
                   onSchedule={() => setScheduling(m)}
                   onUnschedule={() => run(() => unscheduleMatch(m.id))}
                   onResult={(a, b, winnerId) => run(() => recordMatchResult(m.id, a, b, winnerId))}
+                  onRecordStats={() => setRecordingStats(m)}
                 />
               ))}
             </tbody>
@@ -184,17 +187,27 @@ export default function FixturesTab({
           onScheduled={() => { setScheduling(null); router.refresh(); }}
         />
       )}
+
+      {recordingStats && (
+        <MatchPlayerStatsModal
+          match={recordingStats}
+          teamName={teamName}
+          onClose={() => setRecordingStats(null)}
+          onSaved={() => { setRecordingStats(null); router.refresh(); }}
+        />
+      )}
     </div>
   );
 }
 
-function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult, pending }: {
+function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult, onRecordStats, pending }: {
   match: TournamentMatch;
   teamName: (id: string | null) => string;
   courts: CourtOption[];
   onSchedule: () => void;
   onUnschedule: () => void;
   onResult: (a: number | null, b: number | null, winnerId?: string) => void;
+  onRecordStats: () => void;
   pending: boolean;
 }) {
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
@@ -219,6 +232,9 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
       </td>
       <td className="tc-num">{match.status === "completed" ? `${match.score_a} – ${match.score_b}` : "—"}</td>
       <td>
+        {match.status === "completed" && (
+          <button className="tc-btn" disabled={pending} onClick={onRecordStats} style={{ padding: "6px 10px" }}>Player stats</button>
+        )}
         {done || match.team_b_id === null ? null : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
@@ -269,5 +285,108 @@ function MatchRow({ match, teamName, courts, onSchedule, onUnschedule, onResult,
         )}
       </td>
     </tr>
+  );
+}
+
+type RosterPlayer = { id: string; user_id: string | null; guest_name: string | null; name: string };
+
+function MatchPlayerStatsModal({
+  match, teamName, onClose, onSaved,
+}: {
+  match: TournamentMatch;
+  teamName: (id: string | null) => string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [goals, setGoals] = useState<Record<string, string>>({});
+  const [mom, setMom] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      match.team_a_id ? getTeamRoster(match.team_a_id) : Promise.resolve([]),
+      match.team_b_id ? getTeamRoster(match.team_b_id) : Promise.resolve([]),
+      getMatchPlayerStats(match.id),
+    ]).then(([a, b, stats]) => {
+      if (cancelled) return;
+      const rosterA = isActionError(a) ? [] : a;
+      const rosterB = isActionError(b) ? [] : b;
+      setRoster([...rosterA, ...rosterB]);
+      if (!isActionError(stats)) {
+        const g: Record<string, string> = {};
+        let m: string | null = null;
+        for (const s of stats as TournamentMatchPlayerStat[]) {
+          g[s.team_player_id] = String(s.goals);
+          if (s.is_mom) m = s.team_player_id;
+        }
+        setGoals(g);
+        setMom(m);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [match.id, match.team_a_id, match.team_b_id]);
+
+  function submit() {
+    setErr(null);
+    startTransition(async () => {
+      const stats = roster.map((p) => ({
+        team_player_id: p.id,
+        goals: Number(goals[p.id]) || 0,
+        is_mom: p.id === mom,
+      }));
+      const res = await recordMatchPlayerStats(match.id, stats);
+      if (isActionError(res)) { setErr(res.message); return; }
+      onSaved();
+    });
+  }
+
+  return (
+    <div className="tc-scrim" onClick={onClose}>
+      <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>Player stats</h3>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+        <div className="tc-dim" style={{ fontSize: 12.5, marginBottom: 16 }}>
+          {teamName(match.team_a_id)} {match.score_a}–{match.score_b} {teamName(match.team_b_id)}
+        </div>
+
+        {loading ? (
+          <div className="tc-empty">Loading roster…</div>
+        ) : roster.length === 0 ? (
+          <div className="tc-empty">Neither team has a roster to record stats for.</div>
+        ) : (
+          <>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 70px 60px", gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6 }}>
+              <div>Player</div><div>Goals</div><div>MOM</div>
+            </div>
+            {roster.map((p) => (
+              <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1fr 70px 60px", gap: 8, alignItems: "center", padding: "6px 0" }}>
+                <div style={{ fontSize: 13.5 }}>{p.name}</div>
+                <input
+                  type="number" min={0} value={goals[p.id] ?? ""}
+                  onChange={(e) => setGoals((g) => ({ ...g, [p.id]: e.target.value }))}
+                  style={{ ...inputStyle, width: 60 }}
+                />
+                <input
+                  type="radio" name="mom" checked={mom === p.id} onChange={() => setMom(p.id)}
+                  style={{ justifySelf: "start", width: 18, height: 18 }} aria-label={`${p.name} is man of the match`}
+                />
+              </div>
+            ))}
+          </>
+        )}
+
+        {err && <div className="tc-err" style={{ marginTop: 14 }}>{err}</div>}
+        <button className="tc-btn primary" style={{ marginTop: 18, width: "100%", justifyContent: "center" }} disabled={pending || loading} onClick={submit}>
+          {pending ? "Saving…" : "Save stats"}
+        </button>
+      </div>
+    </div>
   );
 }

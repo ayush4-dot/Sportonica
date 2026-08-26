@@ -7,6 +7,8 @@ import {
   computeBadges, trustLabel,
 } from "@/lib/profile/queries";
 import { getRelationship } from "@/lib/friends/queries";
+import { getPlayerScorecard } from "@/lib/tournaments/actions";
+import { isActionError } from "@/lib/actionError";
 import ShareButton from "./ShareButton";
 import DownloadButton from "./DownloadButton";
 import FriendRequestButton from "@/components/FriendRequestButton";
@@ -54,12 +56,14 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     );
   }
 
-  const [stats, sports, recent, relationship] = await Promise.all([
+  const [stats, sports, recent, relationship, scorecardRes] = await Promise.all([
     getPlayerStats(profile.id),
     getPlayerSports(profile.id),
     getRecentGames(profile.id),
     getRelationship(profile.id),
+    getPlayerScorecard(profile.id),
   ]);
+  const scorecard = isActionError(scorecardRes) ? null : scorecardRes;
   const badges = computeBadges(stats, sports);
   const trust = trustLabel(profile.trust_score ?? 50);
   const joined = new Date(profile.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -145,6 +149,31 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
                 </div>
               </div>
             ))}
+          </section>
+        )}
+
+        {/* ── Tournament stats ── */}
+        {scorecard && scorecard.matches_played > 0 && (
+          <section className="pf-sec">
+            <div className="pf-sec-head">
+              <span className="pf-sec-num">{num()}</span>
+              <h2 className="pf-sec-t">Tournament stats</h2>
+              <span className="pf-sec-count">{scorecard.tournaments_played} tournament{scorecard.tournaments_played !== 1 ? "s" : ""}</span>
+            </div>
+            <div className="pf-stats">
+              <div className="pf-stat">
+                <div className="pf-stat-v">{scorecard.goals}</div>
+                <div className="pf-stat-l">Goals</div>
+              </div>
+              <div className="pf-stat">
+                <div className="pf-stat-v">{scorecard.matches_played}</div>
+                <div className="pf-stat-l">Matches played</div>
+              </div>
+              <div className="pf-stat">
+                <div className="pf-stat-v">{scorecard.mom_count}</div>
+                <div className="pf-stat-l">Player of the match</div>
+              </div>
+            </div>
           </section>
         )}
 
