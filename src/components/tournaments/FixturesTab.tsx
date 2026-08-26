@@ -432,7 +432,7 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
   );
 }
 
-type RosterPlayer = { id: string; user_id: string | null; guest_name: string | null; name: string };
+type RosterPlayer = { id: string; user_id: string | null; guest_name: string | null; name: string; team: "a" | "b" };
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
 
@@ -448,6 +448,7 @@ function MatchPlayerStatsModal({
 }) {
   const [loading, setLoading] = useState(true);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [teamTab, setTeamTab] = useState<"a" | "b">("a");
   const [goals, setGoals] = useState<Record<string, string>>({});
   const [assists, setAssists] = useState<Record<string, string>>({});
   const [yellows, setYellows] = useState<Record<string, string>>({});
@@ -465,8 +466,8 @@ function MatchPlayerStatsModal({
       getMatchPlayerStats(match.id),
     ]).then(([a, b, stats]) => {
       if (cancelled) return;
-      const rosterA = isActionError(a) ? [] : a;
-      const rosterB = isActionError(b) ? [] : b;
+      const rosterA = (isActionError(a) ? [] : a).map((p) => ({ ...p, team: "a" as const }));
+      const rosterB = (isActionError(b) ? [] : b).map((p) => ({ ...p, team: "b" as const }));
       setRoster([...rosterA, ...rosterB]);
       if (!isActionError(stats)) {
         const g: Record<string, string> = {};
@@ -533,10 +534,26 @@ function MatchPlayerStatsModal({
           <div className="tc-empty">Neither team has a roster to record stats for.</div>
         ) : (
           <div style={{ overflowX: "auto" }}>
+            {match.team_a_id && match.team_b_id && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 12 }}>
+                <button
+                  className={`tc-btn ${teamTab === "a" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }}
+                  onClick={() => setTeamTab("a")}
+                >
+                  {teamName(match.team_a_id)} <span style={{ opacity: 0.7, marginLeft: 4 }}>{roster.filter((p) => p.team === "a").length}</span>
+                </button>
+                <button
+                  className={`tc-btn ${teamTab === "b" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }}
+                  onClick={() => setTeamTab("b")}
+                >
+                  {teamName(match.team_b_id)} <span style={{ opacity: 0.7, marginLeft: 4 }}>{roster.filter((p) => p.team === "b").length}</span>
+                </button>
+              </div>
+            )}
             <div style={{ display: "grid", gridTemplateColumns: `1.4fr 55px 55px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 470 }}>
               <div>Player</div><div>Goals</div><div>Assists</div><div>Yellow</div><div>Red</div><div>MOM</div>{trackingFines && <div>Fine</div>}
             </div>
-            {roster.map((p) => (
+            {roster.filter((p) => !match.team_b_id || p.team === teamTab).map((p) => (
               <div key={p.id} style={{ display: "grid", gridTemplateColumns: `1.4fr 55px 55px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, alignItems: "center", padding: "6px 0", minWidth: 470 }}>
                 <div style={{ fontSize: 13.5 }}>
                   {p.name}

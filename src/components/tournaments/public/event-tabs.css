@@ -26,7 +26,7 @@
 
 .ev2-tab {
   display: flex; align-items: center; gap: 7px; white-space: nowrap;
-  padding: 10px 16px; border-radius: 11px; border: none; background: transparent;
+  padding: 10px 16px; min-height: 44px; box-sizing: border-box; border-radius: 11px; border: none; background: transparent;
   color: inherit; opacity: 0.62; font-family: inherit; font-size: 13.5px; font-weight: 700;
   cursor: pointer; transition: opacity .2s ease, background .2s ease, color .2s ease;
 }
@@ -154,3 +154,18 @@
 .ev2-bracket-slot.tbd { opacity: 0.4; }
 .ev2-bracket-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev2-bracket-score { font-variant-numeric: tabular-nums; font-weight: 800; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .ev2-card { padding: 16px; margin-bottom: 12px; }
+  .ev2-card-t { font-size: 15px; }
+  .ev2-stats { gap: 10px; margin-bottom: 14px; }
+  .ev2-stat { padding: 14px 10px; }
+  .ev2-stat-v { font-size: 22px; }
+  .ev2-award { padding: 14px; }
+  .ev2-team-card { padding: 14px; }
+  .ev2-fixture { padding: 12px; gap: 10px; }
+  .ev2-fixture-time { width: 44px; font-size: 11px; }
+  .ev2-fixture-round { width: auto; text-align: left; }
+  .ev2-fixture-teams { font-size: 13px; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+  .ev2-table th, .ev2-table td { padding: 9px 8px; font-size: 12.5px; }
+}

@@ -336,7 +336,7 @@
 }
 .bk-hero-info h1 {
   font-family: 'Inter', sans-serif;
-  font-size: clamp(24px, 4.5vw, 38px); font-weight: 800;
+  font-size: clamp(30px, 8vw, 38px); font-weight: 800;
   letter-spacing: -1px; line-height: 1.05; margin: 0 0 9px;
   color: var(--chalk, #F2EDE6);
 }
