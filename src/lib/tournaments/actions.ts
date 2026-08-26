@@ -446,6 +446,16 @@ export async function deleteMatch(matchId: string): Promise<void | ActionError> 
   if (error) return actionError(friendlyTournamentError(error.message));
 }
 
+export async function updateMatchTeams(matchId: string, teamAId: string, teamBId?: string): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("update_match_teams", {
+    p_match_id: matchId, p_team_a_id: teamAId, p_team_b_id: teamBId ?? null,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
 export async function getMatchAudit(matchId: string): Promise<(MatchAuditEntry & { changed_by_name: string })[] | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");

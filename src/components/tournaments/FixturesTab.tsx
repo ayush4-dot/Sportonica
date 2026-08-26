@@ -2,9 +2,9 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X, History } from "lucide-react";
+import { Plus, Trash2, X, History, Pencil } from "lucide-react";
 import {
-  recordMatchResult, setMatchTime, createMatch, deleteMatch, getMatchAudit,
+  recordMatchResult, setMatchTime, createMatch, deleteMatch, updateMatchTeams, getMatchAudit,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -28,6 +28,45 @@ function toLocalTime(iso: string | null) {
 }
 
 const DONE = new Set(["completed", "walkover", "cancelled"]);
+
+// "Winner of X" quick-pick — reads matches already on the page, no
+// bracket tree or auto-wiring involved. Lets an admin building round 2
+// grab round 1's winner by name instead of having to remember/re-find
+// it in the confirmed-teams list.
+function winnerOptions(matches: TournamentMatch[], teamName: (id: string | null) => string) {
+  const out: { id: string; label: string }[] = [];
+  for (const m of matches) {
+    if (!m.winner_team_id) continue;
+    out.push({ id: m.winner_team_id, label: `${teamName(m.winner_team_id)} — won ${m.round_label}` });
+  }
+  return out;
+}
+
+function TeamSelect({ value, onChange, teams, winners, excludeId, placeholder, style }: {
+  value: string;
+  onChange: (id: string) => void;
+  teams: TournamentTeam[];
+  winners: { id: string; label: string }[];
+  excludeId?: string;
+  placeholder: string;
+  style?: React.CSSProperties;
+}) {
+  const winnerOpts = winners.filter((w) => w.id !== excludeId);
+  const teamOpts = teams.filter((t) => t.id !== excludeId);
+  return (
+    <select value={value} onChange={(e) => onChange(e.target.value)} style={style}>
+      <option value="">{placeholder}</option>
+      {winnerOpts.length > 0 && (
+        <optgroup label="Winners">
+          {winnerOpts.map((w) => <option key={`w-${w.id}`} value={w.id}>{w.label}</option>)}
+        </optgroup>
+      )}
+      <optgroup label="All confirmed teams">
+        {teamOpts.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+      </optgroup>
+    </select>
+  );
+}
 
 export default function FixturesTab({
   tournament, teams, matches,
@@ -73,7 +112,7 @@ export default function FixturesTab({
 
       {canAddMatches && (
         <AddMatchForm
-          tournament={tournament} teams={teams} matches={matches} pending={pending}
+          tournament={tournament} teams={teams} matches={matches} teamName={teamName} pending={pending}
           onAdd={(input) => run(() => createMatch(input))}
         />
       )}
@@ -89,10 +128,11 @@ export default function FixturesTab({
               <tbody>
                 {ms.map((m) => (
                   <MatchRow
-                    key={m.id} match={m} teamName={teamName} pending={pending}
+                    key={m.id} match={m} teams={teams} matches={matches} teamName={teamName} pending={pending}
                     onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
                     onRecordStats={() => setRecordingStats(m)}
                     onSetTime={(startsAt, endsAt) => run(() => setMatchTime(m.id, startsAt, endsAt))}
+                    onUpdateTeams={(teamAId, teamBId) => run(() => updateMatchTeams(m.id, teamAId, teamBId))}
                     onDelete={() => {
                       if (!window.confirm(`Delete ${teamName(m.team_a_id)} vs ${teamName(m.team_b_id)}? This can't be undone.`)) return;
                       run(() => deleteMatch(m.id));
@@ -123,10 +163,11 @@ const STAGE_LABELS: Record<"group" | "league" | "knockout", string> = {
   group: "Group stage", league: "League", knockout: "Knockout",
 };
 
-function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
+function AddMatchForm({ tournament, teams, matches, teamName, pending, onAdd }: {
   tournament: Tournament;
   teams: TournamentTeam[];
   matches: TournamentMatch[];
+  teamName: (id: string | null) => string;
   pending: boolean;
   onAdd: (input: {
     tournamentId: string; stage: "group" | "league" | "knockout"; round: number;
@@ -154,6 +195,7 @@ function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
       .filter((id): id is string => id !== null)
   );
   const availableTeams = teams.filter((t) => !usedTeamIds.has(t.id));
+  const winners = winnerOptions(matches, teamName).filter((w) => !usedTeamIds.has(w.id));
 
   function submit() {
     if (!teamAId) { setLocalErr("Pick team A."); return; }
@@ -182,17 +224,17 @@ function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
         )}
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="tc-dim" style={{ fontSize: 11 }}>Team A</span>
-          <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
-            <option value="">Select…</option>
-            {availableTeams.filter((t) => t.id !== teamBId).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <TeamSelect
+            value={teamAId} onChange={setTeamAId} teams={availableTeams} winners={winners}
+            excludeId={teamBId || undefined} placeholder="Select…" style={{ ...inputStyle, width: 190 }}
+          />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="tc-dim" style={{ fontSize: 11 }}>Team B</span>
-          <select value={teamBId} onChange={(e) => setTeamBId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
-            <option value="">TBD / bye</option>
-            {availableTeams.filter((t) => t.id !== teamAId).map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
+          <TeamSelect
+            value={teamBId} onChange={setTeamBId} teams={availableTeams} winners={winners}
+            excludeId={teamAId || undefined} placeholder="TBD / bye" style={{ ...inputStyle, width: 190 }}
+          />
         </label>
         {stage === "group" && (
           <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -217,8 +259,10 @@ function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
   );
 }
 
-function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelete, pending }: {
+function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, onSetTime, onUpdateTeams, onDelete, pending }: {
   match: TournamentMatch;
+  teams: TournamentTeam[];
+  matches: TournamentMatch[];
   teamName: (id: string | null) => string;
   onResult: (
     a: number | null, b: number | null, winnerId?: string,
@@ -226,11 +270,15 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
   ) => void;
   onRecordStats: () => void;
   onSetTime: (startsAt: string | null, endsAt: string | null) => void;
+  onUpdateTeams: (teamAId: string, teamBId?: string) => void;
   onDelete: () => void;
   pending: boolean;
 }) {
   const [editingTime, setEditingTime] = useState(false);
+  const [editingTeams, setEditingTeams] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [teamAId, setTeamAId] = useState(match.team_a_id ?? "");
+  const [teamBId, setTeamBId] = useState(match.team_b_id ?? "");
   const [dateStr, setDateStr] = useState(toLocalDate(match.starts_at));
   const [timeStr, setTimeStr] = useState(toLocalTime(match.starts_at) || "17:00");
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
@@ -241,6 +289,15 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
   const [scoreBPens, setScoreBPens] = useState(match.score_b_pens?.toString() ?? "");
   const bothSet = !!match.team_a_id && !!match.team_b_id;
   const done = DONE.has(match.status);
+
+  const usedTeamIds = new Set(
+    matches
+      .filter((m) => m.id !== match.id && m.stage === match.stage && m.round === match.round && (match.stage !== "group" || m.group_name === match.group_name))
+      .flatMap((m) => [m.team_a_id, m.team_b_id])
+      .filter((id): id is string => id !== null)
+  );
+  const availableTeams = teams.filter((t) => !usedTeamIds.has(t.id));
+  const winners = winnerOptions(matches, teamName).filter((w) => w.id !== match.winner_team_id && !usedTeamIds.has(w.id));
 
   // A knockout match can't end level — group/league draws are a valid
   // result on their own. When regulation is tied, reveal extra time;
@@ -266,7 +323,39 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
   return (
     <tr>
       <td>
-        <div style={{ fontWeight: 600 }}>{teamName(match.team_a_id)} <span className="tc-dim">vs</span> {teamName(match.team_b_id)}</div>
+        {editingTeams ? (
+          <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+            <TeamSelect
+              value={teamAId} onChange={setTeamAId} teams={availableTeams} winners={winners}
+              excludeId={teamBId || undefined} placeholder="Team A" style={{ ...inputStyle, width: 160 }}
+            />
+            <span className="tc-dim">vs</span>
+            <TeamSelect
+              value={teamBId} onChange={setTeamBId} teams={availableTeams} winners={winners}
+              excludeId={teamAId || undefined} placeholder="TBD / bye" style={{ ...inputStyle, width: 160 }}
+            />
+            <button
+              className="tc-btn primary" disabled={pending || !teamAId} style={{ padding: "5px 8px", fontSize: 11.5 }}
+              onClick={() => { onUpdateTeams(teamAId, teamBId || undefined); setEditingTeams(false); }}
+            >
+              Save
+            </button>
+            <button className="tc-btn" disabled={pending} style={{ padding: "5px 8px", fontSize: 11.5 }} onClick={() => setEditingTeams(false)}>Cancel</button>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ fontWeight: 600 }}>{teamName(match.team_a_id)} <span className="tc-dim">vs</span> {teamName(match.team_b_id)}</div>
+            {!done && (
+              <button
+                aria-label="Edit teams" disabled={pending}
+                onClick={() => { setTeamAId(match.team_a_id ?? ""); setTeamBId(match.team_b_id ?? ""); setEditingTeams(true); }}
+                style={{ background: "none", border: "none", color: "inherit", opacity: 0.5, cursor: "pointer", padding: 2, display: "flex" }}
+              >
+                <Pencil size={12} />
+              </button>
+            )}
+          </div>
+        )}
         {match.status === "walkover" && <span className="tc-badge warn">Walkover — {teamName(match.winner_team_id)}</span>}
         {match.status === "completed" && match.team_b_id === null && <span className="tc-badge ok">Bye</span>}
       </td>
@@ -623,6 +712,7 @@ function summarizeAudit(e: MatchAuditEntry): string {
     if (nv?.status === "walkover") return "Walkover recorded";
     return `Score set to ${nv?.score_a}–${nv?.score_b}`;
   }
+  if (e.change_type === "teams") return "Teams changed";
   return e.change_type;
 }
 

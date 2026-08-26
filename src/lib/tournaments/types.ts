@@ -191,7 +191,7 @@ export interface MatchAuditEntry {
   id: string;
   match_id: string;
   changed_by: string | null;
-  change_type: "created" | "deleted" | "result" | "schedule";
+  change_type: "created" | "deleted" | "result" | "schedule" | "teams";
   old_value: Record<string, unknown> | null;
   new_value: Record<string, unknown> | null;
   created_at: string;
