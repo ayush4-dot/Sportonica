@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
 import {
   LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight,
 } from "lucide-react";
@@ -54,14 +54,35 @@ export default function EventTabs({
   const [tab, setTab] = useState<Tab>("Overview");
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
 
+  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
+  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null);
+
+  useLayoutEffect(() => {
+    const el = tabRefs.current[activeTab];
+    if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+  }, [activeTab, visibleTabs.length]);
+
+  useEffect(() => {
+    const onResize = () => {
+      const el = tabRefs.current[activeTab];
+      if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [activeTab]);
+
   return (
     <div>
       <div className="ev2-tabbar-wrap">
         <div className="ev2-tabbar">
+          {indicator && <div className="ev2-tab-indicator" style={{ transform: `translateX(${indicator.left}px)`, width: indicator.width }} />}
           {visibleTabs.map((t) => {
             const Icon = TAB_ICON[t];
             return (
-              <button key={t} className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}>
+              <button
+                key={t} ref={(el) => { if (el) tabRefs.current[t] = el; }}
+                className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}
+              >
                 <Icon size={15} /> {t}
               </button>
             );
