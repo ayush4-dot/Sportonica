@@ -8,6 +8,7 @@ import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
   TournamentMatchPlayerStat, PlayerScorecard, TournamentPlayerStatRow, TournamentAwards,
+  MatchAuditEntry,
 } from "./types";
 
 async function requireUser() {
@@ -443,6 +444,23 @@ export async function deleteMatch(matchId: string): Promise<void | ActionError> 
   if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.rpc("delete_match", { p_match_id: matchId });
   if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+export async function getMatchAudit(matchId: string): Promise<(MatchAuditEntry & { changed_by_name: string })[] | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("get_match_audit", { p_match_id: matchId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  const entries = (data ?? []) as MatchAuditEntry[];
+  const ids = [...new Set(entries.map((e) => e.changed_by).filter((id): id is string => !!id))];
+  const { data: profiles } = ids.length
+    ? await sb.from("profiles").select("id, full_name, name").in("id", ids)
+    : { data: [] as { id: string; full_name: string | null; name: string | null }[] };
+  const map = new Map((profiles ?? []).map((p) => [p.id, p]));
+  return entries.map((e) => ({
+    ...e,
+    changed_by_name: e.changed_by ? (map.get(e.changed_by)?.full_name ?? map.get(e.changed_by)?.name ?? "Someone") : "System",
+  }));
 }
 
 export async function recordMatchResult(

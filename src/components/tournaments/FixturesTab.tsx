@@ -2,13 +2,13 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, X } from "lucide-react";
+import { Plus, Trash2, X, History } from "lucide-react";
 import {
-  recordMatchResult, setMatchTime, createMatch, deleteMatch,
+  recordMatchResult, setMatchTime, createMatch, deleteMatch, getMatchAudit,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
-import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat } from "@/lib/tournaments/types";
+import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat, MatchAuditEntry } from "@/lib/tournaments/types";
 
 const inputStyle: React.CSSProperties = {
   padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(242,237,230,0.15)",
@@ -230,6 +230,7 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
   pending: boolean;
 }) {
   const [editingTime, setEditingTime] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [dateStr, setDateStr] = useState(toLocalDate(match.starts_at));
   const [timeStr, setTimeStr] = useState(toLocalTime(match.starts_at) || "17:00");
   const [scoreA, setScoreA] = useState(match.score_a?.toString() ?? "");
@@ -317,11 +318,18 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelet
         {match.status === "completed" && match.team_a_id && match.team_b_id && match.score_a !== null && match.score_b !== null && (
           <button className="tc-btn" disabled={pending} onClick={onRecordStats} style={{ padding: "6px 10px", marginRight: 6 }}>Player stats</button>
         )}
+        <button
+          aria-label="Match history" onClick={() => setShowHistory((v) => !v)}
+          style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", padding: 6 }}
+        >
+          <History size={14} />
+        </button>
         {!done && (
           <button aria-label="Delete match" disabled={pending} onClick={onDelete} style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.7, cursor: "pointer", padding: 6 }}>
             <Trash2 size={14} />
           </button>
         )}
+        {showHistory && <MatchHistoryPanel matchId={match.id} />}
         {done || match.team_b_id === null ? null : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
@@ -598,6 +606,57 @@ function MatchPlayerStatsModal({
           {pending ? "Saving…" : "Save stats"}
         </button>
       </div>
+    </div>
+  );
+}
+
+function summarizeAudit(e: MatchAuditEntry): string {
+  const nv = e.new_value as Record<string, unknown> | null;
+  if (e.change_type === "created") return "Match created";
+  if (e.change_type === "schedule") {
+    const startsAt = nv?.starts_at as string | null | undefined;
+    return startsAt
+      ? `Scheduled for ${new Date(startsAt).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: KTM_TZ })}`
+      : "Schedule cleared";
+  }
+  if (e.change_type === "result") {
+    if (nv?.status === "walkover") return "Walkover recorded";
+    return `Score set to ${nv?.score_a}–${nv?.score_b}`;
+  }
+  return e.change_type;
+}
+
+function MatchHistoryPanel({ matchId }: { matchId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [entries, setEntries] = useState<(MatchAuditEntry & { changed_by_name: string })[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getMatchAudit(matchId).then((res) => {
+      if (cancelled) return;
+      if (!isActionError(res)) setEntries(res);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [matchId]);
+
+  return (
+    <div style={{ marginTop: 8, padding: 10, borderRadius: 10, background: "rgba(128,128,128,0.08)", fontSize: 12 }}>
+      {loading ? (
+        <span className="tc-dim">Loading history…</span>
+      ) : entries.length === 0 ? (
+        <span className="tc-dim">No changes recorded yet.</span>
+      ) : (
+        entries.map((e) => (
+          <div key={e.id} style={{ padding: "4px 0" }}>
+            <span className="tc-dim">
+              {new Date(e.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: KTM_TZ })}
+            </span>
+            {" — "}{summarizeAudit(e)}{" "}
+            <span className="tc-dim">by {e.changed_by_name}</span>
+          </div>
+        ))
+      )}
     </div>
   );
 }

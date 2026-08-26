@@ -152,6 +152,12 @@
 .ev2-bracket-slot.winner { font-weight: 800; }
 .ev2-bracket-slot.winner .ev2-bracket-name::after { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 999px; background: #00875a; margin-left: 6px; }
 .ev2-bracket-slot.tbd { opacity: 0.4; }
+.ev2-bracket-team { display: flex; align-items: center; gap: 7px; min-width: 0; overflow: hidden; }
+.ev2-bracket-av {
+  flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 10px; font-weight: 800; color: #fff; background: linear-gradient(150deg,#006241,#1e3932);
+}
+.ev2-bracket-slot.tbd .ev2-bracket-av { background: rgba(128,128,128,0.35); }
 .ev2-bracket-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev2-bracket-score { font-variant-numeric: tabular-nums; font-weight: 800; flex-shrink: 0; }
 

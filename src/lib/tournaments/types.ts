@@ -187,6 +187,16 @@ export interface TournamentAwards {
   semifinalists: string[];
 }
 
+export interface MatchAuditEntry {
+  id: string;
+  match_id: string;
+  changed_by: string | null;
+  change_type: "created" | "deleted" | "result" | "schedule";
+  old_value: Record<string, unknown> | null;
+  new_value: Record<string, unknown> | null;
+  created_at: string;
+}
+
 export interface TournamentTeamPlayer {
   id: string;
   team_id: string;

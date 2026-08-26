@@ -235,11 +235,17 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
   );
 }
 
+// No team crest/logo upload exists yet — an initial-letter avatar
+// (same visual language used for players/hosts elsewhere) stands in
+// for one, rather than leaving the bracket as bare text rows.
 function BracketSlot({ name, winner, score }: { name: string; winner: boolean; score: number | null }) {
-  const tbd = name === "TBD";
+  const tbd = name === "TBD" || name === "Bye";
   return (
     <div className={`ev2-bracket-slot ${winner ? "winner" : ""} ${tbd ? "tbd" : ""}`}>
-      <span className="ev2-bracket-name">{name}</span>
+      <span className="ev2-bracket-team">
+        <span className="ev2-bracket-av">{tbd ? "?" : name.charAt(0).toUpperCase()}</span>
+        <span className="ev2-bracket-name">{name}</span>
+      </span>
       {score != null && <span className="ev2-bracket-score">{score}</span>}
     </div>
   );
