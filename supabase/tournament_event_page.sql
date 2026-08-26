@@ -11,6 +11,11 @@
 -- Run any time. Safe to re-run.
 -- ================================================================
 
+-- yellow_cards/red_card should already exist from tournament_cards_fines.sql
+-- — added defensively here too (idempotent) so this file doesn't depend
+-- on migrations having been run in a particular order.
+alter table public.tournament_match_player_stats add column if not exists yellow_cards int not null default 0 check (yellow_cards between 0 and 2);
+alter table public.tournament_match_player_stats add column if not exists red_card boolean not null default false;
 alter table public.tournament_match_player_stats add column if not exists assists int not null default 0 check (assists >= 0);
 
 create or replace function public.record_match_player_stats(p_match_id uuid, p_stats jsonb)
