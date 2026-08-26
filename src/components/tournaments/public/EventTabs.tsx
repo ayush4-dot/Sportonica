@@ -232,37 +232,70 @@ function matchWhen(m: TournamentMatch): string {
 // that assumption doesn't hold), each round is its own independently
 // centered column; a plain chevron between columns shows the flow
 // left-to-right without claiming a precision the data can't back up.
+const KO_DONE = new Set(["completed", "walkover", "cancelled"]);
+
+function matchCode(ms: TournamentMatch[], i: number): string {
+  return ms.length > 1 ? `${roundShortCode(ms[i].round_label)}${i + 1}` : roundShortCode(ms[i].round_label);
+}
+
 function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
   const [selected, setSelected] = useState<TournamentMatch | null>(null);
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
-  if (knockout.length === 0) return <div className="ev2-empty">No knockout matches added yet.</div>;
 
   const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
   const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
-  const maxCount = Math.max(...byRound.map((ms) => ms.length));
+  const maxCount = byRound.length ? Math.max(...byRound.map((ms) => ms.length)) : 0;
   const columnHeight = maxCount * MATCH_H + (maxCount - 1) * SLOT_GAP;
 
+  // Land on whichever round still has something undecided (the round
+  // you'd actually want to check), not always round 1 — falls back to
+  // the last round once everything's finished.
+  const [activeRound, setActiveRound] = useState(() => {
+    const i = byRound.findIndex((ms) => ms.some((m) => !KO_DONE.has(m.status)));
+    return i === -1 ? byRound.length - 1 : i;
+  });
+
+  if (knockout.length === 0) return <div className="ev2-empty">No knockout matches added yet.</div>;
+  const safeActiveRound = Math.min(Math.max(activeRound, 0), byRound.length - 1);
+
   return (
-    <div className="ev2-bracket-wrap">
-      <div className="ev2-bracket">
-        {byRound.map((ms, r) => (
-          <div key={r} style={{ display: "flex", alignItems: "center" }}>
-            {r > 0 && <ChevronRight className="ev2-bracket-arrow" size={18} />}
-            <div className="ev2-bracket-round">
-              <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
-              <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
-                {ms.map((m, i) => (
-                  <BracketMatchCard
-                    key={m.id} match={m} teamName={teamName}
-                    code={ms.length > 1 ? `${roundShortCode(m.round_label)}${i + 1}` : roundShortCode(m.round_label)}
-                    onClick={() => setSelected(m)}
-                  />
-                ))}
+    <div>
+      {/* Phone: tap between rounds instead of having to discover them
+          by swiping sideways. */}
+      <div className="ev2-bracket-mobile">
+        <div className="ev2-bracket-round-chips">
+          {byRound.map((ms, r) => (
+            <button key={r} className={`ev2-bracket-chip ${r === safeActiveRound ? "on" : ""}`} onClick={() => setActiveRound(r)}>
+              {ms[0]?.round_label}
+            </button>
+          ))}
+        </div>
+        <div className="ev2-bracket-mobile-list">
+          {byRound[safeActiveRound].map((m, i) => (
+            <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(byRound[safeActiveRound], i)} onClick={() => setSelected(m)} />
+          ))}
+        </div>
+      </div>
+
+      {/* Desktop / wide screens: the full bracket, all rounds at once. */}
+      <div className="ev2-bracket-wrap ev2-bracket-desktop">
+        <div className="ev2-bracket">
+          {byRound.map((ms, r) => (
+            <div key={r} style={{ display: "flex", alignItems: "center" }}>
+              {r > 0 && <ChevronRight className="ev2-bracket-arrow" size={18} />}
+              <div className="ev2-bracket-round">
+                <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
+                  {ms.map((m, i) => (
+                    <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(ms, i)} onClick={() => setSelected(m)} />
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
+
       {selected && <MatchDetailModal match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
     </div>
   );

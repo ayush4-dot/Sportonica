@@ -136,6 +136,28 @@
 .ev2-bracket { display: flex; align-items: center; }
 .ev2-bracket-round { width: 220px; flex-shrink: 0; }
 .ev2-bracket-arrow { flex-shrink: 0; margin: 0 6px; opacity: 0.3; }
+
+/* Phone: a round switcher + single vertical list instead of the
+   full horizontal multi-column bracket — nothing to discover by
+   swiping, every match in the picked round is just there. */
+.ev2-bracket-mobile { display: none; }
+.ev2-bracket-round-chips {
+  display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 14px;
+  -ms-overflow-style: none; scrollbar-width: none;
+}
+.ev2-bracket-round-chips::-webkit-scrollbar { display: none; }
+.ev2-bracket-chip {
+  flex-shrink: 0; padding: 9px 16px; border-radius: 999px; border: 1px solid rgba(242,237,230,0.16);
+  background: transparent; color: inherit; opacity: 0.65; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
+}
+[data-theme="paper"] .ev2-bracket-chip { border-color: rgba(20,23,30,0.12); }
+.ev2-bracket-chip.on { opacity: 1; color: #fff; background: linear-gradient(135deg,#006241,#00875a); border-color: transparent; }
+.ev2-bracket-mobile-list { display: flex; flex-direction: column; gap: 14px; }
+
+@media (max-width: 720px) {
+  .ev2-bracket-desktop { display: none; }
+  .ev2-bracket-mobile { display: block; }
+}
 .ev2-bracket-round-label {
   text-align: center; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em;
   opacity: 0.6; margin-bottom: 14px;
