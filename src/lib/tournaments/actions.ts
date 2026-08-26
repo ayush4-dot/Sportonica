@@ -412,52 +412,37 @@ export async function getTournamentStandings(tournamentId: string, groupName?: s
   return (data ?? []) as TournamentStanding[];
 }
 
-export async function setTeamSeed(teamId: string, seed: number, groupName?: string): Promise<TournamentTeam | ActionError> {
+// Fully manual fixtures/bracket: the organizer picks both teams from the
+// confirmed pool, a stage, a round number, and a round label — no
+// auto-seeding or auto-pairing. First match created flips the
+// tournament to 'live', same as the old auto-generation did.
+export async function createMatch(input: {
+  tournamentId: string;
+  stage: "group" | "league" | "knockout";
+  round: number;
+  roundLabel: string;
+  teamAId: string;
+  teamBId?: string;
+  groupName?: string;
+}): Promise<TournamentMatch | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("set_team_seed", { p_team_id: teamId, p_seed: seed, p_group_name: groupName ?? null });
+  const { data, error } = await sb.rpc("create_match", {
+    p_tournament_id: input.tournamentId, p_stage: input.stage, p_round: input.round,
+    p_round_label: input.roundLabel, p_team_a_id: input.teamAId, p_team_b_id: input.teamBId ?? null,
+    p_group_name: input.groupName ?? null,
+  });
   if (error) return actionError(friendlyTournamentError(error.message));
-  return data as TournamentTeam;
+  revalidatePath(`/admin/tournaments/${input.tournamentId}`);
+  revalidatePath(`/tournaments/${input.tournamentId}`);
+  return data as TournamentMatch;
 }
 
-export async function generateKnockoutBracket(tournamentId: string): Promise<Tournament | ActionError> {
+export async function deleteMatch(matchId: string): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("generate_knockout_bracket", { p_tournament_id: tournamentId });
+  const { error } = await sb.rpc("delete_match", { p_match_id: matchId });
   if (error) return actionError(friendlyTournamentError(error.message));
-  revalidatePath(`/admin/tournaments/${tournamentId}`);
-  revalidatePath(`/tournaments/${tournamentId}`);
-  return data as Tournament;
-}
-
-export async function generateLeagueFixtures(tournamentId: string): Promise<Tournament | ActionError> {
-  const { sb, user } = await requireUser();
-  if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("generate_league_fixtures", { p_tournament_id: tournamentId });
-  if (error) return actionError(friendlyTournamentError(error.message));
-  revalidatePath(`/admin/tournaments/${tournamentId}`);
-  revalidatePath(`/tournaments/${tournamentId}`);
-  return data as Tournament;
-}
-
-export async function generateGroupFixtures(tournamentId: string): Promise<Tournament | ActionError> {
-  const { sb, user } = await requireUser();
-  if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("generate_group_fixtures", { p_tournament_id: tournamentId });
-  if (error) return actionError(friendlyTournamentError(error.message));
-  revalidatePath(`/admin/tournaments/${tournamentId}`);
-  revalidatePath(`/tournaments/${tournamentId}`);
-  return data as Tournament;
-}
-
-export async function generateKnockoutFromGroups(tournamentId: string, advancePerGroup: number): Promise<Tournament | ActionError> {
-  const { sb, user } = await requireUser();
-  if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("generate_knockout_from_groups", { p_tournament_id: tournamentId, p_advance_per_group: advancePerGroup });
-  if (error) return actionError(friendlyTournamentError(error.message));
-  revalidatePath(`/admin/tournaments/${tournamentId}`);
-  revalidatePath(`/tournaments/${tournamentId}`);
-  return data as Tournament;
 }
 
 export async function recordMatchResult(

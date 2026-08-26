@@ -311,6 +311,8 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   MATCH_NOT_COMPLETED: "Enter the match score before recording player stats.",
   PLAYER_NOT_IN_MATCH: "That player isn't on either team in this match.",
   TEAM_NAME_TAKEN: "A team with that name is already registered for this tournament.",
+  INVALID_STAGE: "That's not a valid stage.",
+  SAME_TEAM: "Pick two different teams.",
 };
 
 export function friendlyTournamentError(message: string): string {

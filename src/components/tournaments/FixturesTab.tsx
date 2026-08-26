@@ -2,10 +2,9 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUp, ArrowDown, X } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import {
-  setTeamSeed, generateKnockoutBracket, generateLeagueFixtures, generateGroupFixtures,
-  generateKnockoutFromGroups, recordMatchResult, setMatchTime,
+  recordMatchResult, setMatchTime, createMatch, deleteMatch,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -41,7 +40,6 @@ export default function FixturesTab({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
-  const [advancePerGroup, setAdvancePerGroup] = useState(2);
 
   const teamsById = new Map(teams.map((t) => [t.id, t.name]));
   const teamName = (id: string | null) => (id ? teamsById.get(id) ?? "Unknown" : "TBD");
@@ -55,111 +53,10 @@ export default function FixturesTab({
     });
   }
 
-  const generated = matches.length > 0;
-  const groupMatches = matches.filter((m) => m.stage === "group");
-  const groupStageComplete = groupMatches.length > 0 && groupMatches.every((m) => DONE.has(m.status));
-  const hasKnockout = matches.some((m) => m.stage === "knockout");
+  const canAddMatches = (tournament.status === "registration_closed" || tournament.status === "live") && teams.length >= 1;
 
-  if (!generated) {
-    if (tournament.status !== "registration_closed") {
-      return <div className="tc-empty">Close registration to seed teams and generate fixtures.</div>;
-    }
-    if (teams.length < 2) {
-      return <div className="tc-empty">Need at least 2 confirmed teams to generate fixtures.</div>;
-    }
-
-    const sorted = [...teams].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999) || a.name.localeCompare(b.name));
-
-    function move(idx: number, dir: -1 | 1) {
-      const swapIdx = idx + dir;
-      if (swapIdx < 0 || swapIdx >= sorted.length) return;
-      const reordered = [...sorted];
-      [reordered[idx], reordered[swapIdx]] = [reordered[swapIdx], reordered[idx]];
-      run(async () => {
-        for (let i = 0; i < reordered.length; i++) {
-          const res = await setTeamSeed(reordered[i].id, i + 1, reordered[i].group_name ?? undefined);
-          if (isActionError(res)) return res;
-        }
-      });
-    }
-
-    function shuffle() {
-      const reordered = [...sorted];
-      for (let i = reordered.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [reordered[i], reordered[j]] = [reordered[j], reordered[i]];
-      }
-      run(async () => {
-        for (let i = 0; i < reordered.length; i++) {
-          const res = await setTeamSeed(reordered[i].id, i + 1, reordered[i].group_name ?? undefined);
-          if (isActionError(res)) return res;
-        }
-      });
-    }
-
-    return (
-      <div className="tc-card">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-          <div>
-            <div className="tc-card-t">Seed teams</div>
-            <div className="tc-card-sub">
-              {tournament.format === "group_knockout"
-                ? "Set each team's group, then generate group fixtures."
-                : "Order determines bracket/schedule position — reorder before generating, or shuffle for a random draw."}
-            </div>
-          </div>
-          {tournament.format === "knockout" && (
-            <button className="tc-btn" disabled={pending} style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={shuffle}>Shuffle randomly</button>
-          )}
-        </div>
-        <table className="tc-table" style={{ marginTop: 12 }}>
-          <thead>
-            <tr><th>#</th><th>Team</th>{tournament.format === "group_knockout" && <th>Group</th>}<th></th></tr>
-          </thead>
-          <tbody>
-            {sorted.map((t, i) => (
-              <tr key={t.id}>
-                <td className="tc-num">{i + 1}</td>
-                <td style={{ fontWeight: 600 }}>{t.name}</td>
-                {tournament.format === "group_knockout" && (
-                  <td>
-                    <input
-                      defaultValue={t.group_name ?? ""}
-                      placeholder="e.g. A"
-                      style={{ ...inputStyle, width: 56 }}
-                      onBlur={(e) => {
-                        const v = e.target.value.trim();
-                        if (v && v !== (t.group_name ?? "")) run(() => setTeamSeed(t.id, t.seed ?? i + 1, v));
-                      }}
-                    />
-                  </td>
-                )}
-                <td>
-                  <button className="tc-btn" disabled={pending || i === 0} onClick={() => move(i, -1)} style={{ padding: "6px 10px", marginRight: 6 }}>
-                    <ArrowUp size={13} />
-                  </button>
-                  <button className="tc-btn" disabled={pending || i === sorted.length - 1} onClick={() => move(i, 1)} style={{ padding: "6px 10px" }}>
-                    <ArrowDown size={13} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {err && <div className="tc-err" style={{ marginTop: 12 }}>{err}</div>}
-        <div style={{ marginTop: 16 }}>
-          {tournament.format === "knockout" && (
-            <button className="tc-btn primary" disabled={pending} onClick={() => run(() => generateKnockoutBracket(tournament.id))}>Generate bracket</button>
-          )}
-          {tournament.format === "league" && (
-            <button className="tc-btn primary" disabled={pending} onClick={() => run(() => generateLeagueFixtures(tournament.id))}>Generate fixtures</button>
-          )}
-          {tournament.format === "group_knockout" && (
-            <button className="tc-btn primary" disabled={pending} onClick={() => run(() => generateGroupFixtures(tournament.id))}>Generate group fixtures</button>
-          )}
-        </div>
-      </div>
-    );
+  if (!canAddMatches && matches.length === 0) {
+    return <div className="tc-empty">Close registration to start adding matches.</div>;
   }
 
   const rounds = new Map<string, TournamentMatch[]>();
@@ -171,40 +68,42 @@ export default function FixturesTab({
   return (
     <div className="tc-card">
       <div className="tc-card-t">Fixtures</div>
+      <div className="tc-card-sub">Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it&apos;s added.</div>
       {err && <div className="tc-err">{err}</div>}
 
-      {tournament.format === "group_knockout" && groupStageComplete && !hasKnockout && (
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", margin: "12px 0 20px", padding: 14, background: "rgba(0,98,65,0.08)", borderRadius: 12 }}>
-          <span style={{ fontSize: 13 }}>Group stage complete — advance</span>
-          <input
-            type="number" min={1} value={advancePerGroup} onChange={(e) => setAdvancePerGroup(Math.max(1, Number(e.target.value)))}
-            style={{ ...inputStyle, width: 50 }}
-          />
-          <span style={{ fontSize: 13 }}>team(s) per group.</span>
-          <button className="tc-btn primary" disabled={pending} onClick={() => run(() => generateKnockoutFromGroups(tournament.id, advancePerGroup))}>
-            Generate knockout stage
-          </button>
-        </div>
+      {canAddMatches && (
+        <AddMatchForm
+          tournament={tournament} teams={teams} matches={matches} pending={pending}
+          onAdd={(input) => run(() => createMatch(input))}
+        />
       )}
 
-      {[...rounds.entries()].map(([label, ms]) => (
-        <div key={label} style={{ marginBottom: 22 }}>
-          <div className="tc-card-sub" style={{ fontWeight: 700, opacity: 0.8, marginBottom: 8 }}>{label}</div>
-          <table className="tc-table">
-            <thead><tr><th>Match</th><th>When</th><th>Score</th><th></th></tr></thead>
-            <tbody>
-              {ms.map((m) => (
-                <MatchRow
-                  key={m.id} match={m} teamName={teamName} pending={pending}
-                  onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
-                  onRecordStats={() => setRecordingStats(m)}
-                  onSetTime={(startsAt, endsAt) => run(() => setMatchTime(m.id, startsAt, endsAt))}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ))}
+      {matches.length === 0 ? (
+        <div className="tc-empty">No matches added yet.</div>
+      ) : (
+        [...rounds.entries()].map(([label, ms]) => (
+          <div key={label} style={{ marginBottom: 22 }}>
+            <div className="tc-card-sub" style={{ fontWeight: 700, opacity: 0.8, marginBottom: 8 }}>{label}</div>
+            <table className="tc-table">
+              <thead><tr><th>Match</th><th>When</th><th>Score</th><th></th></tr></thead>
+              <tbody>
+                {ms.map((m) => (
+                  <MatchRow
+                    key={m.id} match={m} teamName={teamName} pending={pending}
+                    onResult={(a, b, winnerId, et, pens) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens))}
+                    onRecordStats={() => setRecordingStats(m)}
+                    onSetTime={(startsAt, endsAt) => run(() => setMatchTime(m.id, startsAt, endsAt))}
+                    onDelete={() => {
+                      if (!window.confirm(`Delete ${teamName(m.team_a_id)} vs ${teamName(m.team_b_id)}? This can't be undone.`)) return;
+                      run(() => deleteMatch(m.id));
+                    }}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      )}
 
       {recordingStats && (
         <MatchPlayerStatsModal
@@ -220,7 +119,93 @@ export default function FixturesTab({
   );
 }
 
-function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, pending }: {
+const STAGE_LABELS: Record<"group" | "league" | "knockout", string> = {
+  group: "Group stage", league: "League", knockout: "Knockout",
+};
+
+function AddMatchForm({ tournament, teams, matches, pending, onAdd }: {
+  tournament: Tournament;
+  teams: TournamentTeam[];
+  matches: TournamentMatch[];
+  pending: boolean;
+  onAdd: (input: {
+    tournamentId: string; stage: "group" | "league" | "knockout"; round: number;
+    roundLabel: string; teamAId: string; teamBId?: string; groupName?: string;
+  }) => void;
+}) {
+  const fixedStage: "group" | "league" | "knockout" | null =
+    tournament.format === "league" ? "league" : tournament.format === "knockout" ? "knockout" : null;
+  const [stage, setStage] = useState<"group" | "league" | "knockout">(fixedStage ?? "group");
+  const [teamAId, setTeamAId] = useState("");
+  const [teamBId, setTeamBId] = useState("");
+  const [groupName, setGroupName] = useState("");
+  const [round, setRound] = useState(() => (matches.length ? Math.max(...matches.map((m) => m.round)) : 1));
+  const [roundLabel, setRoundLabel] = useState("");
+  const [localErr, setLocalErr] = useState<string | null>(null);
+
+  function submit() {
+    if (!teamAId) { setLocalErr("Pick team A."); return; }
+    if (teamBId && teamBId === teamAId) { setLocalErr("Pick two different teams."); return; }
+    if (!roundLabel.trim()) { setLocalErr("Name this round (e.g. Quarterfinal, Matchday 3)."); return; }
+    if (stage === "group" && !groupName.trim()) { setLocalErr("Enter a group name."); return; }
+    setLocalErr(null);
+    onAdd({
+      tournamentId: tournament.id, stage, round, roundLabel: roundLabel.trim(),
+      teamAId, teamBId: teamBId || undefined, groupName: stage === "group" ? groupName.trim() : undefined,
+    });
+    setTeamAId(""); setTeamBId("");
+  }
+
+  return (
+    <div style={{ background: "rgba(0,98,65,0.06)", borderRadius: 12, padding: 16, marginTop: 12, marginBottom: 20 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        {!fixedStage && (
+          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span className="tc-dim" style={{ fontSize: 11 }}>Stage</span>
+            <select value={stage} onChange={(e) => setStage(e.target.value as typeof stage)} style={{ ...inputStyle, width: 130 }}>
+              <option value="group">{STAGE_LABELS.group}</option>
+              <option value="knockout">{STAGE_LABELS.knockout}</option>
+            </select>
+          </label>
+        )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="tc-dim" style={{ fontSize: 11 }}>Team A</span>
+          <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
+            <option value="">Select…</option>
+            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="tc-dim" style={{ fontSize: 11 }}>Team B</span>
+          <select value={teamBId} onChange={(e) => setTeamBId(e.target.value)} style={{ ...inputStyle, width: 150 }}>
+            <option value="">TBD / bye</option>
+            {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </label>
+        {stage === "group" && (
+          <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span className="tc-dim" style={{ fontSize: 11 }}>Group</span>
+            <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder="A" style={{ ...inputStyle, width: 60 }} />
+          </label>
+        )}
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="tc-dim" style={{ fontSize: 11 }}>Round #</span>
+          <input type="number" min={1} value={round} onChange={(e) => setRound(Math.max(1, Number(e.target.value)))} style={{ ...inputStyle, width: 60 }} />
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span className="tc-dim" style={{ fontSize: 11 }}>Round label</span>
+          <input value={roundLabel} onChange={(e) => setRoundLabel(e.target.value)} placeholder="Quarterfinal" style={{ ...inputStyle, width: 140 }} />
+        </label>
+        <button className="tc-btn primary" disabled={pending} style={{ padding: "9px 14px" }} onClick={submit}>
+          <Plus size={14} /> Add match
+        </button>
+      </div>
+      {localErr && <div className="tc-err" style={{ marginTop: 10, marginBottom: 0 }}>{localErr}</div>}
+    </div>
+  );
+}
+
+function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, onDelete, pending }: {
   match: TournamentMatch;
   teamName: (id: string | null) => string;
   onResult: (
@@ -229,6 +214,7 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, pending
   ) => void;
   onRecordStats: () => void;
   onSetTime: (startsAt: string | null, endsAt: string | null) => void;
+  onDelete: () => void;
   pending: boolean;
 }) {
   const [editingTime, setEditingTime] = useState(false);
@@ -317,7 +303,12 @@ function MatchRow({ match, teamName, onResult, onRecordStats, onSetTime, pending
       </td>
       <td>
         {match.status === "completed" && match.team_a_id && match.team_b_id && match.score_a !== null && match.score_b !== null && (
-          <button className="tc-btn" disabled={pending} onClick={onRecordStats} style={{ padding: "6px 10px" }}>Player stats</button>
+          <button className="tc-btn" disabled={pending} onClick={onRecordStats} style={{ padding: "6px 10px", marginRight: 6 }}>Player stats</button>
+        )}
+        {!done && (
+          <button aria-label="Delete match" disabled={pending} onClick={onDelete} style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.7, cursor: "pointer", padding: 6 }}>
+            <Trash2 size={14} />
+          </button>
         )}
         {done || match.team_b_id === null ? null : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
