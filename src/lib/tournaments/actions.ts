@@ -6,7 +6,7 @@ import { actionError, isActionError, type ActionError } from "@/lib/actionError"
 import { friendlyTournamentError } from "./types";
 import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
-  TournamentMatch, TournamentAnnouncement, TournamentStanding,
+  TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
 } from "./types";
 
 async function requireUser() {
@@ -342,6 +342,36 @@ export async function removeTeamPlayer(teamId: string, userId: string): Promise<
   if (!user) return actionError("UNAUTHORIZED");
   const { error } = await sb.rpc("remove_team_player", { p_team_id: teamId, p_user_id: userId });
   if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// ── Walk-in teams: registered by whoever manages the tournament, on
+// behalf of people who signed up in person — no accounts involved. ──
+export async function createWalkinTeam(
+  tournamentId: string,
+  teamName: string,
+  members: WalkinMember[]
+): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("create_walkin_team", {
+    p_tournament_id: tournamentId,
+    p_team_name: teamName,
+    p_members: members.map((m) => ({ name: m.name, phone: m.phone, email: m.email || null })),
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/organize/tournaments/${tournamentId}`);
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  return data as TournamentTeam;
+}
+
+export async function markWalkinTeamPaid(teamId: string, tournamentId: string): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("mark_walkin_team_paid", { p_team_id: teamId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/organize/tournaments/${tournamentId}`);
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  return data as TournamentTeam;
 }
 
 // ── Fixtures / bracket / standings / announcements (Phase 2) ───────

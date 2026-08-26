@@ -96,11 +96,12 @@ export interface TournamentTeam {
   id: string;
   tournament_id: string;
   name: string;
-  captain_id: string;
+  captain_id: string | null;
   ack_terms: boolean;
   status: TeamStatus;
   seed: number | null;
   group_name: string | null;
+  is_walkin: boolean;
   created_at: string;
 }
 
@@ -162,10 +163,15 @@ export interface TournamentStanding {
 export interface TournamentTeamPlayer {
   id: string;
   team_id: string;
-  user_id: string;
+  user_id: string | null;
+  guest_name: string | null;
+  guest_phone: string | null;
+  guest_email: string | null;
   role: "captain" | "player" | "substitute";
   joined_at: string;
 }
+
+export type WalkinMember = { name: string; phone: string; email?: string };
 
 // Everything create_tournament()/update_tournament_draft() accept — sent
 // as a single jsonb blob, matching the RPC signatures in tournaments.sql.
@@ -249,6 +255,12 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   KNOCKOUT_CANNOT_DRAW: "Knockout matches can't end in a draw — enter a winner instead.",
   INCOMPLETE_MATCHES: "Every match needs a result before the tournament can be completed.",
   TITLE_REQUIRED: "Enter a title for the announcement.",
+  AT_LEAST_ONE_MEMBER_REQUIRED: "Add at least one team member.",
+  MEMBER_NAME_REQUIRED: "Enter a name for every team member.",
+  MEMBER_PHONE_REQUIRED: "Enter a phone number for every team member.",
+  TOO_MANY_PLAYERS: "That's more members than this tournament allows per team.",
+  NOT_A_WALKIN_TEAM: "That's not a walk-in team.",
+  NOT_PENDING_PAYMENT: "This team isn't waiting on a payment.",
 };
 
 export function friendlyTournamentError(message: string): string {

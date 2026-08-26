@@ -3,15 +3,15 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, Plus, Trash2, X } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
-  startSingleEvent,
+  startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
   STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS,
-  type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement,
+  type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement, type WalkinMember,
 } from "@/lib/tournaments/types";
 import type { Payment } from "@/lib/payments/types";
 import FixturesTab from "./FixturesTab";
@@ -60,6 +60,7 @@ export default function TournamentControlCenter({
   const [err, setErr] = useState<string | null>(null);
   const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<ReviewPaymentRow | null>(null);
+  const [showWalkinModal, setShowWalkinModal] = useState(false);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
@@ -179,23 +180,58 @@ export default function TournamentControlCenter({
 
       {tab === "Registrations" && (
         <div className="tc-card">
-          <div className="tc-card-t">Registered teams</div>
-          <div className="tc-card-sub">Payment approval happens in Payments — Payouts &amp; Verification, same as every other booking.</div>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+            <div>
+              <div className="tc-card-t">Registered teams</div>
+              <div className="tc-card-sub">Payment approval happens in Payments — Payouts &amp; Verification, same as every other booking.</div>
+            </div>
+            {tournament.status === "registration_open" && (
+              <button className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={() => setShowWalkinModal(true)}>
+                <Plus size={14} /> Add walk-in team
+              </button>
+            )}
+          </div>
           {teams.length === 0 ? (
             <div className="tc-empty">No teams have registered yet.</div>
           ) : (
             <table className="tc-table">
-              <thead><tr><th>Team</th><th>Roster</th><th>Status</th></tr></thead>
+              <thead><tr><th>Team</th><th>Roster</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {teams.map((t) => (
                   <tr key={t.id}>
-                    <td style={{ fontWeight: 600 }}>{t.name}</td>
+                    <td style={{ fontWeight: 600 }}>
+                      {t.name}
+                      {t.is_walkin && <span className="tc-badge" style={{ marginLeft: 8, background: "rgba(128,128,128,.14)", color: "inherit" }}>Walk-in</span>}
+                    </td>
                     <td className="tc-num">{t.roster_count}</td>
                     <td><span className={`tc-badge ${teamBadgeClass(t.status)}`}>{TEAM_STATUS_LABELS[t.status]}</span></td>
+                    <td>
+                      {t.is_walkin && t.status === "payment_pending" && (
+                        <button
+                          className="tc-btn" style={{ padding: "6px 10px" }} disabled={pending}
+                          onClick={() => run(() => markWalkinTeamPaid(t.id, tournament.id), `${t.name} marked as paid.`)}
+                        >
+                          Mark paid
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          )}
+          {showWalkinModal && (
+            <WalkinTeamModal
+              tournamentId={tournament.id}
+              maxMembers={tournament.max_players_per_team + tournament.substitute_limit}
+              onClose={() => setShowWalkinModal(false)}
+              onCreated={(msg) => {
+                setShowWalkinModal(false);
+                setConfirmMsg(msg);
+                setTimeout(() => setConfirmMsg(null), 4000);
+                router.refresh();
+              }}
+            />
           )}
         </div>
       )}
@@ -315,4 +351,82 @@ function paymentBadgeClass(status: string) {
   if (status === "APPROVED") return "ok";
   if (status === "REJECTED") return "danger";
   return "warn";
+}
+
+function WalkinTeamModal({
+  tournamentId, maxMembers, onClose, onCreated,
+}: {
+  tournamentId: string;
+  maxMembers: number;
+  onClose: () => void;
+  onCreated: (msg: string) => void;
+}) {
+  const [teamName, setTeamName] = useState("");
+  const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "" }]);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function updateMember(i: number, field: keyof WalkinMember, value: string) {
+    setMembers((prev) => prev.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)));
+  }
+  function addMember() {
+    if (members.length >= maxMembers) return;
+    setMembers((prev) => [...prev, { name: "", phone: "", email: "" }]);
+  }
+  function removeMember(i: number) {
+    setMembers((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function submit() {
+    if (!teamName.trim()) { setErr("Enter a team name."); return; }
+    if (members.some((m) => !m.name.trim() || !m.phone.trim())) {
+      setErr("Enter a name and phone number for every team member.");
+      return;
+    }
+    setErr(null);
+    startTransition(async () => {
+      const res = await createWalkinTeam(tournamentId, teamName.trim(), members);
+      if (isActionError(res)) { setErr(res.message); return; }
+      onCreated(`${res.name} added as a walk-in team.`);
+    });
+  }
+
+  return (
+    <div className="tc-scrim" onClick={onClose}>
+      <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>Add walk-in team</h3>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+
+        <div className="tc-member-row" style={{ gridTemplateColumns: "1fr" }}>
+          <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name" />
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", margin: "16px 0 8px" }}>
+          Members ({members.length}/{maxMembers})
+        </div>
+        {members.map((m, i) => (
+          <div className="tc-member-row" key={i}>
+            <input value={m.name} onChange={(e) => updateMember(i, "name", e.target.value)} placeholder="Name" />
+            <input value={m.phone} onChange={(e) => updateMember(i, "phone", e.target.value)} placeholder="Phone" />
+            <input value={m.email ?? ""} onChange={(e) => updateMember(i, "email", e.target.value)} placeholder="Email (optional)" />
+            <button onClick={() => removeMember(i)} disabled={members.length <= 1} aria-label={`Remove member ${i + 1}`} style={{ opacity: members.length <= 1 ? 0.3 : 0.7 }}>
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+        {members.length < maxMembers && (
+          <button className="tc-btn" style={{ padding: "8px 12px", marginTop: 4 }} onClick={addMember}>
+            <Plus size={13} /> Add member
+          </button>
+        )}
+
+        {err && <div className="tc-err" style={{ marginTop: 14 }}>{err}</div>}
+        <button className="tc-btn primary" style={{ marginTop: 18, width: "100%", justifyContent: "center" }} disabled={pending} onClick={submit}>
+          {pending ? "Adding…" : "Add team"}
+        </button>
+      </div>
+    </div>
+  );
 }

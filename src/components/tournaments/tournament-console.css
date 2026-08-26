@@ -62,3 +62,15 @@
 
 .tc-empty { text-align: center; padding: 40px 20px; opacity: 0.6; font-size: 13.5px; }
 .tc-err { color: #ef4444; font-size: 13px; margin-bottom: 14px; }
+
+.tc-scrim { position: fixed; inset: 0; background: rgba(6,7,10,0.72); backdrop-filter: blur(6px);
+  z-index: 400; display: grid; place-items: center; padding: 20px; }
+.tc-modal { width: 100%; max-width: 480px; max-height: 86vh; overflow-y: auto; background: #14171E;
+  border: 1px solid rgba(242,237,230,0.12); border-radius: 16px; padding: 22px; color: #F2EDE6; }
+[data-theme="paper"] .tc-modal { background: #fff; border-color: rgba(20,23,30,0.1); color: #14171E; }
+.tc-member-row { display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+.tc-member-row input {
+  background: rgba(128,128,128,0.08); border: 1px solid rgba(128,128,128,0.25); border-radius: 8px;
+  padding: 9px 10px; font-size: 13px; color: inherit; font-family: inherit; min-width: 0;
+}
+.tc-member-row button { background: none; border: none; color: #ef4444; opacity: 0.7; cursor: pointer; padding: 4px; }

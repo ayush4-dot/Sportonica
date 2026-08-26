@@ -10,7 +10,7 @@ import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { TEAM_STATUS_LABELS, type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
 
-type RosterPlayer = { id: string; team_id: string; user_id: string; role: string; name: string; username: string | null; avatar_url: string | null };
+type RosterPlayer = { id: string; team_id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null };
 
 export default function TournamentRegisterPanel({
   tournament, initialTeam, loggedIn,
@@ -144,9 +144,10 @@ export default function TournamentRegisterPanel({
                   <button
                     aria-label={`Remove ${p.name} from the team`}
                     onClick={() => {
+                      if (!p.user_id) return;
                       if (!window.confirm(`Remove ${p.name} from the team?`)) return;
                       startTransition(async () => {
-                        await removeTeamPlayer(team.id, p.user_id);
+                        await removeTeamPlayer(team.id, p.user_id!);
                         const r = await getTeamRoster(team.id);
                         if (!isActionError(r)) setRoster(r);
                       });
