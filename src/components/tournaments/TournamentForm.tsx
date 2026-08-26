@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Trophy, Upload, X, Users, User, Handshake, MapPin } from "lucide-react";
 import { SPORT_NAMES as SPORTS } from "@/lib/sports";
 import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner } from "@/lib/tournaments/actions";
+import { parseMapsUrl } from "@/lib/admin/location";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS, TOURNAMENT_FORMATS } from "@/lib/tournaments/types";
 import type { Tournament, TournamentFormat } from "@/lib/tournaments/types";
@@ -37,9 +38,14 @@ export default function TournamentForm({
   );
   const [ownVenueName, setOwnVenueName] = useState(existing?.own_venue_name ?? "");
   const [ownVenueAddress, setOwnVenueAddress] = useState(existing?.own_venue_address ?? "");
+  // Same pattern as a real venue's location (EditVenueForm.tsx /
+  // src/lib/admin/location.ts) — paste a Google Maps link, parse it
+  // server-side into lat/lng, rather than a browser-geolocation pin.
+  const [ownVenueMapUrl, setOwnVenueMapUrl] = useState(existing?.own_venue_map_url ?? "");
   const [ownVenueLat, setOwnVenueLat] = useState<number | null>(existing?.own_venue_lat ?? null);
   const [ownVenueLng, setOwnVenueLng] = useState<number | null>(existing?.own_venue_lng ?? null);
-  const [locating, setLocating] = useState(false);
+  const [locBusy, setLocBusy] = useState(false);
+  const [locErr, setLocErr] = useState<string | null>(null);
   const [organizerType, setOrganizerType] = useState<"venue" | "platform">(
     existing?.organizer_type ?? (mode === "platform" ? "platform" : "venue")
   );
@@ -134,6 +140,21 @@ export default function TournamentForm({
     if (bannerFileRef.current) bannerFileRef.current.value = "";
   }
 
+  function captureLocation() {
+    if (!ownVenueMapUrl.trim()) return;
+    setLocBusy(true);
+    setLocErr(null);
+    parseMapsUrl(ownVenueMapUrl)
+      .then((res) => {
+        if (isActionError(res)) { setLocErr(res.message); return; }
+        setOwnVenueLat(res.lat);
+        setOwnVenueLng(res.lng);
+        setOwnVenueMapUrl(res.url);
+      })
+      .catch((e) => setLocErr(e instanceof Error ? e.message : "Couldn't read that link."))
+      .finally(() => setLocBusy(false));
+  }
+
   function payload() {
     const isSingleEvent = format === "single_event";
     const useOwnVenue = mode === "organizer" && venueMode === "own";
@@ -141,6 +162,7 @@ export default function TournamentForm({
       venue_id: useOwnVenue ? undefined : venueId,
       own_venue_name: useOwnVenue ? ownVenueName.trim() : undefined,
       own_venue_address: useOwnVenue ? (ownVenueAddress.trim() || undefined) : undefined,
+      own_venue_map_url: useOwnVenue ? (ownVenueMapUrl.trim() || undefined) : undefined,
       own_venue_lat: useOwnVenue ? (ownVenueLat ?? undefined) : undefined,
       own_venue_lng: useOwnVenue ? (ownVenueLng ?? undefined) : undefined,
       organizer_type: organizerType,
@@ -300,21 +322,35 @@ export default function TournamentForm({
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 10 }}>
               <input value={ownVenueName} onChange={(e) => setOwnVenueName(e.target.value)} placeholder="Venue name" />
               <input value={ownVenueAddress} onChange={(e) => setOwnVenueAddress(e.target.value)} placeholder="Address (optional)" />
-              <button
-                type="button" className="ev-btn" disabled={locating}
-                style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)", alignSelf: "flex-start" }}
-                onClick={() => {
-                  setLocating(true);
-                  navigator.geolocation.getCurrentPosition(
-                    (pos) => { setOwnVenueLat(pos.coords.latitude); setOwnVenueLng(pos.coords.longitude); setLocating(false); },
-                    () => setLocating(false)
-                  );
-                }}
-              >
-                <MapPin size={14} />
-                {locating ? "Getting location…" : ownVenueLat != null ? "Location pinned" : "Pin my location"}
-                {ownVenueLat != null && !locating && <Check size={13} />}
-              </button>
+              <div>
+                <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, opacity: 0.7, marginBottom: 7 }}>
+                  Location link (optional)
+                </label>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    value={ownVenueMapUrl} onChange={(e) => setOwnVenueMapUrl(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), captureLocation())}
+                    placeholder="https://maps.app.goo.gl/…  or  https://www.google.com/maps/…"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="button" className="ev-btn" disabled={locBusy || !ownVenueMapUrl.trim()}
+                    style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)", whiteSpace: "nowrap" }}
+                    onClick={captureLocation}
+                  >
+                    {locBusy ? "Reading…" : "Capture"}
+                  </button>
+                </div>
+                <p style={{ fontSize: 11.5, opacity: 0.6, marginTop: 6 }}>
+                  On Google Maps, find your venue → tap Share → Copy link → paste it here.
+                </p>
+                {locErr && <div className="ev-err" style={{ marginTop: 8 }}>{locErr}</div>}
+                {ownVenueLat != null && !locErr && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "#006241", fontWeight: 600, marginTop: 8 }}>
+                    <MapPin size={13} /> Location captured <Check size={13} />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

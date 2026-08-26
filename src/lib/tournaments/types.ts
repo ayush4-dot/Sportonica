@@ -51,6 +51,7 @@ export interface Tournament {
   venue_id: string | null;
   own_venue_name: string | null;
   own_venue_address: string | null;
+  own_venue_map_url: string | null;
   own_venue_lat: number | null;
   own_venue_lng: number | null;
   owner_id: string | null;
@@ -172,6 +173,7 @@ export type TournamentDraftInput = Partial<{
   venue_id: string;
   own_venue_name: string;
   own_venue_address: string;
+  own_venue_map_url: string;
   own_venue_lat: number;
   own_venue_lng: number;
   organizer_type: "venue" | "platform";

@@ -138,6 +138,14 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               <div className="bk-sum-row"><span className="lbl">Registration closes</span><span className="val">{when(tournament.registration_closes_at)}</span></div>
               {tournament.skill_category && <div className="bk-sum-row"><span className="lbl">Category</span><span className="val">{tournament.skill_category}</span></div>}
               {tournament.gender_rule && <div className="bk-sum-row"><span className="lbl">Eligibility</span><span className="val">{tournament.gender_rule}</span></div>}
+              {tournament.own_venue_map_url && (
+                <div className="bk-sum-row">
+                  <span className="lbl">Location</span>
+                  <a href={tournament.own_venue_map_url} target="_blank" rel="noopener noreferrer" className="val" style={{ color: "#006241", textDecoration: "none" }}>
+                    Get directions
+                  </a>
+                </div>
+              )}
               {phoneHref && (
                 <div className="bk-sum-row">
                   <span className="lbl">Contact</span>
