@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList } from "lucide-react";
+import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList, Trophy } from "lucide-react";
 import { useProfile } from "@/lib/hooks/useProfile";
 import { CITIES, useCity, greeting, nearestCity, nearestArea, type City, type Area } from "@/lib/city";
 import NotificationBell from "./NotificationBell";
@@ -181,6 +181,14 @@ export default function AppHeader() {
               aria-label="My games"
             >
               <ClipboardList size={19} />
+            </Link>
+            <Link
+              href="/organize"
+              className={`ah-btn ${pathname.startsWith("/organize") ? "on" : ""}`}
+              aria-label="Organize a tournament"
+              title="Organize a tournament"
+            >
+              <Trophy size={19} />
             </Link>
             <NotificationBell inline />
           </div>
