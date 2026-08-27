@@ -104,6 +104,11 @@ export interface TournamentTeam {
   seed: number | null;
   group_name: string | null;
   is_walkin: boolean;
+  // A public point of contact for the team — unlike player phone/email
+  // (guest_phone/guest_email on tournament_team_players), this is
+  // meant to be visible to anyone browsing the tournament.
+  manager_name: string | null;
+  manager_phone: string | null;
   created_at: string;
 }
 
@@ -304,6 +309,8 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   ALREADY_REGISTERED: "You've already registered a team for this tournament.",
   TERMS_NOT_ACKNOWLEDGED: "You need to agree to the terms to register.",
   TEAM_NAME_REQUIRED: "Enter a team name.",
+  MANAGER_NAME_REQUIRED: "Enter the team manager's name.",
+  MANAGER_PHONE_REQUIRED: "Enter the team manager's phone number.",
   TEAM_NOT_FOUND: "Team not found.",
   ROSTER_LOCKED: "This team's roster is locked — payment is already underway or verified.",
   ROSTER_FULL: "This team's roster is already full.",

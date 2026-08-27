@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn, Phone,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -518,6 +518,11 @@ function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
         {teams.map((t) => (
           <button key={t.id} className="ev2-team-card" onClick={() => setOpen(t)}>
             <div className="ev2-team-card-name">{t.name}</div>
+            {t.manager_name && (
+              <div className="ev2-team-card-sub" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <Phone size={11} /> {t.manager_name}{t.manager_phone ? ` · ${t.manager_phone}` : ""}
+              </div>
+            )}
             <div className="ev2-team-card-sub">Tap to view squad</div>
           </button>
         ))}
@@ -547,9 +552,16 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
   return (
     <div className="ev2-scrim" onClick={onClose}>
       <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name}</h3>
-          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
+          <div>
+            <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name}</h3>
+            {team.manager_name && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 4 }}>
+                <Phone size={12} /> {team.manager_name}{team.manager_phone ? ` · ${team.manager_phone}` : ""}
+              </div>
+            )}
+          </div>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center", flexShrink: 0 }}><X size={18} /></button>
         </div>
         {loading ? (
           <div className="ev2-empty">Loading squad…</div>

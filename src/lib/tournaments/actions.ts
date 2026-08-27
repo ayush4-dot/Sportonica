@@ -337,10 +337,15 @@ export async function cancelTournament(id: string, reason: string): Promise<Tour
 
 // ── Player registration ─────────────────────────────────────────────
 
-export async function registerTeam(tournamentId: string, name: string, ackTerms: boolean): Promise<TournamentTeam | ActionError> {
+export async function registerTeam(
+  tournamentId: string, name: string, ackTerms: boolean, managerName: string, managerPhone: string
+): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.rpc("register_team", { p_tournament_id: tournamentId, p_name: name, p_ack_terms: ackTerms });
+  const { data, error } = await sb.rpc("register_team", {
+    p_tournament_id: tournamentId, p_name: name, p_ack_terms: ackTerms,
+    p_manager_name: managerName, p_manager_phone: managerPhone,
+  });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/tournaments/${tournamentId}`);
   return data as TournamentTeam;
@@ -401,7 +406,9 @@ export async function updateTeamPlayerGuest(
 export async function createWalkinTeam(
   tournamentId: string,
   teamName: string,
-  members: WalkinMember[]
+  members: WalkinMember[],
+  managerName: string,
+  managerPhone: string
 ): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
@@ -409,6 +416,8 @@ export async function createWalkinTeam(
     p_tournament_id: tournamentId,
     p_team_name: teamName,
     p_members: members.map((m) => ({ name: m.name, phone: m.phone, email: m.email || null })),
+    p_manager_name: managerName,
+    p_manager_phone: managerPhone,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/organize/tournaments/${tournamentId}`);

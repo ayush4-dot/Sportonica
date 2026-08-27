@@ -403,6 +403,8 @@ function WalkinTeamModal({
   onCreated: (msg: string) => void;
 }) {
   const [teamName, setTeamName] = useState("");
+  const [managerName, setManagerName] = useState("");
+  const [managerPhone, setManagerPhone] = useState("");
   const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "" }]);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -420,13 +422,15 @@ function WalkinTeamModal({
 
   function submit() {
     if (!teamName.trim()) { setErr("Enter a team name."); return; }
+    if (!managerName.trim()) { setErr("Enter the team manager's name."); return; }
+    if (!managerPhone.trim()) { setErr("Enter the team manager's phone number."); return; }
     if (members.some((m) => !m.name.trim() || !m.phone.trim())) {
       setErr("Enter a name and phone number for every team member.");
       return;
     }
     setErr(null);
     startTransition(async () => {
-      const res = await createWalkinTeam(tournamentId, teamName.trim(), members);
+      const res = await createWalkinTeam(tournamentId, teamName.trim(), members, managerName.trim(), managerPhone.trim());
       if (isActionError(res)) { setErr(res.message); return; }
       onCreated(`${res.name} added as a walk-in team.`);
     });
@@ -443,6 +447,11 @@ function WalkinTeamModal({
         <div className="tc-member-row" style={{ gridTemplateColumns: "1fr" }}>
           <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name" />
         </div>
+        <div className="tc-member-row" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 8 }}>
+          <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Team manager's name" />
+          <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="Manager's phone" />
+        </div>
+        <p className="tc-dim" style={{ fontSize: 11, marginTop: 4 }}>Shown publicly on the tournament&apos;s Teams tab.</p>
 
         <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", margin: "16px 0 8px" }}>
           Members ({members.length}/{maxMembers})
