@@ -15,6 +15,7 @@ import {
   type TournamentManager,
 } from "@/lib/tournaments/types";
 import type { Payment } from "@/lib/payments/types";
+import TournamentForm from "./TournamentForm";
 import FixturesTab from "./FixturesTab";
 import BracketView from "./BracketView";
 import StandingsTab from "./StandingsTab";
@@ -64,6 +65,7 @@ export default function TournamentControlCenter({
   const [confirmMsg, setConfirmMsg] = useState<string | null>(null);
   const [reviewing, setReviewing] = useState<ReviewPaymentRow | null>(null);
   const [showWalkinModal, setShowWalkinModal] = useState(false);
+  const [editingDetails, setEditingDetails] = useState(false);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const finesByTeam = new Map((teamFines ?? []).map((f) => [f.team_id, f.total_fine]));
@@ -306,16 +308,28 @@ export default function TournamentControlCenter({
       )}
 
       {tab === "Settings" && (
-        <div className="tc-card">
-          <div className="tc-card-t">Settings</div>
-          {tournament.status === "draft" ? (
-            <p style={{ fontSize: 13.5, opacity: 0.7 }}>This tournament is still a draft — edit it from the tournaments list.</p>
-          ) : (
-            <p style={{ fontSize: 13.5, opacity: 0.7 }}>
-              This tournament has been submitted — its details are locked. Cancel and recreate it as a new draft to change anything structural.
-            </p>
-          )}
-        </div>
+        editingDetails ? (
+          <TournamentForm
+            existing={tournament}
+            venues={[]}
+            mode={viewer === "super_admin" ? "platform" : viewer === "organizer" ? "organizer" : "venue"}
+            onSaved={() => { setEditingDetails(false); router.refresh(); }}
+          />
+        ) : (
+          <div className="tc-card">
+            <div className="tc-card-t">Settings</div>
+            {tournament.status === "draft" ? (
+              <p style={{ fontSize: 13.5, opacity: 0.7 }}>This tournament is still a draft — edit it from the tournaments list.</p>
+            ) : (
+              <>
+                <p style={{ fontSize: 13.5, opacity: 0.7, marginBottom: 14 }}>
+                  Name, dates, fees, rules, and everything else except the venue can be edited any time — it just won&apos;t retroactively change anything already locked in (existing team payments, results, etc).
+                </p>
+                <button className="tc-btn primary" onClick={() => setEditingDetails(true)}>Edit details</button>
+              </>
+            )}
+          </div>
+        )
       )}
 
       {tab === "Fixtures" && (

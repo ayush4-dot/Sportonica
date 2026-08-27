@@ -22,16 +22,21 @@ const toLocalTime = (iso: string | null | undefined) => (iso ? new Date(iso).toL
 const combine = (date: string, time: string) => (date && time ? `${date}T${time}:00${KTM_OFFSET}` : "");
 
 export default function TournamentForm({
-  venues, existing, mode = "venue",
+  venues, existing, mode = "venue", onSaved,
 }: {
   venues: { id: string; name: string }[];
   existing?: Tournament;
   mode?: "venue" | "platform" | "organizer";
+  // Editing a tournament that's already past draft (from Settings tab,
+  // not the create/draft flow) — skip the redirect-on-save and publish
+  // option, just report back so the caller can close the editor in place.
+  onSaved?: (tournament: Tournament) => void;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<"draft" | "published" | null>(null);
+  const editingLive = !!existing && existing.status !== "draft";
 
   const [name, setName] = useState(existing?.name ?? "");
   const [sport, setSport] = useState(existing?.sport ?? "Futsal");
@@ -250,6 +255,7 @@ export default function TournamentForm({
         ? await updateTournamentDraft(existing.id, payload())
         : await createTournament(payload());
       if (isActionError(result)) { setErr(result.message); return; }
+      if (onSaved) { onSaved(result); return; }
       setDone("draft");
       setTimeout(() => router.push(detailHref(result.id)), 900);
     });
@@ -294,6 +300,11 @@ export default function TournamentForm({
         <label>Tournament name</label>
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Kathmandu Futsal Cup 2026" />
       </div>
+      {editingLive && (
+        <p style={{ fontSize: 12.5, opacity: 0.6, margin: "-8px 0 4px" }}>
+          Venue can&apos;t be changed here — {existing?.own_venue_name || venues.find((v) => v.id === existing?.venue_id)?.name || "current venue"} stays fixed for this tournament.
+        </p>
+      )}
       <div className="ev-row">
         <div className="ev-field">
           <label>Sport</label>
@@ -301,7 +312,7 @@ export default function TournamentForm({
             {SPORTS.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        {mode === "venue" && (
+        {mode === "venue" && !editingLive && (
           <div className="ev-field">
             <label>Venue</label>
             <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
@@ -310,7 +321,7 @@ export default function TournamentForm({
           </div>
         )}
       </div>
-      {(mode === "organizer" || mode === "platform") && (
+      {(mode === "organizer" || mode === "platform") && !editingLive && (
         <div className="ev-field">
           <label>Venue</label>
           <div className="ev-entry-toggle">
@@ -615,12 +626,20 @@ export default function TournamentForm({
       {err && <div className="ev-err">{err}</div>}
 
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-        <button className="ev-btn" style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)" }} onClick={saveDraft} disabled={pending}>
-          {pending ? "Saving…" : "Save draft"}
-        </button>
-        <button className="ev-btn" onClick={saveAndPublish} disabled={pending}>
-          <Trophy size={15} /> {pending ? "Submitting…" : "Save & submit for review"}
-        </button>
+        {onSaved ? (
+          <button className="ev-btn" onClick={saveDraft} disabled={pending}>
+            <Check size={15} /> {pending ? "Saving…" : "Save changes"}
+          </button>
+        ) : (
+          <>
+            <button className="ev-btn" style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)" }} onClick={saveDraft} disabled={pending}>
+              {pending ? "Saving…" : "Save draft"}
+            </button>
+            <button className="ev-btn" onClick={saveAndPublish} disabled={pending}>
+              <Trophy size={15} /> {pending ? "Submitting…" : "Save & submit for review"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
