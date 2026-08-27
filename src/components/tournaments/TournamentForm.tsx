@@ -168,7 +168,7 @@ export default function TournamentForm({
 
   function payload() {
     const isSingleEvent = format === "single_event";
-    const useOwnVenue = mode === "organizer" && venueMode === "own";
+    const useOwnVenue = (mode === "organizer" || mode === "platform") && venueMode === "own";
     return {
       venue_id: useOwnVenue ? undefined : venueId,
       own_venue_name: useOwnVenue ? ownVenueName.trim() : undefined,
@@ -213,7 +213,7 @@ export default function TournamentForm({
 
   function validate(): string | null {
     if (!name.trim()) return "Give the tournament a name.";
-    if (mode === "organizer" && venueMode === "own") {
+    if ((mode === "organizer" || mode === "platform") && venueMode === "own") {
       if (!ownVenueName.trim()) return "Give your venue a name.";
     } else if (!venueId) {
       return "Pick a venue.";
@@ -301,7 +301,7 @@ export default function TournamentForm({
             {SPORTS.map((s) => <option key={s}>{s}</option>)}
           </select>
         </div>
-        {mode !== "organizer" && (
+        {mode === "venue" && (
           <div className="ev-field">
             <label>Venue</label>
             <select value={venueId} onChange={(e) => setVenueId(e.target.value)}>
@@ -310,23 +310,30 @@ export default function TournamentForm({
           </div>
         )}
       </div>
-      {mode === "organizer" && (
+      {(mode === "organizer" || mode === "platform") && (
         <div className="ev-field">
           <label>Venue</label>
           <div className="ev-entry-toggle">
             <button type="button" className={venueMode === "partnered" ? "on" : ""} onClick={() => setVenueMode("partnered")}>
               <Handshake size={15} />
-              <span>Partnered venue<small>Pick from venues that have accepted your invite</small></span>
+              <span>
+                {mode === "platform" ? "Sportonica venue" : "Partnered venue"}
+                <small>{mode === "platform" ? "Pick from any venue listed on the platform" : "Pick from venues that have accepted your invite"}</small>
+              </span>
             </button>
             <button type="button" className={venueMode === "own" ? "on" : ""} onClick={() => setVenueMode("own")}>
               <MapPin size={15} />
-              <span>My own venue<small>Name and location only — no vendor involved</small></span>
+              <span>{mode === "platform" ? "Unlisted venue" : "My own venue"}<small>Name and location only — no vendor involved</small></span>
             </button>
           </div>
           {venueMode === "partnered" ? (
             venues.length === 0 ? (
               <p style={{ fontSize: 12.5, opacity: 0.7, marginTop: 10 }}>
-                No partnered venues yet — <a href="/organize/partnerships" style={{ color: "#006241" }}>invite one</a>, or switch to &quot;My own venue&quot; above.
+                {mode === "platform" ? (
+                  <>No venues listed on the platform yet — switch to &quot;Unlisted venue&quot; above, or add one under Venues first.</>
+                ) : (
+                  <>No partnered venues yet — <a href="/organize/partnerships" style={{ color: "#006241" }}>invite one</a>, or switch to &quot;My own venue&quot; above.</>
+                )}
               </p>
             ) : (
               <select value={venueId} onChange={(e) => setVenueId(e.target.value)} style={{ marginTop: 10 }}>
