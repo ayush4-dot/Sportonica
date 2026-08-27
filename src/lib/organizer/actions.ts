@@ -215,16 +215,27 @@ export async function setVenueBookingStatus(
 // "everything, RLS scopes it" shape as getMyVendorTournaments() in
 // src/lib/tournaments/actions.ts, but for the tournaments_read_organizer_own
 // policy (owner_id = auth.uid()) instead of has_venue_access().
-// No owner_id filter — RLS (tournaments_read_owner, which checks
-// is_tournament_organizer()) already scopes this to tournaments the
-// caller owns AND ones a super admin granted them delegated ("Owner
-// access") to, so a tournament_managers grant shows up here too even
-// though the caller isn't the owner_id.
+// Explicit owner-or-managed filter, NOT a bare select relying on RLS —
+// tournaments_read_public (a separate policy, for the /tournaments
+// browse page) makes every non-draft tournament readable by anyone,
+// and RLS policies for the same command OR together. A plain
+// `select *` here would return every published/live/cancelled/
+// completed tournament on the platform to whoever's logged in, not
+// just the ones this person owns or was granted "Owner access" to.
 export async function getMyOrganizerTournaments(): Promise<Tournament[] | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+
+  const { data: managed, error: managedErr } = await sb
+    .from("tournament_managers").select("tournament_id").eq("user_id", user.id);
+  if (managedErr) return actionError(managedErr.message);
+  const managedIds = (managed ?? []).map((m) => m.tournament_id);
+
+  const filters = [`owner_id.eq.${user.id}`];
+  if (managedIds.length > 0) filters.push(`id.in.(${managedIds.join(",")})`);
+
   const { data, error } = await sb
-    .from("tournaments").select("*").order("created_at", { ascending: false });
+    .from("tournaments").select("*").or(filters.join(",")).order("created_at", { ascending: false });
   if (error) return actionError(error.message);
   return (data ?? []) as Tournament[];
 }
