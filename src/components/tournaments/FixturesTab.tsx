@@ -80,6 +80,7 @@ export default function FixturesTab({
   const [pending, startTransition] = useTransition();
   const [err, setErr] = useState<string | null>(null);
   const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
+  const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
 
   const teamsById = new Map(teams.map((t) => [t.id, t.name]));
   const teamName = (id: string | null) => (id ? teamsById.get(id) ?? "Unknown" : "TBD");
@@ -110,25 +111,47 @@ export default function FixturesTab({
   return (
     <div className="tc-card">
       <div className="tc-card-t">Fixtures</div>
-      <div className="tc-card-sub">Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it&apos;s added.</div>
+      <div className="tc-card-sub">
+        {canGenerateBracket && mode === "choose"
+          ? "Choose how you'd like to build the bracket."
+          : "Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it's added."}
+      </div>
       {err && <div className="tc-err">{err}</div>}
 
-      {canGenerateBracket && (
-        <GenerateBracketPanel
-          teams={teams} pending={pending}
-          onSeed={(teamId, seed) => run(() => setTeamSeed(teamId, seed))}
-          onGenerate={() => {
-            if (!window.confirm(`Auto-generate the bracket for ${teams.length} teams? Byes are assigned automatically for any round that doesn't divide evenly. You can still edit any match by hand afterwards.`)) return;
-            run(() => generateKnockoutBracket(tournament.id));
-          }}
-        />
-      )}
+      {canGenerateBracket && mode === "choose" ? (
+        <FixtureModeChooser onChoose={setMode} />
+      ) : (
+        <>
+          {canGenerateBracket && mode === "auto" && (
+            <>
+              <GenerateBracketPanel
+                teams={teams} pending={pending}
+                onSeed={(teamId, seed) => run(() => setTeamSeed(teamId, seed))}
+                onGenerate={() => {
+                  if (!window.confirm(`Auto-generate the bracket for ${teams.length} teams? Byes are assigned automatically for any round that doesn't divide evenly. You can still edit any match by hand afterwards.`)) return;
+                  run(() => generateKnockoutBracket(tournament.id));
+                }}
+              />
+              <button className="tc-btn" disabled={pending} style={{ padding: "6px 10px", fontSize: 12, marginTop: -4, marginBottom: 16 }} onClick={() => setMode("choose")}>
+                ‹ Choose a different way to build this
+              </button>
+            </>
+          )}
 
-      {canAddMatches && (
-        <AddMatchForm
-          tournament={tournament} teams={teams} matches={matches} teamName={teamName} pending={pending}
-          onAdd={(input) => run(() => createMatch(input))}
-        />
+          {canAddMatches && (!canGenerateBracket || mode === "manual") && (
+            <>
+              <AddMatchForm
+                tournament={tournament} teams={teams} matches={matches} teamName={teamName} pending={pending}
+                onAdd={(input) => run(() => createMatch(input))}
+              />
+              {canGenerateBracket && (
+                <button className="tc-btn" disabled={pending} style={{ padding: "6px 10px", fontSize: 12, marginTop: -8, marginBottom: 16 }} onClick={() => setMode("choose")}>
+                  ‹ Choose a different way to build this
+                </button>
+              )}
+            </>
+          )}
+        </>
       )}
 
       {matches.length === 0 ? (
@@ -180,6 +203,41 @@ export default function FixturesTab({
           onSaved={() => { setRecordingStats(null); router.refresh(); }}
         />
       )}
+    </div>
+  );
+}
+
+// The very first decision on an empty knockout bracket: build it by
+// hand, or let the server auto-pair seeded teams into a full tree.
+// Shown only while nothing exists yet — once a single match is added
+// either way, this never comes back for this tournament.
+function FixtureModeChooser({ onChoose }: { onChoose: (mode: "manual" | "auto") => void }) {
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginTop: 12, marginBottom: 20 }}>
+      <button
+        onClick={() => onChoose("manual")}
+        style={{
+          textAlign: "left", cursor: "pointer", border: "1px solid rgba(242,237,230,0.14)", borderRadius: 14,
+          padding: 18, background: "rgba(242,237,230,0.04)", color: "inherit", font: "inherit",
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Build it manually</div>
+        <div className="tc-dim" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+          You pick every matchup, round by round. Full control over pairings, byes, and seeding order.
+        </div>
+      </button>
+      <button
+        onClick={() => onChoose("auto")}
+        style={{
+          textAlign: "left", cursor: "pointer", border: "1px solid rgba(0,98,65,0.35)", borderRadius: 14,
+          padding: 18, background: "rgba(0,98,65,0.08)", color: "inherit", font: "inherit",
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Auto-generate the bracket</div>
+        <div className="tc-dim" style={{ fontSize: 12.5, lineHeight: 1.5 }}>
+          Set seeds (optional), then the full knockout tree is built for you — byes assigned automatically. You can still edit any match by hand afterwards.
+        </div>
+      </button>
     </div>
   );
 }
