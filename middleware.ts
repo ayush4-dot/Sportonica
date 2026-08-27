@@ -33,14 +33,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Admin gate — must be logged in AND have an owner/admin role.
+  // Admin gate — must be logged in AND have an owner/admin role. Checked
+  // against the database, not user_metadata: that field is set via
+  // supabase.auth.updateUser() straight from the browser, with no server
+  // round-trip at all, so trusting it here was a direct privilege-escalation
+  // path independent of anything on the profiles table itself.
   if (request.nextUrl.pathname.startsWith('/admin')) {
     if (!user) {
       const loginUrl = new URL('/login', request.url)
       loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
       return NextResponse.redirect(loginUrl)
     }
-    const role = user.user_metadata?.role
+    const { data: profile } = await supabase
+      .from('profiles').select('role').eq('id', user.id).maybeSingle()
+    const role = profile?.role
     // super_admin oversees the whole platform, so it can open the venue
     // console too. Without this it gets bounced to the homepage.
     if (role !== 'admin' && role !== 'venue_owner' && role !== 'super_admin') {
