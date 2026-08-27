@@ -1162,6 +1162,13 @@ $$;
 -- Standings — always derived, fixed points (win=3, draw=1, loss=0).
 -- Defined before generate_knockout_from_groups(), which reads from it.
 -- ================================================================
+-- Dropped unconditionally before the first create: this function's
+-- OUT-parameter row shape widens later in this same file (adds goals_for/
+-- goals_against/goal_diff) — replaying the file against a database that
+-- already has the wide version live otherwise fails with "cannot change
+-- return type of existing function" the moment this narrower version
+-- below tries to redefine it without a preceding drop.
+drop function if exists public.tournament_standings(uuid,text);
 create or replace function public.tournament_standings(p_tournament_id uuid, p_group_name text default null)
 returns table(team_id uuid, team_name text, played int, won int, drawn int, lost int, points int)
 language sql stable as $$
@@ -1464,6 +1471,11 @@ grant execute on function public.unschedule_match(uuid) to authenticated;
 -- ================================================================
 -- Results — vendor-entered, trusted-organizer model.
 -- ================================================================
+-- Dropped unconditionally first: this function's parameter list grows
+-- twice later in this file (extra time/penalties, then confirm_cascade)
+-- — see the tournament_standings comment above for why replaying
+-- against an already-current database needs this.
+drop function if exists public.record_match_result(uuid,int,int,uuid);
 create or replace function public.record_match_result(p_match_id uuid, p_score_a int default null, p_score_b int default null, p_winner_team_id uuid default null)
 returns public.tournament_matches
 language plpgsql security definer set search_path = public as $$
@@ -2978,6 +2990,11 @@ grant execute on function public.tournament_standings(uuid,text) to anon, authen
 
 -- ── set_match_time: just "when", no court/conflict-checking — the
 -- venue is already fixed for the whole tournament. ──────────────────
+-- Dropped unconditionally first: this function's parameter list grows
+-- later in this file (court_label/notes) — see the tournament_standings
+-- comment above for why replaying against an already-current database
+-- needs this.
+drop function if exists public.set_match_time(uuid,timestamptz,timestamptz);
 create or replace function public.set_match_time(p_match_id uuid, p_starts_at timestamptz, p_ends_at timestamptz)
 returns public.tournament_matches
 language plpgsql security definer set search_path = public as $$
