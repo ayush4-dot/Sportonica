@@ -146,11 +146,11 @@ export async function getTeamRoster(teamId: string): Promise<
 // Public-safe roster for the event page's Teams tab — name + role only,
 // via a security-definer RPC (the raw table has no public read policy
 // since it holds walk-in guest_phone/guest_email). Confirmed teams only.
-export async function getTeamRosterPublic(teamId: string): Promise<{ id: string; name: string; role: string }[] | ActionError> {
+export async function getTeamRosterPublic(teamId: string): Promise<{ id: string; name: string; role: string; is_linked: boolean }[] | ActionError> {
   const sb = await createClient();
   const { data, error } = await sb.rpc("get_team_roster_public", { p_team_id: teamId });
   if (error) return actionError(error.message);
-  return (data ?? []) as { id: string; name: string; role: string }[];
+  return (data ?? []) as { id: string; name: string; role: string; is_linked: boolean }[];
 }
 
 // Search players to add to a team roster — same shape/behavior as

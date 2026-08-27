@@ -9,6 +9,7 @@ import {
 import { getRelationship } from "@/lib/friends/queries";
 import { getPlayerScorecard } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
+import { createClient } from "@/lib/supabase/server";
 import ShareButton from "./ShareButton";
 import DownloadButton from "./DownloadButton";
 import FriendRequestButton from "@/components/FriendRequestButton";
@@ -56,14 +57,17 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
     );
   }
 
-  const [stats, sports, recent, relationship, scorecardRes] = await Promise.all([
+  const [stats, sports, recent, relationship, scorecardRes, sb] = await Promise.all([
     getPlayerStats(profile.id),
     getPlayerSports(profile.id),
     getRecentGames(profile.id),
     getRelationship(profile.id),
     getPlayerScorecard(profile.id),
+    createClient(),
   ]);
   const scorecard = isActionError(scorecardRes) ? null : scorecardRes;
+  const { data: { user: viewer } } = await sb.auth.getUser();
+  const isOwnProfile = viewer?.id === profile.id;
   const badges = computeBadges(stats, sports);
   const trust = trustLabel(profile.trust_score ?? 50);
   const joined = new Date(profile.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
@@ -153,7 +157,7 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
         )}
 
         {/* ── Tournament stats ── */}
-        {scorecard && scorecard.matches_played > 0 && (
+        {scorecard && scorecard.matches_played > 0 ? (
           <section className="pf-sec">
             <div className="pf-sec-head">
               <span className="pf-sec-num">{num()}</span>
@@ -175,7 +179,19 @@ export default async function PublicProfile({ params }: { params: Promise<{ user
               </div>
             </div>
           </section>
-        )}
+        ) : isOwnProfile ? (
+          <section className="pf-sec">
+            <div className="pf-sec-head">
+              <span className="pf-sec-num">{num()}</span>
+              <h2 className="pf-sec-t">Tournament stats</h2>
+            </div>
+            <div className="pf-empty">
+              No tournament stats linked yet. Played as a walk-in at the venue? Sportonica links your goals and
+              match history automatically the moment your account&apos;s email or phone matches what you registered
+              with — check that they match, or ask the organizer to confirm what was entered at sign-up.
+            </div>
+          </section>
+        ) : null}
 
         {/* ── Badges ── */}
         {badges.length > 0 && (

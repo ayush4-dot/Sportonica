@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
+import { useProfile } from "@/lib/hooks/useProfile";
 import {
   FORMAT_LABELS,
   type Tournament, type TournamentTeam, type TournamentMatch,
@@ -503,7 +506,7 @@ function PlayerStatsTab({ rows }: { rows: TournamentPlayerStatRow[] }) {
 }
 
 // ── Teams + squad viewer ────────────────────────────────────────
-type RosterPlayer = { id: string; role: string; name: string };
+type RosterPlayer = { id: string; role: string; name: string; is_linked: boolean };
 
 function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
   const [open, setOpen] = useState<TournamentTeam | null>(null);
@@ -527,6 +530,9 @@ function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
 function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => void }) {
   const [loading, setLoading] = useState(true);
   const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const { user } = useProfile();
+  const pathname = usePathname();
+  const hasUnlinked = roster.some((p) => !p.is_linked);
 
   useEffect(() => {
     let cancelled = false;
@@ -550,14 +556,33 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
         ) : roster.length === 0 ? (
           <div className="ev2-empty">No roster on file yet.</div>
         ) : (
-          roster.map((p) => (
-            <div key={p.id} className="ev2-squad-row">
-              <span className="ev2-squad-av">{p.name.charAt(0).toUpperCase()}</span>
-              <span style={{ flex: 1, fontSize: 13.5 }}>{p.name}</span>
-              {p.role === "captain" && <Star size={13} style={{ opacity: 0.6 }} />}
-              {p.role === "substitute" && <span style={{ fontSize: 11, opacity: 0.5 }}>Sub</span>}
-            </div>
-          ))
+          <>
+            {roster.map((p) => (
+              <div key={p.id} className="ev2-squad-row">
+                <span className="ev2-squad-av">{p.name.charAt(0).toUpperCase()}</span>
+                <span style={{ flex: 1, fontSize: 13.5 }}>{p.name}</span>
+                {p.role === "captain" && <Star size={13} style={{ opacity: 0.6 }} />}
+                {p.role === "substitute" && <span style={{ fontSize: 11, opacity: 0.5 }}>Sub</span>}
+                {!p.is_linked && !user && (
+                  <span style={{ fontSize: 10.5, opacity: 0.5, fontStyle: "italic" }}>Not linked</span>
+                )}
+              </div>
+            ))}
+            {hasUnlinked && !user && (
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(242,237,230,0.1)" }}>
+                <p style={{ fontSize: 12, opacity: 0.65, marginBottom: 8 }}>
+                  Played on this team but registered without an account? Sign in with the same email or phone you
+                  registered with — Sportonica links your stats to your player card automatically.
+                </p>
+                <Link
+                  href={`/login?redirect=${encodeURIComponent(pathname)}`}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13, fontWeight: 700, color: "#00875a", textDecoration: "none" }}
+                >
+                  <LogIn size={14} /> Sign in to claim your stats
+                </Link>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
