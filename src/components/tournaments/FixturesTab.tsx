@@ -135,8 +135,15 @@ export default function FixturesTab({
         <div className="tc-empty">No matches added yet.</div>
       ) : (
         [...rounds.entries()].map(([label, ms]) => (
-          <div key={label} style={{ marginBottom: 22 }}>
+          <div key={label} style={{ marginBottom: 26 }}>
             <div className="tc-card-sub" style={{ fontWeight: 700, opacity: 0.8, marginBottom: 8 }}>{label}</div>
+            {canAddMatches && (
+              <RoundAddMatch
+                tournament={tournament} teams={teams} matches={matches} teamName={teamName} pending={pending}
+                stage={ms[0].stage} round={ms[0].round} roundLabel={label} groupName={ms[0].group_name}
+                onAdd={(input) => run(() => createMatch(input))}
+              />
+            )}
             <table className="tc-table">
               <thead><tr><th>Match</th><th>When</th><th>Score</th><th></th></tr></thead>
               <tbody>
@@ -149,7 +156,10 @@ export default function FixturesTab({
                     onSetStatus={(status) => run(() => setMatchStatus(m.id, status))}
                     onUpdateTeams={(teamAId, teamBId) => run(() => updateMatchTeams(m.id, teamAId, teamBId))}
                     onDelete={() => {
-                      if (!window.confirm(`Delete ${teamName(m.team_a_id)} vs ${teamName(m.team_b_id)}? This can't be undone.`)) return;
+                      const note = m.winner_team_id && m.next_match_id
+                        ? ` ${teamName(m.winner_team_id)} already advanced from this match — that will be reset too.`
+                        : "";
+                      if (!window.confirm(`Delete ${teamName(m.team_a_id)} vs ${teamName(m.team_b_id)}? This can't be undone.${note}`)) return;
                       run(() => deleteMatch(m.id));
                     }}
                   />
@@ -199,18 +209,10 @@ function AddMatchForm({ tournament, teams, matches, teamName, pending, onAdd }: 
   const [roundLabel, setRoundLabel] = useState("");
   const [localErr, setLocalErr] = useState<string | null>(null);
 
-  // A team already paired in this same round (and, for group stage, the
-  // same group) shouldn't show up again while building the rest of that
-  // round — they're already accounted for. They become selectable again
-  // once you move on to a new round number.
-  const usedTeamIds = new Set(
-    matches
-      .filter((m) => m.stage === stage && m.round === round && (stage !== "group" || m.group_name === (groupName.trim() || null)))
-      .flatMap((m) => [m.team_a_id, m.team_b_id])
-      .filter((id): id is string => id !== null)
-  );
-  const availableTeams = teams.filter((t) => !usedTeamIds.has(t.id));
-  const winners = winnerOptions(matches, teamName).filter((w) => !usedTeamIds.has(w.id));
+  // Every confirmed team is always selectable — an admin fixing up a
+  // generated bracket (swapping a bye, correcting a seed placement)
+  // needs to freely re-pick any team, not just ones unused elsewhere.
+  const winners = winnerOptions(matches, teamName);
 
   function submit() {
     if (!teamAId) { setLocalErr("Pick team A."); return; }
@@ -240,14 +242,14 @@ function AddMatchForm({ tournament, teams, matches, teamName, pending, onAdd }: 
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="tc-dim" style={{ fontSize: 11 }}>Team A</span>
           <TeamSelect
-            value={teamAId} onChange={setTeamAId} teams={availableTeams} winners={winners}
+            value={teamAId} onChange={setTeamAId} teams={teams} winners={winners}
             excludeId={teamBId || undefined} placeholder="Select…" style={{ ...inputStyle, width: 190 }}
           />
         </label>
         <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span className="tc-dim" style={{ fontSize: 11 }}>Team B</span>
           <TeamSelect
-            value={teamBId} onChange={setTeamBId} teams={availableTeams} winners={winners}
+            value={teamBId} onChange={setTeamBId} teams={teams} winners={winners}
             excludeId={teamAId || undefined} placeholder="TBD / bye" style={{ ...inputStyle, width: 190 }}
           />
         </label>
@@ -270,6 +272,60 @@ function AddMatchForm({ tournament, teams, matches, teamName, pending, onAdd }: 
         </button>
       </div>
       {localErr && <div className="tc-err" style={{ marginTop: 10, marginBottom: 0 }}>{localErr}</div>}
+    </div>
+  );
+}
+
+// Quick "+" to drop one more match straight into a round section
+// that already exists, without re-entering its stage/round/label —
+// the alternative to AddMatchForm (which is for starting a brand new
+// round) for the common case of just adding another game to one
+// that's already on the page.
+function RoundAddMatch({ tournament, teams, matches, teamName, pending, stage, round, roundLabel, groupName, onAdd }: {
+  tournament: Tournament;
+  teams: TournamentTeam[];
+  matches: TournamentMatch[];
+  teamName: (id: string | null) => string;
+  pending: boolean;
+  stage: "group" | "league" | "knockout";
+  round: number;
+  roundLabel: string;
+  groupName: string | null;
+  onAdd: (input: {
+    tournamentId: string; stage: "group" | "league" | "knockout"; round: number;
+    roundLabel: string; teamAId: string; teamBId?: string; groupName?: string;
+  }) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [teamAId, setTeamAId] = useState("");
+  const [teamBId, setTeamBId] = useState("");
+  const [localErr, setLocalErr] = useState<string | null>(null);
+  const winners = winnerOptions(matches, teamName);
+
+  if (!open) {
+    return (
+      <button className="tc-btn" disabled={pending} style={{ padding: "6px 10px", fontSize: 12, marginBottom: 10 }} onClick={() => setOpen(true)}>
+        <Plus size={13} /> Add match to {roundLabel}
+      </button>
+    );
+  }
+
+  function submit() {
+    if (!teamAId) { setLocalErr("Pick team A."); return; }
+    if (teamBId && teamBId === teamAId) { setLocalErr("Pick two different teams."); return; }
+    setLocalErr(null);
+    onAdd({ tournamentId: tournament.id, stage, round, roundLabel, teamAId, teamBId: teamBId || undefined, groupName: groupName ?? undefined });
+    setTeamAId(""); setTeamBId(""); setOpen(false);
+  }
+
+  return (
+    <div style={{ background: "rgba(0,98,65,0.06)", borderRadius: 12, padding: 12, marginBottom: 10, display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+      <TeamSelect value={teamAId} onChange={setTeamAId} teams={teams} winners={winners} excludeId={teamBId || undefined} placeholder="Team A" style={{ ...inputStyle, width: 170 }} />
+      <span className="tc-dim">vs</span>
+      <TeamSelect value={teamBId} onChange={setTeamBId} teams={teams} winners={winners} excludeId={teamAId || undefined} placeholder="TBD / bye" style={{ ...inputStyle, width: 170 }} />
+      <button className="tc-btn primary" disabled={pending || !teamAId} style={{ padding: "6px 10px", fontSize: 12 }} onClick={submit}>Add</button>
+      <button className="tc-btn" disabled={pending} style={{ padding: "6px 10px", fontSize: 12 }} onClick={() => { setOpen(false); setLocalErr(null); }}>Cancel</button>
+      {localErr && <div className="tc-err" style={{ width: "100%", marginTop: 4, marginBottom: 0 }}>{localErr}</div>}
     </div>
   );
 }
@@ -351,14 +407,8 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
   const bothSet = !!match.team_a_id && !!match.team_b_id;
   const done = DONE.has(match.status);
 
-  const usedTeamIds = new Set(
-    matches
-      .filter((m) => m.id !== match.id && m.stage === match.stage && m.round === match.round && (match.stage !== "group" || m.group_name === match.group_name))
-      .flatMap((m) => [m.team_a_id, m.team_b_id])
-      .filter((id): id is string => id !== null)
-  );
-  const availableTeams = teams.filter((t) => !usedTeamIds.has(t.id));
-  const winners = winnerOptions(matches, teamName).filter((w) => w.id !== match.winner_team_id && !usedTeamIds.has(w.id));
+  // Every confirmed team stays selectable here too — see AddMatchForm.
+  const winners = winnerOptions(matches, teamName).filter((w) => w.id !== match.winner_team_id);
 
   // A knockout match can't end level — group/league draws are a valid
   // result on their own. When regulation is tied, reveal extra time;
@@ -424,17 +474,21 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
         {editingTeams ? (
           <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
             <TeamSelect
-              value={teamAId} onChange={setTeamAId} teams={availableTeams} winners={winners}
+              value={teamAId} onChange={setTeamAId} teams={teams} winners={winners}
               excludeId={teamBId || undefined} placeholder="Team A" style={{ ...inputStyle, width: 160 }}
             />
             <span className="tc-dim">vs</span>
             <TeamSelect
-              value={teamBId} onChange={setTeamBId} teams={availableTeams} winners={winners}
+              value={teamBId} onChange={setTeamBId} teams={teams} winners={winners}
               excludeId={teamAId || undefined} placeholder="TBD / bye" style={{ ...inputStyle, width: 160 }}
             />
             <button
               className="tc-btn primary" disabled={pending || !teamAId} style={{ padding: "5px 8px", fontSize: 11.5 }}
-              onClick={() => { onUpdateTeams(teamAId, teamBId || undefined); setEditingTeams(false); }}
+              onClick={() => {
+                if (done && !window.confirm(`This match is already decided — changing the teams will undo the result${match.next_match_id ? " and reset anything it already fed into" : ""}. Continue?`)) return;
+                onUpdateTeams(teamAId, teamBId || undefined);
+                setEditingTeams(false);
+              }}
             >
               Save
             </button>
@@ -443,15 +497,13 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
         ) : (
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <div style={{ fontWeight: 600 }}>{teamName(match.team_a_id)} <span className="tc-dim">vs</span> {teamName(match.team_b_id)}</div>
-            {!done && (
-              <button
-                aria-label="Edit teams" disabled={pending}
-                onClick={() => { setTeamAId(match.team_a_id ?? ""); setTeamBId(match.team_b_id ?? ""); setEditingTeams(true); }}
-                style={{ background: "none", border: "none", color: "inherit", opacity: 0.5, cursor: "pointer", padding: 2, display: "flex" }}
-              >
-                <Pencil size={12} />
-              </button>
-            )}
+            <button
+              aria-label="Edit teams" disabled={pending}
+              onClick={() => { setTeamAId(match.team_a_id ?? ""); setTeamBId(match.team_b_id ?? ""); setEditingTeams(true); }}
+              style={{ background: "none", border: "none", color: "inherit", opacity: 0.5, cursor: "pointer", padding: 2, display: "flex" }}
+            >
+              <Pencil size={12} />
+            </button>
           </div>
         )}
         {match.status === "walkover" && <span className="tc-badge warn">Walkover — {teamName(match.winner_team_id)}</span>}
@@ -525,11 +577,9 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
         >
           <History size={14} />
         </button>
-        {!done && (
-          <button aria-label="Delete match" disabled={pending} onClick={onDelete} style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.7, cursor: "pointer", padding: 6 }}>
-            <Trash2 size={14} />
-          </button>
-        )}
+        <button aria-label="Delete match" disabled={pending} onClick={onDelete} style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.7, cursor: "pointer", padding: 6 }}>
+          <Trash2 size={14} />
+        </button>
         {!done && (
           <select
             value={match.status} disabled={pending} aria-label="Match status"
@@ -540,7 +590,7 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
           </select>
         )}
         {showHistory && <MatchHistoryPanel matchId={match.id} />}
-        {done || match.team_b_id === null ? null : !bothSet ? (
+        {match.status === "cancelled" || match.team_b_id === null ? null : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
@@ -565,7 +615,7 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
                   className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }}
                   onClick={save}
                 >
-                  Save score
+                  {done ? "Update score" : "Save score"}
                 </button>
               )}
             </div>
@@ -590,7 +640,7 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
                 </label>
                 {!showPens && (
                   <button className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }} onClick={save}>
-                    Save score
+                    {done ? "Update score" : "Save score"}
                   </button>
                 )}
               </div>
@@ -615,7 +665,7 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
                   />
                 </label>
                 <button className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }} onClick={save}>
-                  Save score
+                  {done ? "Update score" : "Save score"}
                 </button>
               </div>
             )}
