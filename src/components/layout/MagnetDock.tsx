@@ -129,26 +129,26 @@ export default function MagnetDock() {
         [data-theme="paper"] .dock-label { background: #14171E; color: #F2EDE6; border-color: rgba(20,23,30,0.2); }
         [data-theme="paper"] .dock-label::after { border-left-color: #14171E; }
 
-        /* ── Mobile: horizontal bar at the bottom, labels always visible ── */
+        /* ── Mobile: a real edge-to-edge tab bar, flush with the screen
+           bottom — not a floating pill with page peeking around it. Its
+           own bottom padding (not an external offset) absorbs the home
+           indicator / Safari's toolbar via env(safe-area-inset-bottom). ── */
         @media (max-width: 780px) {
           .dock {
-            right: 12px; left: 12px; top: auto;
-            /* Safari's own toolbar sits at the bottom on iPhone. Sit well
-               clear of it so we never swallow taps meant for Share/tabs. */
-            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-            transform: none;
-            flex-direction: row; justify-content: space-between;
-            gap: 2px; border-radius: 20px; padding: 7px 8px;
+            left: 0; right: 0; bottom: 0; top: auto;
+            transform: none; border-radius: 0;
+            flex-direction: row; justify-content: space-around;
+            gap: 2px; padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
             max-height: none; max-width: none;
+            border-left: none; border-right: none; border-bottom: none;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 -8px 24px -14px rgba(0,0,0,0.4);
           }
-          /* When the app is installed there's no browser chrome — sit lower. */
-          @media (display-mode: standalone) {
-            .dock { bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
-          }
+          [data-theme="paper"] .dock { border-top-color: rgba(20,23,30,0.12); box-shadow: 0 -8px 24px -14px rgba(20,23,30,0.15); }
           .dock > div { width: auto !important; flex: 1; }
           .dock-item {
             width: 100% !important; height: auto; flex-direction: column;
-            gap: 3px; padding: 7px 4px; border-radius: 13px;
+            gap: 3px; padding: 6px 4px; border-radius: 13px;
             transform: none !important;
           }
           .dock-item svg { width: 19px; height: 19px; }

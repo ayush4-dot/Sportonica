@@ -167,9 +167,12 @@ body {
   color: var(--color-dark);
 }
 
-/* Floating mobile dock clearance — keep page content above the bottom bar. */
+/* Edge-to-edge mobile tab bar clearance — keep page content above it.
+   The bar itself is flush with the screen bottom and already pads for
+   the home indicator internally, so this only needs to cover the bar's
+   own content height plus a little breathing room. */
 @media (max-width: 780px) {
-  body { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
+  body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* Nothing should scroll sideways — a stray wide element was showing a

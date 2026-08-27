@@ -133,7 +133,7 @@ export default function NearbyPopup() {
         @media (max-width: 780px) {
           /* Icon-only on phones — the wide pill collided with hero text. */
           .nb-fab {
-            bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+            bottom: calc(76px + env(safe-area-inset-bottom, 0px));
             left: 12px; padding: 0; width: 42px; height: 42px;
             justify-content: center; gap: 0;
           }

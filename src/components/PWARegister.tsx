@@ -143,7 +143,7 @@ export default function PWARegister() {
         }
         @keyframes pwaNudge { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 5px); } }
         .pwa-x:hover { opacity: 1; }
-        @media (max-width: 780px) { .pwa-bar { bottom: calc(108px + env(safe-area-inset-bottom, 0px)); } }
+        @media (max-width: 780px) { .pwa-bar { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); } }
       `}</style>
     </div>
   );
