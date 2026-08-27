@@ -8,7 +8,7 @@ import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
   TournamentMatchPlayerStat, PlayerScorecard, TournamentPlayerStatRow, TournamentAwards,
-  MatchAuditEntry,
+  MatchAuditEntry, TournamentManager,
 } from "./types";
 
 async function requireUser() {
@@ -575,6 +575,51 @@ export async function setTeamSeed(teamId: string, seed: number, groupName?: stri
   const { data, error } = await sb.rpc("set_team_seed", { p_team_id: teamId, p_seed: seed, p_group_name: groupName ?? null });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeam;
+}
+
+// Per-tournament delegated access — super admin only. Distinct from
+// profiles.role === "organizer" (see organizer_partnerships.sql); this
+// grants one specific person the same control a tournament's own
+// owner/organizer already has, scoped to just that one tournament.
+export async function findUserByEmail(email: string): Promise<{ id: string; full_name: string | null; email: string } | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("find_user_by_email", { p_email: email }).maybeSingle();
+  if (error) return actionError(friendlyTournamentError(error.message));
+  if (!data) return actionError("USER_NOT_FOUND");
+  return data as { id: string; full_name: string | null; email: string };
+}
+
+export async function listTournamentManagers(tournamentId: string): Promise<TournamentManager[] | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("list_tournament_managers", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return (data ?? []).map((r: { id: string; user_id: string; full_name: string | null; email: string; added_at: string }) => ({
+    id: r.id, user_id: r.user_id, full_name: r.full_name, email: r.email, added_at: r.added_at,
+  }));
+}
+
+export async function grantTournamentManager(tournamentId: string, userId: string): Promise<TournamentManager | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("grant_tournament_manager", { p_tournament_id: tournamentId, p_user_id: userId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  const list = await listTournamentManagers(tournamentId);
+  if (isActionError(list)) return list;
+  const row = list.find((m) => m.user_id === userId);
+  if (!row) return actionError("NOT_FOUND");
+  return row;
+}
+
+export async function revokeTournamentManager(tournamentId: string, userId: string): Promise<true | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("revoke_tournament_manager", { p_tournament_id: tournamentId, p_user_id: userId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  return true;
 }
 
 // Winner/runner-up/semifinalists, derived from the Final and Semifinal

@@ -151,6 +151,19 @@ export interface TournamentMatch {
   updated_at: string;
 }
 
+// A super-admin-granted delegate for one specific tournament — same
+// capabilities as that tournament's own owner/organizer, but scoped to
+// just this tournament. Distinct from profiles.role === "organizer"
+// (the platform-wide, self-serve role that lets someone create
+// tournaments anywhere).
+export interface TournamentManager {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string;
+  added_at: string;
+}
+
 export interface TournamentAnnouncement {
   id: string;
   tournament_id: string;
@@ -330,6 +343,7 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   CASCADE_CONFIRMATION_REQUIRED: "This would change a team that's already advanced further in the bracket — confirm to continue.",
   INVALID_SLOT: "Pick which side (A or B) this feeds into.",
   SAME_MATCH: "A match can't advance into itself.",
+  USER_NOT_FOUND: "No account found with that email.",
 };
 
 export function friendlyTournamentError(message: string): string {

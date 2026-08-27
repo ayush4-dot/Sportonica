@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import {
   getTournament, getDisplayVenueName, listTournamentTeamsWithRosterCount, listTournamentPayments,
-  getTournamentMatches, getTournamentAnnouncements, getTournamentTeamFines,
+  getTournamentMatches, getTournamentAnnouncements, getTournamentTeamFines, listTournamentManagers,
 } from "@/lib/tournaments/actions";
 import { listTournamentPaymentsForReview } from "@/lib/payments/adminActions";
 import { isActionError } from "@/lib/actionError";
@@ -14,7 +14,7 @@ export default async function PlatformTournamentDetailPage({ params }: { params:
   const tournament = await getTournament(id);
   if (isActionError(tournament) || !tournament) notFound();
 
-  const [venueName, teams, payments, matches, announcements, reviewPayments, teamFines] = await Promise.all([
+  const [venueName, teams, payments, matches, announcements, reviewPayments, teamFines, managers] = await Promise.all([
     getDisplayVenueName(tournament),
     listTournamentTeamsWithRosterCount(id),
     listTournamentPayments(id),
@@ -22,6 +22,7 @@ export default async function PlatformTournamentDetailPage({ params }: { params:
     getTournamentAnnouncements(id),
     listTournamentPaymentsForReview(id),
     getTournamentTeamFines(id),
+    listTournamentManagers(id),
   ]);
 
   return (
@@ -34,6 +35,7 @@ export default async function PlatformTournamentDetailPage({ params }: { params:
       announcements={isActionError(announcements) ? [] : announcements}
       reviewPayments={isActionError(reviewPayments) ? [] : reviewPayments}
       teamFines={isActionError(teamFines) ? [] : teamFines}
+      managers={isActionError(managers) ? [] : managers}
       viewer="super_admin"
       backHref="/platform/tournaments"
     />

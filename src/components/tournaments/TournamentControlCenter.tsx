@@ -12,12 +12,14 @@ import { isActionError } from "@/lib/actionError";
 import {
   STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS,
   type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement, type WalkinMember,
+  type TournamentManager,
 } from "@/lib/tournaments/types";
 import type { Payment } from "@/lib/payments/types";
 import FixturesTab from "./FixturesTab";
 import BracketView from "./BracketView";
 import StandingsTab from "./StandingsTab";
 import AnnouncementsTab from "./AnnouncementsTab";
+import TournamentAccessTab from "./TournamentAccessTab";
 import ReviewPaymentModal from "@/app/platform/payments/ReviewPaymentModal";
 import "./tournament-console.css";
 
@@ -30,12 +32,12 @@ type TeamRow = TournamentTeam & { roster_count: number };
 type PaymentRow = { team_id: string; team_name: string; status: string; payment_method: string | null; expected_amount: number; submitted_at: string | null };
 type ReviewPaymentRow = Payment & { customer_name: string; booking_label: string };
 
-const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements"] as const;
+const TABS = ["Overview", "Registrations", "Payments", "Settings", "Fixtures", "Bracket", "Standings", "Announcements", "Access"] as const;
 // A single_event tournament is captain-only, no bracket — those three tabs
 // don't apply and are dropped rather than shown locked.
 const NOT_FOR_SINGLE_EVENT = new Set<(typeof TABS)[number]>(["Fixtures", "Bracket", "Standings"]);
 export default function TournamentControlCenter({
-  tournament, venueName, teams, payments, matches, announcements, viewer, backHref, reviewPayments, teamFines,
+  tournament, venueName, teams, payments, matches, announcements, viewer, backHref, reviewPayments, teamFines, managers,
 }: {
   tournament: Tournament;
   venueName: string;
@@ -51,6 +53,9 @@ export default function TournamentControlCenter({
   // /platform/payments.
   reviewPayments?: ReviewPaymentRow[];
   teamFines?: { team_id: string; total_fine: number }[];
+  // Same story — granting per-tournament access is a super-admin-only
+  // action, so this is only fetched/passed for viewer === "super_admin".
+  managers?: TournamentManager[];
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -63,7 +68,8 @@ export default function TournamentControlCenter({
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const finesByTeam = new Map((teamFines ?? []).map((f) => [f.team_id, f.total_fine]));
   const trackingFines = tournament.yellow_card_fine > 0 || tournament.red_card_fine > 0;
-  const visibleTabs = tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS;
+  const visibleTabs = (tournament.format === "single_event" ? TABS.filter((t) => !NOT_FOR_SINGLE_EVENT.has(t)) : TABS)
+    .filter((t) => t !== "Access" || viewer === "super_admin");
 
   // Every state-changing button passes its own confirmation text, in the
   // same verb as the button — "Open registration" confirms "Registration
@@ -333,6 +339,10 @@ export default function TournamentControlCenter({
 
       {tab === "Announcements" && (
         <AnnouncementsTab tournamentId={tournament.id} announcements={announcements} />
+      )}
+
+      {tab === "Access" && viewer === "super_admin" && (
+        <TournamentAccessTab tournamentId={tournament.id} managers={managers ?? []} />
       )}
     </div>
   );
