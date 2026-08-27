@@ -370,6 +370,32 @@ export async function removeTeamPlayerAdmin(teamPlayerId: string): Promise<void 
   if (error) return actionError(friendlyTournamentError(error.message));
 }
 
+// Admin/organizer-only — add a no-account (walk-in) member directly to
+// an existing team, and edit one's own name/phone/email afterwards.
+export async function addWalkinTeamPlayer(
+  teamId: string, name: string, phone: string, email?: string, role: "player" | "substitute" = "player"
+): Promise<TournamentTeamPlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("add_walkin_team_player", {
+    p_team_id: teamId, p_name: name, p_phone: phone, p_email: email ?? null, p_role: role,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeamPlayer;
+}
+
+export async function updateTeamPlayerGuest(
+  teamPlayerId: string, name: string, phone: string, email?: string
+): Promise<TournamentTeamPlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("update_team_player_guest", {
+    p_team_player_id: teamPlayerId, p_name: name, p_phone: phone, p_email: email ?? null,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeamPlayer;
+}
+
 // ── Walk-in teams: registered by whoever manages the tournament, on
 // behalf of people who signed up in person — no accounts involved. ──
 export async function createWalkinTeam(

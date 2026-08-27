@@ -3,11 +3,12 @@
 import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Trash2, X, Users, UserPlus } from "lucide-react";
+import { Check, Plus, Trash2, X, Users, UserPlus, Pencil } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
+  addWalkinTeamPlayer, updateTeamPlayerGuest,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -227,7 +228,7 @@ export default function TournamentControlCenter({
                           Mark paid
                         </button>
                       )}
-                      {t.status === "confirmed" && (
+                      {t.status !== "rejected" && t.status !== "withdrawn" && (
                         <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setManagingRoster(t)}>
                           <Users size={13} /> Roster
                         </button>
@@ -489,10 +490,18 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [addMode, setAddMode] = useState<"registered" | "walkin">("registered");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<{ id: string; name: string; username: string | null; avatar_url: string | null }[]>([]);
   const [searching, setSearching] = useState(false);
   const [addRole, setAddRole] = useState<"player" | "substitute">("player");
+  const [wName, setWName] = useState("");
+  const [wPhone, setWPhone] = useState("");
+  const [wEmail, setWEmail] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
 
   // Used from remove()/add() below (event handlers, not effects) to
   // refetch after a mutation — the mount effect has its own inline
@@ -551,6 +560,37 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     });
   }
 
+  function addWalkin() {
+    if (!wName.trim() || !wPhone.trim()) { setErr("Enter a name and phone number."); return; }
+    setErr(null);
+    startTransition(async () => {
+      const res = await addWalkinTeamPlayer(team.id, wName.trim(), wPhone.trim(), wEmail.trim() || undefined, addRole);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setWName(""); setWPhone(""); setWEmail("");
+      load();
+      onChanged();
+    });
+  }
+
+  function startEdit(p: RosterRow) {
+    setEditingId(p.id);
+    setEditName(p.guest_name ?? "");
+    setEditPhone(p.guest_phone ?? "");
+    setEditEmail(p.guest_email ?? "");
+  }
+
+  function saveEdit(playerId: string) {
+    if (!editName.trim() || !editPhone.trim()) { setErr("Enter a name and phone number."); return; }
+    setErr(null);
+    startTransition(async () => {
+      const res = await updateTeamPlayerGuest(playerId, editName.trim(), editPhone.trim(), editEmail.trim() || undefined);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setEditingId(null);
+      load();
+      onChanged();
+    });
+  }
+
   return (
     <div className="tc-scrim" onClick={onClose}>
       <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
@@ -566,51 +606,104 @@ function TeamRosterModal({ team, onClose, onChanged }: {
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
             {roster.map((p) => (
-              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, background: "rgba(242,237,230,0.04)" }}>
-                <span style={{ flex: 1, fontSize: 13.5 }}>
-                  {p.name}
-                  {!p.user_id && <span className="tc-dim" style={{ marginLeft: 6, fontSize: 11 }}>Walk-in</span>}
-                </span>
-                <span className="tc-dim" style={{ fontSize: 11.5, textTransform: "capitalize" }}>{p.role}</span>
-                {p.role !== "captain" && (
-                  <button
-                    aria-label={`Remove ${p.name}`} disabled={pending} onClick={() => remove(p.id, p.name)}
-                    style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.75, cursor: "pointer", padding: 4, display: "flex" }}
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                )}
-              </div>
+              editingId === p.id ? (
+                <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px", borderRadius: 10, background: "rgba(0,98,65,0.06)" }}>
+                  <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" style={modalInputStyle} />
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                    <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button className="tc-btn primary" style={{ padding: "6px 10px", fontSize: 12 }} disabled={pending} onClick={() => saveEdit(p.id)}>Save</button>
+                    <button className="tc-btn" style={{ padding: "6px 10px", fontSize: 12 }} disabled={pending} onClick={() => setEditingId(null)}>Cancel</button>
+                  </div>
+                </div>
+              ) : (
+                <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, background: "rgba(242,237,230,0.04)" }}>
+                  <span style={{ flex: 1, fontSize: 13.5 }}>
+                    {p.name}
+                    {!p.user_id && <span className="tc-dim" style={{ marginLeft: 6, fontSize: 11 }}>Walk-in</span>}
+                  </span>
+                  <span className="tc-dim" style={{ fontSize: 11.5, textTransform: "capitalize" }}>{p.role}</span>
+                  {!p.user_id && (
+                    <button
+                      aria-label={`Edit ${p.name}`} disabled={pending} onClick={() => startEdit(p)}
+                      style={{ background: "none", border: "none", color: "inherit", opacity: 0.5, cursor: "pointer", padding: 4, display: "flex" }}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  )}
+                  {p.role !== "captain" && (
+                    <button
+                      aria-label={`Remove ${p.name}`} disabled={pending} onClick={() => remove(p.id, p.name)}
+                      style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.75, cursor: "pointer", padding: 4, display: "flex" }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  )}
+                </div>
+              )
             ))}
           </div>
         )}
 
         <div style={{ borderTop: "1px solid rgba(242,237,230,0.1)", paddingTop: 14 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>
-            Add a registered player
+          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
+            <button
+              className={`tc-btn ${addMode === "registered" ? "primary" : ""}`} style={{ padding: "6px 10px", fontSize: 12 }}
+              onClick={() => setAddMode("registered")}
+            >
+              Registered player
+            </button>
+            <button
+              className={`tc-btn ${addMode === "walkin" ? "primary" : ""}`} style={{ padding: "6px 10px", fontSize: 12 }}
+              onClick={() => setAddMode("walkin")}
+            >
+              Walk-in member
+            </button>
           </div>
-          <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-            <input
-              value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or username"
-              style={{ ...modalInputStyle, flex: 1, minWidth: 160 }}
-            />
-            <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
-              <option value="player">Player</option>
-              <option value="substitute">Substitute</option>
-            </select>
-          </div>
-          {searching && <div className="tc-dim" style={{ fontSize: 12 }}>Searching…</div>}
-          {query.trim().length >= 2 && results.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              {results.map((r) => (
-                <button
-                  key={r.id} className="tc-btn" style={{ padding: "8px 10px", justifyContent: "space-between" }}
-                  disabled={pending} onClick={() => add(r.id)}
-                >
-                  <span>{r.name}{r.username && <span className="tc-dim"> @{r.username}</span>}</span>
-                  <UserPlus size={14} />
-                </button>
-              ))}
+
+          {addMode === "registered" ? (
+            <>
+              <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+                <input
+                  value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or username"
+                  style={{ ...modalInputStyle, flex: 1, minWidth: 160 }}
+                />
+                <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
+                  <option value="player">Player</option>
+                  <option value="substitute">Substitute</option>
+                </select>
+              </div>
+              {searching && <div className="tc-dim" style={{ fontSize: 12 }}>Searching…</div>}
+              {query.trim().length >= 2 && results.length > 0 && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {results.map((r) => (
+                    <button
+                      key={r.id} className="tc-btn" style={{ padding: "8px 10px", justifyContent: "space-between" }}
+                      disabled={pending} onClick={() => add(r.id)}
+                    >
+                      <span>{r.name}{r.username && <span className="tc-dim"> @{r.username}</span>}</span>
+                      <UserPlus size={14} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <input value={wName} onChange={(e) => setWName(e.target.value)} placeholder="Name" style={modalInputStyle} />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <input value={wPhone} onChange={(e) => setWPhone(e.target.value)} placeholder="Phone" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                <input value={wEmail} onChange={(e) => setWEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
+                  <option value="player">Player</option>
+                  <option value="substitute">Substitute</option>
+                </select>
+              </div>
+              <button className="tc-btn primary" style={{ padding: "8px 12px", alignSelf: "flex-start" }} disabled={pending} onClick={addWalkin}>
+                <UserPlus size={14} /> Add member
+              </button>
             </div>
           )}
         </div>

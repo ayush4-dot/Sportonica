@@ -110,4 +110,102 @@ end;
 $$;
 grant execute on function public.remove_team_player_admin(uuid) to authenticated;
 
+-- Add a walk-in (no-account) member directly to an existing team.
+-- Walk-in teams have no captain_id at all (create_walkin_team() inserts
+-- null — see tournaments.sql) and their members have no user_id to log
+-- in with, so this has to be admin-only; there's no self-service path
+-- for a walk-in team the way a real captain has for a linked one.
+create or replace function public.add_walkin_team_player(
+  p_team_id uuid, p_name text, p_phone text, p_email text default null, p_role text default 'player'
+)
+returns public.tournament_team_players
+language plpgsql security definer set search_path = public as $$
+declare
+  v_team public.tournament_teams;
+  v_t    public.tournaments;
+  v_players int;
+  v_subs    int;
+  v_name  text := trim(coalesce(p_name, ''));
+  v_phone text := trim(coalesce(p_phone, ''));
+  v_email text := nullif(trim(coalesce(p_email, '')), '');
+  v_row  public.tournament_team_players;
+begin
+  select * into v_team from public.tournament_teams where id = p_team_id for update;
+  if not found then raise exception 'TEAM_NOT_FOUND'; end if;
+
+  select * into v_t from public.tournaments where id = v_team.tournament_id;
+  if not (
+    public.is_tournament_organizer(v_t)
+    or public.has_venue_access(v_t.venue_id, 'manager')
+    or public.is_super_admin()
+  ) then
+    raise exception 'FORBIDDEN';
+  end if;
+  if v_team.status in ('rejected','withdrawn') then raise exception 'TEAM_NOT_CONFIRMED'; end if;
+
+  if v_name = '' then raise exception 'MEMBER_NAME_REQUIRED'; end if;
+  if v_phone = '' then raise exception 'MEMBER_PHONE_REQUIRED'; end if;
+
+  select count(*) filter (where role <> 'substitute'), count(*) filter (where role = 'substitute')
+    into v_players, v_subs
+    from public.tournament_team_players where team_id = p_team_id;
+
+  if p_role = 'substitute' then
+    if v_subs >= v_t.substitute_limit then raise exception 'SUBSTITUTE_LIMIT_REACHED'; end if;
+  else
+    if v_players >= v_t.max_players_per_team then raise exception 'ROSTER_FULL'; end if;
+  end if;
+
+  insert into public.tournament_team_players (team_id, guest_name, guest_phone, guest_email, role)
+  values (p_team_id, v_name, v_phone, v_email, coalesce(p_role, 'player'))
+  returning * into v_row;
+
+  return v_row;
+end;
+$$;
+grant execute on function public.add_walkin_team_player(uuid,text,text,text,text) to authenticated;
+
+-- Edit a walk-in member's own details (name/phone/email) — only for a
+-- guest row (user_id is null). A linked account's contact info comes
+-- from their own profile/auth account, not something to overwrite here.
+create or replace function public.update_team_player_guest(
+  p_team_player_id uuid, p_name text, p_phone text, p_email text default null
+)
+returns public.tournament_team_players
+language plpgsql security definer set search_path = public as $$
+declare
+  v_row public.tournament_team_players;
+  v_team public.tournament_teams;
+  v_t public.tournaments;
+  v_name  text := trim(coalesce(p_name, ''));
+  v_phone text := trim(coalesce(p_phone, ''));
+  v_email text := nullif(trim(coalesce(p_email, '')), '');
+begin
+  select * into v_row from public.tournament_team_players where id = p_team_player_id for update;
+  if not found then raise exception 'PLAYER_NOT_IN_MATCH'; end if;
+  if v_row.user_id is not null then raise exception 'NOT_A_WALKIN_TEAM'; end if;
+
+  select * into v_team from public.tournament_teams where id = v_row.team_id;
+  select * into v_t from public.tournaments where id = v_team.tournament_id;
+  if not (
+    public.is_tournament_organizer(v_t)
+    or public.has_venue_access(v_t.venue_id, 'manager')
+    or public.is_super_admin()
+  ) then
+    raise exception 'FORBIDDEN';
+  end if;
+
+  if v_name = '' then raise exception 'MEMBER_NAME_REQUIRED'; end if;
+  if v_phone = '' then raise exception 'MEMBER_PHONE_REQUIRED'; end if;
+
+  update public.tournament_team_players
+    set guest_name = v_name, guest_phone = v_phone, guest_email = v_email
+    where id = p_team_player_id
+    returning * into v_row;
+
+  return v_row;
+end;
+$$;
+grant execute on function public.update_team_player_guest(uuid,text,text,text) to authenticated;
+
 -- ── DONE ─────────────────────────────────────────────────────────
