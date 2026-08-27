@@ -215,11 +215,16 @@ export async function setVenueBookingStatus(
 // "everything, RLS scopes it" shape as getMyVendorTournaments() in
 // src/lib/tournaments/actions.ts, but for the tournaments_read_organizer_own
 // policy (owner_id = auth.uid()) instead of has_venue_access().
+// No owner_id filter — RLS (tournaments_read_owner, which checks
+// is_tournament_organizer()) already scopes this to tournaments the
+// caller owns AND ones a super admin granted them delegated ("Owner
+// access") to, so a tournament_managers grant shows up here too even
+// though the caller isn't the owner_id.
 export async function getMyOrganizerTournaments(): Promise<Tournament[] | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb
-    .from("tournaments").select("*").eq("owner_id", user.id).order("created_at", { ascending: false });
+    .from("tournaments").select("*").order("created_at", { ascending: false });
   if (error) return actionError(error.message);
   return (data ?? []) as Tournament[];
 }

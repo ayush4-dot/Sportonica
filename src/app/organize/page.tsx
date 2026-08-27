@@ -14,10 +14,20 @@ const STATUS_BADGE: Record<TournamentStatus, string> = {
 // header's trophy icon (OrganizerAccessModal.tsx) now, not here — this
 // page assumes access and only needs a short fallback for anyone who
 // lands here directly without it (bookmark, back button, shared link).
+//
+// A plain player can also land here with something to manage: a super
+// admin can grant "Owner access" to one specific tournament without
+// making them a platform-wide Organizer (see TournamentAccessTab.tsx /
+// tournament_owner_access.sql). getMyOrganizerTournaments() already
+// picks up both cases via RLS — so the access gate below only blocks
+// someone who is neither an Organizer nor has been granted anything.
 export default async function OrganizePage() {
   const role = await getMyRole();
+  const isOrganizerRole = role === "organizer" || role === "super_admin";
+  const tournaments = await getMyOrganizerTournaments();
+  const rows = isActionError(tournaments) ? [] : tournaments;
 
-  if (role !== "organizer" && role !== "super_admin") {
+  if (!isOrganizerRole && rows.length === 0) {
     return (
       <div className="adm-empty">
         <div className="adm-empty-icon"><Trophy size={22} /></div>
@@ -26,9 +36,6 @@ export default async function OrganizePage() {
       </div>
     );
   }
-
-  const tournaments = await getMyOrganizerTournaments();
-  const rows = isActionError(tournaments) ? [] : tournaments;
 
   return (
     <div className="adm-body" style={{ padding: 0 }}>
@@ -40,17 +47,29 @@ export default async function OrganizePage() {
       <div className="adm-between" style={{ marginBottom: 20 }}>
         <div>
           <h1 className="plt-h1">Your tournaments</h1>
-          <p className="plt-sub2">Everything you&apos;re organizing, across every venue that&apos;s said yes.</p>
+          <p className="plt-sub2">
+            {isOrganizerRole
+              ? "Everything you're organizing, across every venue that's said yes."
+              : "Tournaments you've been given access to manage."}
+          </p>
         </div>
-        <Link href="/organize/tournaments/new" className="adm-btn primary"><Plus size={14} /> New tournament</Link>
+        {isOrganizerRole && (
+          <Link href="/organize/tournaments/new" className="adm-btn primary"><Plus size={14} /> New tournament</Link>
+        )}
       </div>
 
       {rows.length === 0 ? (
         <div className="adm-empty">
           <div className="adm-empty-icon"><Trophy size={22} /></div>
           <h3>No tournaments yet</h3>
-          <p>Create one at your own venue, or invite a Sportonica venue to host.</p>
-          <Link href="/organize/tournaments/new" className="adm-btn primary">New tournament</Link>
+          {isOrganizerRole ? (
+            <>
+              <p>Create one at your own venue, or invite a Sportonica venue to host.</p>
+              <Link href="/organize/tournaments/new" className="adm-btn primary">New tournament</Link>
+            </>
+          ) : (
+            <p>You haven&apos;t been given access to manage any tournaments yet.</p>
+          )}
         </div>
       ) : (
         <table className="adm-table">
