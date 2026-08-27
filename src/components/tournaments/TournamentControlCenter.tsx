@@ -1,18 +1,19 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Trash2, X } from "lucide-react";
+import { Check, Plus, Trash2, X, Users, UserPlus } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
+  getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
   STATUS_LABELS, TEAM_STATUS_LABELS, FORMAT_LABELS,
   type Tournament, type TournamentTeam, type TournamentMatch, type TournamentAnnouncement, type WalkinMember,
-  type TournamentManager,
+  type TournamentManager, type TournamentTeamPlayer,
 } from "@/lib/tournaments/types";
 import type { Payment } from "@/lib/payments/types";
 import TournamentForm from "./TournamentForm";
@@ -66,6 +67,7 @@ export default function TournamentControlCenter({
   const [reviewing, setReviewing] = useState<ReviewPaymentRow | null>(null);
   const [showWalkinModal, setShowWalkinModal] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
+  const [managingRoster, setManagingRoster] = useState<TeamRow | null>(null);
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const finesByTeam = new Map((teamFines ?? []).map((f) => [f.team_id, f.total_fine]));
@@ -216,13 +218,18 @@ export default function TournamentControlCenter({
                     {trackingFines && (
                       <td className="tc-num">{(finesByTeam.get(t.id) ?? 0) > 0 ? money(finesByTeam.get(t.id) ?? 0) : "—"}</td>
                     )}
-                    <td>
+                    <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {t.is_walkin && t.status === "payment_pending" && (
                         <button
                           className="tc-btn" style={{ padding: "6px 10px" }} disabled={pending}
                           onClick={() => run(() => markWalkinTeamPaid(t.id, tournament.id), `${t.name} marked as paid.`)}
                         >
                           Mark paid
+                        </button>
+                      )}
+                      {t.status === "confirmed" && (
+                        <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setManagingRoster(t)}>
+                          <Users size={13} /> Roster
                         </button>
                       )}
                     </td>
@@ -242,6 +249,13 @@ export default function TournamentControlCenter({
                 setTimeout(() => setConfirmMsg(null), 4000);
                 router.refresh();
               }}
+            />
+          )}
+          {managingRoster && (
+            <TeamRosterModal
+              team={managingRoster}
+              onClose={() => setManagingRoster(null)}
+              onChanged={() => router.refresh()}
             />
           )}
         </div>
@@ -452,6 +466,156 @@ function WalkinTeamModal({
         <button className="tc-btn primary" style={{ marginTop: 18, width: "100%", justifyContent: "center" }} disabled={pending} onClick={submit}>
           {pending ? "Adding…" : "Add team"}
         </button>
+      </div>
+    </div>
+  );
+}
+
+const modalInputStyle: React.CSSProperties = {
+  padding: "9px 10px", borderRadius: 10, border: "1px solid rgba(242,237,230,0.15)",
+  background: "transparent", color: "inherit", fontFamily: "inherit",
+};
+
+// Add/remove players on an already-confirmed team, any time — not just
+// the captain, not just during the registration window. See
+// tournament_admin_roster.sql for the backend side of this.
+function TeamRosterModal({ team, onClose, onChanged }: {
+  team: TeamRow;
+  onClose: () => void;
+  onChanged: () => void;
+}) {
+  type RosterRow = TournamentTeamPlayer & { name: string; username: string | null; avatar_url: string | null };
+  const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<RosterRow[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<{ id: string; name: string; username: string | null; avatar_url: string | null }[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [addRole, setAddRole] = useState<"player" | "substitute">("player");
+
+  // Used from remove()/add() below (event handlers, not effects) to
+  // refetch after a mutation — the mount effect has its own inline
+  // fetch instead of calling this, since a synchronous setState call
+  // directly in an effect body (as opposed to inside its async
+  // continuation) trips react-hooks/set-state-in-effect.
+  function load() {
+    setLoading(true);
+    getTeamRoster(team.id).then((res) => {
+      if (!isActionError(res)) setRoster(res);
+      setLoading(false);
+    });
+  }
+
+  useEffect(() => {
+    let cancelled = false;
+    getTeamRoster(team.id).then((res) => {
+      if (cancelled) return;
+      if (!isActionError(res)) setRoster(res);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [team.id]);
+
+  useEffect(() => {
+    if (query.trim().length < 2) return;
+    const t = setTimeout(() => {
+      setSearching(true);
+      searchPlayersForTeam(query, team.id).then((res) => {
+        setSearching(false);
+        if (!isActionError(res)) setResults(res);
+      });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [query, team.id]);
+
+  function remove(playerId: string, name: string) {
+    if (!window.confirm(`Remove ${name} from ${team.name}?`)) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await removeTeamPlayerAdmin(playerId);
+      if (isActionError(res)) { setErr(res.message); return; }
+      load();
+      onChanged();
+    });
+  }
+
+  function add(userId: string) {
+    setErr(null);
+    startTransition(async () => {
+      const res = await addTeamPlayer(team.id, userId, addRole);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setQuery(""); setResults([]);
+      load();
+      onChanged();
+    });
+  }
+
+  return (
+    <div className="tc-scrim" onClick={onClose}>
+      <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name} — Roster</h3>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+
+        {loading ? (
+          <div className="tc-empty">Loading roster…</div>
+        ) : roster.length === 0 ? (
+          <div className="tc-empty">No roster on file yet.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 18 }}>
+            {roster.map((p) => (
+              <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", borderRadius: 10, background: "rgba(242,237,230,0.04)" }}>
+                <span style={{ flex: 1, fontSize: 13.5 }}>
+                  {p.name}
+                  {!p.user_id && <span className="tc-dim" style={{ marginLeft: 6, fontSize: 11 }}>Walk-in</span>}
+                </span>
+                <span className="tc-dim" style={{ fontSize: 11.5, textTransform: "capitalize" }}>{p.role}</span>
+                {p.role !== "captain" && (
+                  <button
+                    aria-label={`Remove ${p.name}`} disabled={pending} onClick={() => remove(p.id, p.name)}
+                    style={{ background: "none", border: "none", color: "#ef4444", opacity: 0.75, cursor: "pointer", padding: 4, display: "flex" }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ borderTop: "1px solid rgba(242,237,230,0.1)", paddingTop: 14 }}>
+          <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>
+            Add a registered player
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
+            <input
+              value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name or username"
+              style={{ ...modalInputStyle, flex: 1, minWidth: 160 }}
+            />
+            <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
+              <option value="player">Player</option>
+              <option value="substitute">Substitute</option>
+            </select>
+          </div>
+          {searching && <div className="tc-dim" style={{ fontSize: 12 }}>Searching…</div>}
+          {query.trim().length >= 2 && results.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {results.map((r) => (
+                <button
+                  key={r.id} className="tc-btn" style={{ padding: "8px 10px", justifyContent: "space-between" }}
+                  disabled={pending} onClick={() => add(r.id)}
+                >
+                  <span>{r.name}{r.username && <span className="tc-dim"> @{r.username}</span>}</span>
+                  <UserPlus size={14} />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {err && <div className="tc-err" style={{ marginTop: 14 }}>{err}</div>}
       </div>
     </div>
   );

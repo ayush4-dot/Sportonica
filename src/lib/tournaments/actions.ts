@@ -361,6 +361,15 @@ export async function removeTeamPlayer(teamId: string, userId: string): Promise<
   if (error) return actionError(friendlyTournamentError(error.message));
 }
 
+// Admin/organizer-only — removes by the roster row's own id, so it also
+// works for a walk-in/guest member (no user_id to match on).
+export async function removeTeamPlayerAdmin(teamPlayerId: string): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("remove_team_player_admin", { p_team_player_id: teamPlayerId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
 // ── Walk-in teams: registered by whoever manages the tournament, on
 // behalf of people who signed up in person — no accounts involved. ──
 export async function createWalkinTeam(
