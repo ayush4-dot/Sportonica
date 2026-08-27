@@ -34,8 +34,10 @@ export default function MagnetDock() {
   // profile round-trip on mount — noticeable savings on mobile.
   const { user, profile } = useProfile();
 
-  // Hide dock on admin console, auth pages (they have their own chrome).
-  const hidden = pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/login") || pathname.startsWith("/signup");
+  // Hide dock on admin/organizer/platform consoles, auth pages (they have their own chrome).
+  const hidden =
+    pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/organize")
+    || pathname.startsWith("/login") || pathname.startsWith("/signup");
   if (hidden) return null;
 
   const firstName =
