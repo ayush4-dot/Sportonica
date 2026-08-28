@@ -94,12 +94,19 @@ export default function FixturesTab({
     });
   }
 
-  const canAddMatches = (tournament.status === "registration_closed" || tournament.status === "live") && teams.length >= 1;
+  const registrationClosed = tournament.status === "registration_closed" || tournament.status === "live";
+  const canAddMatches = registrationClosed && teams.length >= 1;
   const canGenerateBracket =
     tournament.format === "knockout" && tournament.status === "registration_closed" && matches.length === 0 && teams.length >= 2;
 
   if (!canAddMatches && matches.length === 0) {
-    return <div className="tc-empty">Close registration to start adding matches.</div>;
+    return (
+      <div className="tc-empty">
+        {!registrationClosed
+          ? "Close registration to start adding matches."
+          : "Registration is closed, but no team is confirmed yet — approve at least one team's payment (or add a walk-in team) before fixtures can be added."}
+      </div>
+    );
   }
 
   const rounds = new Map<string, TournamentMatch[]>();
