@@ -826,7 +826,6 @@ function MatchPlayerStatsModal({
     return y * yellowCardFine + (reds[p.id] ? redCardFine : 0);
   }
   const totalFine = roster.reduce((sum, p) => sum + fineFor(p), 0);
-  const suspended = new Set(roster.filter((p) => (Number(yellows[p.id]) || 0) >= 2 || reds[p.id]).map((p) => p.id));
 
   function submit() {
     setErr(null);
@@ -883,10 +882,7 @@ function MatchPlayerStatsModal({
             </div>
             {roster.filter((p) => !match.team_b_id || p.team === teamTab).map((p) => (
               <div key={p.id} style={{ display: "grid", gridTemplateColumns: `1.4fr 55px 55px 55px 45px 45px${trackingFines ? " 70px" : ""}`, gap: 8, alignItems: "center", padding: "6px 0", minWidth: 470 }}>
-                <div style={{ fontSize: 13.5 }}>
-                  {p.name}
-                  {suspended.has(p.id) && <span className="tc-badge danger" style={{ marginLeft: 6, fontSize: 10 }}>Suspended next</span>}
-                </div>
+                <div style={{ fontSize: 13.5 }}>{p.name}</div>
                 <input
                   type="number" min={0} value={goals[p.id] ?? ""}
                   onChange={(e) => setGoals((g) => ({ ...g, [p.id]: e.target.value }))}
