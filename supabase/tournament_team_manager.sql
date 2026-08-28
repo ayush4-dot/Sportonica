@@ -152,4 +152,40 @@ end;
 $$;
 grant execute on function public.create_walkin_team(uuid,text,jsonb,text,text) to authenticated;
 
+-- Set/edit the manager after a team already exists — for a team that
+-- registered without one, or to fix a typo. Admin/organizer-only, same
+-- as the rest of the roster-management tools (add_walkin_team_player
+-- etc. in tournament_admin_roster.sql), not the captain's own
+-- self-service — that stays scoped to register_team() at signup time.
+create or replace function public.update_team_manager(p_team_id uuid, p_manager_name text, p_manager_phone text)
+returns public.tournament_teams
+language plpgsql security definer set search_path = public as $$
+declare
+  v_team public.tournament_teams;
+  v_t public.tournaments;
+  v_manager_name text := nullif(trim(coalesce(p_manager_name, '')), '');
+  v_manager_phone text := nullif(trim(coalesce(p_manager_phone, '')), '');
+begin
+  select * into v_team from public.tournament_teams where id = p_team_id for update;
+  if not found then raise exception 'TEAM_NOT_FOUND'; end if;
+
+  select * into v_t from public.tournaments where id = v_team.tournament_id;
+  if not (
+    public.is_tournament_organizer(v_t)
+    or public.has_venue_access(v_t.venue_id, 'manager')
+    or public.is_super_admin()
+  ) then
+    raise exception 'FORBIDDEN';
+  end if;
+
+  update public.tournament_teams
+    set manager_name = v_manager_name, manager_phone = v_manager_phone
+    where id = p_team_id
+    returning * into v_team;
+
+  return v_team;
+end;
+$$;
+grant execute on function public.update_team_manager(uuid,text,text) to authenticated;
+
 -- ── DONE ─────────────────────────────────────────────────────────

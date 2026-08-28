@@ -8,7 +8,7 @@ import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
-  addWalkinTeamPlayer, updateTeamPlayerGuest,
+  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -512,6 +512,11 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [managerName, setManagerName] = useState(team.manager_name ?? "");
+  const [managerPhone, setManagerPhone] = useState(team.manager_phone ?? "");
+  const [savedManagerName, setSavedManagerName] = useState(team.manager_name);
+  const [savedManagerPhone, setSavedManagerPhone] = useState(team.manager_phone);
+  const [editingManager, setEditingManager] = useState(false);
 
   // Used from remove()/add() below (event handlers, not effects) to
   // refetch after a mutation — the mount effect has its own inline
@@ -601,6 +606,18 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     });
   }
 
+  function saveManager() {
+    setErr(null);
+    startTransition(async () => {
+      const res = await updateTeamManager(team.id, managerName.trim() || undefined, managerPhone.trim() || undefined);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setSavedManagerName(res.manager_name);
+      setSavedManagerPhone(res.manager_phone);
+      setEditingManager(false);
+      onChanged();
+    });
+  }
+
   return (
     <div className="tc-scrim" onClick={onClose}>
       <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
@@ -608,6 +625,33 @@ function TeamRosterModal({ team, onClose, onChanged }: {
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name} — Roster</h3>
           <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
         </div>
+
+        {editingManager ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, padding: 10, borderRadius: 10, background: "rgba(0,98,65,0.06)", marginBottom: 16 }}>
+            <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Team manager's name" style={modalInputStyle} />
+            <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="Manager's phone" style={modalInputStyle} />
+            <div style={{ display: "flex", gap: 6 }}>
+              <button className="tc-btn primary" style={{ padding: "6px 10px", fontSize: 12 }} disabled={pending} onClick={saveManager}>Save</button>
+              <button
+                className="tc-btn" style={{ padding: "6px 10px", fontSize: 12 }} disabled={pending}
+                onClick={() => { setEditingManager(false); setManagerName(savedManagerName ?? ""); setManagerPhone(savedManagerPhone ?? ""); }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: 16, fontSize: 12.5 }}>
+            {savedManagerName ? (
+              <span className="tc-dim">Manager: {savedManagerName}{savedManagerPhone ? ` · ${savedManagerPhone}` : ""}</span>
+            ) : (
+              <span className="tc-dim" style={{ fontStyle: "italic" }}>No team manager set</span>
+            )}
+            <button className="tc-btn" style={{ padding: "5px 8px", fontSize: 11.5 }} onClick={() => setEditingManager(true)}>
+              <Pencil size={12} /> {savedManagerName ? "Edit" : "Add"}
+            </button>
+          </div>
+        )}
 
         {loading ? (
           <div className="tc-empty">Loading roster…</div>
