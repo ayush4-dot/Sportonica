@@ -422,15 +422,16 @@ function WalkinTeamModal({
 
   function submit() {
     if (!teamName.trim()) { setErr("Enter a team name."); return; }
-    if (!managerName.trim()) { setErr("Enter the team manager's name."); return; }
-    if (!managerPhone.trim()) { setErr("Enter the team manager's phone number."); return; }
     if (members.some((m) => !m.name.trim() || !m.phone.trim())) {
       setErr("Enter a name and phone number for every team member.");
       return;
     }
     setErr(null);
     startTransition(async () => {
-      const res = await createWalkinTeam(tournamentId, teamName.trim(), members, managerName.trim(), managerPhone.trim());
+      const res = await createWalkinTeam(
+        tournamentId, teamName.trim(), members,
+        managerName.trim() || undefined, managerPhone.trim() || undefined
+      );
       if (isActionError(res)) { setErr(res.message); return; }
       onCreated(`${res.name} added as a walk-in team.`);
     });
@@ -448,10 +449,10 @@ function WalkinTeamModal({
           <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Team name" />
         </div>
         <div className="tc-member-row" style={{ gridTemplateColumns: "1fr 1fr", marginTop: 8 }}>
-          <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Team manager's name" />
-          <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="Manager's phone" />
+          <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Team manager's name (optional)" />
+          <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="Manager's phone (optional)" />
         </div>
-        <p className="tc-dim" style={{ fontSize: 11, marginTop: 4 }}>Shown publicly on the tournament&apos;s Teams tab.</p>
+        <p className="tc-dim" style={{ fontSize: 11, marginTop: 4 }}>If given, shown publicly on the tournament&apos;s Teams tab.</p>
 
         <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", margin: "16px 0 8px" }}>
           Members ({members.length}/{maxMembers})

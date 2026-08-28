@@ -37,12 +37,13 @@ export default function TournamentRegisterPanel({
 
   function submitRegister() {
     if (!teamName.trim()) { setErr("Enter a team name."); return; }
-    if (!managerName.trim()) { setErr("Enter the team manager's name."); return; }
-    if (!managerPhone.trim()) { setErr("Enter the team manager's phone number."); return; }
     if (!ackTerms) { setErr("You need to agree to the terms to register."); return; }
     setErr(null);
     startTransition(async () => {
-      const res = await registerTeam(tournament.id, teamName.trim(), ackTerms, managerName.trim(), managerPhone.trim());
+      const res = await registerTeam(
+        tournament.id, teamName.trim(), ackTerms,
+        managerName.trim() || undefined, managerPhone.trim() || undefined
+      );
       if (isActionError(res)) { setErr(res.message); return; }
       setTeam(res);
     });
@@ -79,15 +80,15 @@ export default function TournamentRegisterPanel({
           <input value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="Your team's name" />
         </div>
         <div className="ev-field" style={{ marginTop: 12 }}>
-          <label>Team manager&apos;s name</label>
+          <label>Team manager&apos;s name <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
           <input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Who should other teams contact" />
         </div>
         <div className="ev-field" style={{ marginTop: 12 }}>
-          <label>Team manager&apos;s phone</label>
+          <label>Team manager&apos;s phone <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
           <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
         </div>
         <p style={{ fontSize: 11.5, opacity: 0.55, margin: "6px 0 0" }}>
-          Shown publicly on this tournament&apos;s Teams tab, so opposing teams and organizers can reach you.
+          If given, shown publicly on this tournament&apos;s Teams tab, so opposing teams and organizers can reach you.
         </p>
         <label style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, opacity: 0.75, margin: "10px 0 16px", cursor: "pointer" }}>
           <input type="checkbox" checked={ackTerms} onChange={(e) => setAckTerms(e.target.checked)} style={{ marginTop: 2 }} />
