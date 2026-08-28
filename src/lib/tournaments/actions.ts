@@ -425,6 +425,15 @@ export async function createWalkinTeam(
   return data as TournamentTeam;
 }
 
+// Admin/organizer-only — rename a team any time.
+export async function updateTeamName(teamId: string, name: string): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("update_team_name", { p_team_id: teamId, p_name: name });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeam;
+}
+
 // Admin/organizer-only — set or edit a team's manager after the fact
 // (registered without one, or fixing a typo).
 export async function updateTeamManager(

@@ -8,7 +8,7 @@ import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
-  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager,
+  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -69,6 +69,8 @@ export default function TournamentControlCenter({
   const [showWalkinModal, setShowWalkinModal] = useState(false);
   const [editingDetails, setEditingDetails] = useState(false);
   const [managingRoster, setManagingRoster] = useState<TeamRow | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   const confirmedTeams = teams.filter((t) => t.status === "confirmed").length;
   const finesByTeam = new Map((teamFines ?? []).map((f) => [f.team_id, f.total_fine]));
@@ -196,11 +198,9 @@ export default function TournamentControlCenter({
               <div className="tc-card-t">Registered teams</div>
               <div className="tc-card-sub">Payment approval happens in Payments — Payouts &amp; Verification, same as every other booking.</div>
             </div>
-            {tournament.status === "registration_open" && (
-              <button className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={() => setShowWalkinModal(true)}>
-                <Plus size={14} /> Add walk-in team
-              </button>
-            )}
+            <button className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={() => setShowWalkinModal(true)}>
+              <Plus size={14} /> Add walk-in team
+            </button>
           </div>
           {teams.length === 0 ? (
             <div className="tc-empty">No teams have registered yet.</div>
@@ -211,8 +211,37 @@ export default function TournamentControlCenter({
                 {teams.map((t) => (
                   <tr key={t.id}>
                     <td style={{ fontWeight: 600 }}>
-                      {t.name}
-                      {t.is_walkin && <span className="tc-badge" style={{ marginLeft: 8, background: "rgba(128,128,128,.14)", color: "inherit" }}>Walk-in</span>}
+                      {renamingId === t.id ? (
+                        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                          <input
+                            value={renameValue} onChange={(e) => setRenameValue(e.target.value)} autoFocus
+                            style={{ padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(242,237,230,0.15)", background: "transparent", color: "inherit", fontFamily: "inherit", fontWeight: 600, width: 160 }}
+                          />
+                          <button
+                            className="tc-btn primary" style={{ padding: "5px 8px", fontSize: 11.5 }} disabled={pending || !renameValue.trim()}
+                            onClick={() => {
+                              const name = renameValue.trim();
+                              run(() => updateTeamName(t.id, name), `Renamed to ${name}.`);
+                              setRenamingId(null);
+                            }}
+                          >
+                            Save
+                          </button>
+                          <button className="tc-btn" style={{ padding: "5px 8px", fontSize: 11.5 }} disabled={pending} onClick={() => setRenamingId(null)}>Cancel</button>
+                        </div>
+                      ) : (
+                        <>
+                          {t.name}
+                          <button
+                            aria-label={`Rename ${t.name}`} disabled={pending}
+                            onClick={() => { setRenamingId(t.id); setRenameValue(t.name); }}
+                            style={{ background: "none", border: "none", color: "inherit", opacity: 0.5, cursor: "pointer", padding: 4, display: "inline-flex", verticalAlign: "middle" }}
+                          >
+                            <Pencil size={12} />
+                          </button>
+                          {t.is_walkin && <span className="tc-badge" style={{ marginLeft: 4, background: "rgba(128,128,128,.14)", color: "inherit" }}>Walk-in</span>}
+                        </>
+                      )}
                     </td>
                     <td className="tc-num">{t.roster_count}</td>
                     <td><span className={`tc-badge ${teamBadgeClass(t.status)}`}>{TEAM_STATUS_LABELS[t.status]}</span></td>
