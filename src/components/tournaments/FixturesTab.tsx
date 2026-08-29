@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, X, History, Pencil } from "lucide-react";
 import {
@@ -81,6 +81,15 @@ export default function FixturesTab({
   const [err, setErr] = useState<string | null>(null);
   const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
   const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
+  const errRef = useRef<HTMLDivElement | null>(null);
+
+  // The error banner sits at the top of a card that can scroll for a
+  // while (many rounds/matches) — an action taken far down the list
+  // otherwise fails silently as far as the admin can see, since the
+  // message renders somewhere they've already scrolled past.
+  useEffect(() => {
+    if (err) errRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [err]);
 
   const teamsById = new Map(teams.map((t) => [t.id, t.name]));
   const teamName = (id: string | null) => (id ? teamsById.get(id) ?? "Unknown" : "TBD");
@@ -123,7 +132,7 @@ export default function FixturesTab({
           ? "Choose how you'd like to build the bracket."
           : "Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it's added."}
       </div>
-      {err && <div className="tc-err">{err}</div>}
+      {err && <div ref={errRef} className="tc-err">{err}</div>}
 
       {canGenerateBracket && mode === "choose" ? (
         <FixtureModeChooser onChoose={setMode} />
