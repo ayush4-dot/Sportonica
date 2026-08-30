@@ -28,6 +28,15 @@ export default function GoogleButton({
   async function signIn() {
     console.log("[GoogleButton] clicked — starting OAuth", { next });
     setPending(true); setErr(null);
+    // The ?next= query param on redirectTo isn't reliably preserved
+    // through the full Google → Supabase → app round trip (it's landed
+    // back on the default /discover instead more than once) —
+    // sessionStorage survives that trip in the same tab regardless of
+    // what happens to the URL, so AppHeader.tsx picks this up once the
+    // session actually appears and finishes the redirect from there.
+    try {
+      if (next && next !== "/discover") sessionStorage.setItem("post-login-redirect", next);
+    } catch { /* private mode / storage disabled — falls back to /discover, not fatal */ }
     const sb = createClient();
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",

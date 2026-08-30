@@ -48,6 +48,19 @@ export default function AppHeader() {
     });
   }, [profile?.id]);
 
+  // Finish the redirect GoogleButton couldn't guarantee via the OAuth
+  // URL's ?next= param — see the comment there. Fires once a session
+  // exists, regardless of which page /auth/callback happened to land on.
+  useEffect(() => {
+    if (!profile?.id) return;
+    let target: string | null = null;
+    try {
+      target = sessionStorage.getItem("post-login-redirect");
+      if (target) sessionStorage.removeItem("post-login-redirect");
+    } catch { /* private mode / storage disabled */ }
+    if (target && target !== pathname) router.push(target);
+  }, [profile?.id, pathname, router]);
+
   useEffect(() => {
     function onDoc(e: MouseEvent) {
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false);
