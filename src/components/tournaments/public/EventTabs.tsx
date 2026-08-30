@@ -56,6 +56,8 @@ export default function EventTabs({
   });
   const [tab, setTab] = useState<Tab>("Overview");
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
+  const { user, loading: authLoading } = useProfile();
+  const pathname = usePathname();
 
   const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement>>>({});
   const barRef = useRef<HTMLDivElement | null>(null);
@@ -128,8 +130,29 @@ export default function EventTabs({
       {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
       {activeTab === "Knockout" && <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
       {activeTab === "Fixtures" && <FixturesPublicTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
-      {activeTab === "Player Stats" && <PlayerStatsTab rows={playerStats} />}
-      {activeTab === "Teams" && <TeamsTab teams={confirmedTeams} />}
+      {activeTab === "Player Stats" && (
+        authLoading ? null : user ? <PlayerStatsTab rows={playerStats} /> : <SignInGate what="the player stats" pathname={pathname} />
+      )}
+      {activeTab === "Teams" && (
+        authLoading ? null : user ? <TeamsTab teams={confirmedTeams} /> : <SignInGate what="the teams and squads" pathname={pathname} />
+      )}
+    </div>
+  );
+}
+
+// ── Sign-in wall for Player Stats / Teams — everything else on this
+// page stays public. ──────────────────────────────────────────────
+function SignInGate({ what, pathname }: { what: string; pathname: string }) {
+  return (
+    <div className="ev2-empty" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 20px" }}>
+      <LogIn size={22} style={{ opacity: 0.5 }} />
+      <div>Sign in to view {what} for this tournament.</div>
+      <Link
+        href={`/login?redirect=${encodeURIComponent(pathname)}`}
+        style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13.5, fontWeight: 700, color: "#00875a", textDecoration: "none" }}
+      >
+        <LogIn size={14} /> Sign in
+      </Link>
     </div>
   );
 }
