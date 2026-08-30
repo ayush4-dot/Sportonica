@@ -21,11 +21,15 @@ function km(aLat: number, aLng: number, bLat: number, bLng: number) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-// Closest approved venues + closest upcoming games to a point.
+// Closest approved venues + closest upcoming games to a point. The two
+// queries are independent on purpose (Promise.allSettled, not
+// Promise.all) — a transient failure on one (a slow/overloaded
+// database, a dropped connection) shouldn't wipe out the other's
+// perfectly good result along with it.
 export async function nearbyVenuesAndGames(lat: number, lng: number): Promise<NearbyResult> {
   const sb = await createClient();
 
-  const [{ data: venues }, { data: games }] = await Promise.all([
+  const [venuesRes, gamesRes] = await Promise.allSettled([
     sb.from("venues")
       .select("id, name, venue_type, sports, lat, lng")
       .eq("verification_status", "verified")
@@ -39,6 +43,9 @@ export async function nearbyVenuesAndGames(lat: number, lng: number): Promise<Ne
       .order("event_date", { ascending: true })
       .limit(60),
   ]);
+
+  const venues = venuesRes.status === "fulfilled" ? venuesRes.value.data : null;
+  const games = gamesRes.status === "fulfilled" ? gamesRes.value.data : null;
 
   return {
     venues: (venues ?? [])
