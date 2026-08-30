@@ -32,10 +32,9 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
     <div className="play">
       <div className="play-wrap">
         <div className="play-hero">
-          <div className="play-eyebrow">Organised play</div>
           <h1>Tournaments <em>& events.</em></h1>
           <p>
-            Run by venues and by Sportonica — register a team or book a spot, and pay online
+            Register a team or book a spot, and pay online
             with eSewa, Khalti or bank transfer.
           </p>
         </div>
