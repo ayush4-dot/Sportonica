@@ -1023,7 +1023,8 @@ returns text language sql immutable as $$
     when p_round = p_rounds then 'Final'
     when p_round = p_rounds - 1 then 'Semifinal'
     when p_round = p_rounds - 2 then 'Quarterfinal'
-    else 'Round ' || p_round
+    -- Round r has 2^(p_rounds - r + 1) teams: "Round of 16", "Round of 32", ...
+    else 'Round of ' || (2 ^ (p_rounds - p_round + 1))::int
   end;
 $$;
 
