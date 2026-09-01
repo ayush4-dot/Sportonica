@@ -1,5 +1,5 @@
 -- ================================================================
--- Khelumna — Full Schema v2
+-- Sportonica — Full Schema v2
 -- Run this in Supabase SQL Editor (safe to re-run)
 -- ================================================================
 
