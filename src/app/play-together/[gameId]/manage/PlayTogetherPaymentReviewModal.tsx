@@ -112,7 +112,7 @@ export default function PlayTogetherPaymentReviewModal({
 
         {confirming && (
           <div className="ptrm-confirm">
-            <p><ShieldCheck size={14} /> Confirm you've checked this payment actually reached you before adding {name} to the group.</p>
+            <p><ShieldCheck size={14} /> Confirm you&apos;ve checked this payment actually reached you before adding {name} to the group.</p>
             <div className="ptrm-actions">
               <button className="ptrm-btn ok" disabled={pending} onClick={approve}>{pending ? "Verifying…" : "Confirm verify"}</button>
               <button className="ptrm-btn" disabled={pending} onClick={() => setConfirming(false)}>Cancel</button>

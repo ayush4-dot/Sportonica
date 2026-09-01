@@ -58,7 +58,7 @@ export default async function StaffPage({
           <div className="adm-between" style={{ marginBottom: 16 }}>
             <div>
               <div className="adm-card-t">Team</div>
-              <div className="adm-card-sub" style={{ marginBottom: 0 }}>Who can access this venue's console</div>
+              <div className="adm-card-sub" style={{ marginBottom: 0 }}>Who can access this venue&apos;s console</div>
             </div>
             <button className="adm-btn sm primary">Invite staff</button>
           </div>

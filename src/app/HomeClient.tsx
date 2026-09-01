@@ -455,11 +455,11 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             FOOTER
         ══════════════════════════════════ */}
         <footer className="p-footer">
-          <a href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"8px" }}>
+          <Link href="/" style={{ textDecoration:"none", display:"flex", alignItems:"center", gap:"8px" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/icons/mark.png" alt="" width={22} height={22} />
             <span style={{ fontSize:"18px", fontWeight:800, color:"var(--chalk)", fontFamily:"'Inter',sans-serif" }}>Sportonica</span>
-          </a>
+          </Link>
           <div style={{ display:"flex", gap:"32px", flexWrap:"wrap" as const }}>
             {[
               { label:"Play", href:"/discover" },

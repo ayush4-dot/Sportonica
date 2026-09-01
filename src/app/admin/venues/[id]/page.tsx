@@ -76,7 +76,7 @@ export default async function VenueDetail({ params }: { params: Promise<{ id: st
               <div>
                 <div className="adm-card-t">Get verified to lift your payout cap</div>
                 <div className="adm-card-sub" style={{ marginBottom: 12 }}>
-                  Verified venues get uncapped payouts and a trust badge players can see. It's a quick phone check plus one visit or document.
+                  Verified venues get uncapped payouts and a trust badge players can see. It&apos;s a quick phone check plus one visit or document.
                 </div>
                 <button className="adm-btn sm">Start verification</button>
               </div>

@@ -27,7 +27,7 @@ export default async function BookingsPage() {
           <div className="adm-empty">
             <div className="adm-empty-icon"><Ticket size={22} /></div>
             <h3>No bookings yet</h3>
-            <p>Once you add a venue and start taking bookings, they'll all show up here.</p>
+            <p>Once you add a venue and start taking bookings, they&apos;ll all show up here.</p>
             <Link href="/admin/venues/new" className="adm-btn primary">Add venue</Link>
           </div>
         ) : (

@@ -54,7 +54,7 @@ export default async function AnalyticsPage() {
           <div className="adm-empty">
             <div className="adm-empty-icon"><BarChart3 size={22} /></div>
             <h3>No data yet</h3>
-            <p>Analytics appear once you've taken some bookings. Come back after your first games.</p>
+            <p>Analytics appear once you&apos;ve taken some bookings. Come back after your first games.</p>
             <Link href="/admin/venues/new" className="adm-btn primary">Add venue</Link>
           </div>
         ) : (

@@ -137,7 +137,7 @@ export default function PricingManager({
           <div className="adm-dim" style={{ fontSize: 13 }}>Add a court first to create pricing rules.</div>
         ) : rules.length === 0 && !adding ? (
           <div className="adm-dim" style={{ fontSize: 13, padding: "10px 0" }}>
-            No rules yet. Bookings use each court's base price until you add peak or discount rules.
+            No rules yet. Bookings use each court&apos;s base price until you add peak or discount rules.
           </div>
         ) : (
           <table className="adm-table">

@@ -241,7 +241,7 @@ function DiscoverInner() {
                 ) : (
                   <>
                     <p>No games on this day. Try another date.</p>
-                    <a href="/create">Book a court and host →</a>
+                    <Link href="/create">Book a court and host →</Link>
                   </>
                 )}
               </div>
@@ -497,9 +497,9 @@ function DiscoverInner() {
         <div className="disc-cta-inner">
           <h2>Don&apos;t see your game?</h2>
           <p>Host your own event and let Kathmandu&apos;s players come to you.</p>
-          <a href="/create" style={{ background: "#006241", color: "#fff", border: "none", padding: "14px 28px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+          <Link href="/create" style={{ background: "#006241", color: "#fff", border: "none", padding: "14px 28px", borderRadius: "12px", fontSize: "15px", fontWeight: 700, cursor: "pointer", fontFamily: "'Inter',sans-serif", display: "inline-flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
             Host an event →
-          </a>
+          </Link>
         </div>
       </section>
     </main >
