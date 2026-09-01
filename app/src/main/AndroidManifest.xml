@@ -22,14 +22,14 @@
             <!-- App Links — verified via public/.well-known/assetlinks.json
                  (fill in the real signing-cert SHA-256 fingerprint there
                  before this can pass Android's auto-verification). Lets a
-                 khelamna.com link — including the Google Sign-In redirect
+                 sportonica.com link — including the Google Sign-In redirect
                  chain opened via the system browser in GoogleButton.tsx —
                  open this app instead of staying in the browser. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="www.khelamna.com" />
+                <data android:scheme="https" android:host="www.sportonica.com" />
             </intent-filter>
         </activity>
 
