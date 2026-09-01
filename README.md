@@ -4,6 +4,22 @@ Kathmandu's sports booking platform — find games and book courts.
 
 ---
 
+## Related repositories
+
+| Repo | Purpose |
+|------|---------|
+| **`Sportonica`** (this repo) | Main / web app (Next.js). |
+| [`sportonica-ios`](https://github.com/ayush4-dot/sportonica-ios) | iOS Capacitor shell. Present here as the `ios/` **git subtree**. |
+| [`sportonica-android`](https://github.com/ayush4-dot/sportonica-android) | Android Capacitor shell. Present here as the `android/` **git subtree**. |
+| [`sportonica-changes`](https://github.com/ayush4-dot/sportonica-changes) | Changelog, database scripts (`supabase/`), conventions, planning. |
+
+`ios/` and `android/` are git subtrees — see
+[`sportonica-changes/docs/subtrees.md`](https://github.com/ayush4-dot/sportonica-changes/blob/main/docs/subtrees.md)
+before editing them. Database SQL lives in `sportonica-changes`, not here.
+Workflow rules: [`sportonica-changes/CONTRIBUTING.md`](https://github.com/ayush4-dot/sportonica-changes/blob/main/CONTRIBUTING.md).
+
+---
+
 ## Current State
 
 Two live pages:
@@ -46,11 +62,6 @@ sportonica/
 │
 ├── public/
 │   └── hero.mp4                        ← Sports video for home page hero
-│
-├── supabase/
-│   ├── admin_schema.sql                 ← venues, courts, bookings, payouts (current schema)
-│   ├── add_columns.sql                  ← profiles, RLS, events_with_counts view
-│   └── schema_full.sql                  ← Full reference
 │
 ├── src/
 │   ├── app/
@@ -191,9 +202,12 @@ Three.js morphing sculpture. Vertex shader morphs between 5 sport shapes (footba
 
 ## SQL — Run in Supabase
 
+All database scripts live in
+[`sportonica-changes/supabase/`](https://github.com/ayush4-dot/sportonica-changes/tree/main/supabase).
+
 ```sql
--- 1. Run supabase/admin_schema.sql
--- 2. Run supabase/add_columns.sql
+-- 1. Run supabase/admin_schema.sql   (from sportonica-changes)
+-- 2. Run supabase/add_columns.sql    (from sportonica-changes)
 -- 3. Then run these:
 
 -- Public can read open venues
