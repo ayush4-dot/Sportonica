@@ -1,4 +1,4 @@
-/** Brevo check — node brevo-check.mjs you@example.com */
+/** Brevo check — npm run mailcheck -- you@example.com */
 import { readFileSync } from "node:fs";
 const env = {};
 for (const line of readFileSync(".env.local", "utf8").split("\n")) {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Link2, Share2, Download, Check } from "lucide-react";
-import { useTheme } from "@/lib/useTheme";
+import { useTheme } from "@/lib/hooks/useTheme";
 
 // Three separate, explicit actions rather than one smart "Share" button —
 // each covers a different real ask: grabbing the raw link, handing the OS

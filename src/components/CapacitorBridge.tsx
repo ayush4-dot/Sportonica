@@ -9,7 +9,7 @@ import { StatusBar, Style } from "@capacitor/status-bar";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { consumeHardwareBack } from "@/lib/capacitor/hardwareBack";
 
-// The app is cream/"paper" only (see src/lib/useTheme.ts) — status bar
+// The app is cream/"paper" only (see src/lib/hooks/useTheme.ts) — status bar
 // always matches the paper background, same value as layout.tsx's
 // viewport.themeColor.
 function syncStatusBar() {

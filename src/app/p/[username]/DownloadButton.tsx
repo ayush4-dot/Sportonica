@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Download, Check } from "lucide-react";
-import { useTheme } from "@/lib/useTheme";
+import { useTheme } from "@/lib/hooks/useTheme";
 
 // Downloads a 9:16 story card (1080x1920) rendered server-side, in whatever
 // theme the viewer is currently using. On phones it offers the native share

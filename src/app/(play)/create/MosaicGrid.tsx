@@ -19,7 +19,7 @@ import BookFilters, { NO_BOOK_FILTERS, bookActiveCount, timeLabel, type BookQuer
 import DateStrip from "@/components/shared/DateStrip";
 import { useCity, inCity } from "@/lib/city";
 import { normalizeSport, SPORT_NAMES } from "@/lib/sports";
-import { useTheme } from "@/lib/useTheme";
+import { useTheme } from "@/lib/hooks/useTheme";
 import { getDaySlots } from "@/lib/play/availability";
 import type { Venue, Court } from "@/lib/admin/types";
 
