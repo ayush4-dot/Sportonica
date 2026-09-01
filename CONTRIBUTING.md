@@ -1,11 +1,15 @@
 # How we work
 
-Two people, four repos. These rules keep it from turning into a mess. They apply
-to **every** Sportonica repo, not just this one.
+Two people, one repo (`ayush4-dot/Sportonica`), four long-lived branches
+(`main`, `ios`, `android`, `changes`). These rules keep it from turning into a
+mess.
 
 ## Branches
 
-- `main` is always deployable. Never commit to it directly — even for a typo.
+- `main`, `ios`, `android`, `changes` are long-lived. Each is always in a
+  deployable/usable state. Never commit to them directly — even for a typo.
+- Topic branches target the long-lived branch they belong to
+  (`feat/...` → `main`, a native fix → `ios`, a doc/SQL change → `changes`).
 - Branch names: `type/short-description`
   - `feat/roster-edit-window`
   - `fix/knockout-round-labels`
@@ -30,12 +34,12 @@ to **every** Sportonica repo, not just this one.
 
 ## After merging
 
-- Add a line to [`CHANGELOG.md`](./CHANGELOG.md) in this repo under `[Unreleased]`.
+- Add a line to `CHANGELOG.md` on the `changes` branch under `[Unreleased]`.
 - If it was a DB script, note when it was applied to production.
 
 ## Database changes
 
-- SQL lives in `sportonica-changes/supabase/`.
+- SQL lives on the `changes` branch under `supabase/`.
 - Every script must be safe to read top-to-bottom before running. Add a comment
   block at the top: what it does, whether it's idempotent, whether it's
   destructive.
@@ -43,9 +47,10 @@ to **every** Sportonica repo, not just this one.
   reads it carefully before approving.
 - The author runs it against production and records the date in the changelog.
 
-## The mobile subtrees
+## The mobile branches & subtrees
 
-`ios/` and `android/` in the web repo are **git subtrees** of `sportonica-ios`
-and `sportonica-android`. See [`docs/subtrees.md`](./docs/subtrees.md) for the
-pull/push commands. Short version: make native changes in the dedicated repo,
-then `git subtree pull` into the web repo.
+`ios/` and `android/` on `main` are **git subtrees**; the `ios` and `android`
+branches are their standalone source of truth. See
+[`docs/subtrees.md`](./docs/subtrees.md) for the pull/push commands. Short
+version: make native changes on the `ios` / `android` branch, then
+`git subtree pull --prefix=ios origin ios --squash` on `main`.

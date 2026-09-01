@@ -2,18 +2,20 @@
 
 Short log of choices we don't want to relitigate. Newest first.
 
-## 2026-09-01 — Repo layout
+## 2026-09-01 — One repo, long-lived branches
 
-- **Four repos, no GitHub org.** Everything under `ayush4-dot`, second person
-  added as a collaborator per repo. Can move to an org later without losing
-  history or issues.
-- **Mobile shells get their own repos**, and are also present in the web repo as
-  **git subtrees** (squashed). Rationale: the native shells are rarely touched,
-  but keeping them in the web repo means `npx cap sync` and CI "just work".
-  Subtrees give a deliberate sync point instead of two copies drifting.
-- **DB scripts live in `sportonica-changes/supabase/`**, not the web repo. They
-  aren't used at build/run time, and reviewing them separately from app code
-  keeps schema changes visible.
+- **Everything is in `ayush4-dot/Sportonica`.** No GitHub org (deferred; the
+  token also lacks `admin:org`). Second person is added as a collaborator.
+- **`main`** = web app. **`ios`**, **`android`**, **`changes`** are long-lived
+  branches, each split out of `main` with `git filter-repo` so they carry only
+  their own file history.
+- **`ios/` and `android/` also live on `main`** as git subtrees, so
+  `npx cap sync` / CI work. The `ios` / `android` branches are the source of
+  truth; `git subtree pull` moves changes onto `main`. See `subtrees.md`.
+- **DB scripts** are on the `changes` branch under `supabase/`, not on `main` —
+  they aren't used at build/run time and are easier to review on their own.
+- Considered and rejected: 4 separate repos (built first, then switched — the
+  owner preferred a single repo with branches).
 
 ## Template
 

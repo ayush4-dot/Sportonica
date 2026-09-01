@@ -1,48 +1,49 @@
-# Working with the mobile subtrees
+# Working with the mobile branches & subtrees
 
-`ios/` and `android/` in the [`Sportonica`](https://github.com/ayush4-dot/Sportonica)
-web repo are [git subtrees](https://git-scm.com/book/en/v2/Git-Tools-Advanced-Merging)
-of the dedicated shells:
+The `Sportonica` repo keeps the native shells in two places:
 
-| Subtree prefix | Source repo | Remote name (suggested) |
-|----------------|-------------|-------------------------|
-| `ios/`     | `git@github.com:ayush4-dot/sportonica-ios.git`     | `ios-shell`     |
-| `android/` | `git@github.com:ayush4-dot/sportonica-android.git` | `android-shell` |
+- On their own branches — **`ios`** and **`android`** — where the shell is a
+  standalone project (files at branch root). This is the source of truth.
+- On **`main`**, under `ios/` and `android/`, as **git subtrees** so
+  `npx cap sync` and CI work against a normal Capacitor project layout.
 
-## One-time setup (in a fresh clone of the web repo)
-
-```sh
-git remote add ios-shell     https://github.com/ayush4-dot/sportonica-ios.git
-git remote add android-shell https://github.com/ayush4-dot/sportonica-android.git
-git fetch ios-shell android-shell
-```
+Both must be kept in step. These commands are how.
 
 ## Where to make native changes
 
-Make them **in the dedicated repo** (`sportonica-ios` / `sportonica-android`),
-open a PR there, merge. Then pull the result into the web repo.
+Make them on the **`ios` / `android` branch**, then pull the result into `main`'s
+subtree. Pick one direction per change — never edit the same native file on both
+`main` and the branch between syncs.
 
-## Pull the latest native code into the web repo
-
-```sh
-git subtree pull --prefix=ios     ios-shell     main --squash
-git subtree pull --prefix=android android-shell main --squash
-```
-
-Commit the merge, open a PR against the web repo `main`.
-
-## Push web-repo changes back up (rare)
-
-If a native fix landed in the web repo first:
+### Check out a native branch alongside main
 
 ```sh
-git subtree push --prefix=ios     ios-shell     sync/from-web
-git subtree push --prefix=android android-shell sync/from-web
+git worktree add ../sportonica-ios ios
+# ...edit, commit, push in ../sportonica-ios...
 ```
 
-Then open a PR in the shell repo from `sync/from-web` → `main`.
+### Pull the latest native code into main's subtree
 
-## Rule of thumb
+From a `main` checkout:
 
-Pick **one** direction per change. Don't edit the same native file in both repos
-between syncs — that's the drift we're trying to avoid.
+```sh
+git fetch origin
+git subtree pull --prefix=ios     origin ios     --squash
+git subtree pull --prefix=android origin android --squash
+```
+
+Commit the merge (subtree does it for you) and open a PR against `main`.
+
+### Push a main-first native fix back to the branch (rare)
+
+```sh
+git subtree push --prefix=ios origin ios
+```
+
+Then reconcile on the `ios` branch.
+
+## Why not just one copy?
+
+The branch alone can't be built by Capacitor (it wants `<web>/ios/`). The subtree
+alone loses the clean standalone history. Keeping both, synced deliberately, beats
+either.

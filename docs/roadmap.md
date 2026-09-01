@@ -12,4 +12,4 @@ Loose, living. Use GitHub Issues/Projects for anything with a real due date.
 
 ## Someday / maybe
 
-- Move the four repos into a `Sportonica` GitHub org.
+- Move into a `Sportonica` GitHub org (branches could then become real repos again).
