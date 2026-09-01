@@ -39,7 +39,7 @@ const r = await fetch("https://api.brevo.com/v3/smtp/email", {
   method: "POST",
   headers: { "api-key": key, "Content-Type": "application/json", accept: "application/json" },
   body: JSON.stringify({
-    sender: { name: "Sportonica", email: from ?? "noreply@khelamna.com" },
+    sender: { name: "Sportonica", email: from ?? "support@sportonica.com" },
     to: [{ email: to }], subject: "Sportonica — test",
     textContent: "If you're reading this, email works.",
   }),

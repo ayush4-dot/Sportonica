@@ -126,7 +126,7 @@ export async function GET(
         {/* footer brand */}
         <div style={{ display: "flex", alignItems: "center", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
           <div style={{ width: 68, height: 68, background: "#006241", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
-            K
+            S
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>

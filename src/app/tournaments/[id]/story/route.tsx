@@ -122,11 +122,11 @@ export async function GET(
           {/* footer brand */}
           <div style={{ display: "flex", alignItems: "center", marginTop: "auto", paddingTop: 56 }}>
             <div style={{ width: 68, height: 68, background: "#006241", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
-              K
+              S
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
-              <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>khelamna.com/tournaments</div>
+              <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
             </div>
           </div>
         </div>

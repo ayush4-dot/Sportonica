@@ -10,7 +10,7 @@ const config: CapacitorConfig = {
   appName: 'Sportonica',
   webDir: 'public',
   server: {
-    url: 'https://www.khelamna.com',
+    url: 'https://www.sportonica.com',
     androidScheme: 'https',
   },
   plugins: {

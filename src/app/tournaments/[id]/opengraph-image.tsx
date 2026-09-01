@@ -70,7 +70,7 @@ export default async function OG({ params }: { params: Promise<{ id: string }> }
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ width: 44, height: 44, borderRadius: 10, background: "#006241", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, fontWeight: 800, marginRight: 14 }}>
-                K
+                S
               </div>
               <div style={{ display: "flex", fontSize: 30, fontWeight: 700 }}>Sportonica</div>
             </div>
