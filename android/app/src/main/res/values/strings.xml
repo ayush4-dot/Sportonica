@@ -1,7 +1,0 @@
-<?xml version='1.0' encoding='utf-8'?>
-<resources>
-    <string name="app_name">Sportonica</string>
-    <string name="title_activity_main">Sportonica</string>
-    <string name="package_name">com.sportonica.app</string>
-    <string name="custom_url_scheme">com.sportonica.app</string>
-</resources>
