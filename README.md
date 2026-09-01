@@ -4,19 +4,23 @@ Kathmandu's sports booking platform — find games and book courts.
 
 ---
 
-## Related repositories
+## Branches
 
-| Repo | Purpose |
-|------|---------|
-| **`Sportonica`** (this repo) | Main / web app (Next.js). |
-| [`sportonica-ios`](https://github.com/ayush4-dot/sportonica-ios) | iOS Capacitor shell. Present here as the `ios/` **git subtree**. |
-| [`sportonica-android`](https://github.com/ayush4-dot/sportonica-android) | Android Capacitor shell. Present here as the `android/` **git subtree**. |
-| [`sportonica-changes`](https://github.com/ayush4-dot/sportonica-changes) | Changelog, database scripts (`supabase/`), conventions, planning. |
+This is a single repo. Long-lived branches hold the non-web parts:
 
-`ios/` and `android/` are git subtrees — see
-[`sportonica-changes/docs/subtrees.md`](https://github.com/ayush4-dot/sportonica-changes/blob/main/docs/subtrees.md)
-before editing them. Database SQL lives in `sportonica-changes`, not here.
-Workflow rules: [`sportonica-changes/CONTRIBUTING.md`](https://github.com/ayush4-dot/sportonica-changes/blob/main/CONTRIBUTING.md).
+| Branch | Contents |
+|--------|----------|
+| **`main`** | Web app (Next.js). Also carries `ios/` and `android/` as git subtrees. |
+| [`ios`](https://github.com/ayush4-dot/Sportonica/tree/ios) | iOS Capacitor shell, standalone (files at branch root). Source of truth for the `ios/` subtree on `main`. |
+| [`android`](https://github.com/ayush4-dot/Sportonica/tree/android) | Android Capacitor shell, standalone. Source of truth for the `android/` subtree on `main`. |
+| [`changes`](https://github.com/ayush4-dot/Sportonica/tree/changes) | Changelog, database scripts (`supabase/`), conventions (`CONTRIBUTING.md`), planning docs. |
+
+Work on a native shell by checking out its branch (a `git worktree` is handy),
+then run `git subtree pull --prefix=ios origin ios --squash` on `main` to bring
+the change across. See
+[`docs/subtrees.md` on the `changes` branch](https://github.com/ayush4-dot/Sportonica/blob/changes/docs/subtrees.md).
+Database SQL lives on the `changes` branch, not `main`.
+Workflow rules: [`CONTRIBUTING.md` on `changes`](https://github.com/ayush4-dot/Sportonica/blob/changes/CONTRIBUTING.md).
 
 ---
 
@@ -202,12 +206,12 @@ Three.js morphing sculpture. Vertex shader morphs between 5 sport shapes (footba
 
 ## SQL — Run in Supabase
 
-All database scripts live in
-[`sportonica-changes/supabase/`](https://github.com/ayush4-dot/sportonica-changes/tree/main/supabase).
+All database scripts live on the
+[`changes` branch, in `supabase/`](https://github.com/ayush4-dot/Sportonica/tree/changes/supabase).
 
 ```sql
--- 1. Run supabase/admin_schema.sql   (from sportonica-changes)
--- 2. Run supabase/add_columns.sql    (from sportonica-changes)
+-- 1. Run supabase/admin_schema.sql   (from the changes branch)
+-- 2. Run supabase/add_columns.sql    (from the changes branch)
 -- 3. Then run these:
 
 -- Public can read open venues
