@@ -29,7 +29,7 @@
 -- via SECURITY DEFINER — it isn't loosening anything that was
 -- actually being enforced before.
 -- Run any time. Safe to re-run.
--- ================================================================
+-- ===============================================================
 
 drop policy if exists "notifications insert" on public.notifications;
 create policy "notifications insert"
