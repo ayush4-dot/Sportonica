@@ -209,3 +209,4 @@ $$;
 grant execute on function public.update_team_player_guest(uuid,text,text,text) to authenticated;
 
 -- ── DONE ─────────────────────────────────────────────────────────
+a
