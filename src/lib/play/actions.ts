@@ -15,7 +15,7 @@ async function requireUser() {
 // it created the public event and emailed "your game is live" immediately
 // at booking time, before the court payment was ever verified. That logic
 // now lives entirely server-side in maybe_publish_hosted_event()
-// (supabase/payments.sql), invoked only once payment is approved (or
+// (supabase/payments/payments.sql), invoked only once payment is approved (or
 // instantly for a free court) — see bookCourt() in src/lib/admin/actions.ts
 // and confirmFreeBooking()/reviewPayment() in src/lib/payments/.
 

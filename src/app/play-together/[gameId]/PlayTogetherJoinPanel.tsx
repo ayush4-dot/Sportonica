@@ -42,7 +42,7 @@ export default function PlayTogetherJoinPanel({
   // returns to) a payment_pending/payment_rejected request — closing it
   // ("I'll Pay Later") never cancels the request; the reminder
   // notifications (see send_due_play_together_reminders() in
-  // supabase/play_together_payments.sql) are what nudge them the rest of
+  // supabase/play-together/play_together_payments.sql) are what nudge them the rest of
   // the way through the 2-hour window when they're not on this page.
   useEffect(() => {
     if (autoOpenedRef.current) return;
@@ -244,7 +244,7 @@ export default function PlayTogetherJoinPanel({
 // "Request to Join" always routes through here first — the checkbox must
 // be checked before the button is enabled, and join_play_together_game()
 // independently re-checks p_ack_terms server-side (see
-// supabase/play_together_payments.sql), so this can't be bypassed by
+// supabase/play-together/play_together_payments.sql), so this can't be bypassed by
 // skipping the UI.
 function TermsCard({
   ackTerms, setAckTerms, onCancel, onConfirm, pending,

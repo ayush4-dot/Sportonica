@@ -1,6 +1,6 @@
 // Shared payment enums/types — the "consistent enums, not random strings"
 // source of truth for both the customer checkout UI and the /platform
-// verification console. Mirrors supabase/payments.sql exactly.
+// verification console. Mirrors supabase/payments/payments.sql exactly.
 
 export const PAYMENT_METHODS = ["esewa", "khalti", "fonepay", "bank_transfer"] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
@@ -71,7 +71,7 @@ export interface PaymentAuditLog {
 }
 
 // Friendly messages for the Postgres exceptions raised by submit_payment()/
-// review_payment()/confirm_free_booking() in supabase/payments.sql — keeps
+// review_payment()/confirm_free_booking() in supabase/payments/payments.sql — keeps
 // the mapping in one place instead of repeated inline string checks.
 export const PAYMENT_ERROR_MESSAGES: Record<string, string> = {
   BOOKING_NOT_FOUND: "We couldn't find that booking.",

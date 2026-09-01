@@ -98,7 +98,7 @@ export async function confirmFreeBooking(bookingType: BookingType, bookingId: st
   revalidatePath("/my-games");
 
   // Free court, hosting requested: the RPC just published the event for
-  // the first time (maybe_publish_hosted_event() in supabase/payments.sql).
+  // the first time (maybe_publish_hosted_event() in supabase/payments/payments.sql).
   // A Play Together game is a separate, mutually-exclusive path — one of
   // these two is always a no-op.
   if (bookingType === "court_booking") {

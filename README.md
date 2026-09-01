@@ -47,10 +47,16 @@ khelumna/
 ├── public/
 │   └── hero.mp4                        ← Sports video for home page hero
 │
-├── supabase/
-│   ├── admin_schema.sql                 ← venues, courts, bookings, payouts (current schema)
-│   ├── add_columns.sql                  ← profiles, RLS, events_with_counts view
-│   └── schema_full.sql                  ← Full reference
+├── supabase/                            ← SQL grouped by domain (see supabase/README.md)
+│   ├── schema/                          ← base schema — admin_schema, add_columns, schema_full
+│   ├── tournaments/                     ← tournament tables, roster, team + owner access
+│   ├── play-together/                   ← "Play Together" games + payments
+│   ├── payments/                        ← payment verification / review RPCs
+│   ├── venues/                          ← booking dedupe + phone
+│   ├── organizer/                       ← organizer approval, partnerships, host tools
+│   ├── social/                          ← friends, DMs, game groups, group links
+│   ├── notifications/                   ← notifications + policy fix
+│   └── maintenance/                     ← one-off fixes / resets
 │
 ├── src/
 │   ├── app/
@@ -192,8 +198,8 @@ Three.js morphing sculpture. Vertex shader morphs between 5 sport shapes (footba
 ## SQL — Run in Supabase
 
 ```sql
--- 1. Run supabase/admin_schema.sql
--- 2. Run supabase/add_columns.sql
+-- 1. Run supabase/schema/admin_schema.sql
+-- 2. Run supabase/schema/add_columns.sql
 -- 3. Then run these:
 
 -- Public can read open venues

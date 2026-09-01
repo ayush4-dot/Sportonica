@@ -179,7 +179,7 @@ export async function bookCourt(input: {
   source?: "platform" | "walk_in" | "phone";
   // "Open this slot to other players" — captured here, not acted on
   // until payment is approved (see book_court()/maybe_publish_hosted_event()
-  // in supabase/payments.sql). Only meaningful for source:"platform".
+  // in supabase/payments/payments.sql). Only meaningful for source:"platform".
   need_players?: boolean;
   spots_needed?: number;
   skill_level?: string;

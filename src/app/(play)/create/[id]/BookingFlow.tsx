@@ -70,7 +70,7 @@ export default function BookingFlow({
 
   // ── "Need players?" -> Play Together fields (host-approved requests,
   // 2-hour payment window, host's own QR shown to players — see
-  // supabase/play_together_payments.sql). Same wizard, same submit, no
+  // supabase/play-together/play_together_payments.sql). Same wizard, same submit, no
   // separate page — createGame() below replaces bookCourt() entirely
   // when this is on. ──────────────────────────────────────────────
   const [maxPlayers, setMaxPlayers] = useState(10);
@@ -194,7 +194,7 @@ export default function BookingFlow({
     // Re-check right here rather than letting the backend reject it with a
     // raw error; the backend (create_play_together_game()/book_court())
     // still re-validates this itself regardless, per
-    // supabase/play_together_payments.sql.
+    // supabase/play-together/play_together_payments.sql.
     if (new Date(ktmIso(dateStr, hour)).getTime() <= Date.now()) {
       setErr("That time has already passed. Go back and pick a new time.");
       return;
@@ -489,7 +489,7 @@ export default function BookingFlow({
             {/* Same wizard, same submit — this just collects Play
                 Together's capacity fields (host-approved requests, 2-hour
                 payment window, host's own QR — see
-                supabase/play_together_payments.sql) instead of a separate
+                supabase/play-together/play_together_payments.sql) instead of a separate
                 page. The next step asks for your phone/QR. */}
             {needPlayers && (
               <div style={{ marginTop: 18 }}>

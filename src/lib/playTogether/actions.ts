@@ -51,7 +51,7 @@ export async function uploadHostQr(file: File): Promise<string | ActionError> {
 // Host creates & pays for a game. This only reserves the court slot and
 // records the game as 'awaiting_payment' — it is not joinable, and does not
 // appear anywhere for players, until the venue payment is confirmed (see
-// finalize_play_together_game() in supabase/play_together.sql, called from
+// finalize_play_together_game() in supabase/play-together/play_together.sql, called from
 // the existing confirmFreeBooking()/reviewPayment() payment actions).
 export async function createGame(input: {
   court_id: string;
@@ -150,7 +150,7 @@ export async function approveJoinRequest(
 // uploadPaymentProof() in src/lib/payments/actions.ts, targeting the
 // private 'game-payment-proofs' bucket instead. Path convention:
 // '{user_id}/{game_player_id}_{timestamp}.{ext}' — see
-// supabase/play_together_payments.sql for why the separator is '_' not '-'.
+// supabase/play-together/play_together_payments.sql for why the separator is '_' not '-'.
 export async function uploadGamePaymentProof(gamePlayerId: string, file: File): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
@@ -214,7 +214,7 @@ export async function submitPlayTogetherPayment(input: {
 // original Play Together model, offered alongside the QR-and-upload path
 // so a player can pick whichever the host actually supports. The 2-hour
 // deadline is still re-checked server-side inside
-// choose_play_together_cash_payment() (see supabase/
+// choose_play_together_cash_payment() (see supabase/play-together/
 // play_together_cash_payment.sql) — a lapsed window expires the row in
 // place exactly like submitPlayTogetherPayment() does, never trust the
 // client's countdown.
@@ -276,7 +276,7 @@ export async function verifyPlayTogetherPayment(
 // Host-only — a short-lived signed URL to view a submitted proof
 // screenshot. Mirrors getSignedScreenshotUrl() in
 // src/lib/payments/adminActions.ts; storage RLS (game_proof_read in
-// supabase/play_together_payments.sql) independently enforces that only
+// supabase/play-together/play_together_payments.sql) independently enforces that only
 // the uploading player or that game's host can ever read the object, so
 // this never needs its own ownership check beyond "row is visible to me".
 export async function getSignedGamePaymentProofUrl(gamePlayerId: string): Promise<string | ActionError> {
@@ -332,7 +332,7 @@ export async function markContributionCollected(
 
 // Host-only. No refund is computed or processed here — refunds depend on
 // venue/Sportonica policy, which isn't implemented yet (see
-// supabase/play_together.sql). Any refund must currently be handled
+// supabase/play-together/play_together.sql). Any refund must currently be handled
 // manually by an admin.
 export async function cancelGame(gameId: string, reason?: string): Promise<Game | ActionError> {
   const { sb, user } = await requireUser();

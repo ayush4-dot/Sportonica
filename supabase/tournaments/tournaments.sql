@@ -1665,7 +1665,7 @@ grant execute on function public.start_single_event(uuid) to authenticated;
 -- STORAGE: tournament banner images.
 -- Public read (shown on public tournament cards/pages); owner-scoped
 -- insert, keyed by the uploader's own auth.uid() folder — same shape as
--- payment-qr / host-qr in supabase/payments.sql & play_together.ts.
+-- payment-qr / host-qr in supabase/payments/payments.sql & play_together.ts.
 -- ================================================================
 insert into storage.buckets (id, name, public)
   values ('tournament-banners', 'tournament-banners', true)

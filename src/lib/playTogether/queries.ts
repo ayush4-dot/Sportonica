@@ -34,7 +34,7 @@ export async function listPublishedGames(): Promise<(GameWithVenue & { joined_co
 export async function getGame(gameId: string): Promise<GameWithVenue | null> {
   const sb = await createClient();
   // Belt-and-suspenders deadline enforcement: pg_cron sweeps this every
-  // minute (see supabase/play_together_payments.sql), but that's
+  // minute (see supabase/play-together/play_together_payments.sql), but that's
   // best-effort and no-ops silently if the pg_cron extension was never
   // enabled on this project. Firing the same sweep here means a stale
   // payment_pending row gets flipped to 'expired' (and both sides

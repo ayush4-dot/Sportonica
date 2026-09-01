@@ -336,7 +336,7 @@ export async function getSignedScreenshotUrl(paymentId: string): Promise<string 
 
 // The only write path for approve/reject — everything (auth, state-machine
 // enforcement, the linked booking's payment_status/state) happens inside
-// review_payment() in supabase/payments.sql.
+// review_payment() in supabase/payments/payments.sql.
 export async function reviewPayment(
   paymentId: string,
   action: "APPROVE" | "REJECT",
@@ -359,7 +359,7 @@ export async function reviewPayment(
   const payment = data as Payment;
   // If this booking asked to open its slot to other players, the RPC
   // just published the event for the first time (see
-  // maybe_publish_hosted_event() in supabase/payments.sql) — the "game
+  // maybe_publish_hosted_event() in supabase/payments/payments.sql) — the "game
   // is live" email only makes sense now, not at booking time.
   if (action === "APPROVE" && payment.booking_type === "court_booking" && payment.court_booking_id) {
     await notifyHostedEventIfPublished(payment.court_booking_id);

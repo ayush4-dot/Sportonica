@@ -1,4 +1,4 @@
-// Mirrors supabase/tournaments.sql exactly — see that file for the
+// Mirrors supabase/tournaments/tournaments.sql exactly — see that file for the
 // authoritative schema/constraints and the state-machine RPCs.
 
 export const TOURNAMENT_FORMATS = ["knockout", "league", "group_knockout", "single_event"] as const;

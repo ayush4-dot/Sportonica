@@ -18,8 +18,8 @@ const STATUS_LABEL: Record<string, string> = {
 // Read-only, consolidated view of the same payment data already visible
 // piecemeal in /my-games (court bookings) and on individual Play Together
 // game pages (game_players contribution) — no new payment logic, just one
-// place to see all of it. See supabase/payments.sql and
-// supabase/play_together_payments.sql for the underlying state machines.
+// place to see all of it. See supabase/payments/payments.sql and
+// supabase/play-together/play_together_payments.sql for the underlying state machines.
 export default async function PaymentsPage() {
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();

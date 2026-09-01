@@ -106,7 +106,7 @@ export async function notifyGameHosted(input: {
 
 // A court booking's "host a game" flag only actually creates the public
 // event once payment is approved (or immediately for a free court) —
-// see maybe_publish_hosted_event() in supabase/payments.sql. This is the
+// see maybe_publish_hosted_event() in supabase/payments/payments.sql. This is the
 // notification counterpart, called right after that RPC path succeeds so
 // "your game is live" only ever goes out once the event genuinely exists.
 export async function notifyHostedEventIfPublished(courtBookingId: string) {
@@ -192,7 +192,7 @@ async function playTogetherContext(gameId: string) {
 
 // A court booking's Play Together game only actually goes live once the
 // host's venue payment is confirmed (finalize_play_together_game() in
-// supabase/play_together.sql). Called right after that RPC path succeeds,
+// supabase/play-together/play_together.sql). Called right after that RPC path succeeds,
 // mirroring notifyHostedEventIfPublished().
 export async function notifyPlayTogetherGamePublishedIfAny(courtBookingId: string) {
   const sb = await createClient();
@@ -330,7 +330,7 @@ export async function notifyPlayTogetherPaymentSubmitted(input: { gamePlayerId: 
 
 // ── Player chose "pay in cash at the venue" instead of paying online —
 // they're confirmed immediately (see choose_play_together_cash_payment()
-// in supabase/play_together_cash_payment.sql), so this is both a "you're
+// in supabase/play-together/play_together_cash_payment.sql), so this is both a "you're
 // in" email to the player and a heads-up to the host that there's
 // nothing to verify, just cash to collect at the venue. ───────────────
 export async function notifyPlayTogetherCashSelected(input: { gamePlayerId: string; gameId: string }) {

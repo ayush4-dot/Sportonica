@@ -1,4 +1,4 @@
-// Shared "Play Together" types — mirrors supabase/play_together.sql exactly.
+// Shared "Play Together" types — mirrors supabase/play-together/play_together.sql exactly.
 //
 // Model: the host books and pays for the venue through Sportonica upfront.
 // Other players join for free and reimburse the host in cash at the venue —
@@ -20,7 +20,7 @@ export type SkillLevel = "any" | "beginner" | "intermediate" | "advanced";
 // A player is NEVER a confirmed member just because the host approved the
 // request — approval only opens a 2-hour payment window ('payment_pending').
 // The player becomes 'joined' (CONFIRMED, added to the group) only once the
-// host verifies their submitted payment proof. See supabase/
+// host verifies their submitted payment proof. See supabase/play-together/
 // play_together_payments.sql for the full state machine and backend
 // enforcement of the deadline.
 //
@@ -160,7 +160,7 @@ export function playerWhatsappUrl(phone: string, message: string): string | null
 }
 
 // Friendly messages for the Postgres exceptions raised by the RPCs in
-// supabase/play_together.sql — keeps the mapping in one place instead of
+// supabase/play-together/play_together.sql — keeps the mapping in one place instead of
 // repeated inline string checks (mirrors src/lib/payments/types.ts).
 export const PLAY_TOGETHER_ERROR_MESSAGES: Record<string, string> = {
   RISK_NOT_ACKNOWLEDGED: "Please confirm you understand the venue payment terms before continuing.",

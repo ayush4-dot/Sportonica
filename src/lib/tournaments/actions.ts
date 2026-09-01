@@ -225,7 +225,7 @@ export async function listTournamentPayments(tournamentId: string): Promise<
 // draft), so the storage path is keyed by the uploader's own id rather than
 // a tournament id — same convention as uploadHostQr() in
 // src/lib/playTogether/actions.ts. Targets the public 'tournament-banners'
-// bucket (see supabase/tournaments.sql).
+// bucket (see supabase/tournaments/tournaments.sql).
 export async function uploadTournamentBanner(file: File): Promise<string | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");

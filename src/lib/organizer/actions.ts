@@ -48,7 +48,7 @@ export async function requestOrganizerAccess(): Promise<void | ActionError> {
 }
 
 // Super-admin-only — see approve_organizer_request() in
-// supabase/organizer_approval_and_own_venue.sql for why this has to be a
+// supabase/organizer/organizer_approval_and_own_venue.sql for why this has to be a
 // security-definer RPC rather than a plain client update() the way
 // setUserRole() in src/lib/platform/actions.ts does it: profiles' only
 // update policy is "id = auth.uid()", so a super_admin acting on someone

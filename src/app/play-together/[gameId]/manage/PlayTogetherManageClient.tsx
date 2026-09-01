@@ -78,7 +78,7 @@ export default function PlayTogetherManageClient({
   }
 
   // The ONLY action that actually adds a player to the group — see
-  // verify_play_together_payment() in supabase/play_together_payments.sql.
+  // verify_play_together_payment() in supabase/play-together/play_together_payments.sql.
   async function reviewPayment(row: GamePlayerWithProfile, approve: boolean, rejectReason?: string) {
     const res = await verifyPlayTogetherPayment(row.id, gameId, approve, rejectReason);
     if (isActionError(res)) throw new Error(res.message);

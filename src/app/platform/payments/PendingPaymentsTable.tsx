@@ -47,7 +47,7 @@ const COLS: Column<Row>[] = [
 ];
 
 // Realtime (Supabase Realtime on the `payments` table, added to the
-// supabase_realtime publication in supabase/payments.sql) so the queue
+// supabase_realtime publication in supabase/payments/payments.sql) so the queue
 // updates the moment a customer submits, without a manual page reload.
 export default function PendingPaymentsTable({ initialPayments }: { initialPayments: Row[] }) {
   const router = useRouter();

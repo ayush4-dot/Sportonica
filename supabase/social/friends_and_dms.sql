@@ -262,6 +262,26 @@ create policy "own reads update"
 alter table public.notifications
   add column if not exists conversation_id uuid references public.conversations(id) on delete cascade;
 
+-- Full kind set — see supabase/notifications/notifications_kind_check.sql,
+-- the authoritative copy. Listed in full here (not just the friend_* kinds
+-- this file adds) because whichever file redeclares this constraint last
+-- wins; narrowing it to 7 kinds here would drop every payment_* / game_* /
+-- tournament_* notification if this file runs after payments/ or tournaments/.
 alter table public.notifications drop constraint if exists notifications_kind_check;
 alter table public.notifications add constraint notifications_kind_check
-  check (kind in ('joined','left','spots_needed','hosted','event','friend_request','friend_accepted'));
+  check (kind in (
+    'joined', 'left', 'spots_needed', 'hosted', 'event',
+    'friend_request', 'friend_accepted',
+    'payment_submitted', 'payment_approved', 'payment_rejected',
+    'game_published', 'game_joined', 'game_left', 'game_cancelled',
+    'game_join_requested', 'game_join_rejected',
+    'game_payment_required', 'game_payment_reminder',
+    'game_payment_submitted', 'game_payment_verified',
+    'game_payment_rejected', 'game_payment_expired',
+    'game_host_payment_submitted', 'game_host_payment_expired',
+    'game_payment_cash_selected',
+    'tournament_published', 'tournament_registration_submitted',
+    'tournament_payment_verified', 'tournament_payment_rejected',
+    'tournament_announcement', 'tournament_match_scheduled',
+    'tournament_venue_booking_updated', 'organizer_request_reviewed'
+  ));
