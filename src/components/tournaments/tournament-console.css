@@ -74,3 +74,23 @@
   padding: 9px 10px; font-size: 13px; color: inherit; font-family: inherit; min-width: 0;
 }
 .tc-member-row button { background: none; border: none; color: #ef4444; opacity: 0.7; cursor: pointer; padding: 4px; }
+
+/* ── Narrow screens ──────────────────────────────────────────────
+   Tables here have 5–6 columns and sat directly in a fixed-width card
+   — on phones they overflowed the page. The card scrolls sideways
+   instead (same approach as .adm-card), and the dense chrome tightens. */
+@media (max-width: 720px) {
+  .tc-card { padding: 16px; overflow-x: auto; }
+  .tc-table { min-width: 460px; }
+  .tc-chips { gap: 6px; margin-bottom: 14px; }
+  .tc-chip { padding: 7px 12px; font-size: 12px; }
+  .tc-stat { padding: 12px 13px; }
+  .tc-stat-v { font-size: 18px; }
+  .tc-btn { padding: 10px 14px; font-size: 13px; }
+}
+@media (max-width: 560px) {
+  .tc-modal { padding: 18px; }
+  /* name + phone on the first row (with the delete button), email full width below */
+  .tc-member-row { grid-template-columns: 1fr 1fr auto; }
+  .tc-member-row > input:nth-of-type(3) { grid-column: 1 / -1; }
+}

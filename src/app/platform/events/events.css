@@ -18,7 +18,10 @@
 .ev-field select option { background: #14171E; color: #F2EDE6; }
 [data-theme="paper"] .ev-field select option { background: #fff; color: #14171E; }
 .ev-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 520px) { .ev-row { grid-template-columns: 1fr; } }
+@media (max-width: 520px) {
+  .ev-row { grid-template-columns: 1fr; }
+  .ev-card { padding: 16px; }
+}
 .ev-err { color: #ef4444; font-size: 13px; margin-bottom: 14px; }
 .ev-btn {
   display: inline-flex; align-items: center; gap: 8px; margin-top: 6px;

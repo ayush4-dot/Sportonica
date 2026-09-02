@@ -32,6 +32,7 @@ export default async function PlatformTournamentsPage() {
       {rows.length === 0 ? (
         <div className="tc-empty">No tournaments yet.</div>
       ) : (
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table className="tc-table">
           <thead><tr><th>Name</th><th>Venue</th><th>Sport</th><th>Starts</th><th>Teams</th><th>Status</th></tr></thead>
           <tbody>
@@ -49,6 +50,7 @@ export default async function PlatformTournamentsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </>
   );

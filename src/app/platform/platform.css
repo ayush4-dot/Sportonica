@@ -94,3 +94,31 @@
 .dt-btn.bad:hover { background: rgba(239,68,68,0.12); }
 
 .dt-pages { display: flex; align-items: center; justify-content: center; gap: 14px; padding: 12px; border-top: 1px solid rgba(128,128,128,0.14); }
+
+/* ── Narrow screens ──────────────────────────────────────────────
+   The top bar's nav was a fixed flex row of 8–9 links with no mobile
+   treatment — it overflowed the viewport and shoved the brand off. On
+   phones it drops to its own full-width row and scrolls sideways as a
+   pill strip; body padding and headings tighten to match. */
+@media (max-width: 760px) {
+  .plt-top { flex-wrap: wrap; padding: 12px 16px; gap: 10px; }
+  .plt-brand { gap: 10px; }
+  .plt-k { width: 34px; height: 34px; }
+  .plt-nav {
+    order: 3; width: 100%; gap: 18px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 2px;
+  }
+  .plt-nav::-webkit-scrollbar { display: none; }
+  .plt-nav a { white-space: nowrap; font-size: 13px; }
+
+  .plt-body { padding: 20px 16px 72px; }
+  .plt-h1 { font-size: 23px; letter-spacing: -0.6px; }
+  .plt-sub2 { font-size: 13px; margin-bottom: 20px; }
+  .plt-sec-t { font-size: 17px; margin: 26px 0 12px; }
+  .plt-stat { padding: 14px; }
+  .plt-stat-v { font-size: 24px; }
+
+  .dt-bar { flex-wrap: wrap; row-gap: 8px; }
+  .dt-search { order: 3; width: 100%; max-width: none; }
+}

@@ -72,6 +72,7 @@ export default async function OrganizePage() {
           )}
         </div>
       ) : (
+        <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
         <table className="adm-table">
           <thead>
             <tr><th>Name</th><th>Sport</th><th>Format</th><th>Starts</th><th>Teams</th><th>Status</th></tr>
@@ -91,6 +92,7 @@ export default async function OrganizePage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
