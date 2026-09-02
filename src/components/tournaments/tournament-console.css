@@ -75,22 +75,43 @@
 }
 .tc-member-row button { background: none; border: none; color: #ef4444; opacity: 0.7; cursor: pointer; padding: 4px; }
 
-/* ── Narrow screens ──────────────────────────────────────────────
-   Tables here have 5–6 columns and sat directly in a fixed-width card
-   — on phones they overflowed the page. The card scrolls sideways
-   instead (same approach as .adm-card), and the dense chrome tightens. */
+/* ── Narrow screens ────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .tc-card { padding: 16px; overflow-x: auto; }
-  .tc-table { min-width: 460px; }
-  .tc-chips { gap: 6px; margin-bottom: 14px; }
-  .tc-chip { padding: 7px 12px; font-size: 12px; }
+  /* tab chips scroll as one strip instead of stacking into 3 rows */
+  .tc-chips {
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    margin: 0 0 14px; padding-bottom: 3px;
+  }
+  .tc-chips::-webkit-scrollbar { display: none; }
+  .tc-chip { flex-shrink: 0; padding: 7px 12px; font-size: 12px; }
   .tc-stat { padding: 12px 13px; }
   .tc-stat-v { font-size: 18px; }
   .tc-btn { padding: 10px 14px; font-size: 13px; }
+  /* view-only tables (Fixtures / Standings) still scroll sideways */
+  .tc-table:not(.stk) { min-width: 440px; }
 }
-@media (max-width: 560px) {
+@media (max-width: 600px) {
   .tc-modal { padding: 18px; }
   /* name + phone on the first row (with the delete button), email full width below */
   .tc-member-row { grid-template-columns: 1fr 1fr auto; }
   .tc-member-row > input:nth-of-type(3) { grid-column: 1 / -1; }
+
+  /* .stk tables (registrations, payments, list pages) become labelled
+     stacked cards — each <td> needs data-label in the markup. */
+  .tc-table.stk, .tc-table.stk tbody, .tc-table.stk tr, .tc-table.stk td { display: block; width: auto; min-width: 0; }
+  .tc-table.stk thead { display: none; }
+  .tc-table.stk tr { border: 1px solid rgba(242,237,230,0.12); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  [data-theme="paper"] .tc-table.stk tr { border-color: rgba(20,23,30,0.1); }
+  .tc-table.stk td {
+    border: none !important; padding: 4px 0 !important;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: right; font-size: 13px;
+  }
+  .tc-table.stk td::before {
+    content: attr(data-label); flex-shrink: 0; text-align: left;
+    font-weight: 700; opacity: .5; text-transform: uppercase; font-size: 10px; letter-spacing: .05em;
+  }
+  .tc-table.stk td:first-child { display: block; font-weight: 800; font-size: 15px; padding-bottom: 6px !important; text-align: left; }
+  .tc-table.stk td:first-child::before { display: none; }
+  .tc-table.stk td:empty { display: none; }
 }

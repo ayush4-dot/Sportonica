@@ -33,19 +33,19 @@ export default async function PlatformTournamentsPage() {
         <div className="tc-empty">No tournaments yet.</div>
       ) : (
         <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
-        <table className="tc-table">
+        <table className="tc-table stk">
           <thead><tr><th>Name</th><th>Venue</th><th>Sport</th><th>Starts</th><th>Teams</th><th>Status</th></tr></thead>
           <tbody>
             {rows.map((t, i) => (
               <tr key={t.id}>
-                <td><Link href={`/platform/tournaments/${t.id}`} style={{ fontWeight: 700, color: "inherit" }}>{t.name}</Link></td>
-                <td className="tc-dim">{venueNames[i]}</td>
-                <td className="tc-dim">{t.sport}</td>
-                <td className="tc-num tc-dim" style={{ fontSize: 12 }}>
+                <td data-label="Name"><Link href={`/platform/tournaments/${t.id}`} style={{ fontWeight: 700, color: "inherit" }}>{t.name}</Link></td>
+                <td className="tc-dim" data-label="Venue">{venueNames[i]}</td>
+                <td className="tc-dim" data-label="Sport">{t.sport}</td>
+                <td className="tc-num tc-dim" style={{ fontSize: 12 }} data-label="Starts">
                   {new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </td>
-                <td className="tc-num">{t.max_teams}</td>
-                <td><span className={`tc-badge ${t.status === "pending_approval" ? "warn" : t.status === "cancelled" ? "danger" : t.status === "draft" ? "neutral" : "ok"}`}>{STATUS_LABELS[t.status]}</span></td>
+                <td className="tc-num" data-label="Teams">{t.max_teams}</td>
+                <td data-label="Status"><span className={`tc-badge ${t.status === "pending_approval" ? "warn" : t.status === "cancelled" ? "danger" : t.status === "draft" ? "neutral" : "ok"}`}>{STATUS_LABELS[t.status]}</span></td>
               </tr>
             ))}
           </tbody>

@@ -80,14 +80,14 @@ export default async function OrganizePage() {
           <tbody>
             {rows.map((t) => (
               <tr key={t.id}>
-                <td><Link href={`/organize/tournaments/${t.id}`} style={{ fontWeight: 700, color: "inherit" }}>{t.name}</Link></td>
-                <td className="adm-dim">{t.sport}</td>
-                <td className="adm-dim" style={{ textTransform: "capitalize" }}>{t.format.replace("_", " + ")}</td>
-                <td className="adm-num adm-dim" style={{ fontSize: 12 }}>
+                <td data-label="Name"><Link href={`/organize/tournaments/${t.id}`} style={{ fontWeight: 700, color: "inherit" }}>{t.name}</Link></td>
+                <td className="adm-dim" data-label="Sport">{t.sport}</td>
+                <td className="adm-dim" style={{ textTransform: "capitalize" }} data-label="Format">{t.format.replace("_", " + ")}</td>
+                <td className="adm-num adm-dim" style={{ fontSize: 12 }} data-label="Starts">
                   {new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </td>
-                <td className="adm-num">{t.max_teams}</td>
-                <td><span className={`adm-badge ${STATUS_BADGE[t.status]}`}>{STATUS_LABELS[t.status]}</span></td>
+                <td className="adm-num" data-label="Teams">{t.max_teams}</td>
+                <td data-label="Status"><span className={`adm-badge ${STATUS_BADGE[t.status]}`}>{STATUS_LABELS[t.status]}</span></td>
               </tr>
             ))}
           </tbody>

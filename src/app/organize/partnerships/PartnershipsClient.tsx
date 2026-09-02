@@ -111,8 +111,8 @@ export default function PartnershipsClient({ initial }: { initial: Row[] }) {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td style={{ fontWeight: 600 }}>{r.vendor_name}</td>
-                  <td>
+                  <td style={{ fontWeight: 600 }} data-label="Venue owner">{r.vendor_name}</td>
+                  <td data-label="Status">
                     <span className={`adm-badge ${STATUS_BADGE[r.status]}`} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                       {STATUS_ICON[r.status]} {STATUS_LABEL[r.status]}
                     </span>

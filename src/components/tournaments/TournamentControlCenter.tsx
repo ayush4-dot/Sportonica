@@ -207,7 +207,7 @@ export default function TournamentControlCenter({
           {teams.length === 0 ? (
             <div className="tc-empty">No teams have registered yet.</div>
           ) : (
-            <table className="tc-table">
+            <table className="tc-table stk">
               <thead><tr><th>Team</th><th>Roster</th><th>Status</th>{trackingFines && <th>Fines</th>}<th></th></tr></thead>
               <tbody>
                 {teams.map((t) => (
@@ -245,10 +245,10 @@ export default function TournamentControlCenter({
                         </>
                       )}
                     </td>
-                    <td className="tc-num">{t.roster_count}</td>
-                    <td><span className={`tc-badge ${teamBadgeClass(t.status)}`}>{TEAM_STATUS_LABELS[t.status]}</span></td>
+                    <td className="tc-num" data-label="Roster">{t.roster_count}</td>
+                    <td data-label="Status"><span className={`tc-badge ${teamBadgeClass(t.status)}`}>{TEAM_STATUS_LABELS[t.status]}</span></td>
                     {trackingFines && (
-                      <td className="tc-num">{(finesByTeam.get(t.id) ?? 0) > 0 ? money(finesByTeam.get(t.id) ?? 0) : "—"}</td>
+                      <td className="tc-num" data-label="Fines">{(finesByTeam.get(t.id) ?? 0) > 0 ? money(finesByTeam.get(t.id) ?? 0) : "—"}</td>
                     )}
                     <td style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {t.is_walkin && t.status === "payment_pending" && (
@@ -300,15 +300,15 @@ export default function TournamentControlCenter({
           {(reviewPayments ?? []).length === 0 ? (
             <div className="tc-empty">No payments submitted yet.</div>
           ) : (
-            <table className="tc-table">
+            <table className="tc-table stk">
               <thead><tr><th>Team</th><th>Method</th><th>Amount</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {(reviewPayments ?? []).map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontWeight: 600 }}>{p.booking_label}</td>
-                    <td className="tc-dim" style={{ textTransform: "capitalize" }}>{p.payment_method ?? "—"}</td>
-                    <td className="tc-num">{money(p.expected_amount)}</td>
-                    <td><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
+                    <td style={{ fontWeight: 600 }} data-label="Team">{p.booking_label}</td>
+                    <td className="tc-dim" style={{ textTransform: "capitalize" }} data-label="Method">{p.payment_method ?? "—"}</td>
+                    <td className="tc-num" data-label="Amount">{money(p.expected_amount)}</td>
+                    <td data-label="Status"><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
                     <td>
                       {p.status === "PENDING_VERIFICATION" && (
                         <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setReviewing(p)}>Review</button>
@@ -343,15 +343,15 @@ export default function TournamentControlCenter({
           {(reviewPayments ?? []).length === 0 ? (
             <div className="tc-empty">No payments submitted yet.</div>
           ) : (
-            <table className="tc-table">
+            <table className="tc-table stk">
               <thead><tr><th>Team</th><th>Method</th><th>Amount</th><th>Status</th><th></th></tr></thead>
               <tbody>
                 {(reviewPayments ?? []).map((p) => (
                   <tr key={p.id}>
-                    <td style={{ fontWeight: 600 }}>{p.booking_label}</td>
-                    <td className="tc-dim" style={{ textTransform: "capitalize" }}>{p.payment_method ?? "—"}</td>
-                    <td className="tc-num">{money(p.expected_amount)}</td>
-                    <td><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
+                    <td style={{ fontWeight: 600 }} data-label="Team">{p.booking_label}</td>
+                    <td className="tc-dim" style={{ textTransform: "capitalize" }} data-label="Method">{p.payment_method ?? "—"}</td>
+                    <td className="tc-num" data-label="Amount">{money(p.expected_amount)}</td>
+                    <td data-label="Status"><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
                     <td>
                       {p.status === "PENDING_VERIFICATION" && (
                         <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setReviewing(p)}>Review</button>
@@ -380,15 +380,15 @@ export default function TournamentControlCenter({
           {payments.length === 0 ? (
             <div className="tc-empty">No payments submitted yet.</div>
           ) : (
-            <table className="tc-table">
+            <table className="tc-table stk">
               <thead><tr><th>Team</th><th>Method</th><th>Amount</th><th>Status</th></tr></thead>
               <tbody>
                 {payments.map((p) => (
                   <tr key={p.team_id}>
-                    <td style={{ fontWeight: 600 }}>{p.team_name}</td>
-                    <td className="tc-dim" style={{ textTransform: "capitalize" }}>{p.payment_method ?? "—"}</td>
-                    <td className="tc-num">{money(p.expected_amount)}</td>
-                    <td><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
+                    <td style={{ fontWeight: 600 }} data-label="Team">{p.team_name}</td>
+                    <td className="tc-dim" style={{ textTransform: "capitalize" }} data-label="Method">{p.payment_method ?? "—"}</td>
+                    <td className="tc-num" data-label="Amount">{money(p.expected_amount)}</td>
+                    <td data-label="Status"><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
                   </tr>
                 ))}
               </tbody>

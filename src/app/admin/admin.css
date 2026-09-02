@@ -318,9 +318,13 @@
   .adm-stats { grid-template-columns: repeat(2,1fr); }
   .adm-row, .adm-grid-2, .adm-grid-3 { grid-template-columns: 1fr; }
 
-  /* Tables scroll sideways instead of squeezing every column unreadable. */
+  /* Tables scroll sideways instead of squeezing every column unreadable.
+     The sticky, blurred, translucent header can't be sticky inside a
+     horizontal scroller — it renders as an unreadable smear — so pin it
+     off on narrow screens. */
   .adm-card { overflow-x: auto; }
   .adm-table { min-width: 560px; }
+  .adm-table th { position: static; backdrop-filter: none; }
 }
 
 /* reduced motion */
@@ -497,4 +501,27 @@
   .adm-stats { grid-template-columns: repeat(2, 1fr); }
   .adm-body { padding: 20px 16px; }
   .adm-topbar { padding: 0 16px; }
+}
+
+/* Phones: tables become stacked, labelled cards. A sideways-scrolling
+   table with a sticky blurred header doesn't work on a 375px screen —
+   it renders as an unreadable overlap. Each <td> needs a data-label
+   attribute in the markup for its row label. */
+@media (max-width: 640px) {
+  .adm-card { overflow-x: visible; }
+  .adm-table, .adm-table tbody, .adm-table tr, .adm-table td { display: block; width: auto; min-width: 0; }
+  .adm-table thead { display: none; }
+  .adm-table tr { border: 1px solid var(--a-line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .adm-table tr:hover td { background: none !important; }
+  .adm-table td {
+    border: none !important; padding: 5px 0 !important; background: none !important;
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; text-align: right;
+  }
+  .adm-table td::before {
+    content: attr(data-label); flex-shrink: 0; text-align: left;
+    font-family: var(--a-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--a-faint);
+  }
+  .adm-table td:first-child { display: block; font-weight: 800; font-size: 15px; padding-bottom: 8px !important; text-align: left; }
+  .adm-table td:first-child::before { display: none; }
+  .adm-table td:empty { display: none; }
 }
