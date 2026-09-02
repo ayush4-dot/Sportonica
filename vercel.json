@@ -1,5 +1,5 @@
 {
-  "regions": ["bom1"],
+  "regions": ["syd1"],
   "headers": [
     {
       "source": "/.well-known/apple-app-site-association",
