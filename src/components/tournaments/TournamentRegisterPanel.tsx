@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Search, UserMinus, UserPlus, X } from "lucide-react";
+import { Check, UserMinus, UserPlus, X } from "lucide-react";
 import {
-  registerTeam, getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayer,
+  registerTeam, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
@@ -160,10 +160,10 @@ export default function TournamentRegisterPanel({
                   <button
                     aria-label={`Remove ${p.name} from the team`}
                     onClick={() => {
-                      if (!p.user_id) return;
                       if (!window.confirm(`Remove ${p.name} from the team?`)) return;
                       startTransition(async () => {
-                        await removeTeamPlayer(team.id, p.user_id!);
+                        const res = await removeTeamGuestPlayer(p.id);
+                        if (isActionError(res)) { setErr(res.message); return; }
                         const r = await getTeamRoster(team.id);
                         if (!isActionError(r)) setRoster(r);
                       });
@@ -199,7 +199,7 @@ export default function TournamentRegisterPanel({
       )}
 
       {showInvite && (
-        <InviteModal
+        <AddPlayerModal
           teamId={team.id}
           onClose={() => setShowInvite(false)}
           onAdded={async () => { const r = await getTeamRoster(team.id); if (!isActionError(r)) setRoster(r); router.refresh(); }}
@@ -216,25 +216,29 @@ export default function TournamentRegisterPanel({
   );
 }
 
-function InviteModal({ teamId, onClose, onAdded }: { teamId: string; onClose: () => void; onAdded: () => void }) {
-  const [q, setQ] = useState("");
-  const [results, setResults] = useState<{ id: string; name: string; username: string | null; avatar_url: string | null }[]>([]);
-  const [added, setAdded] = useState<Set<string>>(new Set());
+// Captain builds their roster by entering each teammate's details —
+// name required, email + phone optional. Each teammate is a guest entry
+// that auto-links to their account when they sign in with a matching
+// email or phone. Stays open so several players can be added in a row.
+function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose: () => void; onAdded: () => void }) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [role, setRole] = useState<"player" | "substitute">("player");
+  const [err, setErr] = useState<string | null>(null);
+  const [justAdded, setJustAdded] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function search(value: string) {
-    setQ(value);
-    if (value.trim().length < 2) { setResults([]); return; }
+  function add() {
+    if (!name.trim()) { setErr("Enter the player's name."); return; }
+    setErr(null);
     startTransition(async () => {
-      const res = await searchPlayersForTeam(value, teamId);
-      setResults(isActionError(res) ? [] : res);
-    });
-  }
-
-  function invite(userId: string) {
-    startTransition(async () => {
-      const res = await addTeamPlayer(teamId, userId);
-      if (!isActionError(res)) { added.add(userId); setAdded(new Set(added)); onAdded(); }
+      const res = await addTeamGuestPlayer(teamId, name.trim(), phone.trim() || undefined, email.trim() || undefined, role);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setJustAdded(name.trim());
+      setName(""); setEmail(""); setPhone(""); setRole("player");
+      onAdded();
+      setTimeout(() => setJustAdded(null), 3000);
     });
   }
 
@@ -242,35 +246,38 @@ function InviteModal({ teamId, onClose, onAdded }: { teamId: string; onClose: ()
     <div onClick={onClose} className="tim-scrim">
       <style>{TIM_CSS}</style>
       <div onClick={(e) => e.stopPropagation()} className="tim-card">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 19, fontWeight: 800 }}>Add a player</h3>
           <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 44, height: 44, display: "grid", placeItems: "center", marginRight: -10 }}><X size={18} /></button>
         </div>
-        <div className="tim-search">
-          <Search size={15} style={{ opacity: 0.6 }} />
-          <input value={q} onChange={(e) => search(e.target.value)} placeholder="Search by name or @username"
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", color: "inherit", fontFamily: "inherit", fontSize: 14 }} />
-        </div>
-        <div style={{ maxHeight: 300, overflowY: "auto" }}>
-          {q.trim().length < 2 ? (
-            <div style={{ fontSize: 13, opacity: 0.5, padding: "20px 0", textAlign: "center" }}>Type at least 2 characters.</div>
-          ) : results.length === 0 ? (
-            <div style={{ fontSize: 13, opacity: 0.5, padding: "20px 0", textAlign: "center" }}>{pending ? "Searching…" : "No players found."}</div>
-          ) : results.map((p) => (
-            <div key={p.id} className="tim-row">
-              <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(150deg,#006241,#1e3932)", display: "grid", placeItems: "center", fontSize: 13, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
-                {p.name.charAt(0).toUpperCase()}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13.5, fontWeight: 600 }}>{p.name}</div>
-                {p.username && <div style={{ fontSize: 11.5, opacity: 0.5, fontFamily: "'Inter',sans-serif" }}>@{p.username}</div>}
-              </div>
-              <button onClick={() => invite(p.id)} disabled={pending || added.has(p.id)}
-                style={{ background: added.has(p.id) ? "transparent" : "#006241", color: added.has(p.id) ? "#2E7D5B" : "#ffffff", border: added.has(p.id) ? "1px solid rgba(46,125,91,0.4)" : "none", borderRadius: 8, padding: "10px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-                {added.has(p.id) ? "Added ✓" : "Add"}
-              </button>
-            </div>
-          ))}
+        <p style={{ fontSize: 12, opacity: 0.6, margin: "0 0 14px" }}>
+          Only a name is required. Add an email so this player can sign in later and see their own stats.
+        </p>
+
+        <input className="tim-in" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player's name" />
+        <input className="tim-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" />
+        <input className="tim-in" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
+        <select className="tim-in" value={role} onChange={(e) => setRole(e.target.value as "player" | "substitute")}>
+          <option value="player">Player</option>
+          <option value="substitute">Substitute</option>
+        </select>
+
+        {err && <div style={{ color: "#ef4444", fontSize: 12.5, marginTop: 6 }}>{err}</div>}
+        {justAdded && (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#006241", fontWeight: 600, fontSize: 12.5, marginTop: 8 }}>
+            <Check size={14} /> Added {justAdded}.
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <button onClick={add} disabled={pending}
+            style={{ flex: 1, background: "#006241", color: "#fff", border: "none", borderRadius: 8, padding: "12px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            {pending ? "Adding…" : "Add player"}
+          </button>
+          <button onClick={onClose}
+            style={{ background: "transparent", color: "inherit", border: "1px solid rgba(128,128,128,0.35)", borderRadius: 8, padding: "12px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            Done
+          </button>
         </div>
       </div>
     </div>
@@ -283,8 +290,7 @@ const TIM_CSS = `
 .tim-card { width: 100%; max-width: 420px; background: #14171E; border: 1px solid rgba(242,237,230,0.12);
   border-radius: 16px; padding: 22px; color: #F2EDE6; }
 [data-theme="paper"] .tim-card { background: #fff; border-color: rgba(20,23,30,0.1); color: #14171E; }
-.tim-search { display: flex; align-items: center; gap: 8px; border: 1px solid rgba(128,128,128,0.3);
-  border-radius: 10px; padding: 13px 12px; margin-bottom: 14px; }
-.tim-row { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
-[data-theme="paper"] .tim-row { border-bottom-color: rgba(20,23,30,0.08); }
+.tim-in { width: 100%; box-sizing: border-box; margin-top: 8px; padding: 12px 12px; border-radius: 10px;
+  border: 1px solid rgba(128,128,128,0.3); background: transparent; color: inherit; font-family: inherit; font-size: 14px; }
+.tim-in:focus { outline: none; border-color: #006241; }
 `;

@@ -546,6 +546,31 @@ export async function removeTeamPlayerAdmin(teamPlayerId: string): Promise<void 
   if (error) return actionError(friendlyTournamentError(error.message));
 }
 
+// Captain-facing: add a teammate by name (+ optional email/phone) instead
+// of searching for an account. Creates a guest roster row that auto-links
+// when that person signs in with a matching email/phone. Also usable by
+// an admin/organizer (enforced in add_team_guest_player() in the DB).
+export async function addTeamGuestPlayer(
+  teamId: string, name: string, phone?: string, email?: string, role: "player" | "substitute" = "player"
+): Promise<TournamentTeamPlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("add_team_guest_player", {
+    p_team_id: teamId, p_name: name, p_phone: phone ?? null, p_email: email ?? null, p_role: role,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeamPlayer;
+}
+
+// Captain-facing (or admin) — remove a roster row by its own id, the only
+// way to target a guest member the captain added.
+export async function removeTeamGuestPlayer(teamPlayerId: string): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("remove_team_guest_player", { p_team_player_id: teamPlayerId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
 // Admin/organizer-only — add a no-account (walk-in) member directly to
 // an existing team, and edit one's own name/phone/email afterwards.
 export async function addWalkinTeamPlayer(
