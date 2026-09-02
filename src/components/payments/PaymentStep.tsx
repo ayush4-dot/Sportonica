@@ -22,12 +22,33 @@ const INSTRUCTIONS = [
   "Submit for verification.",
 ];
 
+// Shown when paying a tournament host directly (hostMethod set) rather
+// than Sportonica's platform QR.
+const INSTRUCTIONS_HOST = [
+  "Open your payment app on your phone.",
+  "Scan the organizer's QR below.",
+  "Pay the exact amount shown, to the organizer.",
+  "Enter the transaction/reference ID from your payment app.",
+  "Upload a screenshot of the completed payment.",
+  "Submit — the organizer verifies it.",
+];
+
+/** When set, the payer pays this fixed recipient (a tournament host's own
+ *  QR) instead of choosing a Sportonica platform method. */
+export type HostMethod = {
+  qrUrl: string | null;
+  merchantName: string;
+  account: string | null;
+  method: PaymentMethod;
+};
+
 export default function PaymentStep({
   bookingType,
   bookingId,
   amount,
   summary,
   footer,
+  hostMethod,
 }: {
   bookingType: BookingType;
   bookingId: string;
@@ -36,11 +57,15 @@ export default function PaymentStep({
   summary?: { label: string; value: string }[];
   /** Extra actions rendered under the "submitted" confirmation (e.g. "Done" / "See my games"). */
   footer?: React.ReactNode;
+  /** Pay a fixed recipient (tournament host QR) instead of the platform method picker. */
+  hostMethod?: HostMethod;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [methods, setMethods] = useState<PaymentMethodConfig[] | null>(null);
-  const [method, setMethod] = useState<PaymentMethod | null>(null);
+  // Paying a tournament host directly — the recipient is fixed, so there's
+  // no platform-method lookup to wait on.
+  const [methods, setMethods] = useState<PaymentMethodConfig[] | null>(hostMethod ? [] : null);
+  const [method, setMethod] = useState<PaymentMethod | null>(hostMethod ? hostMethod.method : null);
   const [transactionId, setTransactionId] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -49,6 +74,7 @@ export default function PaymentStep({
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    if (hostMethod) return;
     let cancelled = false;
     getPaymentMethods()
       .then((rows) => {
@@ -60,6 +86,8 @@ export default function PaymentStep({
       })
       .catch(() => { if (!cancelled) setMethods([]); });
     return () => { cancelled = true; };
+    // hostMethod presence is fixed for the life of this component.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -80,7 +108,13 @@ export default function PaymentStep({
 
   const active = methods?.find((m) => m.method === method) ?? null;
   const enabledMethods = methods?.filter((m) => m.enabled) ?? [];
-  const canSubmit = !!method && !!active?.enabled && transactionId.trim().length > 0 && !!file && !pending;
+  const methodReady = hostMethod ? !!hostMethod.qrUrl : !!active?.enabled;
+  const canSubmit = !!method && methodReady && transactionId.trim().length > 0 && !!file && !pending;
+
+  const panelQrUrl = hostMethod ? hostMethod.qrUrl : (active ? paymentQrPublicUrl(active.qr_path) : null);
+  const panelMerchant = hostMethod ? hostMethod.merchantName : (active?.merchant_name ?? "");
+  const panelAccount = hostMethod ? hostMethod.account : (active?.account_identifier ?? null);
+  const panelSteps = hostMethod ? INSTRUCTIONS_HOST : INSTRUCTIONS;
 
   function submit() {
     if (!method || !file) return;
@@ -144,49 +178,57 @@ export default function PaymentStep({
         <span className="pymt-amt-val">{rs(amount)}</span>
       </div>
 
-      {methods === null ? (
+      {!hostMethod && methods === null ? (
         <p className="pymt-hint">Loading payment options…</p>
-      ) : enabledMethods.length === 0 ? (
+      ) : !hostMethod && enabledMethods.length === 0 ? (
         <div className="pymt-warn">
           <AlertCircle size={15} />
           No payment method is available right now. Please try again shortly or contact support.
         </div>
       ) : (
         <>
-          <p className="pymt-hint">Choose Payment Method</p>
-          <div className="pymt-methods">
-            {enabledMethods.map((m) => (
-              <button
-                key={m.method}
-                className={`pymt-method ${method === m.method ? "on" : ""}`}
-                onClick={() => setMethod(m.method)}
-              >
-                {METHOD_LABELS[m.method]}
-              </button>
-            ))}
-          </div>
+          {!hostMethod && (
+            <>
+              <p className="pymt-hint">Choose Payment Method</p>
+              <div className="pymt-methods">
+                {enabledMethods.map((m) => (
+                  <button
+                    key={m.method}
+                    className={`pymt-method ${method === m.method ? "on" : ""}`}
+                    onClick={() => setMethod(m.method)}
+                  >
+                    {METHOD_LABELS[m.method]}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
 
-          {active && (
+          {(hostMethod || active) && (
             <div className="pymt-panel">
-              <h4>Pay with {METHOD_LABELS[active.method]}</h4>
+              <h4>
+                {hostMethod
+                  ? `Pay the organizer via ${METHOD_LABELS[hostMethod.method]}`
+                  : `Pay with ${METHOD_LABELS[active!.method]}`}
+              </h4>
 
-              {active.qr_path ? (
-                <img className="pymt-qr" src={paymentQrPublicUrl(active.qr_path) ?? ""} alt={`${active.method} QR code`} />
+              {panelQrUrl ? (
+                <img className="pymt-qr" src={panelQrUrl} alt="Payment QR code" />
               ) : (
                 <div className="pymt-qr pymt-qr-empty">
                   <AlertCircle size={20} />
-                  <span>QR not configured yet — contact support.</span>
+                  <span>{hostMethod ? "The organizer hasn't added a QR yet — contact them." : "QR not configured yet — contact support."}</span>
                 </div>
               )}
 
               <div className="pymt-done-rows" style={{ marginTop: 14 }}>
-                <Row label="Merchant" value={active.merchant_name} />
-                <Row label={METHOD_LABELS[active.method]} value={active.account_identifier || "—"} />
+                <Row label={hostMethod ? "Pay to" : "Merchant"} value={panelMerchant || "—"} />
+                <Row label={METHOD_LABELS[(hostMethod ? hostMethod.method : active!.method)]} value={panelAccount || "—"} />
                 <Row label="Amount" value={rs(amount)} accent />
               </div>
 
               <ol className="pymt-steps">
-                {INSTRUCTIONS.map((s, i) => <li key={i}>{s}</li>)}
+                {panelSteps.map((s, i) => <li key={i}>{s}</li>)}
               </ol>
 
               <label className="pymt-label">Transaction / Reference ID</label>
@@ -216,8 +258,9 @@ export default function PaymentStep({
                 {pending ? "Submitting…" : "Submit Payment"}
               </button>
               <p className="pymt-fine">
-                A screenshot is evidence, not automatic proof — our team verifies the merchant, amount and
-                transaction ID before your booking is confirmed.
+                {hostMethod
+                  ? "A screenshot is evidence, not automatic proof — the organizer verifies the amount and transaction ID before your team is confirmed."
+                  : "A screenshot is evidence, not automatic proof — our team verifies the merchant, amount and transaction ID before your booking is confirmed."}
               </p>
             </div>
           )}

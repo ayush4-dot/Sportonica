@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { actionError, isActionError, type ActionError } from "@/lib/actionError";
 import { friendlyTournamentError } from "./types";
+import { bookingLabel, friendlyPaymentError, type Payment } from "@/lib/payments/types";
+import { notifyPaymentReviewed } from "@/lib/mail/notify";
 import type {
   Tournament, TournamentDraftInput, TournamentTeam, TournamentTeamPlayer,
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
@@ -219,6 +221,110 @@ export async function listTournamentPayments(tournamentId: string): Promise<
   }));
 }
 
+// Review-ready rows for the host's own Payments tab — same shape the
+// Tournament Control Center already expects for `reviewPayments`
+// (Payment + customer_name + booking_label), so the tab renders
+// identically to the super-admin one. RLS (pay_tournament_organizer_read
+// / pay_vendor_tournament_read) scopes the select to the caller's own
+// tournament; a non-host caller just gets []. Lighter than
+// adminActions.attachDisplayInfo — the host is looking at one tournament,
+// so no venue/when joins are needed.
+export type TournamentReviewPayment = Payment & { customer_name: string; booking_label: string };
+
+export async function listTournamentPaymentsForReviewAsHost(
+  tournamentId: string
+): Promise<TournamentReviewPayment[] | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const { data: teams, error: teamsErr } = await sb
+    .from("tournament_teams").select("id, name").eq("tournament_id", tournamentId);
+  if (teamsErr) return actionError(teamsErr.message);
+  const teamIds = (teams ?? []).map((t) => t.id);
+  if (teamIds.length === 0) return [];
+
+  const { data, error } = await sb
+    .from("payments")
+    .select("*")
+    .eq("booking_type", "tournament_registration")
+    .in("tournament_registration_id", teamIds)
+    .order("submitted_at", { ascending: false });
+  if (error) return actionError(error.message);
+  const payments = (data ?? []) as Payment[];
+
+  const teamNameById = new Map((teams ?? []).map((t) => [t.id, t.name]));
+  const userIds = [...new Set(payments.map((p) => p.user_id))];
+  const { data: profiles } = userIds.length
+    ? await sb.from("profiles").select("id, full_name, name").in("id", userIds)
+    : { data: [] as { id: string; full_name: string | null; name: string | null }[] };
+  const nameById = new Map((profiles ?? []).map((p) => [p.id, p.full_name ?? p.name ?? "—"]));
+
+  return payments.map((p) => ({
+    ...p,
+    customer_name: nameById.get(p.user_id) ?? "—",
+    booking_label:
+      teamNameById.get(p.tournament_registration_id ?? "") ??
+      bookingLabel(p.booking_type, p.tournament_registration_id ?? ""),
+  }));
+}
+
+// Host (or a granted tournament manager, or a venue manager, or a super
+// admin — all enforced in verify_tournament_payment() in the DB) approves
+// or rejects one registration payment made to their own QR. The
+// super-admin /platform path keeps using reviewPayment() unchanged; both
+// converge on the same end state.
+export async function reviewTournamentPaymentAsHost(
+  paymentId: string,
+  approve: boolean,
+  tournamentId: string,
+  reason?: string,
+  note?: string
+): Promise<Payment | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const { data, error } = await sb.rpc("verify_tournament_payment", {
+    p_payment_id: paymentId,
+    p_approve: approve,
+    p_reason: reason ?? null,
+    p_note: note ?? null,
+  });
+  if (error) return actionError(friendlyPaymentError(error.message));
+
+  const payment = data as Payment;
+  revalidatePath(`/organize/tournaments/${tournamentId}`);
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  revalidatePath("/platform/payments");
+
+  // Notify the payer after the write succeeds — never let a failed
+  // notification undo a successful review. notifyPaymentReviewed() is
+  // already tournament-aware (src/lib/mail/notify.ts).
+  await notifyPaymentReviewed(paymentId);
+
+  return payment;
+}
+
+// Short-lived signed URL for a submitted proof screenshot, for the host's
+// review modal. Mirrors getSignedGamePaymentProofUrl() in
+// src/lib/playTogether/actions.ts — storage RLS
+// (proof_read_tournament_organizer) independently enforces that only that
+// tournament's host/manager (or the uploader, or a super admin) can read
+// the object, so this needs no ownership check beyond "row is visible".
+export async function getSignedTournamentPaymentProofUrl(paymentId: string): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const { data: row, error } = await sb
+    .from("payments").select("screenshot_path").eq("id", paymentId).maybeSingle();
+  if (error) return actionError(error.message);
+  if (!row?.screenshot_path) return actionError("No payment screenshot on file for this payment.");
+
+  const { data, error: sErr } = await sb.storage
+    .from("payment-proofs").createSignedUrl(row.screenshot_path, 300);
+  if (sErr) return actionError(sErr.message);
+  return data.signedUrl;
+}
+
 // ── Vendor / super-admin lifecycle RPCs ─────────────────────────────
 
 // Uploads happen before the tournament row exists (creation is a multi-step
@@ -245,14 +351,70 @@ export async function uploadTournamentBanner(file: File): Promise<string | Actio
   return pub.publicUrl;
 }
 
+// The host's own payment QR image — same upload shape as
+// uploadTournamentBanner() above (uploader-keyed path, since the
+// tournament row may not exist yet during a draft), targeting the public
+// 'tournament-qr' bucket. Returns the full public URL, stored verbatim on
+// tournaments.host_payment_qr_url (like banner_url).
+export async function uploadTournamentQr(file: File): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const okTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!okTypes.includes(file.type)) return actionError("Upload a JPG, PNG or WebP QR image.");
+  if (file.size > 5 * 1024 * 1024) return actionError("QR image must be under 5 MB.");
+
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const ext = extMap[file.type];
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const { error } = await sb.storage.from("tournament-qr").upload(path, file, { upsert: false });
+  if (error) return actionError(error.message);
+
+  const { data: pub } = sb.storage.from("tournament-qr").getPublicUrl(path);
+  return pub.publicUrl;
+}
+
+// The host's payment QR/details live in their own columns, set through a
+// dedicated RPC (set_tournament_host_payment) rather than the create/edit
+// jsonb blob — that RPC also gates on is_tournament_organizer, and unlike
+// update_tournament_draft it isn't restricted to drafts, so it doubles as
+// the "fix my QR after publishing" path. Only called when a QR was
+// actually provided (fee > 0 path in TournamentForm); a free tournament
+// leaves the columns untouched.
+async function applyHostPayment(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  tournamentId: string,
+  input: TournamentDraftInput
+): Promise<ActionError | null> {
+  if (!input.host_payment_qr_url) return null;
+  const { error } = await sb.rpc("set_tournament_host_payment", {
+    p_id: tournamentId,
+    p_qr_url: input.host_payment_qr_url,
+    p_name: input.host_payment_name ?? null,
+    p_account: input.host_payment_account ?? null,
+    p_method: input.host_payment_method ?? null,
+  });
+  return error ? actionError(friendlyTournamentError(error.message)) : null;
+}
+
 export async function createTournament(input: TournamentDraftInput): Promise<Tournament | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("create_tournament", { p: input });
   if (error) return actionError(friendlyTournamentError(error.message));
+  const row = data as Tournament;
+  const qrErr = await applyHostPayment(sb, row.id, input);
+  if (qrErr) return qrErr;
   revalidatePath("/admin/tournaments");
   revalidatePath("/organize");
-  return data as Tournament;
+  return {
+    ...row,
+    host_payment_qr_url: input.host_payment_qr_url ?? row.host_payment_qr_url,
+    host_payment_name: input.host_payment_name ?? row.host_payment_name,
+    host_payment_account: input.host_payment_account ?? row.host_payment_account,
+    host_payment_method: input.host_payment_method ?? row.host_payment_method,
+  };
 }
 
 export async function updateTournamentDraft(id: string, input: TournamentDraftInput): Promise<Tournament | ActionError> {
@@ -260,9 +422,18 @@ export async function updateTournamentDraft(id: string, input: TournamentDraftIn
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("update_tournament_draft", { p_id: id, p: input });
   if (error) return actionError(friendlyTournamentError(error.message));
+  const qrErr = await applyHostPayment(sb, id, input);
+  if (qrErr) return qrErr;
   revalidatePath(`/admin/tournaments/${id}`);
   revalidatePath(`/organize/tournaments/${id}`);
-  return data as Tournament;
+  const row = data as Tournament;
+  return {
+    ...row,
+    host_payment_qr_url: input.host_payment_qr_url ?? row.host_payment_qr_url,
+    host_payment_name: input.host_payment_name ?? row.host_payment_name,
+    host_payment_account: input.host_payment_account ?? row.host_payment_account,
+    host_payment_method: input.host_payment_method ?? row.host_payment_method,
+  };
 }
 
 export async function publishTournament(id: string): Promise<Tournament | ActionError> {

@@ -184,6 +184,16 @@ export default function TournamentRegisterPanel({
             bookingId={team.id}
             amount={tournament.fee}
             summary={[{ label: "Team", value: team.name }, { label: "Tournament", value: tournament.name }]}
+            hostMethod={
+              tournament.host_payment_qr_url
+                ? {
+                    qrUrl: tournament.host_payment_qr_url,
+                    merchantName: tournament.host_payment_name ?? tournament.organizer_name ?? "Tournament organizer",
+                    account: tournament.host_payment_account,
+                    method: tournament.host_payment_method ?? "esewa",
+                  }
+                : undefined
+            }
           />
         </div>
       )}

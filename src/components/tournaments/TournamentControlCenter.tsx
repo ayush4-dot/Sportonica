@@ -24,6 +24,7 @@ import StandingsTab from "./StandingsTab";
 import AnnouncementsTab from "./AnnouncementsTab";
 import TournamentAccessTab from "./TournamentAccessTab";
 import ReviewPaymentModal from "@/app/platform/payments/ReviewPaymentModal";
+import TournamentPaymentReviewModal from "./TournamentPaymentReviewModal";
 import "./tournament-console.css";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
@@ -50,10 +51,11 @@ export default function TournamentControlCenter({
   announcements: TournamentAnnouncement[];
   viewer: "vendor" | "organizer" | "super_admin";
   backHref: string;
-  // Only fetched (and only usable) for viewer === "super_admin" — approving
-  // a tournament payment is the same Sportonica-only action as any other
-  // booking type, just reachable from here too instead of only
-  // /platform/payments.
+  // Review-ready payment rows. For viewer === "super_admin" these come from
+  // the platform payments console (acted on via review_payment); for
+  // viewer === "organizer" they're the host's own tournament payments,
+  // acted on via verify_tournament_payment (host primary, super admin
+  // fallback). Same row shape either way.
   reviewPayments?: ReviewPaymentRow[];
   teamFines?: { team_id: string; total_fine: number }[];
   // Same story — granting per-tournament access is a super-admin-only
@@ -327,10 +329,54 @@ export default function TournamentControlCenter({
         </div>
       )}
 
-      {tab === "Payments" && viewer !== "super_admin" && (
+      {tab === "Payments" && viewer === "organizer" && (
         <div className="tc-card">
           <div className="tc-card-t">Payments</div>
-          <div className="tc-card-sub">View-only here — approve or reject from Sportonica&apos;s payment console.</div>
+          <div className="tc-card-sub">
+            Approve or reject payments made to your QR. Sportonica can also step in from their console if needed.
+          </div>
+          {tournament.fee > 0 && !tournament.host_payment_qr_url && (
+            <div className="tc-empty" style={{ color: "#d97706" }}>
+              This tournament has an entry fee but no payment QR — add one in Settings so teams can pay you.
+            </div>
+          )}
+          {(reviewPayments ?? []).length === 0 ? (
+            <div className="tc-empty">No payments submitted yet.</div>
+          ) : (
+            <table className="tc-table">
+              <thead><tr><th>Team</th><th>Method</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+              <tbody>
+                {(reviewPayments ?? []).map((p) => (
+                  <tr key={p.id}>
+                    <td style={{ fontWeight: 600 }}>{p.booking_label}</td>
+                    <td className="tc-dim" style={{ textTransform: "capitalize" }}>{p.payment_method ?? "—"}</td>
+                    <td className="tc-num">{money(p.expected_amount)}</td>
+                    <td><span className={`tc-badge ${paymentBadgeClass(p.status)}`}>{p.status.replace("_", " ").toLowerCase()}</span></td>
+                    <td>
+                      {p.status === "PENDING_VERIFICATION" && (
+                        <button className="tc-btn" style={{ padding: "6px 10px" }} onClick={() => setReviewing(p)}>Review</button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          {reviewing && (
+            <TournamentPaymentReviewModal
+              payment={reviewing}
+              tournamentId={tournament.id}
+              onClose={() => setReviewing(null)}
+              onReviewed={() => { setReviewing(null); setConfirmMsg("Payment reviewed."); setTimeout(() => setConfirmMsg(null), 4000); router.refresh(); }}
+            />
+          )}
+        </div>
+      )}
+
+      {tab === "Payments" && viewer === "vendor" && (
+        <div className="tc-card">
+          <div className="tc-card-t">Payments</div>
+          <div className="tc-card-sub">View-only here — the organizer verifies payments made to their QR.</div>
           {payments.length === 0 ? (
             <div className="tc-empty">No payments submitted yet.</div>
           ) : (

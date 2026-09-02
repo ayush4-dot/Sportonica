@@ -11,6 +11,20 @@ export const FORMAT_LABELS: Record<TournamentFormat, string> = {
   single_event: "Single event (no bracket)",
 };
 
+// The label shown next to the host's payment QR at checkout. Constrained
+// to the same four values as payments.payment_method (see
+// src/lib/payments/types.ts) so nothing downstream needs widening — the
+// QR image is what a payer actually scans, this is just the label.
+export const HOST_PAYMENT_METHODS = ["esewa", "khalti", "fonepay", "bank_transfer"] as const;
+export type HostPaymentMethod = (typeof HOST_PAYMENT_METHODS)[number];
+
+export const HOST_PAYMENT_METHOD_LABELS: Record<HostPaymentMethod, string> = {
+  esewa: "eSewa",
+  khalti: "Khalti",
+  fonepay: "Fonepay",
+  bank_transfer: "Bank Transfer",
+};
+
 export const TOURNAMENT_STATUS = [
   "draft", "pending_approval", "published", "registration_open",
   "registration_closed", "live", "completed", "cancelled",
@@ -78,6 +92,14 @@ export interface Tournament {
   fee: number;
   payment_instructions: string | null;
   refund_policy: string | null;
+  // The tournament host's own payment QR — fee payers pay the host
+  // directly (not Sportonica's platform eSewa/Khalti QR), and the host
+  // verifies each payment themselves from the Payments tab. Set on the
+  // create/edit form; only meaningful when fee > 0.
+  host_payment_qr_url: string | null;
+  host_payment_name: string | null;
+  host_payment_account: string | null;
+  host_payment_method: HostPaymentMethod | null;
   prize_winner: string | null;
   prize_runner_up: string | null;
   prize_mvp: string | null;
@@ -282,6 +304,10 @@ export type TournamentDraftInput = Partial<{
   fee: number;
   payment_instructions: string;
   refund_policy: string;
+  host_payment_qr_url: string;
+  host_payment_name: string;
+  host_payment_account: string;
+  host_payment_method: HostPaymentMethod;
   prize_winner: string;
   prize_runner_up: string;
   prize_mvp: string;
@@ -303,6 +329,7 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   NOT_A_DRAFT: "This tournament has already been submitted and can no longer be edited — cancel it to start over.",
   INVALID_TRANSITION: "That action isn't available for this tournament right now.",
   INCOMPLETE_TOURNAMENT: "Fill in the required fields before publishing.",
+  HOST_QR_REQUIRED: "Add your payment QR and the name it pays to before publishing a paid tournament.",
   TOURNAMENT_NOT_FOUND: "Tournament not found.",
   REGISTRATION_CLOSED: "Registration for this tournament is closed.",
   TOURNAMENT_FULL: "This tournament has reached its team limit.",

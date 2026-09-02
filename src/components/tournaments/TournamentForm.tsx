@@ -4,11 +4,11 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Trophy, Upload, X, Users, User, Handshake, MapPin } from "lucide-react";
 import { SPORT_NAMES as SPORTS } from "@/lib/sports";
-import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner } from "@/lib/tournaments/actions";
+import { createTournament, updateTournamentDraft, publishTournament, uploadTournamentBanner, uploadTournamentQr } from "@/lib/tournaments/actions";
 import { parseMapsUrl } from "@/lib/admin/location";
 import { isActionError } from "@/lib/actionError";
-import { FORMAT_LABELS, TOURNAMENT_FORMATS } from "@/lib/tournaments/types";
-import type { Tournament, TournamentFormat } from "@/lib/tournaments/types";
+import { FORMAT_LABELS, TOURNAMENT_FORMATS, HOST_PAYMENT_METHODS, HOST_PAYMENT_METHOD_LABELS } from "@/lib/tournaments/types";
+import type { Tournament, TournamentFormat, HostPaymentMethod } from "@/lib/tournaments/types";
 
 const KTM_OFFSET = "+05:45";
 const todayKTM = () => new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
@@ -105,6 +105,16 @@ export default function TournamentForm({
   const [paymentInstructions, setPaymentInstructions] = useState(existing?.payment_instructions ?? "");
   const [refundPolicy, setRefundPolicy] = useState(existing?.refund_policy ?? "");
 
+  // The host's own payment QR — teams pay the host directly, and the host
+  // verifies each payment from the Payments tab. Required once fee > 0.
+  const [hostQrUrl, setHostQrUrl] = useState(existing?.host_payment_qr_url ?? "");
+  const [hostQrPreview, setHostQrPreview] = useState<string | null>(existing?.host_payment_qr_url ?? null);
+  const [hostQrUploading, setHostQrUploading] = useState(false);
+  const hostQrFileRef = useRef<HTMLInputElement>(null);
+  const [hostPayName, setHostPayName] = useState(existing?.host_payment_name ?? "");
+  const [hostPayAccount, setHostPayAccount] = useState(existing?.host_payment_account ?? "");
+  const [hostPayMethod, setHostPayMethod] = useState<HostPaymentMethod>(existing?.host_payment_method ?? "esewa");
+
   // Optional — leave at 0 to skip tracking cards/fines entirely for
   // sports/tournaments that don't use them.
   const [yellowCardFine, setYellowCardFine] = useState(existing?.yellow_card_fine ?? 0);
@@ -122,6 +132,10 @@ export default function TournamentForm({
   useEffect(() => {
     return () => { if (bannerPreview?.startsWith("blob:")) URL.revokeObjectURL(bannerPreview); };
   }, [bannerPreview]);
+
+  useEffect(() => {
+    return () => { if (hostQrPreview?.startsWith("blob:")) URL.revokeObjectURL(hostQrPreview); };
+  }, [hostQrPreview]);
 
   function pickBannerFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -154,6 +168,39 @@ export default function TournamentForm({
     setBannerPreview(null);
     setBannerUrl("");
     if (bannerFileRef.current) bannerFileRef.current.value = "";
+  }
+
+  function pickHostQrFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    const okTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!okTypes.includes(f.type)) { setErr("Upload a JPG, PNG or WebP QR image."); return; }
+    if (f.size > 5 * 1024 * 1024) { setErr("QR image must be under 5 MB."); return; }
+    setErr(null);
+    if (hostQrPreview?.startsWith("blob:")) URL.revokeObjectURL(hostQrPreview);
+    setHostQrPreview(URL.createObjectURL(f));
+    setHostQrUploading(true);
+    uploadTournamentQr(f)
+      .then((url) => {
+        if (isActionError(url)) {
+          if (url.message === "UNAUTHORIZED") {
+            router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
+            return;
+          }
+          setErr(url.message);
+          return;
+        }
+        setHostQrUrl(url);
+      })
+      .catch((e2) => setErr(e2 instanceof Error ? e2.message : "Could not upload the QR image."))
+      .finally(() => setHostQrUploading(false));
+  }
+
+  function removeHostQr() {
+    if (hostQrPreview?.startsWith("blob:")) URL.revokeObjectURL(hostQrPreview);
+    setHostQrPreview(null);
+    setHostQrUrl("");
+    if (hostQrFileRef.current) hostQrFileRef.current.value = "";
   }
 
   function captureLocation() {
@@ -204,6 +251,10 @@ export default function TournamentForm({
       fee,
       payment_instructions: paymentInstructions.trim() || undefined,
       refund_policy: refundPolicy.trim() || undefined,
+      host_payment_qr_url: fee > 0 ? (hostQrUrl.trim() || undefined) : undefined,
+      host_payment_name: fee > 0 ? (hostPayName.trim() || undefined) : undefined,
+      host_payment_account: fee > 0 ? (hostPayAccount.trim() || undefined) : undefined,
+      host_payment_method: fee > 0 ? hostPayMethod : undefined,
       yellow_card_fine: yellowCardFine,
       red_card_fine: redCardFine,
       prize_winner: prizeWinner.trim() || undefined,
@@ -238,6 +289,12 @@ export default function TournamentForm({
     if (combine(endsDate, endsTime) <= nowIso) return "The tournament's end time has already passed — pick a future date.";
     if (combine(regCloseDate, regCloseTime) <= nowIso) return "Registration closes in the past — pick a future date/time.";
     if (format !== "single_event" && maxPlayers < minPlayers) return "Max players per team can't be less than the minimum.";
+    // A paid tournament with no QR is a foot-gun: the payer checkout would
+    // render an empty QR panel with no support fallback, since the host —
+    // not Sportonica — owns this payment. Server re-checks at publish and
+    // pay time; this just catches it early. Free tournaments are exempt.
+    if (fee > 0 && !hostQrUrl.trim()) return "Upload your payment QR — teams pay you directly, so a paid tournament needs one.";
+    if (fee > 0 && !hostPayName.trim()) return "Enter the name your payment QR pays to.";
     return null;
   }
 
@@ -568,6 +625,53 @@ export default function TournamentForm({
         <label>Entry fee per team (Rs — 0 for free)</label>
         <input type="number" min={0} value={fee} onChange={(e) => setFee(Number(e.target.value))} />
       </div>
+      {fee > 0 && (
+        <>
+          <div className="ev-field">
+            <label>Your payment QR</label>
+            <input
+              ref={hostQrFileRef} type="file" accept="image/jpeg,image/png,image/webp"
+              onChange={pickHostQrFile} style={{ display: "none" }}
+            />
+            {hostQrPreview ? (
+              <div className="tf-banner-preview" style={{ maxHeight: 220 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={hostQrPreview} alt="" style={{ maxHeight: 220, objectFit: "contain", background: "#fff" }} />
+                <button type="button" className="tf-banner-replace" onClick={() => hostQrFileRef.current?.click()}>
+                  {hostQrUploading ? "Uploading…" : "Replace"}
+                </button>
+                <button type="button" className="tf-banner-remove" onClick={removeHostQr} aria-label="Remove QR image">
+                  <X size={13} />
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="tf-banner-upload" onClick={() => hostQrFileRef.current?.click()}>
+                <Upload size={15} /> {hostQrUploading ? "Uploading…" : "Upload your eSewa / Khalti QR"}
+              </button>
+            )}
+            <p style={{ fontSize: 11.5, opacity: 0.6, marginTop: 6 }}>
+              Teams scan this to pay you directly. Sportonica never holds this money — you verify each
+              payment yourself in the Payments tab.
+            </p>
+          </div>
+          <div className="ev-row">
+            <div className="ev-field">
+              <label>Payment method</label>
+              <select value={hostPayMethod} onChange={(e) => setHostPayMethod(e.target.value as HostPaymentMethod)}>
+                {HOST_PAYMENT_METHODS.map((m) => <option key={m} value={m}>{HOST_PAYMENT_METHOD_LABELS[m]}</option>)}
+              </select>
+            </div>
+            <div className="ev-field">
+              <label>Name it pays to</label>
+              <input value={hostPayName} onChange={(e) => setHostPayName(e.target.value)} placeholder="Shown to teams paying you" />
+            </div>
+          </div>
+          <div className="ev-field">
+            <label>Account / ID (optional)</label>
+            <input value={hostPayAccount} onChange={(e) => setHostPayAccount(e.target.value)} placeholder="eSewa/Khalti number or bank account" />
+          </div>
+        </>
+      )}
       <div className="ev-field">
         <label>Payment instructions (optional)</label>
         <textarea rows={2} value={paymentInstructions} onChange={(e) => setPaymentInstructions(e.target.value)} placeholder="Any extra instructions shown at checkout." />

@@ -79,6 +79,7 @@ export const PAYMENT_ERROR_MESSAGES: Record<string, string> = {
   BOOKING_CANCELLED: "This booking was cancelled and can no longer be paid for.",
   BOOKING_ALREADY_PAID: "This booking has already been paid for.",
   BOOKING_NOT_FREE: "This booking isn't free — a payment is required.",
+  HOST_QR_MISSING: "This tournament's organizer hasn't set up a payment QR yet — contact them before paying.",
   PAYMENT_ALREADY_PENDING: "A payment for this booking is already awaiting verification.",
   PAYMENT_METHOD_DISABLED: "That payment method isn't available right now — try the other one.",
   DUPLICATE_TRANSACTION_ID: "This transaction ID has already been used for another payment.",
