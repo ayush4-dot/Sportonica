@@ -497,8 +497,8 @@ function WalkinTeamModal({
 
   function submit() {
     if (!teamName.trim()) { setErr("Enter a team name."); return; }
-    if (members.some((m) => !m.name.trim() || !m.phone.trim())) {
-      setErr("Enter a name and phone number for every team member.");
+    if (members.some((m) => !m.name.trim())) {
+      setErr("Enter a name for every team member.");
       return;
     }
     setErr(null);
@@ -535,13 +535,16 @@ function WalkinTeamModal({
         {members.map((m, i) => (
           <div className="tc-member-row" key={i}>
             <input value={m.name} onChange={(e) => updateMember(i, "name", e.target.value)} placeholder="Name" />
-            <input value={m.phone} onChange={(e) => updateMember(i, "phone", e.target.value)} placeholder="Phone" />
+            <input value={m.phone} onChange={(e) => updateMember(i, "phone", e.target.value)} placeholder="Phone (optional)" />
             <input value={m.email ?? ""} onChange={(e) => updateMember(i, "email", e.target.value)} placeholder="Email (optional)" />
             <button onClick={() => removeMember(i)} disabled={members.length <= 1} aria-label={`Remove member ${i + 1}`} style={{ opacity: members.length <= 1 ? 0.3 : 0.7 }}>
               <Trash2 size={15} />
             </button>
           </div>
         ))}
+        <p className="tc-dim" style={{ fontSize: 11, marginTop: 6 }}>
+          Only a name is required. Add each player&apos;s email so they can sign in later and see their own stats.
+        </p>
         {members.length < maxMembers && (
           <button className="tc-btn" style={{ padding: "8px 12px", marginTop: 4 }} onClick={addMember}>
             <Plus size={13} /> Add member
@@ -651,7 +654,7 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   }
 
   function addWalkin() {
-    if (!wName.trim() || !wPhone.trim()) { setErr("Enter a name and phone number."); return; }
+    if (!wName.trim()) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await addWalkinTeamPlayer(team.id, wName.trim(), wPhone.trim(), wEmail.trim() || undefined, addRole);
@@ -670,7 +673,7 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   }
 
   function saveEdit(playerId: string) {
-    if (!editName.trim() || !editPhone.trim()) { setErr("Enter a name and phone number."); return; }
+    if (!editName.trim()) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await updateTeamPlayerGuest(playerId, editName.trim(), editPhone.trim(), editEmail.trim() || undefined);
@@ -739,7 +742,7 @@ function TeamRosterModal({ team, onClose, onChanged }: {
                 <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px", borderRadius: 10, background: "rgba(0,98,65,0.06)" }}>
                   <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" style={modalInputStyle} />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                    <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                     <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -823,13 +826,16 @@ function TeamRosterModal({ team, onClose, onChanged }: {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <input value={wName} onChange={(e) => setWName(e.target.value)} placeholder="Name" style={modalInputStyle} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <input value={wPhone} onChange={(e) => setWPhone(e.target.value)} placeholder="Phone" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                <input value={wPhone} onChange={(e) => setWPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                 <input value={wEmail} onChange={(e) => setWEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                 <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
                   <option value="player">Player</option>
                   <option value="substitute">Substitute</option>
                 </select>
               </div>
+              <p className="tc-dim" style={{ fontSize: 11 }}>
+                Only a name is required. Add the player&apos;s email so they can sign in later and see their own stats.
+              </p>
               <button className="tc-btn primary" style={{ padding: "8px 12px", alignSelf: "flex-start" }} disabled={pending} onClick={addWalkin}>
                 <UserPlus size={14} /> Add member
               </button>
