@@ -1,7 +1,20 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+// Only these prefixes gate on auth/role. Every other route is public
+// browsing (home, /discover, /tournaments, /play-together, …) and does
+// NOT need a Supabase auth round-trip in middleware — the page/action
+// checks auth itself where it matters. Skipping getUser() for public
+// navigations removes a network round-trip from the critical path of
+// almost every page load.
+const AUTH_PREFIXES = ['/profile', '/admin', '/welcome']
+
 export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname
+  if (!AUTH_PREFIXES.some((p) => path === p || path.startsWith(p + '/'))) {
+    return NextResponse.next({ request })
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -23,13 +36,9 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  // Browsing is open (venues, groups). Login is required only at the point
-  // of committing — the booking action itself checks auth server-side.
-  const protectedPaths = ['/profile']
-  if (!user && protectedPaths.some(p => request.nextUrl.pathname.startsWith(p))) {
-    // Remember where they were headed, so login can send them back.
+  if (!user && (path.startsWith('/profile') || path.startsWith('/welcome'))) {
     const loginUrl = new URL('/login', request.url)
-    loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+    loginUrl.searchParams.set('redirect', path)
     return NextResponse.redirect(loginUrl)
   }
 
@@ -38,10 +47,10 @@ export async function middleware(request: NextRequest) {
   // supabase.auth.updateUser() straight from the browser, with no server
   // round-trip at all, so trusting it here was a direct privilege-escalation
   // path independent of anything on the profiles table itself.
-  if (request.nextUrl.pathname.startsWith('/admin')) {
+  if (path.startsWith('/admin')) {
     if (!user) {
       const loginUrl = new URL('/login', request.url)
-      loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+      loginUrl.searchParams.set('redirect', path)
       return NextResponse.redirect(loginUrl)
     }
     const { data: profile } = await supabase
@@ -52,11 +61,6 @@ export async function middleware(request: NextRequest) {
     if (role !== 'admin' && role !== 'venue_owner' && role !== 'super_admin') {
       return NextResponse.redirect(new URL('/', request.url))
     }
-  }
-
-  // The post-Google role step needs a session.
-  if (!user && request.nextUrl.pathname.startsWith('/welcome')) {
-    return NextResponse.redirect(new URL('/login', request.url))
   }
 
   return response
