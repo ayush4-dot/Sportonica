@@ -67,7 +67,6 @@ export default function DateStrip({
               >
                 <span className="ds-dow">{label}</span>
                 <span className="ds-num">{d.getDate()}</span>
-                {on && <span className="ds-sheen" />}
               </button>
             </div>
           );
@@ -145,19 +144,6 @@ export default function DateStrip({
             0 16px 30px -12px rgba(0,98,65,.7);
         }
         .ds-day.on .ds-dow { color: rgba(255,255,255,.75); opacity: 1; }
-
-        /* A slow sheen sweeping across the chosen day. */
-        .ds-sheen {
-          position: absolute; top: 0; bottom: 0; width: 40%;
-          background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent);
-          animation: dsSheen 3.2s ease-in-out infinite;
-        }
-        @keyframes dsSheen {
-          0%   { left: -50%; }
-          55%  { left: 115%; }
-          100% { left: 115%; }
-        }
-        @media (prefers-reduced-motion: reduce) { .ds-sheen { display: none; } }
 
         .ds-dow { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; opacity: .55; }
         .ds-num {

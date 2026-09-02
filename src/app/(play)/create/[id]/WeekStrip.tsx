@@ -111,7 +111,6 @@ export default function WeekStrip({
                 <span className="wsx-dow">{label}</span>
                 <span className="wsx-num">{d.getDate()}</span>
                 <span className={`wsx-dot ${dot}`} />
-                {on && <span className="wsx-sheen" />}
               </button>
             </div>
           );
@@ -189,14 +188,6 @@ export default function WeekStrip({
             0 16px 30px -12px rgba(0,98,65,.7);
         }
         .wsx-day.on .wsx-dow { color: rgba(255,255,255,.75); opacity: 1; }
-
-        .wsx-sheen {
-          position: absolute; top: 0; bottom: 0; width: 40%;
-          background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent);
-          animation: wsxSheen 3.2s ease-in-out infinite;
-        }
-        @keyframes wsxSheen { 0% { left: -50%; } 55% { left: 115%; } 100% { left: 115%; } }
-        @media (prefers-reduced-motion: reduce) { .wsx-sheen { display: none; } }
 
         .wsx-dow { font-size: 10.5px; font-weight: 700; letter-spacing: .04em; opacity: .55; }
         .wsx-num {

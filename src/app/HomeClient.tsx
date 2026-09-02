@@ -120,20 +120,6 @@ const CSS = `
   }
   .p-book:hover .p-book-go { transform:translateX(3px); }
 
-  /* light travelling across the face */
-  .p-book-sheen {
-    position:absolute; top:0; bottom:0; width:38%; z-index:1;
-    background:linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent);
-    animation:pSheen 3.6s ease-in-out infinite;
-  }
-  @keyframes pSheen {
-    0%   { left:-45%; }
-    58%  { left:112%; }
-    100% { left:112%; }
-  }
-  @media (prefers-reduced-motion: reduce) { .p-book-sheen { display:none; } }
-
-
   @media (max-width:900px) {
     .p-hero-top { flex-direction:column; align-items:flex-start; gap:14px; padding-bottom:16px; }
   }
@@ -341,7 +327,6 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
               <div className="p-hero-aside">
                 <button className="p-book"
                   onClick={() => window.dispatchEvent(new Event("open-nearby"))}>
-                  <span className="p-book-sheen" />
                   <span className="p-book-in">
                     <MapPin size={16} />
                     <span className="p-book-txt">
