@@ -231,6 +231,44 @@
 .bk-sum-total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 14px; }
 .bk-sum-total .val { font-size: 22px; color: var(--sodium); }
 
+/* ── Booking confirm — receipt card ─────────────────────────────── */
+.bk-receipt {
+  border: 1px solid var(--line); border-radius: 16px; overflow: hidden; margin: 6px 0 4px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), rgba(255,255,255,0));
+}
+[data-theme="paper"] .bk-receipt {
+  border-color: rgba(20,23,30,0.1);
+  background: linear-gradient(180deg, rgba(20,23,30,0.02), #fff);
+}
+.bk-rrow {
+  display: grid; grid-template-columns: 30px 1fr auto; align-items: center; gap: 12px;
+  padding: 11px 15px; font-size: 13.5px;
+}
+.bk-rrow + .bk-rrow { border-top: 1px solid rgba(242,237,230,0.06); }
+[data-theme="paper"] .bk-rrow + .bk-rrow { border-top-color: rgba(20,23,30,0.055); }
+.bk-rrow .ico {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+  background: rgba(0,98,65,0.12); color: var(--sodium);
+}
+.bk-rrow .k { color: var(--dim); }
+.bk-rrow .v { font-family: 'Inter', sans-serif; font-weight: 700; text-align: right; }
+.bk-rrow.save .v { color: #006241; }
+
+.bk-rtotal {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 15px 16px; border-top: 1px solid rgba(0,98,65,0.25);
+  background: linear-gradient(135deg, rgba(0,98,65,0.18), rgba(0,98,65,0.05));
+}
+.bk-rtotal .k {
+  font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: 0.65;
+}
+.bk-rtotal .v { display: flex; align-items: baseline; gap: 9px; }
+.bk-rtotal .v s { opacity: 0.42; font-weight: 500; font-size: 15px; }
+.bk-rtotal .v b {
+  font-family: 'Inter', sans-serif; font-size: 25px; font-weight: 800;
+  letter-spacing: -0.6px; color: var(--sodium); line-height: 1;
+}
+
 .bk-split {
   background: rgba(46,125,91,0.1); border: 1px solid rgba(46,125,91,0.28);
   border-radius: 12px; padding: 14px 16px; margin: 16px 0; font-size: 13px;
