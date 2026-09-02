@@ -247,11 +247,17 @@ export default function TournamentRegisterTab({
           {team.status === "payment_pending" && paid && (
             <div className="rgt-card">
               <div className="rgt-step-t">Pay the entry fee</div>
+
+              <div className="rgt-paysum">
+                <div className="rgt-paysum-row"><span>Team</span><b>{team.name}</b></div>
+                <div className="rgt-paysum-row"><span>Tournament</span><b>{tournament.name}</b></div>
+                <div className="rgt-paysum-row tot"><span>Entry fee</span><b>{rs(tournament.fee)}</b></div>
+              </div>
+
               <PaymentStep
                 bookingType="tournament_registration"
                 bookingId={team.id}
                 amount={tournament.fee}
-                summary={[{ label: "Team", value: team.name }, { label: "Tournament", value: tournament.name }]}
                 hostMethod={
                   tournament.host_payment_qr_url
                     ? {
@@ -473,6 +479,27 @@ const RGT_CSS = `
 }
 
 .rgt-step-t { font-family: 'Inter', sans-serif; font-size: 15px; font-weight: 800; margin-bottom: 12px; }
+
+.rgt-paysum {
+  border: 1px solid rgba(242,237,230,0.12); border-radius: 14px; overflow: hidden; margin-bottom: 16px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0));
+}
+[data-theme="paper"] .rgt-paysum { border-color: rgba(20,23,30,0.1); background: linear-gradient(180deg, rgba(20,23,30,0.02), #fff); }
+.rgt-paysum-row {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding: 11px 15px; font-size: 13.5px;
+}
+.rgt-paysum-row + .rgt-paysum-row { border-top: 1px solid rgba(242,237,230,0.06); }
+[data-theme="paper"] .rgt-paysum-row + .rgt-paysum-row { border-top-color: rgba(20,23,30,0.055); }
+.rgt-paysum-row span { opacity: .6; flex-shrink: 0; }
+.rgt-paysum-row b { font-family: 'Inter', sans-serif; font-weight: 700; text-align: right; }
+.rgt-paysum-row.tot {
+  background: linear-gradient(135deg, rgba(0,135,90,0.16), rgba(0,135,90,0.04));
+  border-top: 1px solid rgba(0,135,90,0.25);
+}
+.rgt-paysum-row.tot span { opacity: .7; font-weight: 700; text-transform: uppercase; font-size: 10.5px; letter-spacing: .08em; }
+.rgt-paysum-row.tot b { font-size: 18px; color: var(--g); letter-spacing: -0.3px; }
+
 .rgt-label { display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .55; margin: 12px 0 6px; }
 .rgt-label:first-of-type { margin-top: 0; }
 .rgt-opt { font-weight: 500; text-transform: none; letter-spacing: 0; opacity: .7; }
