@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn, Phone,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn, Phone, ClipboardList,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -14,15 +14,16 @@ import {
   type Tournament, type TournamentTeam, type TournamentMatch,
   type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
 } from "@/lib/tournaments/types";
+import TournamentRegisterTab from "./TournamentRegisterTab";
 import "./event-tabs.css";
 
 const KTM = "Asia/Kathmandu";
 const NOT_FOR_SINGLE_EVENT = new Set(["Table", "Knockout", "Fixtures", "Player Stats"]);
-const TABS = ["Overview", "Table", "Knockout", "Fixtures", "Player Stats", "Teams"] as const;
+const TABS = ["Overview", "Register", "Table", "Knockout", "Fixtures", "Player Stats", "Teams"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_ICON: Record<Tab, ComponentType<{ size?: number }>> = {
-  Overview: LayoutGrid, Table: Table2, Knockout: GitBranch, Fixtures: CalendarDays,
+  Overview: LayoutGrid, Register: ClipboardList, Table: Table2, Knockout: GitBranch, Fixtures: CalendarDays,
   "Player Stats": BarChart3, Teams: Users,
 };
 
@@ -34,7 +35,7 @@ function statusInfo(status: Tournament["status"]): { label: string; cls: string 
 }
 
 export default function EventTabs({
-  tournament, teams, matches, standingsByGroup, playerStats, awards,
+  tournament, teams, matches, standingsByGroup, playerStats, awards, myTeam, loggedIn,
 }: {
   tournament: Tournament;
   teams: TournamentTeam[];
@@ -42,16 +43,24 @@ export default function EventTabs({
   standingsByGroup: Record<string, TournamentStanding[]>;
   playerStats: TournamentPlayerStatRow[];
   awards: TournamentAwards;
+  myTeam: TournamentTeam | null;
+  loggedIn: boolean;
 }) {
   const confirmedTeams = teams.filter((t) => t.status === "confirmed");
   const hasKnockout = matches.some((m) => m.stage === "knockout");
   const hasStandings = tournament.format === "league" || tournament.format === "group_knockout";
   const isSingleEvent = tournament.format === "single_event";
+  // Hide the Register tab once the tournament is well underway with no
+  // team of your own to manage — nothing to do there.
+  const showRegister =
+    !!myTeam ||
+    ["published", "registration_open", "registration_closed"].includes(tournament.status);
 
   const visibleTabs = TABS.filter((t) => {
     if (isSingleEvent && NOT_FOR_SINGLE_EVENT.has(t)) return false;
     if (t === "Table" && !hasStandings) return false;
     if (t === "Knockout" && !hasKnockout) return false;
+    if (t === "Register" && !showRegister) return false;
     return true;
   });
   const [tab, setTab] = useState<Tab>("Overview");
@@ -126,6 +135,14 @@ export default function EventTabs({
 
       {activeTab === "Overview" && (
         <OverviewTab tournament={tournament} teams={teams} matches={matches} awards={awards} />
+      )}
+      {activeTab === "Register" && (
+        <TournamentRegisterTab
+          tournament={tournament}
+          initialTeam={myTeam}
+          loggedIn={loggedIn}
+          confirmedCount={confirmedTeams.length}
+        />
       )}
       {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
       {activeTab === "Knockout" && <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}

@@ -509,17 +509,28 @@ export async function cancelTournament(id: string, reason: string): Promise<Tour
 // ── Player registration ─────────────────────────────────────────────
 
 export async function registerTeam(
-  tournamentId: string, name: string, ackTerms: boolean, managerName?: string, managerPhone?: string
+  tournamentId: string, name: string, ackTerms: boolean,
+  managerName?: string, managerPhone?: string, managerPlays = false
 ): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("register_team", {
     p_tournament_id: tournamentId, p_name: name, p_ack_terms: ackTerms,
     p_manager_name: managerName || null, p_manager_phone: managerPhone || null,
+    p_manager_plays: managerPlays,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/tournaments/${tournamentId}`);
   return data as TournamentTeam;
+}
+
+// Toggle the manager's own player row after registration — the
+// "I'm also playing" control on the roster step.
+export async function setManagerPlays(teamId: string, plays: boolean): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("set_manager_plays", { p_team_id: teamId, p_plays: plays });
+  if (error) return actionError(friendlyTournamentError(error.message));
 }
 
 export async function addTeamPlayer(teamId: string, userId: string, role: "player" | "substitute" = "player"): Promise<TournamentTeamPlayer | ActionError> {

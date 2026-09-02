@@ -10,7 +10,6 @@ import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import type { TournamentStanding } from "@/lib/tournaments/types";
 import { telHref } from "@/lib/playTogether/types";
-import TournamentRegisterPanel from "@/components/tournaments/TournamentRegisterPanel";
 import TournamentShareBar from "@/components/tournaments/TournamentShareBar";
 import EventTabs from "@/components/tournaments/public/EventTabs";
 import "@/app/(play)/play.css";
@@ -99,7 +98,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
         <TournamentShareBar id={tournament.id} name={tournament.name} />
 
-        <div className="bk-layout bk-layout--reg-first">
+        <div className="bk-layout">
           <div>
             <EventTabs
               tournament={tournament}
@@ -108,6 +107,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               standingsByGroup={standingsByGroup}
               playerStats={playerStats}
               awards={awards}
+              myTeam={isActionError(myTeam) ? null : myTeam}
+              loggedIn={!!user}
             />
 
             {prizes.length > 0 && (
@@ -137,8 +138,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           </div>
 
           <div className="bk-summary">
-            <TournamentRegisterPanel tournament={tournament} initialTeam={isActionError(myTeam) ? null : myTeam} loggedIn={!!user} />
-
             <div className="bk-panel">
               <h3>Tournament details</h3>
               <div className="bk-sum-row"><span className="lbl">Entry fee</span><span className="val">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</span></div>
