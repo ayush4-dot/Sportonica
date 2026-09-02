@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, AlertTriangle, Minus, Plus } from "lucide-react";
+import { Check, Users, Wallet, Clock, ChevronLeft, ChevronRight, Tag, Upload, AlertTriangle, Minus, Plus, MapPin, Calendar, Activity, Timer, Gauge, Phone } from "lucide-react";
 import { bookCourt } from "@/lib/admin/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
@@ -600,36 +600,35 @@ export default function BookingFlow({
             <h3>Check and confirm</h3>
             <p className="hint">{venueName}</p>
 
-            <div className="bk-sum-row"><span className="lbl">Court</span><span className="val">{court?.name ?? "—"}</span></div>
-            <div className="bk-sum-row"><span className="lbl">Sport</span><span className="val">{court?.sport ?? "—"}</span></div>
-            <div className="bk-sum-row"><span className="lbl">Date</span><span className="val">
-              {new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: KTM_TZ })}
-            </span></div>
-            <div className="bk-sum-row"><span className="lbl">Time</span><span className="val">{hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—"}</span></div>
-            <div className="bk-sum-row"><span className="lbl">Duration</span><span className="val">{duration === 1 ? "1 hour" : `${duration} hours`}</span></div>
-            {needPlayers && (
-              <>
-                <div className="bk-sum-row"><span className="lbl">Players</span><span className="val">{maxPlayers} max, {minPlayers} min</span></div>
-                <div className="bk-sum-row"><span className="lbl">Skill level</span><span className="val">{SKILL_LEVEL_LABEL[skillLevel]}</span></div>
-                <div className="bk-sum-row"><span className="lbl">Your contact</span><span className="val">{hostPhone || "—"}</span></div>
-              </>
-            )}
-            {priced.rule && (
-              <div className="bk-sum-row">
-                <span className="lbl">{priced.saved > 0 ? "Offer applied" : "Peak rate"}</span>
-                <span className="val" style={{ color: priced.saved > 0 ? "#006241" : "#5f756d" }}>
-                  {priced.rule.label} · {offerLabel(priced.rule)}
+            <div className="bk-receipt">
+              <div className="bk-rrow"><span className="ico"><MapPin size={15} /></span><span className="k">Court</span><span className="v">{court?.name ?? "—"}</span></div>
+              <div className="bk-rrow"><span className="ico"><Activity size={15} /></span><span className="k">Sport</span><span className="v">{court?.sport ?? "—"}</span></div>
+              <div className="bk-rrow"><span className="ico"><Calendar size={15} /></span><span className="k">Date</span><span className="v">
+                {new Date(ktmIso(dateStr, hour ?? 0)).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short", timeZone: KTM_TZ })}
+              </span></div>
+              <div className="bk-rrow"><span className="ico"><Clock size={15} /></span><span className="k">Time</span><span className="v">{hour !== null ? `${fmtHM(hour)}–${fmtHM(hour + duration)}` : "—"}</span></div>
+              <div className="bk-rrow"><span className="ico"><Timer size={15} /></span><span className="k">Duration</span><span className="v">{duration === 1 ? "1 hour" : `${duration} hours`}</span></div>
+              {needPlayers && (
+                <>
+                  <div className="bk-rrow"><span className="ico"><Users size={15} /></span><span className="k">Players</span><span className="v">{maxPlayers} max · {minPlayers} min</span></div>
+                  <div className="bk-rrow"><span className="ico"><Gauge size={15} /></span><span className="k">Skill level</span><span className="v">{SKILL_LEVEL_LABEL[skillLevel]}</span></div>
+                  <div className="bk-rrow"><span className="ico"><Phone size={15} /></span><span className="k">Your contact</span><span className="v">{hostPhone || "—"}</span></div>
+                </>
+              )}
+              {priced.rule && (
+                <div className={`bk-rrow ${priced.saved > 0 ? "save" : ""}`}>
+                  <span className="ico"><Tag size={15} /></span>
+                  <span className="k">{priced.saved > 0 ? "Offer applied" : "Peak rate"}</span>
+                  <span className="v">{priced.rule.label} · {offerLabel(priced.rule)}</span>
+                </div>
+              )}
+              <div className="bk-rtotal">
+                <span className="k">{needPlayers ? "Payable now" : "Total"}</span>
+                <span className="v">
+                  {priced.saved > 0 && <s>Rs {priced.base}</s>}
+                  <b>Rs {price}</b>
                 </span>
               </div>
-            )}
-            <div className="bk-sum-row bk-sum-total">
-              <span className="lbl">{needPlayers ? "Total payable now" : "Total"}</span>
-              <span className="val">
-                {priced.saved > 0 && (
-                  <s style={{ opacity: .45, marginRight: 8, fontWeight: 500 }}>Rs {priced.base}</s>
-                )}
-                Rs {price}
-              </span>
             </div>
 
             {needPlayers ? (

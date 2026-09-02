@@ -303,13 +303,15 @@ export const PYMT_CSS = `
 }
 .pymt-method.on { border-color: #006241; background: rgba(0,98,65,.14); color: #4ADE80; }
 .pymt-summary {
-  background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
-  border-radius: 12px; padding: 4px 14px; margin-bottom: 16px;
+  border: 1px solid rgba(242,237,230,.12); border-radius: 14px; margin-bottom: 16px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0));
 }
 .pymt-summary-t {
-  display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
-  opacity: .5; padding-top: 10px;
+  display: block; font-size: 10px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+  opacity: .55; padding: 11px 14px 9px; border-bottom: 1px solid rgba(242,237,230,.08);
 }
+.pymt-summary .pymt-row { padding: 8px 14px; }
+.pymt-summary .pymt-row + .pymt-row { border-top: 1px solid rgba(242,237,230,.055); }
 .pymt-panel {
   background: rgba(255,255,255,.03); border: 1px solid rgba(242,237,230,.1);
   border-radius: 16px; padding: 20px;
@@ -374,4 +376,6 @@ export const PYMT_CSS = `
 [data-theme="paper"] .pymt-in::placeholder { color: rgba(20,23,30,.35); }
 [data-theme="paper"] .pymt-done-rows { background: #fff; border-color: rgba(20,23,30,.1); }
 [data-theme="paper"] .pymt-summary { background: #fff; border-color: rgba(20,23,30,.1); }
+[data-theme="paper"] .pymt-summary-t { border-bottom-color: rgba(20,23,30,.08); }
+[data-theme="paper"] .pymt-summary .pymt-row + .pymt-row { border-top-color: rgba(20,23,30,.06); }
 `;
