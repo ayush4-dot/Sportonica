@@ -99,7 +99,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
 
         <TournamentShareBar id={tournament.id} name={tournament.name} />
 
-        <div className="bk-layout">
+        <div className="bk-layout bk-layout--reg-first">
           <div>
             <EventTabs
               tournament={tournament}
@@ -137,6 +137,8 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           </div>
 
           <div className="bk-summary">
+            <TournamentRegisterPanel tournament={tournament} initialTeam={isActionError(myTeam) ? null : myTeam} loggedIn={!!user} />
+
             <div className="bk-panel">
               <h3>Tournament details</h3>
               <div className="bk-sum-row"><span className="lbl">Entry fee</span><span className="val">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</span></div>
@@ -160,8 +162,6 @@ export default async function TournamentDetailPage({ params }: { params: Promise
                 </div>
               )}
             </div>
-
-            <TournamentRegisterPanel tournament={tournament} initialTeam={isActionError(myTeam) ? null : myTeam} loggedIn={!!user} />
           </div>
         </div>
       </div>

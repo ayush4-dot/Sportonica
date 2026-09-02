@@ -184,7 +184,13 @@
 .bk-hero-info .sub { font-size: 15px; color: var(--dim); display: flex; gap: 16px; flex-wrap: wrap; }
 
 .bk-layout { display: grid; grid-template-columns: minmax(0,1fr) 380px; gap: 32px; align-items: start; }
-@media (max-width: 880px) { .bk-layout { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 880px) {
+  .bk-layout { grid-template-columns: minmax(0,1fr); }
+  /* On phones the sidebar stacks below the main column — for the tournament
+     page, pull the register CTA + details above the tabs so a visitor sees
+     "register" straight away instead of scrolling past teams/rules. */
+  .bk-layout--reg-first > .bk-summary { order: -1; position: static; }
+}
 
 .bk-panel {
   background: var(--ink-2); border: 1px solid var(--line); border-radius: 18px; padding: 24px;
