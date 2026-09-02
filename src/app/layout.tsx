@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import NavWrapper from '@/components/NavWrapper'
 import PWARegister from '@/components/PWARegister'
+import Onboarding from '@/components/Onboarding'
 import CapacitorBridge from '@/components/CapacitorBridge'
 import PageTransition from '@/components/PageTransition'
 
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NavWrapper />
         <PageTransition>{children}</PageTransition>
         <PWARegister />
+        <Onboarding />
         <CapacitorBridge />
       </body>
     </html>

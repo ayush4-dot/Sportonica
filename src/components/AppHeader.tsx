@@ -11,6 +11,7 @@ import { claimGuestTournamentEntries } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import NotificationBell from "./NotificationBell";
 import OrganizerAccessModal from "./OrganizerAccessModal";
+import { ONBOARDING_SEEN_KEY, ONBOARDING_DONE_EVENT } from "@/lib/onboarding";
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -24,6 +25,11 @@ export default function AppHeader() {
   const [locating, setLocating] = useState(false);
   const [checkingOrganizer, setCheckingOrganizer] = useState(false);
   const [showOrganizerModal, setShowOrganizerModal] = useState(false);
+  // The first-run intro (Onboarding.tsx) only runs on "/". Until it's
+  // been dismissed there, hold the city prompt back so the two don't
+  // stack — on every other page there's no intro, so it's free to show.
+  const onHome = pathname === "/";
+  const [introDone, setIntroDone] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
 
   const hidden =
@@ -32,7 +38,20 @@ export default function AppHeader() {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup");
 
-  useEffect(() => { if (ready && !city && !hidden) setAsk(true); }, [ready, city, hidden]);
+  useEffect(() => {
+    try {
+      setIntroDone(!!localStorage.getItem(ONBOARDING_SEEN_KEY));
+    } catch {
+      setIntroDone(true); // storage blocked — the intro can't show either
+    }
+    const onDone = () => setIntroDone(true);
+    window.addEventListener(ONBOARDING_DONE_EVENT, onDone);
+    return () => window.removeEventListener(ONBOARDING_DONE_EVENT, onDone);
+  }, []);
+
+  useEffect(() => {
+    if (ready && !city && !hidden && (introDone || !onHome)) setAsk(true);
+  }, [ready, city, hidden, introDone, onHome]);
 
   // Once per session per account: link any walk-in tournament roster
   // spot registered with this account's phone/email — so a player who
