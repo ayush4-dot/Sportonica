@@ -13,7 +13,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   payment QR (`host_payment_*` columns + `tournament-qr` bucket); registration
   fees are paid to the host and verified by the host via
   `verify_tournament_payment()` (super admin keeps the `review_payment()`
-  fallback). Not yet applied to production.
+  fallback). Applied to production 2026-09-02.
 - `[web]` Tournament create/edit form takes a payment QR + recipient details;
   the registration checkout shows the host's QR; the Control Center "Payments"
   tab is now actionable for organizers.
