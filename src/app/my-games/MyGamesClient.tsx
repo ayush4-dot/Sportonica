@@ -4,13 +4,16 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2, AlertCircle, Clock3,
+  Calendar, MapPin, Users, Pencil, X, Mail, Check, Plus, Wallet, Loader2, AlertCircle, Clock3, Trash2,
 } from "lucide-react";
 import { updateHostedGame, invitePlayers, cancelInvite } from "@/lib/play/hostActions";
+import {
+  editCourtBooking, cancelCourtBooking, editGameJoin, cancelGameJoin,
+} from "@/lib/bookings/actions";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import type { BookingType } from "@/lib/payments/types";
-import type { CourtBookingRow } from "./page";
+import type { CourtBookingRow, CourtOption } from "./page";
 
 type Game = {
   id: string; title: string; venue: string; sport: string;
@@ -24,6 +27,11 @@ type Game = {
   // approval flow. Absent/"event" = a regular hosted event.
   kind?: "event" | "play_together";
   pendingRequests?: number;
+  // "Playing" tab only — the caller's own entry on this game, so they
+  // can fix a typo in their name/phone or leave.
+  myPlayerName?: string | null;
+  myPhone?: string | null;
+  myPosition?: string | null;
 };
 type Invite = {
   id: string; event_id: string; email: string;
@@ -55,14 +63,21 @@ const toLocalInput = (iso: string) => {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
+const isFuture = (iso: string) => new Date(iso).getTime() > Date.now();
+const HOUR_MS = 3_600_000;
 
 export default function MyGamesClient({
-  hosted, joined, invites, courtBookings,
-}: { hosted: Game[]; joined: Game[]; invites: Invite[]; courtBookings: CourtBookingRow[] }) {
+  hosted, joined, invites, courtBookings, venueCourts,
+}: {
+  hosted: Game[]; joined: Game[]; invites: Invite[];
+  courtBookings: CourtBookingRow[]; venueCourts: CourtOption[];
+}) {
   const router = useRouter();
   const [tab, setTab] = useState<"hosting" | "playing" | "bookings">("hosting");
   const [editing, setEditing] = useState<Game | null>(null);
   const [inviting, setInviting] = useState<Game | null>(null);
+  const [editBooking, setEditBooking] = useState<CourtBookingRow | null>(null);
+  const [editJoin, setEditJoin] = useState<Game | null>(null);
   const [resubmit, setResubmit] = useState<
     { bookingType: BookingType; bookingId: string; amount: number; summary: { label: string; value: string }[] } | null
   >(null);
@@ -187,6 +202,11 @@ export default function MyGamesClient({
                 <PaymentBadge status={g.paymentStatus} />
                 <div className="mg-actions">
                   <Link className="mg-btn ghost" href={`/game/${g.id}`}>View game</Link>
+                  {g.bookingId && (
+                    <button className="mg-btn ghost" onClick={() => setEditJoin(g)}>
+                      <Pencil size={13} /> My details
+                    </button>
+                  )}
                   {g.paymentStatus === "rejected" && g.bookingId && (
                     <button
                       className="mg-btn"
@@ -200,6 +220,21 @@ export default function MyGamesClient({
                       })}
                     >
                       Resubmit payment
+                    </button>
+                  )}
+                  {g.bookingId
+                    && ["unpaid", "rejected"].includes(g.paymentStatus ?? "")
+                    && isFuture(g.event_date) && (
+                    <button
+                      className="mg-btn ghost danger"
+                      onClick={async () => {
+                        if (!confirm("Leave this game? Your spot opens back up.")) return;
+                        const res = await cancelGameJoin(g.bookingId!);
+                        if (isActionError(res)) { alert(res.message); return; }
+                        router.refresh();
+                      }}
+                    >
+                      <Trash2 size={13} /> Leave
                     </button>
                   )}
                 </div>
@@ -226,21 +261,41 @@ export default function MyGamesClient({
               <p className="mg-meta"><Calendar size={12} /> {when(b.starts_at)}</p>
               <p className="mg-meta"><Wallet size={12} /> {Number(b.price) === 0 ? "Free" : `Rs ${b.price}`}</p>
               <PaymentBadge status={b.payment_status} />
-              {b.payment_status === "rejected" && (
+              {b.state === "cancelled" ? (
+                <span className="mg-pay-badge rejected"><AlertCircle size={11} /> Cancelled</span>
+              ) : (
                 <div className="mg-actions">
-                  <button
-                    className="mg-btn"
-                    onClick={() => setResubmit({
-                      bookingType: "court_booking", bookingId: b.id, amount: Number(b.price),
-                      summary: [
-                        { label: "Court", value: b.courts?.name ?? "Court" },
-                        { label: "Venue", value: b.venues?.name ?? "—" },
-                        { label: "When", value: when(b.starts_at) },
-                      ],
-                    })}
-                  >
-                    Resubmit payment
+                  <button className="mg-btn ghost" onClick={() => setEditBooking(b)}>
+                    <Pencil size={13} /> Edit
                   </button>
+                  {b.payment_status === "rejected" && (
+                    <button
+                      className="mg-btn"
+                      onClick={() => setResubmit({
+                        bookingType: "court_booking", bookingId: b.id, amount: Number(b.price),
+                        summary: [
+                          { label: "Court", value: b.courts?.name ?? "Court" },
+                          { label: "Venue", value: b.venues?.name ?? "—" },
+                          { label: "When", value: when(b.starts_at) },
+                        ],
+                      })}
+                    >
+                      Resubmit payment
+                    </button>
+                  )}
+                  {["unpaid", "rejected"].includes(b.payment_status) && isFuture(b.starts_at) && (
+                    <button
+                      className="mg-btn ghost danger"
+                      onClick={async () => {
+                        if (!confirm("Cancel this booking? The slot opens back up.")) return;
+                        const res = await cancelCourtBooking(b.id);
+                        if (isActionError(res)) { alert(res.message); return; }
+                        router.refresh();
+                      }}
+                    >
+                      <Trash2 size={13} /> Cancel
+                    </button>
+                  )}
                 </div>
               )}
             </article>
@@ -250,6 +305,14 @@ export default function MyGamesClient({
 
       {editing && <EditSheet game={editing} onClose={() => { setEditing(null); router.refresh(); }} />}
       {inviting && <InviteSheet game={inviting} onClose={() => { setInviting(null); router.refresh(); }} />}
+      {editBooking && (
+        <EditBookingSheet
+          booking={editBooking}
+          courts={venueCourts.filter((c) => c.venue_id === editBooking.venue_id)}
+          onClose={() => { setEditBooking(null); router.refresh(); }}
+        />
+      )}
+      {editJoin && <EditJoinSheet game={editJoin} onClose={() => { setEditJoin(null); router.refresh(); }} />}
       {resubmit && (
         <div className="mg-scrim" onClick={() => setResubmit(null)}>
           <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
@@ -325,6 +388,8 @@ export default function MyGamesClient({
         }
         .mg-btn:hover { transform: translateY(-1px); }
         .mg-btn.ghost { background: transparent; border: 1px solid var(--line, rgba(242,237,230,.16)); color: inherit; }
+        .mg-btn.danger { color: #ef4444; border-color: rgba(239,68,68,.35); }
+        .mg-note { font-size: 11.5px; opacity: .55; margin: -8px 0 12px; line-height: 1.45; }
 
         .mg-empty { text-align: center; padding: 70px 20px; border-radius: 18px;
           border: 1px dashed var(--line, rgba(242,237,230,.16)); }
@@ -509,6 +574,175 @@ function InviteSheet({ game, onClose }: { game: Game; onClose: () => void }) {
         <div className="mg-sheet-actions">
           <button className="mg-btn" onClick={send} disabled={busy}>
             {busy ? <Loader2 size={13} /> : <Mail size={13} />} Send invites
+          </button>
+          <button className="mg-btn ghost" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit a court booking (contact + reschedule) ──────────────────
+function EditBookingSheet({
+  booking, courts, onClose,
+}: { booking: CourtBookingRow; courts: CourtOption[]; onClose: () => void }) {
+  const locked = !["unpaid", "rejected"].includes(booking.payment_status) || !isFuture(booking.starts_at);
+  const [name, setName] = useState(booking.customer_name ?? "");
+  const [phone, setPhone] = useState(booking.phone ?? "");
+  const [courtId, setCourtId] = useState(booking.court_id);
+  const [date, setDate] = useState(toLocalInput(booking.starts_at));
+  const durHours = Math.max(
+    0.5,
+    Math.round(((new Date(booking.ends_at).getTime() - new Date(booking.starts_at).getTime()) / HOUR_MS) * 2) / 2
+  );
+  const [dur, setDur] = useState(String(durHours));
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [priceNote, setPriceNote] = useState<string | null>(null);
+
+  const timeChanged =
+    courtId !== booking.court_id || new Date(date).toISOString() !== new Date(booking.starts_at).toISOString()
+    || Number(dur) !== durHours;
+
+  async function save() {
+    setBusy(true); setErr(null); setPriceNote(null);
+    try {
+      const startsAt = timeChanged ? new Date(date).toISOString() : null;
+      const endsAt = timeChanged
+        ? new Date(new Date(date).getTime() + Number(dur) * HOUR_MS).toISOString()
+        : null;
+      const res = await editCourtBooking({
+        id: booking.id,
+        customerName: name.trim() !== (booking.customer_name ?? "") ? name.trim() : null,
+        phone: phone.trim() !== (booking.phone ?? "") ? phone.trim() : null,
+        courtId: timeChanged && courtId !== booking.court_id ? courtId : null,
+        startsAt, endsAt,
+      });
+      if (isActionError(res)) { setErr(res.message); setBusy(false); return; }
+      if (timeChanged && Number(res.price) !== Number(booking.price)) {
+        setPriceNote(`New price: Rs ${Number(res.price)}`);
+        setBusy(false);
+        return; // let them see the price change before closing
+      }
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save changes.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mg-scrim" onClick={onClose}>
+      <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
+        <h3>Edit booking</h3>
+        <p className="hint">
+          {booking.courts?.name ?? "Court"} · {booking.venues?.name ?? ""}
+        </p>
+
+        {err && <p className="mg-err">{err}</p>}
+        {priceNote && <p className="mg-err" style={{ color: "#d97706" }}>{priceNote} — saved. Close when ready.</p>}
+
+        <div className="mg-field">
+          <label>Name on the booking</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+        </div>
+        <div className="mg-field">
+          <label>Phone</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98XXXXXXXX" />
+        </div>
+
+        {locked ? (
+          <p className="mg-note">
+            This booking is paid or already underway, so the court and time can&apos;t be
+            changed here — ask the venue if you need to move it.
+          </p>
+        ) : (
+          <>
+            {courts.length > 1 && (
+              <div className="mg-field">
+                <label>Court</label>
+                <select value={courtId} onChange={(e) => setCourtId(e.target.value)}>
+                  {courts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name} · {c.sport}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="mg-row2">
+              <div className="mg-field">
+                <label>Date &amp; time</label>
+                <input type="datetime-local" value={date} onChange={(e) => setDate(e.target.value)} />
+              </div>
+              <div className="mg-field">
+                <label>Hours</label>
+                <select value={dur} onChange={(e) => setDur(e.target.value)}>
+                  {["0.5", "1", "1.5", "2", "3"].map((h) => <option key={h} value={h}>{h}</option>)}
+                </select>
+              </div>
+            </div>
+          </>
+        )}
+
+        <div className="mg-sheet-actions">
+          <button className="mg-btn" onClick={save} disabled={busy}>
+            {busy ? <Loader2 size={13} className="spin" /> : <Check size={13} />} Save changes
+          </button>
+          <button className="mg-btn ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit my entry on a game I joined ─────────────────────────────
+function EditJoinSheet({ game, onClose }: { game: Game; onClose: () => void }) {
+  const [name, setName] = useState(game.myPlayerName ?? "");
+  const [phone, setPhone] = useState(game.myPhone ?? "");
+  const [position, setPosition] = useState(game.myPosition ?? "");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function save() {
+    setBusy(true); setErr(null);
+    try {
+      const res = await editGameJoin({
+        bookingId: game.bookingId!,
+        playerName: name.trim() !== (game.myPlayerName ?? "") ? name.trim() : null,
+        phone: phone.trim() !== (game.myPhone ?? "") ? phone.trim() : null,
+        position: position.trim() !== (game.myPosition ?? "") ? position.trim() : null,
+      });
+      if (isActionError(res)) { setErr(res.message); setBusy(false); return; }
+      onClose();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Couldn't save changes.");
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="mg-scrim" onClick={onClose}>
+      <div className="mg-sheet" onClick={(e) => e.stopPropagation()}>
+        <h3>My details</h3>
+        <p className="hint">How you show up on {game.title} to the host and other players.</p>
+
+        {err && <p className="mg-err">{err}</p>}
+
+        <div className="mg-field">
+          <label>Name</label>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+        </div>
+        <div className="mg-field">
+          <label>Phone</label>
+          <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="98XXXXXXXX" />
+        </div>
+        <div className="mg-field">
+          <label>Position <span style={{ opacity: .5, textTransform: "none" }}>(optional)</span></label>
+          <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Keeper, defender…" />
+        </div>
+
+        <div className="mg-sheet-actions">
+          <button className="mg-btn" onClick={save} disabled={busy}>
+            {busy ? <Loader2 size={13} className="spin" /> : <Check size={13} />} Save
           </button>
           <button className="mg-btn ghost" onClick={onClose}>Cancel</button>
         </div>

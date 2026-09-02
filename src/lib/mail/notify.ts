@@ -9,12 +9,13 @@
 import { createClient } from "@/lib/supabase/server";
 import { sendMail } from "./mailer";
 import {
-  playerBooked, venueNewBooking, hostGameLive, playerJoined, hostSomeoneJoined,
+  playerBooked, venueNewBooking, bookingChanged, hostGameLive, playerJoined, hostSomeoneJoined,
   paymentSubmitted, paymentApproved, paymentRejected,
   playTogetherGamePublished, playTogetherPlayerJoined, playTogetherHostRosterChanged,
   playTogetherGameCancelled, playTogetherJoinRequested, playTogetherJoinRejected,
   playTogetherPaymentRequired, playTogetherPaymentSubmitted, playTogetherPaymentRejected,
   playTogetherPlayerJoinedCash, playTogetherCashPaymentSelected,
+  fmtWhen,
 } from "./templates";
 import { REJECTION_REASONS, bookingLabel } from "@/lib/payments/types";
 import { PLAY_TOGETHER_PAYMENT_REJECTION_REASONS } from "@/lib/playTogether/types";
@@ -83,6 +84,87 @@ export async function notifyCourtBooked(input: {
     }));
   }
   if (mails.length) await sendMail(mails);
+}
+
+// ── A confirmed booking's details/time changed, or it was cancelled ──
+// Only fires for a booking the other side has already committed to (a
+// paid court booking, or a game the host is running) — a still-unpaid
+// booking isn't on anyone's radar yet, so a correction to it is noise.
+// Swallows its own errors like the rest of this file.
+export async function notifyBookingChanged(input: {
+  kind: "court" | "event_join";
+  bookingId: string;
+  action: "edited" | "cancelled";
+  details?: string[];
+  // For a cancelled game join the booking row is already gone by the
+  // time this runs — the caller passes what it read beforehand.
+  joinContext?: { eventId: string; playerName: string | null; userId: string | null };
+}) {
+  try {
+    const sb = await createClient();
+
+    if (input.kind === "event_join" && input.joinContext) {
+      const { data: ev } = await sb
+        .from("events").select("host_id, title, sport, event_date")
+        .eq("id", input.joinContext.eventId).maybeSingle();
+      if (!ev) return;
+      const to = await emailFor(ev.host_id);
+      if (!to) return;
+      await sendMail(bookingChanged({
+        to, action: input.action,
+        what: `${ev.sport ?? "Game"} · ${ev.title ?? "your game"}`,
+        when: fmtWhen(ev.event_date),
+        who: input.joinContext.playerName ?? (await nameFor(input.joinContext.userId)),
+        details: input.details ?? [],
+      }));
+      return;
+    }
+
+    if (input.kind === "court") {
+      const { data: b } = await sb
+        .from("court_bookings")
+        .select("venue_id, user_id, customer_name, phone, starts_at, payment_status, courts(name), venues(name, owner_id)")
+        .eq("id", input.bookingId)
+        .maybeSingle();
+      const row = b as unknown as {
+        venue_id: string; user_id: string | null; customer_name: string | null; phone: string | null;
+        starts_at: string; payment_status: string | null;
+        courts: { name: string } | null; venues: { name: string; owner_id: string | null } | null;
+      } | null;
+      if (!row || row.payment_status !== "paid") return;
+      const to = await emailFor(row.venues?.owner_id);
+      if (!to) return;
+      const who = row.customer_name ?? (await nameFor(row.user_id));
+      await sendMail(bookingChanged({
+        to, action: input.action,
+        what: `${row.courts?.name ?? "Court"} at ${row.venues?.name ?? "your venue"}`,
+        when: fmtWhen(row.starts_at), who, details: input.details ?? [],
+      }));
+      return;
+    }
+
+    // event_join
+    const { data: bk } = await sb
+      .from("bookings")
+      .select("event_id, user_id, player_name")
+      .eq("id", input.bookingId)
+      .maybeSingle();
+    if (!bk) return;
+    const { data: ev } = await sb
+      .from("events").select("host_id, title, sport, event_date").eq("id", bk.event_id).maybeSingle();
+    if (!ev) return;
+    const to = await emailFor(ev.host_id);
+    if (!to) return;
+    await sendMail(bookingChanged({
+      to, action: input.action,
+      what: `${ev.sport ?? "Game"} · ${ev.title ?? "your game"}`,
+      when: fmtWhen(ev.event_date),
+      who: bk.player_name ?? (await nameFor(bk.user_id)),
+      details: input.details ?? [],
+    }));
+  } catch {
+    /* notification failure must never undo the edit */
+  }
 }
 
 // ── A host opened a game to players ─────────────────────────────

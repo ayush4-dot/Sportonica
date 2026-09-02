@@ -16,6 +16,8 @@ under `maintenance/` only when you specifically need it.
 `tournaments.sql` is the main table + RLS. The rest layer on features:
 roster (`tournament_admin_roster.sql`), team editing (`tournament_team_edit.sql`,
 `tournament_team_manager.sql`), detail editing (`tournament_edit_details.sql`),
+captain self-edit of team name/manager (`tournament_captain_edit.sql` — run AFTER
+`tournament_team_edit.sql` + `tournament_team_manager.sql`),
 player self-claim (`tournament_player_claim.sql`), per-tournament owner grants
 (`tournament_owner_access.sql`), and knockout round labels
 (`knockout_round_of_labels.sql`).
@@ -29,7 +31,10 @@ player self-claim (`tournament_player_claim.sql`), per-tournament owner grants
 `maybe_publish_hosted_event()`.
 
 ## venues/
-`book_court_dedupe.sql`, `booking_phone.sql`.
+`book_court_dedupe.sql`, `booking_phone.sql`, `booking_self_service.sql`
+(`booking_audit_logs` + `edit_court_booking()` / `cancel_court_booking()` /
+`edit_game_join()` / `cancel_game_join()` — run AFTER `schema/admin_schema.sql`,
+`booking_phone.sql` and `payments/payments.sql`).
 
 ## organizer/
 `organizer_approval_and_own_venue.sql`, `organizer_partnerships.sql`, `host_tools.sql`.

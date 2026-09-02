@@ -62,6 +62,28 @@ It's already on your calendar in the venue console.
   };
 }
 
+// ── 2b. Venue owner / game host: a confirmed booking changed ────
+export function bookingChanged(p: {
+  to: string; what: string; when: string; who: string;
+  action: "edited" | "cancelled"; details: string[];
+}): Mail {
+  const verb = p.action === "cancelled" ? "was cancelled" : "was changed";
+  return {
+    to: p.to,
+    subject: `Booking ${p.action === "cancelled" ? "cancelled" : "updated"}: ${p.what}, ${p.when}`,
+    body: `A confirmed booking ${verb}.
+
+  What     ${p.what}
+  When     ${p.when}
+  Player   ${p.who}
+${p.details.map((d) => `  ${d}`).join("\n")}
+
+Check the venue console for the current details.
+
+— Sportonica`,
+  };
+}
+
 // ── 3. Host opened their game to players ────────────────────────
 export function hostGameLive(p: {
   to: string; hostName: string; sport: string; venue: string;

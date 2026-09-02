@@ -63,10 +63,11 @@ export default async function MyGamesPage() {
   ].sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime());
 
   // Games they joined (but don't host). payment_status rides along so the
-  // "Playing" tab can flag a still-unverified or rejected payment.
+  // "Playing" tab can flag a still-unverified or rejected payment;
+  // player_name/phone/position so they can fix a typo in their own entry.
   const { data: myBookings } = await sb
     .from("bookings")
-    .select("id, event_id, payment_status")
+    .select("id, event_id, payment_status, player_name, phone, position")
     .eq("user_id", user.id)
     .eq("status", "confirmed");
 
@@ -80,7 +81,10 @@ export default async function MyGamesPage() {
         .order("event_date", { ascending: true })
     : { data: [] };
   const paymentByEvent = new Map(
-    (myBookings ?? []).map((b) => [b.event_id, { bookingId: b.id, paymentStatus: b.payment_status }])
+    (myBookings ?? []).map((b) => [b.event_id, {
+      bookingId: b.id, paymentStatus: b.payment_status,
+      playerName: b.player_name ?? null, phone: b.phone ?? null, position: b.position ?? null,
+    }])
   );
 
   // Pending invites on the hosted events (invites only apply to regular
@@ -92,29 +96,51 @@ export default async function MyGamesPage() {
 
   // Direct court/venue bookings (BookingFlow → court_bookings) — these have
   // no `events` row at all, so they were previously invisible here.
+  // court_id/venue_id/customer_name/phone let the card offer an edit +
+  // reschedule flow (src/lib/bookings/actions.ts).
   const { data: courtBookings } = await sb
     .from("court_bookings")
-    .select("id, starts_at, ends_at, price, state, payment_status, courts(name, sport), venues(name)")
+    .select("id, court_id, venue_id, customer_name, phone, starts_at, ends_at, price, state, payment_status, courts(name, sport), venues(name)")
     .eq("user_id", user.id)
     .order("starts_at", { ascending: false })
     .limit(50);
 
+  // Courts at every venue the person has a booking with — powers the
+  // "move to another court" option in the edit sheet.
+  const bookingVenueIds = [...new Set((courtBookings ?? []).map((b) => b.venue_id).filter(Boolean))];
+  const { data: venueCourts } = bookingVenueIds.length
+    ? await sb.from("courts").select("id, name, sport, venue_id").in("venue_id", bookingVenueIds)
+    : { data: [] };
+
   return (
     <MyGamesClient
       hosted={hosted ?? []}
-      joined={(joined ?? []).map((g) => ({
-        ...g,
-        paymentStatus: paymentByEvent.get(g.id)?.paymentStatus ?? "paid",
-        bookingId: paymentByEvent.get(g.id)?.bookingId ?? null,
-      }))}
+      joined={(joined ?? []).map((g) => {
+        const p = paymentByEvent.get(g.id);
+        return {
+          ...g,
+          paymentStatus: p?.paymentStatus ?? "paid",
+          bookingId: p?.bookingId ?? null,
+          myPlayerName: p?.playerName ?? null,
+          myPhone: p?.phone ?? null,
+          myPosition: p?.position ?? null,
+        };
+      })}
       invites={invites ?? []}
       courtBookings={(courtBookings ?? []) as unknown as CourtBookingRow[]}
+      venueCourts={(venueCourts ?? []) as unknown as CourtOption[]}
     />
   );
 }
 
+export type CourtOption = { id: string; name: string; sport: string; venue_id: string };
+
 export type CourtBookingRow = {
   id: string;
+  court_id: string;
+  venue_id: string;
+  customer_name: string | null;
+  phone: string | null;
   starts_at: string;
   ends_at: string;
   price: number;

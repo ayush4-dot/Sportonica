@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Search, UserMinus, UserPlus, X } from "lucide-react";
+import { Check, Pencil, Search, UserMinus, UserPlus, X } from "lucide-react";
 import {
   registerTeam, getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayer,
+  updateTeamName, updateTeamManager,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
@@ -29,6 +30,7 @@ export default function TournamentRegisterPanel({
   const [managerPhone, setManagerPhone] = useState("");
   const [ackTerms, setAckTerms] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [editingTeam, setEditingTeam] = useState(false);
 
   useEffect(() => {
     if (!team) return;
@@ -102,12 +104,81 @@ export default function TournamentRegisterPanel({
     );
   }
 
+  const canEditTeam = ["pending", "payment_pending", "confirmed", "verification_pending"].includes(team.status);
+
   return (
     <div className="bk-panel">
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
         <h3 style={{ marginBottom: 0 }}>{team.name}</h3>
         <span className={`tt-status ${team.status}`}>{TEAM_STATUS_LABELS[team.status]}</span>
       </div>
+
+      {canEditTeam && !editingTeam && (
+        <button
+          onClick={() => {
+            setTeamName(team.name);
+            setManagerName(team.manager_name ?? "");
+            setManagerPhone(team.manager_phone ?? "");
+            setErr(null);
+            setEditingTeam(true);
+          }}
+          style={{ background: "none", border: "none", color: "#006241", fontSize: 12.5, fontWeight: 600, cursor: "pointer", padding: "6px 0", display: "inline-flex", alignItems: "center", gap: 5 }}
+        >
+          <Pencil size={12} /> Edit team details
+        </button>
+      )}
+
+      {canEditTeam && editingTeam && (
+        <div style={{ margin: "10px 0 4px", padding: 12, borderRadius: 12, border: "1px solid var(--line)" }}>
+          <div className="ev-field">
+            <label>Team name</label>
+            <input value={teamName} onChange={(e) => setTeamName(e.target.value)} />
+          </div>
+          <div className="ev-field" style={{ marginTop: 10 }}>
+            <label>Manager&apos;s name <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
+            <input value={managerName} onChange={(e) => setManagerName(e.target.value)} />
+          </div>
+          <div className="ev-field" style={{ marginTop: 10 }}>
+            <label>Manager&apos;s phone <span style={{ opacity: 0.5, fontWeight: 400 }}>(optional)</span></label>
+            <input value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
+          </div>
+          {err && <div className="ev-err" style={{ marginTop: 8 }}>{err}</div>}
+          <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+            <button
+              className="play-btn"
+              style={{ padding: "9px 13px", fontSize: 12.5 }}
+              disabled={pending}
+              onClick={() => {
+                if (!teamName.trim()) { setErr("Enter a team name."); return; }
+                setErr(null);
+                startTransition(async () => {
+                  if (teamName.trim() !== team.name) {
+                    const r = await updateTeamName(team.id, teamName.trim());
+                    if (isActionError(r)) { setErr(r.message); return; }
+                    setTeam(r);
+                  }
+                  if ((managerName.trim() || "") !== (team.manager_name ?? "")
+                    || (managerPhone.trim() || "") !== (team.manager_phone ?? "")) {
+                    const r = await updateTeamManager(team.id, managerName.trim() || "", managerPhone.trim() || "");
+                    if (isActionError(r)) { setErr(r.message); return; }
+                    setTeam(r);
+                  }
+                  setEditingTeam(false);
+                  router.refresh();
+                });
+              }}
+            >
+              {pending ? "Saving…" : <><Check size={13} /> Save</>}
+            </button>
+            <button
+              onClick={() => { setEditingTeam(false); setErr(null); }}
+              style={{ background: "none", border: "1px solid var(--line)", borderRadius: 9, padding: "9px 13px", fontSize: 12.5, cursor: "pointer", color: "inherit" }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {team.status === "confirmed" && (
         <p style={{ fontSize: 13.5, color: "#006241", fontWeight: 600, margin: "8px 0 16px", display: "flex", alignItems: "center", gap: 6 }}>
