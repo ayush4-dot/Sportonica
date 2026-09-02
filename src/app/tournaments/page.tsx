@@ -4,7 +4,9 @@ import TournamentsClient from "./TournamentsClient";
 import "@/app/(play)/play.css";
 import "@/components/home/rails.css";
 
-export const dynamic = "force-dynamic";
+// Public browse data — global, non-personalised. Edge-cache it and
+// refresh in the background rather than rendering against Sydney per hit.
+export const revalidate = 120;
 
 export const metadata: Metadata = {
   title: "Tournaments · Sportonica",

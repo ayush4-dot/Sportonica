@@ -1,7 +1,11 @@
 import { getHomeRails } from "@/lib/play/homeRails";
 import HomeClient from "./HomeClient";
 
-export const dynamic = "force-dynamic";
+// The homepage data (getHomeRails) is global and non-personalised — the
+// per-city view is filtered client-side in HomeClient — so it doesn't
+// need a fresh Sydney render per visitor. Serve it from the edge cache,
+// refreshed in the background every 2 minutes.
+export const revalidate = 120;
 
 // Tells Google what kind of site this actually is, rather than leaving it
 // to infer from unstructured page text — a WebSite/Organization pairing

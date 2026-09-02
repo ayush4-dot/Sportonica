@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAnonClient } from "@/lib/supabase/anonServer";
 
 export interface RailEvent {
   id: string;
@@ -41,7 +41,9 @@ export interface RailVenue {
  * which is the highest-value thing to surface first.
  */
 export async function getHomeRails() {
-  const sb = await createClient();
+  // Cookie-free client so the homepage can be edge-cached (see page.tsx's
+  // `revalidate`) instead of re-rendered against Sydney on every request.
+  const sb = createAnonClient();
   const nowIso = new Date().toISOString();
 
   // The venues query used to come back with just the 8 rows, then a
