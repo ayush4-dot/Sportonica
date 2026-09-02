@@ -1,5 +1,5 @@
   -- ================================================================
-  -- Khelumna — Manual QR Payment Verification (eSewa / Khalti)
+  -- Sportonica — Manual QR Payment Verification (eSewa / Khalti)
   -- Run this whole file in the Supabase SQL Editor. Safe to re-run.
   --
   -- Design: Sportonica publishes its own eSewa/Khalti merchant QR

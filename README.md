@@ -1,4 +1,4 @@
-# Khelumna
+# Sportonica
 
 Kathmandu's sports booking platform — find games and book courts.
 
@@ -42,7 +42,7 @@ Two live pages:
 ## Project Structure
 
 ```
-khelumna/
+sportonica/
 │
 ├── public/
 │   └── hero.mp4                        ← Sports video for home page hero
@@ -69,7 +69,7 @@ khelumna/
 │   ├── components/
 │   │   ├── AnimatedBackground.tsx      ← Canvas orbs + dot grid (position:fixed, on every page)
 │   │   ├── BookingModal.tsx            ← Full booking flow — details → payment → confirmation
-│   │   ├── KhelumnaMap.tsx             ← Leaflet map — dark tiles, pins, pick-mode
+│   │   ├── SportonicaMap.tsx             ← Leaflet map — dark tiles, pins, pick-mode
 │   │   ├── NavWrapper.tsx              ← Body padding class manager
 │   │   ├── SportSculpture.tsx          ← Morphing 3D sports sculpture (Three.js)
 │   │   ├── ThreeScene.tsx              ← Legacy Three.js scene (kept, unused)
@@ -147,7 +147,7 @@ Full real-world booking flow:
 
 Edge cases: slot full → waitlist, already booked → detected, not logged in → redirects, cancel → auto-promotes waitlisted player.
 
-### `KhelumnaMap`
+### `SportonicaMap`
 Leaflet wrapper with CartoDB Dark Matter tiles. Supports pick-mode (click to drop pin + get lat/lng), custom colored pins, and dark-themed popups. No API key required.
 
 ### `SportSculpture`

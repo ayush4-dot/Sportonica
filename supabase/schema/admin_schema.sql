@@ -1,5 +1,5 @@
 -- ================================================================
--- Khelumna — Admin Panel Schema (Section 6: Venue Admin)
+-- Sportonica — Admin Panel Schema (Section 6: Venue Admin)
 -- Modern, computed-availability model. Safe to re-run.
 -- Run this whole file in the Supabase SQL Editor.
 -- ================================================================
