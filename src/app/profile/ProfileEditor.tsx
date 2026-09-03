@@ -18,6 +18,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState(profile.full_name ?? profile.name ?? "");
+  const [phone, setPhone] = useState(profile.phone ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [city, setCity] = useState(profile.city ?? "Kathmandu");
   const [sports, setSports] = useState<string[]>(profile.sports ?? []);
@@ -68,7 +69,7 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
     setMsg(null);
     startTransition(async () => {
       try {
-        const res = await updateProfile({ full_name: name.trim(), bio: bio.trim(), city: city.trim(), sports, is_public: isPublic });
+        const res = await updateProfile({ full_name: name.trim(), phone: phone.trim(), bio: bio.trim(), city: city.trim(), sports, is_public: isPublic });
         if (isActionError(res)) { setMsg(res.message); return; }
         setOk(true);
         setTimeout(() => setOk(false), 1800);
@@ -127,6 +128,14 @@ export default function ProfileEditor({ profile, origin }: { profile: PlayerProf
 
         <Field label="Name">
           <input className="pf-in" value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <Field label="Phone">
+          <input
+            className="pf-in" type="tel" inputMode="numeric" maxLength={10}
+            value={phone}
+            onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+            placeholder="98XXXXXXXX — used for phone login"
+          />
         </Field>
         <Field label="City">
           <input className="pf-in" value={city} onChange={(e) => setCity(e.target.value)} />
