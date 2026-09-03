@@ -17,6 +17,16 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   `notifications` insert path, revokes `venue_daily_stats` from `authenticated`,
   and adds a `WITH CHECK` to the `tournament_teams` captain UPDATE policy.
   Idempotent, not destructive. Not yet applied to production.
+- `[db]` `identity_validation.sql` — enforces email/phone rules at the DB level
+  so they can't be bypassed by calling the auth API directly: `is_valid_email()`
+  + `normalize_phone()` helpers, a partial unique index on `profiles.phone`, and
+  `handle_new_user()` extended to copy + validate the phone from signup metadata
+  (rejects a bad email `EMAIL_INVALID`, a non-10-digit phone `PHONE_INVALID`, a
+  duplicate `PHONE_TAKEN` — aborting the signup transactionally). Adds
+  `email_for_phone()` (SECURITY DEFINER) so the app can resolve a phone to its
+  account email for phone-based login. Idempotent; normalises existing
+  `profiles.phone` values. Not yet applied to production. Pairs with the
+  app-code PR `feat/unified-auth-redesign` on `main`.
 - `[db]` `booking_payment_gated.sql` + `booking_no_double.sql` +
   `realtime_availability.sql` — a court slot is BOOKED only once its payment is
   approved. `court_booking_slot_state()` returns `booked` (paid / staff walk-in)
