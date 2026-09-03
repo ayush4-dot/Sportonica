@@ -22,3 +22,24 @@ export function actionError(message: string): ActionError {
 export function isActionError(value: unknown): value is ActionError {
   return typeof value === "object" && value !== null && ACTION_ERROR_TAG in value;
 }
+
+// Raw Supabase/Postgres/Storage error text leaks table and column names,
+// constraint names and RLS-policy wording to the browser. Use this for
+// the "unexpected DB error" fall-through in an action: it logs the real
+// message server-side and hands the client a generic sentence, unless
+// the caller recognised a known business code and passed it as `known`.
+export function safeActionError(
+  error: unknown,
+  fallback = "Something went wrong. Please try again.",
+  known?: string,
+): ActionError {
+  if (known) return actionError(known);
+  const message =
+    typeof error === "string"
+      ? error
+      : error instanceof Error
+        ? error.message
+        : (error as { message?: string } | null)?.message ?? String(error);
+  console.error("[action]", message);
+  return actionError(fallback);
+}
