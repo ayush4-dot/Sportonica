@@ -8,6 +8,7 @@ import { useProfile } from "@/lib/hooks/useProfile";
 import { CITIES, useCity, greeting, nearestCity, nearestArea, type City, type Area } from "@/lib/city";
 import { getMyRole } from "@/lib/organizer/actions";
 import { claimGuestTournamentEntries } from "@/lib/tournaments/actions";
+import { safeRedirect } from "@/lib/validation/redirect";
 import { isActionError } from "@/lib/actionError";
 import NotificationBell from "./NotificationBell";
 import OrganizerAccessModal from "./OrganizerAccessModal";
@@ -77,7 +78,10 @@ export default function AppHeader() {
       target = sessionStorage.getItem("post-login-redirect");
       if (target) sessionStorage.removeItem("post-login-redirect");
     } catch { /* private mode / storage disabled */ }
-    if (target && target !== pathname) router.push(target);
+    if (target) {
+      const safe = safeRedirect(target);
+      if (safe !== pathname) router.push(safe);
+    }
   }, [profile?.id, pathname, router]);
 
   useEffect(() => {

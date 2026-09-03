@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Capacitor } from "@capacitor/core";
 import { Browser } from "@capacitor/browser";
 import { createClient } from "@/lib/supabase/client";
+import { safeRedirect } from "@/lib/validation/redirect";
 
 // Google's own mark — required by their branding guidelines if you say
 // "Sign in with Google".
@@ -26,7 +27,8 @@ export default function GoogleButton({
   const [err, setErr] = useState<string | null>(null);
 
   async function signIn() {
-    console.log("[GoogleButton] clicked — starting OAuth", { next });
+    const safeNext = safeRedirect(next);
+    console.log("[GoogleButton] clicked — starting OAuth", { next: safeNext });
     setPending(true); setErr(null);
     // The ?next= query param on redirectTo isn't reliably preserved
     // through the full Google → Supabase → app round trip (it's landed
@@ -35,13 +37,13 @@ export default function GoogleButton({
     // what happens to the URL, so AppHeader.tsx picks this up once the
     // session actually appears and finishes the redirect from there.
     try {
-      if (next && next !== "/discover") sessionStorage.setItem("post-login-redirect", next);
+      if (safeNext && safeNext !== "/discover") sessionStorage.setItem("post-login-redirect", safeNext);
     } catch { /* private mode / storage disabled — falls back to /discover, not fatal */ }
     const sb = createClient();
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(safeNext)}`,
       },
     });
     console.log("[GoogleButton] supabase replied", { data, error });
@@ -71,12 +73,13 @@ export default function GoogleButton({
       <style>{`
         .g-btn {
           width: 100%; display: inline-flex; align-items: center; justify-content: center;
-          gap: 10px; padding: 13px 18px; border-radius: 12px; cursor: pointer;
-          background: #FFFFFF; color: #1F1F1F; border: 1px solid rgba(0,0,0,0.12);
+          gap: 10px; padding: 13px 18px; border-radius: 13px; cursor: pointer;
+          background: rgba(255,255,255,0.96); color: #1F1F1F; border: 1px solid rgba(255,255,255,0.5);
           font-family: inherit; font-size: 14.5px; font-weight: 600;
+          box-shadow: 0 6px 20px -10px rgba(0,0,0,0.5);
           transition: transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s;
         }
-        .g-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 8px 22px -10px rgba(0,0,0,.5); }
+        .g-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 30px -10px rgba(0,0,0,.55); }
         .g-btn:disabled { opacity: .65; cursor: default; }
         .g-err { color: #ef4444; font-size: 12.5px; margin: 8px 0 0; }
       `}</style>

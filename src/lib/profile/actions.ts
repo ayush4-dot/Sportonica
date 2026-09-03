@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { actionError, type ActionError } from "@/lib/actionError";
+import { actionError, safeActionError, type ActionError } from "@/lib/actionError";
+import { isValidLocalPhone, normalizePhone, PHONE_ERROR } from "@/lib/validation/identity";
 
 async function requireUser() {
   const sb = await createClient();
@@ -33,6 +34,7 @@ export async function setMyRole(role: "player" | "venue_owner"): Promise<void | 
 
 export async function updateProfile(patch: {
   full_name?: string;
+  phone?: string;
   bio?: string;
   city?: string;
   sports?: string[];
@@ -40,8 +42,37 @@ export async function updateProfile(patch: {
 }): Promise<void | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { error } = await sb.from("profiles").update(patch).eq("id", user.id);
-  if (error) return actionError(error.message);
+
+  // Explicit allowlist — the action is reachable by direct POST, so a
+  // spread `patch` could otherwise carry role / trust_score / stat
+  // columns (the DB trigger in rls_hardening.sql also blocks those, this
+  // is defence-in-depth).
+  const clean: Record<string, unknown> = {};
+  if (typeof patch.full_name === "string") clean.full_name = patch.full_name.trim().slice(0, 80);
+  if (typeof patch.bio === "string") clean.bio = patch.bio.trim().slice(0, 500);
+  if (typeof patch.city === "string") clean.city = patch.city.trim().slice(0, 80);
+  if (Array.isArray(patch.sports)) clean.sports = patch.sports.slice(0, 20).map((s) => String(s).slice(0, 40));
+  if (typeof patch.is_public === "boolean") clean.is_public = patch.is_public;
+  if (typeof patch.phone === "string") {
+    const raw = patch.phone.trim();
+    if (raw === "") {
+      clean.phone = null; // clearing it is allowed
+    } else if (!isValidLocalPhone(raw)) {
+      return actionError(PHONE_ERROR);
+    } else {
+      clean.phone = normalizePhone(raw);
+    }
+  }
+  if (Object.keys(clean).length === 0) return actionError("Nothing to update.");
+
+  const { error } = await sb.from("profiles").update(clean).eq("id", user.id);
+  if (error) {
+    // profiles_phone_unique partial index (supabase/auth/identity_validation.sql)
+    if (error.code === "23505" || /profiles_phone_unique|duplicate/i.test(error.message)) {
+      return actionError("An account with this phone number already exists.");
+    }
+    return safeActionError(error, "Could not save your profile.");
+  }
   revalidatePath("/profile");
 }
 
@@ -82,6 +113,10 @@ export async function uploadAvatar(file: File): Promise<string | ActionError> {
   const extMap: Record<string, string> = {
     "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif",
   };
+  if (file.size > 5 * 1024 * 1024) {
+    return actionError("Image must be under 5 MB.");
+  }
+
   const ext = extMap[file.type];
   const path = `${user.id}/${Date.now()}.${ext}`;
 

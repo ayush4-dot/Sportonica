@@ -311,7 +311,7 @@ export default function Onboarding() {
         <span className="ob-tag">Let&apos;s get playing!</span>
         <button className="ob-go" onClick={next}>
           {last ? (
-            "Ready. Set. Go."
+            "LET'S KICK OFF"
           ) : (
             <>
               Next <ArrowRight size={16} />

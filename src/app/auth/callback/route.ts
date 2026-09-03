@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirect } from "@/lib/validation/redirect";
 
 // Supabase redirects here after Google sign-in. We swap the one-time code
 // for a session, then decide where to send them.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
-  const next = url.searchParams.get("next") ?? "/discover";
+  // `next` is attacker-controllable (it rides on the OAuth redirect URL) —
+  // clamp it to a same-origin path so it can't become an open redirect.
+  const next = safeRedirect(url.searchParams.get("next"));
   const origin = url.origin;
 
   if (!code) {
@@ -16,7 +19,8 @@ export async function GET(request: Request) {
   const sb = await createClient();
   const { error } = await sb.auth.exchangeCodeForSession(code);
   if (error) {
-    return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
+    console.error("[auth/callback] exchange failed:", error.message);
+    return NextResponse.redirect(`${origin}/login?error=signin_failed`);
   }
 
   const { data: { user } } = await sb.auth.getUser();
