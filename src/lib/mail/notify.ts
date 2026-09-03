@@ -545,7 +545,7 @@ async function paymentContext(paymentId: string) {
       .eq("id", payment.tournament_registration_id)
       .maybeSingle();
     const { data: t } = team?.tournament_id
-      ? await sb.from("tournaments").select("id, name, starts_at, ends_at, venues(name)").eq("id", team.tournament_id).maybeSingle()
+      ? await sb.from("tournaments").select("id, name, owner_id, starts_at, ends_at, venues(name)").eq("id", team.tournament_id).maybeSingle()
       : { data: null };
     const venueName = (t as unknown as { venues: { name: string } | null } | null)?.venues?.name;
     return {
@@ -554,6 +554,7 @@ async function paymentContext(paymentId: string) {
       startsAt: t?.starts_at ?? new Date().toISOString(),
       endsAt: t?.ends_at ?? new Date().toISOString(),
       tournamentId: t?.id ?? null,
+      tournamentOwnerId: t?.owner_id ?? null,
     };
   }
 
@@ -572,6 +573,7 @@ async function paymentContext(paymentId: string) {
       startsAt: booking?.starts_at ?? new Date().toISOString(),
       endsAt: booking?.ends_at ?? new Date().toISOString(),
       tournamentId: null as string | null,
+      tournamentOwnerId: null as string | null,
     };
   }
 
@@ -590,22 +592,40 @@ async function paymentContext(paymentId: string) {
     venueName: event?.venue ?? "the venue",
     startsAt, endsAt,
     tournamentId: null as string | null,
+    tournamentOwnerId: null as string | null,
   };
 }
 
 // A customer submitted proof of payment — tell every super-admin, both by
 // email and via the in-app notifications table (NotificationBell renders
 // it whenever they're not already on /platform, which hides its own bell).
+// For a tournament registration specifically, the tournament's own
+// organizer/access people (owner_id + tournament_managers — see
+// tournament_owner_access.sql) get told too, since they're the ones who'll
+// actually verify a host-QR payment via verify_tournament_payment().
 export async function notifyPaymentSubmitted(paymentId: string) {
   const sb = await createClient();
   const ctx = await paymentContext(paymentId);
   if (!ctx) return;
 
   const { data: admins } = await sb.from("profiles").select("id").eq("role", "super_admin");
-  if (!admins?.length) return;
+  const adminIds = new Set((admins ?? []).map((a) => a.id));
 
-  const adminEmails = await Promise.all(admins.map((a) => emailFor(a.id)));
-  const mails = adminEmails
+  const organizerIds = new Set<string>();
+  if (ctx.tournamentId) {
+    if (ctx.tournamentOwnerId) organizerIds.add(ctx.tournamentOwnerId);
+    const { data: managers } = await sb
+      .from("tournament_managers").select("user_id").eq("tournament_id", ctx.tournamentId);
+    for (const m of managers ?? []) organizerIds.add(m.user_id);
+  }
+  // Don't double-email/notify someone who's both an organizer and a super-admin.
+  for (const id of adminIds) organizerIds.delete(id);
+
+  const recipientIds = [...adminIds, ...organizerIds];
+  if (!recipientIds.length) return;
+
+  const emails = await Promise.all(recipientIds.map((id) => emailFor(id)));
+  const mails = emails
     .filter((e): e is string => !!e)
     .map((to) => paymentSubmitted({
       to, bookingLabel: ctx.label, customerName: ctx.customerName,
@@ -614,14 +634,23 @@ export async function notifyPaymentSubmitted(paymentId: string) {
     }));
   if (mails.length) await sendMail(mails);
 
-  await sb.from("notifications").insert(
-    admins.map((a) => ({
-      user_id: a.id,
+  const isTournament = ctx.payment.booking_type === "tournament_registration";
+  await sb.from("notifications").insert([
+    ...[...adminIds].map((id) => ({
+      user_id: id,
       kind: "payment_submitted",
       title: `New payment to verify — ${ctx.label}`,
       body: `${ctx.customerName} · ${ctx.payment.payment_method} · Rs ${Math.round(ctx.payment.expected_amount)}`,
-    }))
-  );
+      tournament_id: ctx.tournamentId,
+    })),
+    ...[...organizerIds].map((id) => ({
+      user_id: id,
+      kind: isTournament ? "tournament_registration_submitted" : "payment_submitted",
+      title: `New team registration payment — ${ctx.label}`,
+      body: `${ctx.customerName} · ${ctx.payment.payment_method} · Rs ${Math.round(ctx.payment.expected_amount)}`,
+      tournament_id: ctx.tournamentId,
+    })),
+  ]);
 }
 
 // Admin approved or rejected — tell the customer both ways, never silently.
