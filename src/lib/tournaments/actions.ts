@@ -508,20 +508,78 @@ export async function cancelTournament(id: string, reason: string): Promise<Tour
 
 // ── Player registration ─────────────────────────────────────────────
 
+export type TeamDetails = {
+  clubName: string; clubAddress: string; contactPersonName: string; contactPhone: string; contactEmail: string;
+  logoUrl?: string;
+};
+
 export async function registerTeam(
   tournamentId: string, name: string, ackTerms: boolean,
-  managerName?: string, managerPhone?: string, managerPlays = false
+  managerName: string, managerPhone: string, managerPlays: boolean,
+  details: TeamDetails,
 ): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("register_team", {
     p_tournament_id: tournamentId, p_name: name, p_ack_terms: ackTerms,
-    p_manager_name: managerName || null, p_manager_phone: managerPhone || null,
+    p_manager_name: managerName, p_manager_phone: managerPhone,
     p_manager_plays: managerPlays,
+    p_club_name: details.clubName, p_club_address: details.clubAddress,
+    p_contact_person_name: details.contactPersonName, p_contact_phone: details.contactPhone,
+    p_contact_email: details.contactEmail, p_logo_url: details.logoUrl || null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/tournaments/${tournamentId}`);
   return data as TournamentTeam;
+}
+
+// Edit the team profile after registration — same required fields as
+// registerTeam (except logo). Captain of the team, or an admin.
+export async function updateTeamDetails(
+  teamId: string, details: TeamDetails, managerName: string, managerPhone: string,
+): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("update_team_details", {
+    p_team_id: teamId,
+    p_club_name: details.clubName, p_club_address: details.clubAddress,
+    p_contact_person_name: details.contactPersonName, p_contact_phone: details.contactPhone,
+    p_contact_email: details.contactEmail, p_manager_name: managerName, p_manager_phone: managerPhone,
+    p_logo_url: details.logoUrl || null,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeam;
+}
+
+// Team logo upload — same shape as uploadTournamentQr (uploader-keyed
+// path, public 'team-logos' bucket).
+export async function uploadTeamLogo(file: File): Promise<string | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+
+  const okTypes = ["image/jpeg", "image/png", "image/webp"];
+  if (!okTypes.includes(file.type)) return actionError("Upload a JPG, PNG or WebP image.");
+  if (file.size > 5 * 1024 * 1024) return actionError("Image must be under 5 MB.");
+
+  const extMap: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+  const ext = extMap[file.type];
+  const path = `${user.id}/${Date.now()}.${ext}`;
+
+  const { error } = await sb.storage.from("team-logos").upload(path, file, { upsert: false });
+  if (error) return actionError(error.message);
+
+  const { data: pub } = sb.storage.from("team-logos").getPublicUrl(path);
+  return pub.publicUrl;
+}
+
+// Set/clear one player's jersey number — works for a guest row or a
+// linked-account row alike.
+export async function setTeamPlayerJerseyNumber(teamPlayerId: string, jerseyNumber: number | null): Promise<TournamentTeamPlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_team_player_jersey_number", { p_team_player_id: teamPlayerId, p_jersey_number: jerseyNumber });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeamPlayer;
 }
 
 // Toggle the manager's own player row after registration — the
@@ -562,12 +620,14 @@ export async function removeTeamPlayerAdmin(teamPlayerId: string): Promise<void 
 // when that person signs in with a matching email/phone. Also usable by
 // an admin/organizer (enforced in add_team_guest_player() in the DB).
 export async function addTeamGuestPlayer(
-  teamId: string, name: string, phone?: string, email?: string, role: "player" | "substitute" = "player"
+  teamId: string, name: string, phone?: string, email?: string, role: "player" | "substitute" = "player",
+  jerseyNumber?: number,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("add_team_guest_player", {
     p_team_id: teamId, p_name: name, p_phone: phone ?? null, p_email: email ?? null, p_role: role,
+    p_jersey_number: jerseyNumber ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
@@ -585,24 +645,27 @@ export async function removeTeamGuestPlayer(teamPlayerId: string): Promise<void 
 // Admin/organizer-only — add a no-account (walk-in) member directly to
 // an existing team, and edit one's own name/phone/email afterwards.
 export async function addWalkinTeamPlayer(
-  teamId: string, name: string, phone: string, email?: string, role: "player" | "substitute" = "player"
+  teamId: string, name: string, phone: string, email?: string, role: "player" | "substitute" = "player",
+  jerseyNumber?: number,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("add_walkin_team_player", {
     p_team_id: teamId, p_name: name, p_phone: phone, p_email: email ?? null, p_role: role,
+    p_jersey_number: jerseyNumber ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
 }
 
 export async function updateTeamPlayerGuest(
-  teamPlayerId: string, name: string, phone: string, email?: string
+  teamPlayerId: string, name: string, phone: string, email?: string, jerseyNumber?: number,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("update_team_player_guest", {
     p_team_player_id: teamPlayerId, p_name: name, p_phone: phone, p_email: email ?? null,
+    p_jersey_number: jerseyNumber ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
@@ -615,16 +678,23 @@ export async function createWalkinTeam(
   teamName: string,
   members: WalkinMember[],
   managerName?: string,
-  managerPhone?: string
+  managerPhone?: string,
+  details?: Partial<TeamDetails>,
 ): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("create_walkin_team", {
     p_tournament_id: tournamentId,
     p_team_name: teamName,
-    p_members: members.map((m) => ({ name: m.name, phone: m.phone, email: m.email || null })),
+    p_members: members.map((m) => ({
+      name: m.name, phone: m.phone, email: m.email || null,
+      jersey_number: m.jerseyNumber ? Number(m.jerseyNumber) : null,
+    })),
     p_manager_name: managerName || null,
     p_manager_phone: managerPhone || null,
+    p_club_name: details?.clubName || null, p_club_address: details?.clubAddress || null,
+    p_contact_person_name: details?.contactPersonName || null, p_contact_phone: details?.contactPhone || null,
+    p_contact_email: details?.contactEmail || null, p_logo_url: details?.logoUrl || null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/organize/tournaments/${tournamentId}`);
