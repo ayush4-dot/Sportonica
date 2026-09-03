@@ -6,13 +6,13 @@ import {
   Check, Trophy, Users, UserPlus, X, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
 } from "lucide-react";
 import {
-  registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
+  registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer, uploadTeamLogo,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
 
-type RosterPlayer = { id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null };
+type RosterPlayer = { id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null; jersey_number: number | null };
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
 const dateLabel = (iso: string) =>
@@ -35,9 +35,27 @@ export default function TournamentRegisterTab({
   const [teamName, setTeamName] = useState("");
   const [managerName, setManagerName] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
+  const [clubName, setClubName] = useState("");
+  const [clubAddress, setClubAddress] = useState("");
+  const [contactPersonName, setContactPersonName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoUploading, setLogoUploading] = useState(false);
   const [iPlay, setIPlay] = useState(false);
   const [ackTerms, setAckTerms] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
+
+  function submitLogo(file: File) {
+    setLogoUploading(true);
+    setErr(null);
+    startTransition(async () => {
+      const res = await uploadTeamLogo(file);
+      setLogoUploading(false);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setLogoUrl(res);
+    });
+  }
 
   const managerOnRoster = !!team && roster.some((p) => p.user_id === team.captain_id);
   const openSlots = Math.max(0, tournament.max_teams - confirmedCount);
@@ -49,14 +67,99 @@ export default function TournamentRegisterTab({
     getTeamRoster(team.id).then((r) => { if (!isActionError(r)) setRoster(r); });
   }, [team]);
 
+  // "Register again" (after a rejection/withdrawal) shows the same form
+  // pre-filled from what's on file — falls back to the existing team's
+  // stored value wherever the field hasn't been touched this time,
+  // same pattern the team-name input already uses (value={teamName ||
+  // team.name}), so submitting doesn't silently blank out untouched
+  // fields.
+  function renderTeamDetailFields(existing: TournamentTeam | null) {
+    return (
+      <>
+        <label className="rgt-label">Team logo <span className="rgt-opt">optional</span></label>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          {(logoUrl || existing?.logo_url) && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl || existing?.logo_url || ""} alt="Team logo" style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
+          )}
+          <input
+            className="rgt-in" type="file" accept="image/jpeg,image/png,image/webp"
+            disabled={logoUploading}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) submitLogo(f); }}
+          />
+        </div>
+        {logoUploading && <p className="rgt-hint">Uploading…</p>}
+
+        <div className="rgt-row">
+          <div>
+            <label className="rgt-label">Club name</label>
+            <input className="rgt-in" value={clubName || existing?.club_name || ""} onChange={(e) => setClubName(e.target.value)} placeholder="e.g. Everest Sports Club" />
+          </div>
+          <div>
+            <label className="rgt-label">Club address</label>
+            <input className="rgt-in" value={clubAddress || existing?.club_address || ""} onChange={(e) => setClubAddress(e.target.value)} placeholder="City / area" />
+          </div>
+        </div>
+
+        <div className="rgt-row">
+          <div>
+            <label className="rgt-label">Contact person name</label>
+            <input className="rgt-in" value={contactPersonName || existing?.contact_person_name || ""} onChange={(e) => setContactPersonName(e.target.value)} placeholder="Club's point of contact" />
+          </div>
+          <div>
+            <label className="rgt-label">Contact phone</label>
+            <input className="rgt-in" value={contactPhone || existing?.contact_phone || ""} onChange={(e) => setContactPhone(e.target.value)} placeholder="98XXXXXXXX" />
+          </div>
+        </div>
+        <label className="rgt-label">Contact email</label>
+        <input className="rgt-in" type="email" value={contactEmail || existing?.contact_email || ""} onChange={(e) => setContactEmail(e.target.value)} placeholder="club@example.com" />
+
+        <div className="rgt-row">
+          <div>
+            <label className="rgt-label">Manager / coach name</label>
+            <input className="rgt-in" value={managerName || existing?.manager_name || ""} onChange={(e) => setManagerName(e.target.value)} placeholder="Who's running the team" />
+          </div>
+          <div>
+            <label className="rgt-label">Manager / coach phone</label>
+            <input className="rgt-in" value={managerPhone || existing?.manager_phone || ""} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
+          </div>
+        </div>
+        <p className="rgt-hint">Shown on the Teams tab so opponents and organisers can reach you.</p>
+      </>
+    );
+  }
+
   function submitRegister() {
-    if (!teamName.trim()) { setErr("Give your team a name."); return; }
+    // Fall back to the existing team's stored value for any field left
+    // untouched on a "register again" pass.
+    const effName = teamName.trim() || team?.name || "";
+    const effManagerName = managerName.trim() || team?.manager_name || "";
+    const effManagerPhone = managerPhone.trim() || team?.manager_phone || "";
+    const effClubName = clubName.trim() || team?.club_name || "";
+    const effClubAddress = clubAddress.trim() || team?.club_address || "";
+    const effContactPersonName = contactPersonName.trim() || team?.contact_person_name || "";
+    const effContactPhone = contactPhone.trim() || team?.contact_phone || "";
+    const effContactEmail = contactEmail.trim() || team?.contact_email || "";
+    const effLogoUrl = logoUrl || team?.logo_url || undefined;
+
+    if (!effName) { setErr("Give your team a name."); return; }
+    if (!effManagerName || !effManagerPhone) { setErr("Enter the team manager/coach's name and phone number."); return; }
+    if (!effClubName || !effClubAddress) { setErr("Enter the club's name and address."); return; }
+    if (!effContactPersonName || !effContactPhone || !effContactEmail) {
+      setErr("Enter a contact person's name, phone and email.");
+      return;
+    }
     if (!ackTerms) { setErr("Please agree to the tournament rules to register."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await registerTeam(
-        tournament.id, teamName.trim(), ackTerms,
-        managerName.trim() || undefined, managerPhone.trim() || undefined, iPlay,
+        tournament.id, effName, ackTerms,
+        effManagerName, effManagerPhone, iPlay,
+        {
+          clubName: effClubName, clubAddress: effClubAddress,
+          contactPersonName: effContactPersonName, contactPhone: effContactPhone,
+          contactEmail: effContactEmail, logoUrl: effLogoUrl,
+        },
       );
       if (isActionError(res)) { setErr(res.message); return; }
       setTeam(res);
@@ -156,17 +259,7 @@ export default function TournamentRegisterTab({
             <label className="rgt-label">Team name</label>
             <input className="rgt-in" value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Everest United" />
 
-            <div className="rgt-row">
-              <div>
-                <label className="rgt-label">Manager name <span className="rgt-opt">optional</span></label>
-                <input className="rgt-in" value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="Point of contact" />
-              </div>
-              <div>
-                <label className="rgt-label">Manager phone <span className="rgt-opt">optional</span></label>
-                <input className="rgt-in" value={managerPhone} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
-              </div>
-            </div>
-            <p className="rgt-hint">Shown on the Teams tab so opponents and organisers can reach you.</p>
+            {renderTeamDetailFields(null)}
 
             <label className="rgt-check">
               <input type="checkbox" checked={iPlay} onChange={(e) => setIPlay(e.target.checked)} />
@@ -218,6 +311,9 @@ export default function TournamentRegisterTab({
             <p className="rgt-hint" style={{ marginTop: 0 }}>You can register again below.</p>
             <label className="rgt-label">Team name</label>
             <input className="rgt-in" value={teamName || team.name} onChange={(e) => setTeamName(e.target.value)} />
+
+            {renderTeamDetailFields(team)}
+
             <label className="rgt-check">
               <input type="checkbox" checked={ackTerms} onChange={(e) => setAckTerms(e.target.checked)} />
               <span>I agree to the tournament rules{tournament.refund_policy ? " and refund policy" : ""}.</span>
@@ -353,6 +449,7 @@ function RosterCard({
               <span className="rgt-av">{p.name.charAt(0).toUpperCase()}</span>
               <span className="rgt-player-name">
                 {p.name}
+                {p.jersey_number != null && <span className="rgt-tag">#{p.jersey_number}</span>}
                 {p.user_id === team.captain_id && <span className="rgt-tag">you</span>}
                 {p.role === "substitute" && <span className="rgt-tag sub">sub</span>}
               </span>
@@ -373,6 +470,7 @@ function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
+  const [jersey, setJersey] = useState("");
   const [role, setRole] = useState<"player" | "substitute">("player");
   const [err, setErr] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
@@ -382,10 +480,13 @@ function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
     if (!name.trim()) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
-      const res = await addTeamGuestPlayer(teamId, name.trim(), phone.trim() || undefined, email.trim() || undefined, role);
+      const res = await addTeamGuestPlayer(
+        teamId, name.trim(), phone.trim() || undefined, email.trim() || undefined, role,
+        jersey.trim() ? Number(jersey.trim()) : undefined,
+      );
       if (isActionError(res)) { setErr(res.message); return; }
       setJustAdded(name.trim());
-      setName(""); setEmail(""); setPhone(""); setRole("player");
+      setName(""); setEmail(""); setPhone(""); setJersey(""); setRole("player");
       onAdded();
       setTimeout(() => setJustAdded(null), 2500);
     });
@@ -404,6 +505,10 @@ function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
         <input className="rgt-in" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player's name" />
         <input className="rgt-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" />
         <input className="rgt-in" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
+        <input
+          className="rgt-in" type="number" min={0} value={jersey}
+          onChange={(e) => setJersey(e.target.value)} placeholder="Jersey number (optional)"
+        />
         <select className="rgt-in" value={role} onChange={(e) => setRole(e.target.value as "player" | "substitute")}>
           <option value="player">Player</option>
           <option value="substitute">Substitute</option>

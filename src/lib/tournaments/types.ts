@@ -131,6 +131,12 @@ export interface TournamentTeam {
   // meant to be visible to anyone browsing the tournament.
   manager_name: string | null;
   manager_phone: string | null;
+  logo_url: string | null;
+  club_name: string | null;
+  club_address: string | null;
+  contact_person_name: string | null;
+  contact_phone: string | null;
+  contact_email: string | null;
   created_at: string;
 }
 
@@ -249,10 +255,11 @@ export interface TournamentTeamPlayer {
   guest_phone: string | null;
   guest_email: string | null;
   role: "captain" | "player" | "substitute";
+  jersey_number: number | null;
   joined_at: string;
 }
 
-export type WalkinMember = { name: string; phone: string; email?: string };
+export type WalkinMember = { name: string; phone: string; email?: string; jerseyNumber?: string };
 
 export interface TournamentMatchPlayerStat {
   id: string;
@@ -376,6 +383,14 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   INVALID_SLOT: "Pick which side (A or B) this feeds into.",
   SAME_MATCH: "A match can't advance into itself.",
   USER_NOT_FOUND: "No account found with that email.",
+  MANAGER_NAME_REQUIRED: "Enter the team manager/coach's name.",
+  MANAGER_PHONE_REQUIRED: "Enter the team manager/coach's phone number.",
+  CLUB_NAME_REQUIRED: "Enter the club name.",
+  CLUB_ADDRESS_REQUIRED: "Enter the club's address.",
+  CONTACT_PERSON_NAME_REQUIRED: "Enter a contact person's name.",
+  CONTACT_PHONE_REQUIRED: "Enter a contact phone number.",
+  CONTACT_EMAIL_REQUIRED: "Enter a contact email.",
+  JERSEY_NUMBER_TAKEN: "Another player on this team already has that jersey number.",
 };
 
 export function friendlyTournamentError(message: string): string {

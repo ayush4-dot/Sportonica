@@ -8,7 +8,7 @@ import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
-  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName,
+  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName, setTeamPlayerJerseyNumber,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -480,7 +480,12 @@ function WalkinTeamModal({
   const [teamName, setTeamName] = useState("");
   const [managerName, setManagerName] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
-  const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "" }]);
+  const [clubName, setClubName] = useState("");
+  const [clubAddress, setClubAddress] = useState("");
+  const [contactPersonName, setContactPersonName] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
+  const [contactEmail, setContactEmail] = useState("");
+  const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "", jerseyNumber: "" }]);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -489,7 +494,7 @@ function WalkinTeamModal({
   }
   function addMember() {
     if (members.length >= maxMembers) return;
-    setMembers((prev) => [...prev, { name: "", phone: "", email: "" }]);
+    setMembers((prev) => [...prev, { name: "", phone: "", email: "", jerseyNumber: "" }]);
   }
   function removeMember(i: number) {
     setMembers((prev) => prev.filter((_, idx) => idx !== i));
@@ -505,7 +510,12 @@ function WalkinTeamModal({
     startTransition(async () => {
       const res = await createWalkinTeam(
         tournamentId, teamName.trim(), members,
-        managerName.trim() || undefined, managerPhone.trim() || undefined
+        managerName.trim() || undefined, managerPhone.trim() || undefined,
+        {
+          clubName: clubName.trim() || undefined, clubAddress: clubAddress.trim() || undefined,
+          contactPersonName: contactPersonName.trim() || undefined, contactPhone: contactPhone.trim() || undefined,
+          contactEmail: contactEmail.trim() || undefined,
+        },
       );
       if (isActionError(res)) { setErr(res.message); return; }
       onCreated(`${res.name} added as a walk-in team.`);
@@ -530,13 +540,30 @@ function WalkinTeamModal({
         <p className="tc-dim" style={{ fontSize: 11, marginTop: 4 }}>If given, shown publicly on the tournament&apos;s Teams tab.</p>
 
         <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", margin: "16px 0 8px" }}>
+          Club details (optional)
+        </div>
+        <div className="tc-member-row" style={{ gridTemplateColumns: "1fr 1fr" }}>
+          <input value={clubName} onChange={(e) => setClubName(e.target.value)} placeholder="Club name" />
+          <input value={clubAddress} onChange={(e) => setClubAddress(e.target.value)} placeholder="Club address" />
+        </div>
+        <div className="tc-member-row" style={{ gridTemplateColumns: "1fr 1fr 1fr", marginTop: 8 }}>
+          <input value={contactPersonName} onChange={(e) => setContactPersonName(e.target.value)} placeholder="Contact person" />
+          <input value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} placeholder="Contact phone" />
+          <input value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} placeholder="Contact email" />
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", margin: "16px 0 8px" }}>
           Members ({members.length}/{maxMembers})
         </div>
         {members.map((m, i) => (
-          <div className="tc-member-row" key={i}>
+          <div className="tc-member-row" key={i} style={{ gridTemplateColumns: "1.4fr 1fr 1fr 0.7fr auto" }}>
             <input value={m.name} onChange={(e) => updateMember(i, "name", e.target.value)} placeholder="Name" />
             <input value={m.phone} onChange={(e) => updateMember(i, "phone", e.target.value)} placeholder="Phone (optional)" />
             <input value={m.email ?? ""} onChange={(e) => updateMember(i, "email", e.target.value)} placeholder="Email (optional)" />
+            <input
+              type="number" min={0} value={m.jerseyNumber ?? ""}
+              onChange={(e) => updateMember(i, "jerseyNumber", e.target.value)} placeholder="Jersey #"
+            />
             <button onClick={() => removeMember(i)} disabled={members.length <= 1} aria-label={`Remove member ${i + 1}`} style={{ opacity: members.length <= 1 ? 0.3 : 0.7 }}>
               <Trash2 size={15} />
             </button>
@@ -586,10 +613,13 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   const [wName, setWName] = useState("");
   const [wPhone, setWPhone] = useState("");
   const [wEmail, setWEmail] = useState("");
+  const [wJersey, setWJersey] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
+  const [editJersey, setEditJersey] = useState("");
+  const [jerseyDrafts, setJerseyDrafts] = useState<Record<string, string>>({});
   const [managerName, setManagerName] = useState(team.manager_name ?? "");
   const [managerPhone, setManagerPhone] = useState(team.manager_phone ?? "");
   const [savedManagerName, setSavedManagerName] = useState(team.manager_name);
@@ -657,9 +687,12 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     if (!wName.trim()) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
-      const res = await addWalkinTeamPlayer(team.id, wName.trim(), wPhone.trim(), wEmail.trim() || undefined, addRole);
+      const res = await addWalkinTeamPlayer(
+        team.id, wName.trim(), wPhone.trim(), wEmail.trim() || undefined, addRole,
+        wJersey.trim() ? Number(wJersey.trim()) : undefined,
+      );
       if (isActionError(res)) { setErr(res.message); return; }
-      setWName(""); setWPhone(""); setWEmail("");
+      setWName(""); setWPhone(""); setWEmail(""); setWJersey("");
       load();
       onChanged();
     });
@@ -670,13 +703,28 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     setEditName(p.guest_name ?? "");
     setEditPhone(p.guest_phone ?? "");
     setEditEmail(p.guest_email ?? "");
+    setEditJersey(p.jersey_number != null ? String(p.jersey_number) : "");
+  }
+
+  function saveJersey(playerId: string, value: string, current: number | null) {
+    const next = value.trim() ? Number(value.trim()) : null;
+    if (next === current) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await setTeamPlayerJerseyNumber(playerId, next);
+      if (isActionError(res)) { setErr(res.message); return; }
+      load();
+    });
   }
 
   function saveEdit(playerId: string) {
     if (!editName.trim()) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
-      const res = await updateTeamPlayerGuest(playerId, editName.trim(), editPhone.trim(), editEmail.trim() || undefined);
+      const res = await updateTeamPlayerGuest(
+        playerId, editName.trim(), editPhone.trim(), editEmail.trim() || undefined,
+        editJersey.trim() ? Number(editJersey.trim()) : undefined,
+      );
       if (isActionError(res)) { setErr(res.message); return; }
       setEditingId(null);
       load();
@@ -744,6 +792,10 @@ function TeamRosterModal({ team, onClose, onChanged }: {
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                     <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                    <input
+                      type="number" min={0} value={editJersey} onChange={(e) => setEditJersey(e.target.value)}
+                      placeholder="Jersey #" style={{ ...modalInputStyle, width: 80 }}
+                    />
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
                     <button className="tc-btn primary" style={{ padding: "6px 10px", fontSize: 12 }} disabled={pending} onClick={() => saveEdit(p.id)}>Save</button>
@@ -757,6 +809,13 @@ function TeamRosterModal({ team, onClose, onChanged }: {
                     {!p.user_id && <span className="tc-dim" style={{ marginLeft: 6, fontSize: 11 }}>Walk-in</span>}
                   </span>
                   <span className="tc-dim" style={{ fontSize: 11.5, textTransform: "capitalize" }}>{p.role}</span>
+                  <input
+                    type="number" min={0} aria-label={`${p.name}'s jersey number`}
+                    value={jerseyDrafts[p.id] ?? (p.jersey_number != null ? String(p.jersey_number) : "")}
+                    onChange={(e) => setJerseyDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                    onBlur={(e) => saveJersey(p.id, e.target.value, p.jersey_number)}
+                    placeholder="#" style={{ ...modalInputStyle, width: 52, padding: "6px 7px", fontSize: 12.5 }}
+                  />
                   {!p.user_id && (
                     <button
                       aria-label={`Edit ${p.name}`} disabled={pending} onClick={() => startEdit(p)}
@@ -828,6 +887,10 @@ function TeamRosterModal({ team, onClose, onChanged }: {
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input value={wPhone} onChange={(e) => setWPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                 <input value={wEmail} onChange={(e) => setWEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
+                <input
+                  type="number" min={0} value={wJersey} onChange={(e) => setWJersey(e.target.value)}
+                  placeholder="Jersey # (optional)" style={{ ...modalInputStyle, width: 100 }}
+                />
                 <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
                   <option value="player">Player</option>
                   <option value="substitute">Substitute</option>
