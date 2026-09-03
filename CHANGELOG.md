@@ -22,7 +22,8 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   calls `regenerate_tournament_fixtures()` after adding a team: if a
   bracket/schedule already exists and nothing has been played yet, it's
   rebuilt from the current confirmed team list so fixtures always match
-  who's actually registered. No-op once any match has a result.
+  who's actually registered. No-op once any match has a result. Applied
+  to production 2026-09-03.
 
 ### Changed
 -
@@ -33,7 +34,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   that `tournament_team_edit.sql` deliberately removed — an
   organizer/venue-manager/super_admin could no longer add a walk-in team
   once registration closed. Removed again; capacity (`TOURNAMENT_FULL`)
-  still applies.
+  still applies. Applied to production 2026-09-03.
 
 ---
 
