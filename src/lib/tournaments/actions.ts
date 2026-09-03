@@ -843,6 +843,23 @@ export async function generateKnockoutBracket(tournamentId: string): Promise<Tou
   return data as Tournament;
 }
 
+// Rebuilds fixtures from the current confirmed team list — a no-op if
+// nothing's generated yet, a real result already exists, or (for
+// group_knockout) a confirmed team still has no group. Returns which of
+// those happened so the UI can say something useful.
+export async function regenerateTournamentFixtures(
+  tournamentId: string,
+): Promise<"REBUILT" | "NO_MATCHES" | "ALREADY_PLAYED" | "TEAMS_NOT_GROUPED" | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("regenerate_tournament_fixtures", { p_tournament_id: tournamentId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/organize/tournaments/${tournamentId}`);
+  revalidatePath(`/platform/tournaments/${tournamentId}`);
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as "REBUILT" | "NO_MATCHES" | "ALREADY_PLAYED" | "TEAMS_NOT_GROUPED";
+}
+
 export async function setTeamSeed(teamId: string, seed: number, groupName?: string): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
