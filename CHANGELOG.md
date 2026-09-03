@@ -9,6 +9,21 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
 ## [Unreleased]
 
 ### Added
+- `[db]` `tournament_team_registration_details.sql` — client-requested fuller
+  team profile at registration: club name/address, a contact person
+  (name/phone/email) distinct from the team manager/coach, and an optional
+  team logo (`team-logos` bucket). All required except the logo — enforced
+  in `register_team()`; `create_walkin_team()` keeps them optional. Also
+  adds an optional per-player jersey number (unique per team) across
+  `add_team_guest_player`, `add_walkin_team_player`,
+  `update_team_player_guest`, walk-in member batches, and a new
+  `set_team_player_jersey_number()` for editing it later. New
+  `update_team_details()` RPC edits the whole profile after registration.
+- `[web]` Registration form collects the new team-profile fields + logo
+  upload; "register again" after a rejection/withdrawal now falls back to
+  previously-saved values instead of silently blanking untouched fields.
+  Admin walk-in-team form and roster modal gained matching optional fields
+  and jersey-number editing for every roster row.
 - `[db]` `tournament_host_qr_payments.sql` — tournaments carry the host's own
   payment QR (`host_payment_*` columns + `tournament-qr` bucket); registration
   fees are paid to the host and verified by the host via
