@@ -10,24 +10,34 @@
 -- confirmed team list once and refuse to run again (ALREADY_GENERATED).
 --
 -- regenerate_tournament_fixtures() closes that gap: create_walkin_team
--- calls it after inserting the new team. If no fixtures exist yet, it's a
--- no-op (the next manual "Generate bracket/fixtures" call will pick the
--- team up normally). If fixtures exist, it wipes and rebuilds them from
--- the current confirmed team list — but ONLY while nothing has been
--- played yet (no match is 'completed' or 'walkover'). Once a result has
--- been recorded, rebuilding from scratch would destroy real match
--- history, so it's left alone; the late team is on the roster but a
--- human has to fold it in by hand (e.g. via create_match) from that point
--- on. group_knockout tournaments are skipped the same way when the new
--- team hasn't been assigned a group yet — there's no automatic way to
--- decide which group it belongs in.
+-- calls it after inserting the new team, AND it's a standalone RPC an
+-- admin can call directly (a "Regenerate fixtures" button) for cases the
+-- auto-call can't resolve on its own — e.g. a group_knockout team that
+-- had no group yet when it was added.
+--
+-- Behaviour:
+--  - No fixtures generated yet -> no-op ('NO_MATCHES'); the next manual
+--    "Generate bracket/fixtures" call picks the team up normally.
+--  - A REAL result already exists (a two-team match that's completed or
+--    walkover) -> no-op ('ALREADY_PLAYED'). Rebuilding from scratch would
+--    destroy match history, so it's left alone; a bye (team_b_id null,
+--    auto-completed by build_knockout_bracket with no opponent ever
+--    playing) does NOT count as a real result and never blocks a rebuild
+--    — that was the original bug: any bracket with a bye (any team count
+--    that isn't a power of 2) silently never regenerated.
+--  - group_knockout with a confirmed, ungrouped team -> no-op
+--    ('TEAMS_NOT_GROUPED'); there's no automatic way to decide which
+--    group it belongs in — assign one, then call this again.
+--  - Otherwise: wipes and rebuilds tournament_matches from the current
+--    confirmed team list -> 'REBUILT'.
 --
 -- Run AFTER: tournaments.sql (build_knockout_bracket, build_round_robin,
--- tournament_matches). Idempotent, not destructive to played matches.
+-- tournament_matches, is_tournament_organizer, has_venue_access,
+-- is_super_admin). Idempotent, not destructive to played matches.
 -- ================================================================
 
 create or replace function public.regenerate_tournament_fixtures(p_tournament_id uuid)
-returns void
+returns text
 language plpgsql security definer set search_path = public as $$
 declare
   v_t        public.tournaments;
@@ -36,23 +46,34 @@ declare
   v_group    text;
 begin
   select * into v_t from public.tournaments where id = p_tournament_id for update;
-  if not found then return; end if;
-
-  if not exists (select 1 from public.tournament_matches where tournament_id = p_tournament_id) then
-    return; -- no bracket/schedule generated yet — nothing to keep in sync
+  if not found then raise exception 'TOURNAMENT_NOT_FOUND'; end if;
+  if not (
+    public.is_tournament_organizer(v_t)
+    or public.has_venue_access(v_t.venue_id, 'manager')
+    or public.is_super_admin()
+  ) then
+    raise exception 'FORBIDDEN';
   end if;
 
+  if not exists (select 1 from public.tournament_matches where tournament_id = p_tournament_id) then
+    return 'NO_MATCHES'; -- no bracket/schedule generated yet — nothing to keep in sync
+  end if;
+
+  -- A bye (team_b_id null) is auto-completed by build_knockout_bracket
+  -- with no opponent ever playing — it doesn't count as "underway".
+  -- Only a real two-team completed/walkover match should block a rebuild.
   select count(*) into v_played from public.tournament_matches
-    where tournament_id = p_tournament_id and status in ('completed', 'walkover');
+    where tournament_id = p_tournament_id and status in ('completed', 'walkover')
+      and team_b_id is not null;
   if v_played > 0 then
-    return; -- matches already underway — never clobber recorded results
+    return 'ALREADY_PLAYED'; -- a real result exists — never clobber recorded results
   end if;
 
   if v_t.format = 'group_knockout' and exists (
     select 1 from public.tournament_teams
     where tournament_id = p_tournament_id and status = 'confirmed' and group_name is null
   ) then
-    return; -- new team has no group yet — needs a human to assign one
+    return 'TEAMS_NOT_GROUPED'; -- new team has no group yet — needs a human to assign one
   end if;
 
   delete from public.tournament_matches where tournament_id = p_tournament_id;
@@ -83,10 +104,10 @@ begin
       end if;
     end loop;
   end if;
+
+  return 'REBUILT';
 end;
 $$;
-
--- Internal helper only — called from create_walkin_team (security
--- definer, runs as the function owner). No grant to authenticated.
+grant execute on function public.regenerate_tournament_fixtures(uuid) to authenticated;
 
 -- ── DONE ────────────────────────────────────────────────────────────
