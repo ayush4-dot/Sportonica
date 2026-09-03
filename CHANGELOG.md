@@ -9,6 +9,21 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
 ## [Unreleased]
 
 ### Added
+- `[db]` `booking_payment_gated.sql` + `booking_no_double.sql` +
+  `realtime_availability.sql` — a court slot is BOOKED only once its payment is
+  approved. `court_booking_slot_state()` returns `booked` (paid / staff walk-in)
+  or `free` — a reserved/unpaid row never holds the slot. `book_court()` gains a
+  staff guard for walk-in/phone bookings + a past-time check and only conflicts
+  against settled bookings. `court_busy_slots()` (SECURITY DEFINER, no PII) is
+  what the picker reads so it can see other players' bookings past RLS.
+  `block_double_paid_booking` trigger + a paid-only gist exclusion constraint
+  make "first approved payment wins" airtight (`SLOT_ALREADY_BOOKED`).
+  `free_slot_on_payment_rejected` / `expire_stale_court_holds()` sweep abandoned
+  rows. `realtime_availability.sql` adds a world-readable
+  `court_availability_pings` table (court + day only) so the picker updates live.
+  `check_booked_slots.sql` is a read-only diagnostic. Idempotent, not
+  destructive. Not yet applied to production. Pairs with the app-code PR
+  `feat/payment-gated-booking` on `main`.
 - `[db]` `tournament_team_registration_details.sql` — client-requested fuller
   team profile at registration: club name/address, a contact person
   (name/phone/email) distinct from the team manager/coach, and an optional
