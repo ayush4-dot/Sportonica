@@ -3,7 +3,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { notifyGameJoined } from "@/lib/mail/notify";
-import { actionError } from "@/lib/actionError";
+import { actionError, safeActionError } from "@/lib/actionError";
+import { isValidLocalPhone } from "@/lib/validation/identity";
 
 async function requireUser() {
   const sb = await createClient();
@@ -28,14 +29,21 @@ async function requireUser() {
 // is always read fresh from `events.fee`, never trusted from the caller.
 export async function joinGame(input: {
   event_id: string;
-  venue_id: string | null;
-  sport: string;
+  // kept in the type for call-site compatibility but no longer trusted —
+  // venue_id and sport are read from the event row server-side below.
+  venue_id?: string | null;
+  sport?: string;
   player_name?: string;
   position?: string;
   phone?: string;
 }) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+
+  const phone = input.phone?.trim() || null;
+  if (phone && !isValidLocalPhone(phone)) {
+    return actionError("Phone number must contain exactly 10 digits.");
+  }
 
   // Already joined?
   const { data: existing } = await sb
@@ -50,11 +58,12 @@ export async function joinGame(input: {
   // the fee — never trust a client-supplied amount.
   const { data: ev } = await sb
     .from("events_with_counts")
-    .select("slots_remaining, fee")
+    .select("slots_remaining, fee, venue_id, sport")
     .eq("id", input.event_id)
     .single();
-  if (ev && ev.slots_remaining <= 0) return actionError("GAME_FULL");
-  const amount = Number(ev?.fee) || 0;
+  if (!ev) return actionError("We couldn't find that game.");
+  if (ev.slots_remaining <= 0) return actionError("GAME_FULL");
+  const amount = Number(ev.fee) || 0;
 
   const name =
     input.player_name ||
@@ -66,15 +75,15 @@ export async function joinGame(input: {
     event_id: input.event_id,
     user_id: user.id,
     status: "confirmed",
-    venue_id: input.venue_id,
-    sport: input.sport,
+    venue_id: ev.venue_id ?? null,
+    sport: ev.sport ?? null,
     amount,
     payment_status: amount > 0 ? "unpaid" : "paid",
     player_name: name,
     position: input.position ?? null,
-    phone: input.phone?.trim() || null,
+    phone,
   }).select().single();
-  if (error) return actionError(error.message);
+  if (error) return safeActionError(error, "Could not join this game. Please try again.");
 
   revalidatePath("/discover");
 

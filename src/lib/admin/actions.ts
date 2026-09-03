@@ -3,7 +3,27 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { notifyCourtBooked } from "@/lib/mail/notify";
-import { actionError, type ActionError } from "@/lib/actionError";
+import { actionError, safeActionError, type ActionError } from "@/lib/actionError";
+import { friendlyBookingError } from "@/lib/bookings/types";
+import { isValidLocalPhone } from "@/lib/validation/identity";
+
+// Columns a venue owner may set/change themselves. verification_status,
+// payout_cap, owner_id, status and the like are platform-controlled —
+// the DB triggers in supabase/schema/rls_hardening.sql also block them,
+// this is defence-in-depth so a stray field never reaches the update.
+const VENUE_OWNER_FIELDS = new Set([
+  "name", "venue_type", "address", "phone", "sports", "amenities",
+  "lat", "lng", "maps_url", "description", "photos", "opening_hours",
+]);
+function pickVenueFields(patch: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(patch).filter(([k]) => VENUE_OWNER_FIELDS.has(k)),
+  );
+}
+
+const BOOKING_STATES = new Set([
+  "reserved", "confirmed", "played", "no_show", "dropped", "cancelled", "refunded",
+]);
 
 // Every server action re-checks auth. Server Functions are reachable by
 // direct POST, so we never trust the client (per Next.js data-security guide).
@@ -27,12 +47,15 @@ export async function createVenue(input: {
 }) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+  if (input.phone && !isValidLocalPhone(input.phone)) {
+    return actionError("Phone number must contain exactly 10 digits.");
+  }
   const { data, error } = await sb
     .from("venues")
-    .insert({ ...input, owner_id: user.id })
+    .insert({ ...pickVenueFields(input as Record<string, unknown>), name: input.name, owner_id: user.id })
     .select()
     .single();
-  if (error) return actionError(error.message);
+  if (error) return safeActionError(error, "Could not create that venue.");
   revalidatePath("/admin/venues");
   return data;
 }
@@ -40,8 +63,13 @@ export async function createVenue(input: {
 export async function updateVenue(id: string, patch: Record<string, unknown>) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
-  const { data, error } = await sb.from("venues").update(patch).eq("id", id).select().single();
-  if (error) return actionError(error.message);
+  const safe = pickVenueFields(patch);
+  if (typeof safe.phone === "string" && !isValidLocalPhone(safe.phone)) {
+    return actionError("Phone number must contain exactly 10 digits.");
+  }
+  if (Object.keys(safe).length === 0) return actionError("Nothing to update.");
+  const { data, error } = await sb.from("venues").update(safe).eq("id", id).select().single();
+  if (error) return safeActionError(error, "Could not update that venue.");
   revalidatePath(`/admin/venues/${id}`);
   revalidatePath("/admin/venues");
   return data;
@@ -188,28 +216,38 @@ export async function bookCourt(input: {
 }) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+  // Unknown/missing source is treated as a normal player booking, never
+  // a staff walk-in (which lands 'confirmed' with no payment). Staff
+  // access for walk_in/phone is enforced in book_court() itself
+  // (supabase/venues/book_court_staff_guard.sql).
+  const source = input.source ?? "platform";
+  const phone = input.phone?.trim() || null;
+  if (phone && !isValidLocalPhone(phone)) {
+    return actionError("Phone number must contain exactly 10 digits.");
+  }
   const { data, error } = await sb.rpc("book_court", {
     p_court_id: input.court_id,
     p_starts_at: input.starts_at,
     p_ends_at: input.ends_at,
-    p_user_id: input.source && input.source !== "platform" ? null : user.id,
+    p_user_id: source !== "platform" ? null : user.id,
     p_customer: input.customer_name ?? null,
-    p_source: input.source ?? "walk_in",
+    p_source: source,
     p_host_spots_needed: input.need_players ? input.spots_needed ?? null : null,
     p_host_skill_level: input.need_players ? input.skill_level ?? null : null,
     p_host_bring_gear: input.need_players ? input.bring_own_gear ?? null : null,
     p_host_notes: input.need_players ? input.notes ?? null : null,
-    p_phone: input.phone?.trim() || null,
+    p_phone: phone,
   });
   if (error) {
-    if (error.message.includes("SLOT_TAKEN")) return actionError("That time is already booked.");
-    if (error.message.includes("SLOT_BLOCKED")) return actionError("That time is blocked.");
-    return actionError(error.message);
+    const friendly = friendlyBookingError(error.message);
+    return friendly === error.message
+      ? safeActionError(error, "Could not book this slot. Please try again.")
+      : actionError(friendly);
   }
   revalidatePath(`/admin/venues/${input.venue_id}/calendar`);
 
   const price = Number(data?.price) || 0;
-  const isPendingPlatformPayment = (input.source ?? "walk_in") === "platform" && price > 0;
+  const isPendingPlatformPayment = source === "platform" && price > 0;
 
   // Walk-in/phone bookings (staff-entered, already 'confirmed', no
   // payment flow applies) and free platform bookings still get the
@@ -221,7 +259,7 @@ export async function bookCourt(input: {
   if (!isPendingPlatformPayment) {
     const { data: court } = await sb.from("courts").select("name").eq("id", input.court_id).maybeSingle();
     await notifyCourtBooked({
-      playerId: input.source === "platform" ? user.id : null,
+      playerId: source === "platform" ? user.id : null,
       venueId: input.venue_id,
       courtName: court?.name ?? "Court",
       startsAt: input.starts_at,
@@ -237,8 +275,9 @@ export async function bookCourt(input: {
 export async function setBookingState(id: string, venue_id: string, state: string) {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+  if (!BOOKING_STATES.has(state)) return actionError("That isn't a valid booking status.");
   const { error } = await sb.from("court_bookings").update({ state }).eq("id", id);
-  if (error) return actionError(error.message);
+  if (error) return safeActionError(error, "Could not update that booking.");
   revalidatePath(`/admin/venues/${venue_id}/bookings`);
 }
 

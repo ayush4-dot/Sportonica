@@ -16,6 +16,7 @@ import type { Court, CourtHours } from "@/lib/admin/types";
 import type { SkillLevel } from "@/lib/playTogether/types";
 import SkillLevelPicker, { SKILL_LEVEL_LABEL } from "@/components/playTogether/SkillLevelPicker";
 import { useHardwareBack } from "@/lib/capacitor/hardwareBack";
+import { isValidLocalPhone, PHONE_ERROR } from "@/lib/validation/identity";
 
 const KTM_TZ = "Asia/Kathmandu";
 
@@ -67,6 +68,21 @@ export default function BookingFlow({
   const [awaitingPayment, setAwaitingPayment] = useState<{ id: string; price: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [step, setStep] = useState(0);
+  // Bumped when the server rejects a booking as taken/blocked, to force
+  // the slot grid to refetch so the clashing time turns red immediately.
+  const [slotRefresh, setSlotRefresh] = useState(0);
+
+  // A booking failed because the slot isn't actually free — send the user
+  // back to pick another time, and refresh the grid so it shows red now.
+  function bookingErrored(message: string) {
+    const conflict = /just been booked|already booked|already blocked|is blocked|has already passed|already passed|SLOT_TAKEN|SLOT_BLOCKED|SLOT_IN_PAST/i.test(message);
+    if (conflict) {
+      setHour(null);
+      setSlotRefresh((n) => n + 1);
+      setStep(1);
+    }
+    setErr(message);
+  }
 
   // ── "Need players?" -> Play Together fields (host-approved requests,
   // 2-hour payment window, host's own QR shown to players — see
@@ -158,7 +174,7 @@ export default function BookingFlow({
     step === 0 ? !!court :
     step === 1 ? hour !== null :
     step === 2 ? (needPlayers ? minPlayers >= 1 && maxPlayers >= minPlayers : true) :
-    step === 3 && needPlayers ? (hostPhone.trim().length > 0 && !!qrPath && !qrUploading) :
+    step === 3 && needPlayers ? (isValidLocalPhone(hostPhone) && !!qrPath && !qrUploading) :
     true;
 
   function next() {
@@ -200,7 +216,10 @@ export default function BookingFlow({
       return;
     }
     if (needPlayers) {
-      if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
+      if (!isValidLocalPhone(hostPhone) || !qrPath) {
+        setErr(!qrPath ? "Add your phone number and upload your payment QR." : PHONE_ERROR);
+        return;
+      }
       if (!ackRisk) {
         setErr("Please confirm you understand the venue payment terms.");
         riskBoxRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -208,8 +227,8 @@ export default function BookingFlow({
         setTimeout(() => setRiskFlash(false), 1000);
         return;
       }
-    } else if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) {
-      setErr("Enter a valid phone number.");
+    } else if (!isValidLocalPhone(phone)) {
+      setErr(PHONE_ERROR);
       return;
     }
     setErr(null);
@@ -238,7 +257,7 @@ export default function BookingFlow({
               router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
               return;
             }
-            setErr(created.message);
+            bookingErrored(created.message);
             return;
           }
           const { game, price: gamePrice } = created;
@@ -276,7 +295,7 @@ export default function BookingFlow({
             router.push(`/login?redirect=${encodeURIComponent(window.location.pathname)}`);
             return;
           }
-          setErr(booking.message);
+          bookingErrored(booking.message);
           return;
         }
 
@@ -315,7 +334,7 @@ export default function BookingFlow({
           <button className="play-btn gold" onClick={() => router.push(needPlayers ? "/play-together" : "/discover")}>
             {needPlayers ? "See Play Together games" : "See my games"}
           </button>
-          <button className="play-btn ghost" onClick={() => { setDone(false); setHour(null); }}>Book another</button>
+          <button className="play-btn ghost" onClick={() => { setDone(false); setHour(null); setSlotRefresh((n) => n + 1); setStep(1); }}>Book another</button>
         </div>
       </div>
     );
@@ -346,7 +365,7 @@ export default function BookingFlow({
                 <button className="play-btn gold" onClick={() => router.push(needPlayers ? "/my-games" : "/discover")}>
                   {needPlayers ? "Go to My Games" : "See my games"}
                 </button>
-                <button className="play-btn ghost" onClick={() => { setAwaitingPayment(null); setDone(false); setHour(null); }}>Book another</button>
+                <button className="play-btn ghost" onClick={() => { setAwaitingPayment(null); setDone(false); setHour(null); setSlotRefresh((n) => n + 1); setStep(1); }}>Book another</button>
               </>
             }
           />
@@ -432,7 +451,7 @@ export default function BookingFlow({
             <h3>When are you playing?</h3>
             <p className="hint">
               <Clock size={13} style={{ display: "inline", verticalAlign: -2, marginRight: 4 }} />
-              Live availability — already-booked and passed times aren&apos;t shown.
+              Live availability — booked slots are shown in red, passed times aren&apos;t shown.
             </p>
 
             <WeekStrip
@@ -460,6 +479,7 @@ export default function BookingFlow({
                 durationMins={Math.round(duration * 60)}
                 value={hour === null ? null : Math.round(hour * 60)}
                 onPick={(mins) => { setHour(mins === null ? null : mins / 60); setErr(null); }}
+                refreshSignal={slotRefresh}
               />
             )}
           </div>
@@ -570,8 +590,8 @@ export default function BookingFlow({
 
             <p className="hint" style={{ marginBottom: 8 }}>Your phone number</p>
             <input
-              type="tel" inputMode="tel" className="bk-in" style={{ marginBottom: 20 }}
-              value={hostPhone} onChange={(e) => setHostPhone(e.target.value)}
+              type="tel" inputMode="numeric" maxLength={10} className="bk-in" style={{ marginBottom: 20 }}
+              value={hostPhone} onChange={(e) => setHostPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
               placeholder="98XXXXXXXX"
             />
 
@@ -658,8 +678,8 @@ export default function BookingFlow({
               <div style={{ marginTop: 20 }}>
                 <p className="hint" style={{ marginBottom: 8 }}>Phone number</p>
                 <input
-                  type="tel" inputMode="tel" className="bk-in" value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  type="tel" inputMode="numeric" maxLength={10} className="bk-in" value={phone}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   placeholder="98XXXXXXXX"
                 />
                 <p className="hint" style={{ fontSize: 12, marginTop: 6, marginBottom: 0, opacity: 0.7 }}>

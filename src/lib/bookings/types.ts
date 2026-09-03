@@ -9,6 +9,14 @@ export const BOOKING_ERROR_MESSAGES: Record<string, string> = {
     "This booking can't be changed here anymore — it's already paid for or has started. Ask the venue to help.",
   SLOT_TAKEN: "That time is already booked on that court.",
   SLOT_BLOCKED: "That time is blocked on that court.",
+  // Postgres exclusion-constraint violation from court_bookings_no_overlap
+  // (supabase/venues/booking_no_double.sql) — a concurrent booker won the race.
+  "23P01": "Sorry, this time slot has just been booked by another user. Please choose another time.",
+  court_bookings_no_overlap:
+    "Sorry, this time slot has just been booked by another user. Please choose another time.",
+  NOT_VENUE_STAFF: "Only venue staff can add a booking that way.",
+  SLOT_IN_PAST: "That time has already passed. Pick a later slot.",
+  PHONE_INVALID: "Phone number must contain exactly 10 digits.",
   "End time must be after start time": "The end time has to be after the start time.",
   "Court not found": "That court doesn't exist.",
 };

@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useTransition, useMemo } from "react";
+import { useEffect, useRef, useState, useTransition, useMemo } from "react";
 import { Loader2, CalendarX } from "lucide-react";
 import { getDaySlots, type Slot } from "@/lib/play/availability";
+import { createClient } from "@/lib/supabase/client";
 
 const BANDS: { key: "morning" | "afternoon" | "evening"; label: string; from: number; to: number }[] = [
   { key: "morning",   label: "Morning",   from: 0,       to: 12 * 60 },
@@ -32,15 +33,19 @@ function todayKtmStr(): string {
 }
 
 export default function SlotPicker({
-  courtId, dateStr, durationMins, value, onPick,
+  courtId, dateStr, durationMins, value, onPick, refreshSignal = 0,
 }: {
   courtId: string;
   dateStr: string;
   durationMins: number;
   value: number | null;
   onPick: (mins: number | null) => void;
+  /** bump from the parent to force a fresh availability fetch — e.g. after
+   *  the server rejects a booking because the slot was just taken. */
+  refreshSignal?: number;
 }) {
   const [slots, setSlots] = useState<Slot[] | null>(null);
+  const lastRefreshSignal = useRef(refreshSignal);
   const [band, setBand] = useState(() => {
     if (value != null) {
       const b = BANDS.find((b) => value >= b.from && value < b.to);
@@ -49,6 +54,9 @@ export default function SlotPicker({
     return "evening";
   });
   const [pending, startTransition] = useTransition();
+  // Bumped by the realtime subscription below to force a fresh fetch when
+  // someone else books or cancels a slot on this court.
+  const [refreshTick, setRefreshTick] = useState(0);
 
   // Ticks every 30s so a slot that drifts within the 30-min lead-time
   // window while this screen is just sitting open disappears on its own,
@@ -73,6 +81,14 @@ export default function SlotPicker({
     let cancelled = false;
 
     const key = `${courtId}|${dateStr}|${durationMins}`;
+    // A refreshSignal bump (parent saw a booking conflict) means "ignore
+    // the cache, ask the server again".
+    if (lastRefreshSignal.current !== refreshSignal) {
+      lastRefreshSignal.current = refreshSignal;
+      for (const k of Array.from(cache.keys())) {
+        if (k.startsWith(`${courtId}|`)) cache.delete(k);
+      }
+    }
     const cached = cache.get(key);
     if (cached && Date.now() - cached.at < CACHE_TTL_MS) {
       setSlots(cached.data);
@@ -96,7 +112,37 @@ export default function SlotPicker({
     });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [courtId, dateStr, durationMins]);
+  }, [courtId, dateStr, durationMins, refreshTick, refreshSignal]);
+
+  // Supabase realtime — supplementary only. If another player books or
+  // cancels a slot on this court while this screen is open, drop the
+  // cached days for the court and refetch so the timetable (and the red
+  // BOOKED boxes) update without a page refresh. The server still
+  // re-checks availability at confirm time regardless.
+  //
+  // We listen on public.court_availability_pings (court_id + day only, no
+  // PII, world-readable) rather than court_bookings directly — the latter
+  // is row-locked to its owner by RLS, so another player's booking would
+  // never reach this subscription. A trigger keeps the pings table in
+  // sync (see supabase/venues/realtime_availability.sql).
+  useEffect(() => {
+    if (!courtId) return;
+    const sb = createClient();
+    const channel = sb
+      .channel(`court-slots:${courtId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "court_availability_pings", filter: `court_id=eq.${courtId}` },
+        () => {
+          for (const k of Array.from(cache.keys())) {
+            if (k.startsWith(`${courtId}|`)) cache.delete(k);
+          }
+          setRefreshTick((n) => n + 1);
+        },
+      )
+      .subscribe();
+    return () => { sb.removeChannel(channel); };
+  }, [courtId]);
 
   // Re-apply the past-time check live (see isPastLive above) on top of
   // whatever the server said at fetch time — this is what everything
@@ -107,24 +153,34 @@ export default function SlotPicker({
     [slots, nowMins, dateStr]
   );
 
-  // Counts per band, so the tabs can say what's actually free. Booked and
-  // past slots aren't shown at all (not just disabled), so only the free
-  // count matters here — a band with nothing free just doesn't get a tab.
+  // Counts per band. Booked slots are now shown (as red "BOOKED" boxes,
+  // per the booking-UI spec) rather than hidden, so a band gets a tab if
+  // it has anything free *or* anything booked — but the tab label still
+  // reports only what's actually free. Past slots stay hidden.
   const counts = useMemo(() => {
-    const out: Record<string, { free: number }> = {};
+    const out: Record<string, { free: number; booked: number }> = {};
     for (const b of BANDS) {
       const inBand = liveSlots.filter((s) => s.mins >= b.from && s.mins < b.to);
-      out[b.key] = { free: inBand.filter((s) => s.available).length };
+      out[b.key] = {
+        free: inBand.filter((s) => s.available).length,
+        booked: inBand.filter((s) => s.reason === "booked").length,
+      };
     }
     return out;
   }, [liveSlots]);
 
-  // Open the first band that actually has something free.
+  const bandHasSomething = (k: string) =>
+    (counts[k]?.free ?? 0) > 0 || (counts[k]?.booked ?? 0) > 0;
+
+  // Open the first band that has something free; failing that, the first
+  // band that has anything to show at all.
   useEffect(() => {
     if (!slots) return;
-    if (counts[band]?.free > 0) return;
-    const firstFree = BANDS.find((b) => counts[b.key]?.free > 0);
-    if (firstFree) setBand(firstFree.key);
+    if ((counts[band]?.free ?? 0) > 0) return;
+    const firstFree = BANDS.find((b) => (counts[b.key]?.free ?? 0) > 0);
+    const firstAny = BANDS.find((b) => bandHasSomething(b.key));
+    const target = firstFree ?? firstAny;
+    if (target && target.key !== band) setBand(target.key);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slots, counts]);
 
@@ -136,7 +192,10 @@ export default function SlotPicker({
   }
 
   const free = liveSlots.filter((s) => s.available);
-  if (free.length === 0) {
+  const bookedSlots = liveSlots.filter((s) => s.reason === "booked");
+  // Only bail out entirely when there is genuinely nothing to render —
+  // no free slots *and* no booked ones (e.g. every slot is in the past).
+  if (free.length === 0 && bookedSlots.length === 0) {
     return (
       <div className="sp-msg">
         <CalendarX size={18} style={{ opacity: .6 }} />
@@ -146,9 +205,15 @@ export default function SlotPicker({
   }
 
   const activeBand = BANDS.find((b) => b.key === band) ?? BANDS[2];
-  // Booked and already-past times are dropped here, not just disabled —
-  // this timetable should only ever show times someone could actually book.
-  const shown = liveSlots.filter((s) => s.mins >= activeBand.from && s.mins < activeBand.to && s.available);
+  // Available slots stay clickable; booked slots are shown too (rendered
+  // as red "BOOKED" boxes below) so nothing silently disappears. Past
+  // times are still dropped — this timetable never shows a time gone by.
+  const shown = liveSlots.filter(
+    (s) =>
+      s.mins >= activeBand.from &&
+      s.mins < activeBand.to &&
+      (s.available || s.reason === "booked"),
+  );
 
   return (
     <div className="sp">
@@ -156,7 +221,7 @@ export default function SlotPicker({
       <div className="sp-tabs">
         {BANDS.map((b) => {
           const c = counts[b.key];
-          if (!c || c.free === 0) return null;
+          if (!c || (c.free === 0 && c.booked === 0)) return null;
           return (
             <button key={b.key} className={`sp-tab ${band === b.key ? "on" : ""}`} onClick={() => setBand(b.key)}>
               <span className="t">{b.label}</span>
@@ -168,6 +233,21 @@ export default function SlotPicker({
 
       <div className="sp-grid">
         {shown.map((s) => {
+          if (s.reason === "booked") {
+            return (
+              <button
+                key={s.mins}
+                type="button"
+                className="sp-slot booked"
+                disabled
+                aria-disabled="true"
+                title={`${s.label} — already booked`}
+              >
+                <span className="sp-slot-time">{s.label}</span>
+                <span className="sp-slot-tag">BOOKED</span>
+              </button>
+            );
+          }
           const picked = value === s.mins;
           return (
             <button
@@ -185,6 +265,7 @@ export default function SlotPicker({
       <div className="sp-legend">
         <span><i className="sw free" /> Free</span>
         <span><i className="sw picked" /> Your pick</span>
+        {bookedSlots.length > 0 && <span><i className="sw booked" /> Booked</span>}
         <span className="sp-count">{free.length} free today</span>
       </div>
 
@@ -213,6 +294,22 @@ export default function SlotPicker({
         .sp-slot.free { cursor: pointer; }
         .sp-slot.free:hover { border-color: rgba(0,98,65,.6); transform: translateY(-2px); }
 
+        /* Booked — the one booking-UI change: this exact box turns red and
+           says BOOKED. Not clickable, never confused with "your pick". */
+        .sp-slot.booked {
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          cursor: not-allowed;
+          background: rgba(220,38,38,.12);
+          border-color: rgba(220,38,38,.55);
+          color: #dc2626;
+        }
+        .sp-slot.booked:disabled { opacity: 1; }
+        .sp-slot.booked .sp-slot-time { font-size: 13px; font-weight: 700; }
+        .sp-slot.booked .sp-slot-tag {
+          font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 800;
+          letter-spacing: .1em; opacity: .9;
+        }
+
         /* Your pick — solid, lifted and ringed so it can't be missed. */
         .sp-slot.picked {
           background: #006241; border-color: #006241; color: #ffffff;
@@ -229,6 +326,7 @@ export default function SlotPicker({
         .sp-legend .sw { width: 11px; height: 11px; border-radius: 4px; display: inline-block; }
         .sp-legend .sw.free   { border: 1px solid var(--line); }
         .sp-legend .sw.picked { background: #006241; }
+        .sp-legend .sw.booked { background: rgba(220,38,38,.12); border: 1px solid rgba(220,38,38,.55); }
         .sp-count { margin-left: auto; font-family: 'Inter', sans-serif; font-size: 11px; opacity: .55; }
 
         .sp-msg { display: flex; align-items: center; gap: 9px; font-size: 13.5px; opacity: .65; padding: 18px 0; }

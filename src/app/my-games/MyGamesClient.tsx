@@ -254,7 +254,13 @@ export default function MyGamesClient({
             <article key={b.id} className="mg-card">
               <div className="mg-card-top">
                 <span className="mg-sport">{b.courts?.sport ?? "—"}</span>
-                <span className="mg-going">{b.state === "confirmed" ? "Confirmed" : b.state === "reserved" ? "Reserved" : b.state}</span>
+                <span className="mg-going">{
+                  b.state === "confirmed" ? "Confirmed"
+                  : b.state === "reserved"
+                    ? (b.payment_status === "pending_verification" ? "Payment under review" : "Awaiting payment")
+                  : b.state === "cancelled" || b.state === "dropped" ? "Not booked"
+                  : b.state
+                }</span>
               </div>
               <h3 className="mg-title">{b.courts?.name ?? "Court"}</h3>
               <p className="mg-meta"><MapPin size={12} /> {b.venues?.name ?? "—"}</p>
