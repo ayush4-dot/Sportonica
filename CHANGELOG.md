@@ -19,6 +19,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   `update_team_player_guest`, walk-in member batches, and a new
   `set_team_player_jersey_number()` for editing it later. New
   `update_team_details()` RPC edits the whole profile after registration.
+  Applied to production 2026-09-03.
 - `[web]` Registration form collects the new team-profile fields + logo
   upload; "register again" after a rejection/withdrawal now falls back to
   previously-saved values instead of silently blanking untouched fields.
