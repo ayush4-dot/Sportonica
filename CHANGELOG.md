@@ -47,8 +47,10 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   ever "played") as a real result, so it refused to auto-regenerate for
   any knockout bracket that had a bye at all — i.e. almost any bracket
   whose team count isn't a power of 2. Now only a real two-team
-  completed/walkover match blocks a rebuild. Applied to production
-  2026-09-03.
+  completed/walkover match blocks a rebuild. First run against
+  production failed (`42P13`, changing an existing function's return
+  type needs a `drop function` first — production still had the earlier
+  void-returning version); fixed and re-applied 2026-09-03.
 - `[db]` `tournament_walkin_phone_optional.sql` had accidentally
   reintroduced the `registration_open`-only guard on `create_walkin_team()`
   that `tournament_team_edit.sql` deliberately removed — an
