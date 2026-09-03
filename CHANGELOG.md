@@ -9,6 +9,14 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
 ## [Unreleased]
 
 ### Added
+- `[db]` `rls_hardening.sql` — closes privilege holes from the security review:
+  removes the direct `court_bookings` INSERT policy (RPC-only now), drops the
+  client UPDATE on the legacy `bookings` table, adds guard triggers so a user
+  can't self-edit `profiles.trust_score` / game-stat counters and a venue owner
+  can't self-set `verification_status` / `payout_cap` / `owner_id`, locks the
+  `notifications` insert path, revokes `venue_daily_stats` from `authenticated`,
+  and adds a `WITH CHECK` to the `tournament_teams` captain UPDATE policy.
+  Idempotent, not destructive. Not yet applied to production.
 - `[db]` `identity_validation.sql` — enforces email/phone rules at the DB level
   so they can't be bypassed by calling the auth API directly: `is_valid_email()`
   + `normalize_phone()` helpers, a partial unique index on `profiles.phone`, and
