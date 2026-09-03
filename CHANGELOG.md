@@ -9,6 +9,16 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
 ## [Unreleased]
 
 ### Added
+- `[db]` `identity_validation.sql` — enforces email/phone rules at the DB level
+  so they can't be bypassed by calling the auth API directly: `is_valid_email()`
+  + `normalize_phone()` helpers, a partial unique index on `profiles.phone`, and
+  `handle_new_user()` extended to copy + validate the phone from signup metadata
+  (rejects a bad email `EMAIL_INVALID`, a non-10-digit phone `PHONE_INVALID`, a
+  duplicate `PHONE_TAKEN` — aborting the signup transactionally). Adds
+  `email_for_phone()` (SECURITY DEFINER) so the app can resolve a phone to its
+  account email for phone-based login. Idempotent; normalises existing
+  `profiles.phone` values. Not yet applied to production. Pairs with the
+  app-code PR `feat/unified-auth-redesign` on `main`.
 - `[db]` `tournament_team_registration_details.sql` — client-requested fuller
   team profile at registration: club name/address, a contact person
   (name/phone/email) distinct from the team manager/coach, and an optional
