@@ -1,32 +1,65 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useMemo, useState, Suspense } from "react";
 import Link from "next/link";
+import { Lock, AtSign } from "lucide-react";
 import GoogleButton from "@/components/GoogleButton";
+import AuthCard from "@/components/auth/AuthCard";
+import AuthInput from "@/components/auth/AuthInput";
+import IdentityBadge from "@/components/auth/IdentityBadge";
+import SubmitButton from "@/components/auth/SubmitButton";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  normalizeEmail, isValidEmail, isValidLocalPhone, looksLikeEmail,
+} from "@/lib/validation/identity";
+import { safeRedirect } from "@/lib/validation/redirect";
+import { resolveEmailForPhone } from "@/lib/auth/actions";
+import { isActionError } from "@/lib/actionError";
+
+// Shown for any failed sign-in regardless of cause, so an attacker can't
+// tell "no such account" from "wrong password" (spec §21).
+const BAD_CREDENTIALS = "The email/phone number or password is incorrect.";
+const BAD_IDENTIFIER = "Enter a valid email address or a 10-digit mobile number.";
 
 function LoginInner() {
   const sb = createClient();
   const router = useRouter();
   const params = useSearchParams();
-  const redirect = params.get("redirect"); // where they were headed, if gated
-  const [email, setEmail] = useState("");
+  const redirect = params.get("redirect");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const identifierValid = useMemo(() => {
+    const id = identifier.trim();
+    if (!id) return false;
+    return looksLikeEmail(id) ? isValidEmail(id) : isValidLocalPhone(id);
+  }, [identifier]);
+
   async function login() {
-    if (!email || !password) { setErr("Enter your email and password."); return; }
+    const id = identifier.trim();
+    if (!id || !password) { setErr("Enter your mobile number or email, and your password."); return; }
+
+    let signInEmail: string;
+    if (looksLikeEmail(id)) {
+      if (!isValidEmail(id)) { setErr(BAD_IDENTIFIER); return; }
+      signInEmail = normalizeEmail(id);
+    } else {
+      if (!isValidLocalPhone(id)) { setErr(BAD_IDENTIFIER); return; }
+      setLoading(true); setErr(null);
+      const resolved = await resolveEmailForPhone(id);
+      if (isActionError(resolved)) { setErr(BAD_CREDENTIALS); setLoading(false); return; }
+      signInEmail = resolved.email;
+    }
+
     setLoading(true); setErr(null);
+    const { data, error } = await sb.auth.signInWithPassword({ email: signInEmail, password });
+    if (error) { setErr(BAD_CREDENTIALS); setLoading(false); return; }
 
-    const { data, error } = await sb.auth.signInWithPassword({ email, password });
-    if (error) { setErr(error.message); setLoading(false); return; }
-
-    // 1) If they were sent here from a gated page, return them there.
-    // 2) Otherwise route by role: owners → console, players → discover.
     if (redirect) {
-      router.push(redirect);
+      router.push(safeRedirect(redirect));
     } else {
       const role = data.user?.user_metadata?.role;
       router.push(role === "venue_owner" || role === "admin" ? "/admin" : "/discover");
@@ -50,38 +83,45 @@ function LoginInner() {
       </div>
 
       <div className="auth-form-wrap">
-        <div className="auth-card">
+        <AuthCard>
           <h1>Welcome back</h1>
           <p className="sub">Sign in to keep playing.</p>
 
-          <div className="auth-field">
-            <label>Email</label>
-            <input className="auth-input" type="email" placeholder="you@example.com"
-              value={email} onChange={(e) => setEmail(e.target.value)} />
-          </div>
-          <div className="auth-field">
-            <label>Password</label>
-            <input className="auth-input" type="password" placeholder="••••••••"
-              value={password} onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && login()} />
-          </div>
+          <AuthInput
+            label="Mobile number or email"
+            value={identifier}
+            onChange={setIdentifier}
+            icon={<AtSign size={17} />}
+            autoComplete="username"
+            inputMode="email"
+            right={<IdentityBadge value={identifier} />}
+            valid={identifierValid}
+            onEnter={login}
+          />
+          <AuthInput
+            label="Password"
+            value={password}
+            onChange={setPassword}
+            type="password"
+            icon={<Lock size={16} />}
+            autoComplete="current-password"
+            onEnter={login}
+          />
 
           {err && <div className="auth-error">{err}</div>}
 
-          <button className="auth-btn" onClick={login} disabled={loading}>
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
+          <SubmitButton loading={loading} onClick={login}>Sign in</SubmitButton>
 
           <div className="auth-or"><span>or</span></div>
-          <GoogleButton next={redirect ?? "/discover"} label="Sign in with Google" />
+          <GoogleButton next={safeRedirect(redirect)} label="Sign in with Google" />
 
           <div className="auth-alt">
             New here?{" "}
-            <Link href={redirect ? `/signup?redirect=${encodeURIComponent(redirect)}` : "/signup"}>
+            <Link href={redirect ? `/signup?redirect=${encodeURIComponent(safeRedirect(redirect))}` : "/signup"}>
               Create an account
             </Link>
           </div>
-        </div>
+        </AuthCard>
       </div>
     </div>
   );

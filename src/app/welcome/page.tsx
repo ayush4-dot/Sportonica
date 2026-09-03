@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { safeRedirect } from "@/lib/validation/redirect";
 import RolePicker from "./RolePicker";
 
 export const dynamic = "force-dynamic";
@@ -7,7 +8,8 @@ export const dynamic = "force-dynamic";
 export default async function WelcomePage({
   searchParams,
 }: { searchParams: Promise<{ next?: string }> }) {
-  const { next } = await searchParams;
+  const { next: rawNext } = await searchParams;
+  const next = safeRedirect(rawNext);
   const sb = await createClient();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) {

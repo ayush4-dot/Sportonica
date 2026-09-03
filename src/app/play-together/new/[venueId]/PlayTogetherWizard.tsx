@@ -6,6 +6,7 @@ import { Check, Wallet, Clock, ChevronLeft, ChevronRight, AlertTriangle, Upload 
 import { createGame, uploadHostQr } from "@/lib/playTogether/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import { isActionError } from "@/lib/actionError";
+import { isValidLocalPhone, PHONE_ERROR } from "@/lib/validation/identity";
 import PaymentStep from "@/components/payments/PaymentStep";
 import SlotPicker from "../../../(play)/create/[id]/SlotPicker";
 import WeekStrip from "../../../(play)/create/[id]/WeekStrip";
@@ -126,7 +127,7 @@ export default function PlayTogetherWizard({
     step === 1 ? true :
     step === 2 ? hour !== null :
     step === 3 ? minPlayers >= 1 && maxPlayers >= minPlayers :
-    step === 4 ? hostPhone.trim().length > 0 && !!qrPath && !qrUploading :
+    step === 4 ? isValidLocalPhone(hostPhone) && !!qrPath && !qrUploading :
     true;
 
   function next() {
@@ -152,7 +153,10 @@ export default function PlayTogetherWizard({
 
   function submit() {
     if (!court || hour === null) { setErr("Pick a court and a time."); return; }
-    if (!hostPhone.trim() || !qrPath) { setErr("Add your phone number and upload your payment QR."); return; }
+    if (!isValidLocalPhone(hostPhone) || !qrPath) {
+      setErr(!qrPath ? "Add your phone number and upload your payment QR." : PHONE_ERROR);
+      return;
+    }
     if (!ackRisk) { setErr("Please confirm you understand the venue payment terms."); return; }
     setErr(null);
     startTransition(async () => {
@@ -398,8 +402,8 @@ export default function PlayTogetherWizard({
 
             <p className="hint" style={{ marginBottom: 8 }}>Your phone number</p>
             <input
-              type="tel" inputMode="tel" className="bk-in" style={{ marginBottom: 20 }}
-              value={hostPhone} onChange={(e) => setHostPhone(e.target.value)}
+              type="tel" inputMode="numeric" maxLength={10} className="bk-in" style={{ marginBottom: 20 }}
+              value={hostPhone} onChange={(e) => setHostPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
               placeholder="98XXXXXXXX"
             />
 

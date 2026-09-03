@@ -6,6 +6,7 @@ import { Check, MapPin, Share2 } from "lucide-react";
 import { joinGame } from "@/lib/play/actions";
 import { confirmFreeBooking } from "@/lib/payments/actions";
 import { isActionError } from "@/lib/actionError";
+import { isValidLocalPhone, PHONE_ERROR } from "@/lib/validation/identity";
 import PaymentStep from "@/components/payments/PaymentStep";
 
 export default function GameJoinPanel({
@@ -24,7 +25,7 @@ export default function GameJoinPanel({
   const [phone, setPhone] = useState("");
 
   function join() {
-    if (!/^[0-9+\-\s]{7,15}$/.test(phone.trim())) { setErr("Enter a valid phone number."); return; }
+    if (!isValidLocalPhone(phone)) { setErr(PHONE_ERROR); return; }
     setErr(null);
     startTransition(async () => {
       try {
@@ -94,9 +95,9 @@ export default function GameJoinPanel({
         <>
           {slotsLeft > 0 && (
             <input
-              type="tel" inputMode="tel" value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="Phone number"
+              type="tel" inputMode="numeric" maxLength={10} value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
+              placeholder="Phone number (10 digits)"
               className="gm-pay-b"
               style={{ width: "100%", boxSizing: "border-box", textAlign: "left", fontWeight: 500, marginBottom: 10, cursor: "text", padding: "14px", minHeight: 44 }}
             />

@@ -90,6 +90,7 @@ export const PAYMENT_ERROR_MESSAGES: Record<string, string> = {
   PAYMENT_NOT_FOUND: "We couldn't find that payment.",
   ALREADY_REVIEWED: "This payment has already been reviewed.",
   BOOKING_NO_LONGER_VALID: "This booking was cancelled since the payment was submitted — it can't be approved.",
+  SLOT_ALREADY_BOOKED: "Another payment for this time slot was already approved — reject this one.",
   REJECTION_REASON_REQUIRED: "Pick a reason before rejecting a payment.",
   INVALID_ACTION: "Something went wrong. Please try again.",
 };
