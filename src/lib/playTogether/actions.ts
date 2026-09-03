@@ -16,6 +16,7 @@ import {
   notifyPlayTogetherCashSelected,
 } from "@/lib/mail/notify";
 import { actionError, type ActionError } from "@/lib/actionError";
+import { isValidLocalPhone } from "@/lib/validation/identity";
 
 async function requireUser() {
   const sb = await createClient();
@@ -70,6 +71,9 @@ export async function createGame(input: {
 }): Promise<{ game: Game; price: number } | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
+  if (!isValidLocalPhone(input.host_phone)) {
+    return actionError("Phone number must contain exactly 10 digits.");
+  }
   const { data, error } = await sb.rpc("create_play_together_game", {
     p_court_id: input.court_id,
     p_starts_at: input.starts_at,
