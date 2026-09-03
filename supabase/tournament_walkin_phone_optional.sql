@@ -20,6 +20,14 @@
 -- create_walkin_team (the one the web calls — with manager name/phone;
 -- see tournament_team_manager.sql). An older 3-arg overload, if present
 -- on your DB, is left as-is — nothing calls it.
+--
+-- NOTE: this redeclaration of create_walkin_team had accidentally
+-- reintroduced the `status <> 'registration_open'` guard that
+-- tournament_team_edit.sql deliberately dropped (admin can add a walk-in
+-- team any time — capacity still applies). Dropped again here, and the
+-- function now calls regenerate_tournament_fixtures() so a bracket/
+-- schedule generated before this team was added gets rebuilt to include
+-- it (see tournament_late_reg_refixture.sql).
 -- ================================================================
 
 -- ── 1. Relax the guest-row constraint: only guest_name is required ──
@@ -151,7 +159,6 @@ begin
   ) then
     raise exception 'FORBIDDEN';
   end if;
-  if v_t.status <> 'registration_open' then raise exception 'REGISTRATION_CLOSED'; end if;
 
   if v_name = '' then raise exception 'TEAM_NAME_REQUIRED'; end if;
 
@@ -188,6 +195,8 @@ begin
     insert into public.tournament_team_players (team_id, guest_name, guest_phone, guest_email, role)
     values (v_team.id, v_member_name, v_phone, v_email, case when i = 0 then 'captain' else 'player' end);
   end loop;
+
+  perform public.regenerate_tournament_fixtures(p_tournament_id);
 
   return v_team;
 end;
