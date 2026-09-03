@@ -6,7 +6,7 @@ import { Plus, Trash2, X, History, Pencil } from "lucide-react";
 import {
   recordMatchResult, setMatchTime, createMatch, deleteMatch, updateMatchTeams, getMatchAudit,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
-  generateKnockoutBracket, setTeamSeed, setMatchStatus,
+  generateKnockoutBracket, setTeamSeed, setMatchStatus, regenerateTournamentFixtures,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat, MatchAuditEntry } from "@/lib/tournaments/types";
@@ -81,6 +81,7 @@ export default function FixturesTab({
   const [err, setErr] = useState<string | null>(null);
   const [recordingStats, setRecordingStats] = useState<TournamentMatch | null>(null);
   const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
+  const [regenMsg, setRegenMsg] = useState<string | null>(null);
   const errRef = useRef<HTMLDivElement | null>(null);
 
   // The error banner sits at the top of a card that can scroll for a
@@ -124,14 +125,41 @@ export default function FixturesTab({
     rounds.get(m.round_label)!.push(m);
   }
 
+  const REGEN_MESSAGES: Record<string, string> = {
+    REBUILT: "Fixtures rebuilt from the current team list.",
+    NO_MATCHES: "Nothing to regenerate — no bracket/schedule exists yet.",
+    ALREADY_PLAYED: "Not regenerated — a match already has a result, which would be lost.",
+    TEAMS_NOT_GROUPED: "Not regenerated — a confirmed team hasn't been assigned a group yet.",
+  };
+
+  function runRegenerate() {
+    if (!window.confirm("Rebuild fixtures from the current confirmed team list? This only proceeds if no match has a result yet.")) return;
+    setErr(null);
+    setRegenMsg(null);
+    startTransition(async () => {
+      const res = await regenerateTournamentFixtures(tournament.id);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setRegenMsg(REGEN_MESSAGES[res] ?? res);
+      router.refresh();
+    });
+  }
+
   return (
     <div className="tc-card">
-      <div className="tc-card-t">Fixtures</div>
+      <div className="tc-card-t" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+        Fixtures
+        {matches.length > 0 && (
+          <button className="tc-btn" disabled={pending} style={{ padding: "6px 10px", fontSize: 12 }} onClick={runRegenerate}>
+            Regenerate fixtures
+          </button>
+        )}
+      </div>
       <div className="tc-card-sub">
         {canGenerateBracket && mode === "choose"
           ? "Choose how you'd like to build the bracket."
           : "Add each match by hand — pick both teams, a round, and (optionally) a group. Set the date/time per match once it's added."}
       </div>
+      {regenMsg && <div className="tc-card-sub" style={{ marginBottom: 10 }}>{regenMsg}</div>}
       {err && <div ref={errRef} className="tc-err">{err}</div>}
 
       {canGenerateBracket && mode === "choose" ? (
