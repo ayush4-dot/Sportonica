@@ -34,7 +34,13 @@
 -- Run AFTER: tournaments.sql (build_knockout_bracket, build_round_robin,
 -- tournament_matches, is_tournament_organizer, has_venue_access,
 -- is_super_admin). Idempotent, not destructive to played matches.
+--
+-- Drops first: an earlier version of this function (shipped in this same
+-- file, before this fix) returned void — Postgres refuses to
+-- `create or replace` a function into a different return type.
 -- ================================================================
+
+drop function if exists public.regenerate_tournament_fixtures(uuid);
 
 create or replace function public.regenerate_tournament_fixtures(p_tournament_id uuid)
 returns text
