@@ -18,11 +18,22 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   the registration checkout shows the host's QR; the Control Center "Payments"
   tab is now actionable for organizers.
 
+- `[db]` `tournament_late_reg_refixture.sql` — `create_walkin_team()` now
+  calls `regenerate_tournament_fixtures()` after adding a team: if a
+  bracket/schedule already exists and nothing has been played yet, it's
+  rebuilt from the current confirmed team list so fixtures always match
+  who's actually registered. No-op once any match has a result.
+
 ### Changed
 -
 
 ### Fixed
--
+- `[db]` `tournament_walkin_phone_optional.sql` had accidentally
+  reintroduced the `registration_open`-only guard on `create_walkin_team()`
+  that `tournament_team_edit.sql` deliberately removed — an
+  organizer/venue-manager/super_admin could no longer add a walk-in team
+  once registration closed. Removed again; capacity (`TOURNAMENT_FULL`)
+  still applies.
 
 ---
 
