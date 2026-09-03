@@ -7,6 +7,12 @@
 // directly: the "what to say" and the "how to send it" are different
 // jobs with different reasons to change.
 // ================================================================
+// NOTE: server-only. This module and notify.ts read
+// SUPABASE_SERVICE_ROLE_KEY / SMTP creds — never import them from a
+// client component. (notify.ts also transitively imports next/headers,
+// which hard-errors in a client bundle. Consider adding the `server-only`
+// package for an explicit guard.)
+// ================================================================
 
 export interface Mail {
   to: string;

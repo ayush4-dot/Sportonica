@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { actionError, isActionError, type ActionError } from "@/lib/actionError";
+import { actionError, isActionError, safeActionError, type ActionError } from "@/lib/actionError";
 
 async function requireUser() {
   const sb = await createClient();
@@ -30,12 +30,37 @@ function extractCoords(url: string): { lat: number; lng: number } | null {
   return null;
 }
 
+// Only Google's own map hosts — this function makes the server issue an
+// outbound request to a URL a user pasted, so without an allowlist it's
+// an SSRF into the cloud metadata endpoint / internal services.
+const MAPS_HOSTS = new Set([
+  "google.com", "www.google.com", "maps.google.com",
+  "goo.gl", "maps.app.goo.gl", "app.goo.gl",
+]);
+function isAllowedMapsUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    if (u.protocol !== "https:") return false;
+    const host = u.hostname.toLowerCase();
+    return MAPS_HOSTS.has(host) || host.endsWith(".google.com");
+  } catch {
+    return false;
+  }
+}
+
 // Short links (maps.app.goo.gl / goo.gl/maps) don't contain coordinates.
 // We follow the redirect server-side to get the real URL, then parse that.
 async function expandShortLink(url: string): Promise<string> {
+  if (!isAllowedMapsUrl(url)) return url;
   try {
-    const res = await fetch(url, { redirect: "follow", method: "GET" });
-    return res.url || url;
+    const res = await fetch(url, {
+      redirect: "follow",
+      method: "GET",
+      signal: AbortSignal.timeout(5000),
+    });
+    // The redirect target must still be a Google host — a shortlink could
+    // 302 anywhere otherwise.
+    return isAllowedMapsUrl(res.url) ? res.url : url;
   } catch {
     return url;
   }
@@ -47,7 +72,9 @@ export async function parseMapsUrl(rawUrl: string): Promise<{
   lat: number; lng: number; url: string;
 } | ActionError> {
   const url = rawUrl.trim();
-  if (!/^https?:\/\//.test(url)) return actionError("Paste a full Google Maps link (starting with https://).");
+  if (!/^https:\/\//.test(url) || !isAllowedMapsUrl(url)) {
+    return actionError("Paste a full Google Maps link (starting with https://).");
+  }
 
   let coords = extractCoords(url);
   let finalUrl = url;
@@ -79,7 +106,7 @@ export async function saveVenueLocation(venueId: string, rawUrl: string) {
     .from("venues")
     .update({ lat, lng, maps_url: url })
     .eq("id", venueId);
-  if (error) return actionError(error.message);
+  if (error) return safeActionError(error, "Could not save that location.");
 
   revalidatePath(`/admin/venues/${venueId}`);
   return { lat, lng, url };
