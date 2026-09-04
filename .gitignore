@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local copies of DB migrations for manual application — never committed
+RUN_ME*.sql
