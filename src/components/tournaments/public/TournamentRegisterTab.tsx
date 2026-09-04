@@ -437,7 +437,10 @@ function draftFromPlayer(p: RosterPlayer, prev?: PlayerDraft): PlayerDraft {
   };
 }
 
-function seedDrafts(guests: RosterPlayer[], minCards: number, maxCards: number, prev?: PlayerDraft[]): PlayerDraft[] {
+// How many blank player cards to show before the captain has added anyone.
+const SEED_BLANK_CARDS = 2;
+
+function seedDrafts(guests: RosterPlayer[], maxCards: number, prev?: PlayerDraft[]): PlayerDraft[] {
   const prevById = new Map((prev ?? []).filter((d) => d.id).map((d) => [d.id as string, d]));
   const server = guests.map((p) => {
     const ex = prevById.get(p.id);
@@ -447,9 +450,9 @@ function seedDrafts(guests: RosterPlayer[], minCards: number, maxCards: number, 
   });
   const unsaved = (prev ?? []).filter((d) => !d.id && (d.dirty || d.name.trim() || d.phone.trim()));
   const combined = [...server, ...unsaved];
-  // Show at least the minimum number of slots (like the mockup's "0 of 5"),
-  // and always keep one spare blank card while there's room for more.
-  const target = Math.min(maxCards, Math.max(minCards, server.length + 1));
+  // Start with a couple of blank cards as a sample, then always keep one
+  // spare blank while there's room for more.
+  const target = Math.min(maxCards, Math.max(SEED_BLANK_CARDS, server.length + 1));
   while (combined.length < target) combined.push(blankDraft());
   return combined.slice(0, Math.max(maxCards, server.length + unsaved.length));
 }
@@ -472,18 +475,17 @@ function RosterCard({
   const linkedPlayers = roster.filter((p) => p.user_id !== null && p.user_id !== team.captain_id);
   const nonGuestCount = roster.length - guestPlayers.length;
   const maxCards = Math.max(0, tournament.max_players_per_team - nonGuestCount);
-  const minCards = Math.max(0, tournament.min_players_per_team - nonGuestCount);
 
-  const [drafts, setDrafts] = useState<PlayerDraft[]>(() => seedDrafts(guestPlayers, minCards, maxCards));
+  const [drafts, setDrafts] = useState<PlayerDraft[]>(() => seedDrafts(guestPlayers, maxCards));
 
   // Re-sync while rendering whenever the saved roster changes (add / remove /
   // link), keeping any card the user is still typing into. This is React's
   // "adjust state when a prop changes" pattern, not an effect.
-  const rosterSig = `${guestPlayers.map((p) => `${p.id}:${p.jersey_number}:${p.position ?? ""}`).join("|")}#${minCards}#${maxCards}`;
+  const rosterSig = `${guestPlayers.map((p) => `${p.id}:${p.jersey_number}:${p.position ?? ""}`).join("|")}#${maxCards}`;
   const [prevSig, setPrevSig] = useState(rosterSig);
   if (prevSig !== rosterSig) {
     setPrevSig(rosterSig);
-    setDrafts((prev) => seedDrafts(guestPlayers, minCards, maxCards, prev));
+    setDrafts((prev) => seedDrafts(guestPlayers, maxCards, prev));
   }
 
   const patch = (key: string, p: Partial<PlayerDraft>) =>
