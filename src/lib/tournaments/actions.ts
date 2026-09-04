@@ -94,6 +94,27 @@ export async function listTournamentTeams(tournamentId: string): Promise<Tournam
   return (data ?? []) as TournamentTeam[];
 }
 
+// True only for someone who can run this tournament's Control Center —
+// its organiser (owner), a manager on the host venue, or a super admin.
+// A plain viewer who can merely *read* a published tournament's confirmed
+// teams (RLS tournament_teams_read_public) is not enough: the team sheet
+// exposes club address / contact person / coach — manager-only detail.
+export async function canManageTournament(tournamentId: string): Promise<boolean> {
+  const { sb, user } = await requireUser();
+  if (!user) return false;
+  const { data: t } = await sb
+    .from("tournaments").select("owner_id, venue_id").eq("id", tournamentId).maybeSingle();
+  if (!t) return false;
+  if (t.owner_id === user.id) return true;
+  const { data: prof } = await sb.from("profiles").select("role").eq("id", user.id).maybeSingle();
+  if (prof?.role === "super_admin") return true;
+  if (t.venue_id) {
+    const { data: hv } = await sb.rpc("has_venue_access", { v_id: t.venue_id, min_role: "manager" });
+    if (hv === true) return true;
+  }
+  return false;
+}
+
 // Teams plus their roster size — for the control center's Registrations
 // tab, where "how many players signed up" matters at a glance.
 export async function listTournamentTeamsWithRosterCount(tournamentId: string): Promise<

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Plus, Trash2, X, Users, UserPlus, Pencil } from "lucide-react";
+import { Check, Plus, Trash2, X, Users, UserPlus, Pencil, Download } from "lucide-react";
 import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
@@ -26,6 +26,11 @@ import TournamentAccessTab from "./TournamentAccessTab";
 import ReviewPaymentModal from "@/app/platform/payments/ReviewPaymentModal";
 import TournamentPaymentReviewModal from "./TournamentPaymentReviewModal";
 import "./tournament-console.css";
+
+// Printable team dossier route (see app/organize/tournaments/[id]/teams/sheet).
+// One route serves organiser + super admin; access is checked server-side.
+const teamSheetHref = (tournamentId: string, teamId?: string) =>
+  `/organize/tournaments/${tournamentId}/teams/sheet${teamId ? `?team=${teamId}` : ""}`;
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
 const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
@@ -200,9 +205,19 @@ export default function TournamentControlCenter({
               <div className="tc-card-t">Registered teams</div>
               <div className="tc-card-sub">Payment approval happens in Payments — Payouts &amp; Verification, same as every other booking.</div>
             </div>
-            <button className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={() => setShowWalkinModal(true)}>
-              <Plus size={14} /> Add walk-in team
-            </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {teams.length > 0 && (
+                <a
+                  className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }}
+                  href={teamSheetHref(tournament.id)} target="_blank" rel="noopener noreferrer"
+                >
+                  <Download size={14} /> Download all teams
+                </a>
+              )}
+              <button className="tc-btn" style={{ padding: "8px 12px", whiteSpace: "nowrap" }} onClick={() => setShowWalkinModal(true)}>
+                <Plus size={14} /> Add walk-in team
+              </button>
+            </div>
           </div>
           {teams.length === 0 ? (
             <div className="tc-empty">No teams have registered yet.</div>
@@ -264,6 +279,13 @@ export default function TournamentControlCenter({
                           <Users size={13} /> Roster
                         </button>
                       )}
+                      <a
+                        className="tc-btn" style={{ padding: "6px 10px" }}
+                        href={teamSheetHref(tournament.id, t.id)} target="_blank" rel="noopener noreferrer"
+                        title="Full team profile + roster, ready to print or save as PDF"
+                      >
+                        <Download size={13} /> Sheet
+                      </a>
                     </td>
                   </tr>
                 ))}
