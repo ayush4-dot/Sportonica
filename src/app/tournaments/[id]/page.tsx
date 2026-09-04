@@ -22,8 +22,14 @@ const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
   weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu",
 });
 
-export default async function TournamentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TournamentDetailPage({
+  params, searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
   const { id } = await params;
+  const { tab: initialTab } = await searchParams;
   const tournament = await getTournament(id);
   if (isActionError(tournament) || !tournament) notFound();
   // Draft/pending_approval tournaments are only visible to their vendor
@@ -114,7 +120,11 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           </div>
         </div>
 
-        <TournamentShareBar id={tournament.id} name={tournament.name} />
+        <TournamentShareBar
+          id={tournament.id}
+          name={tournament.name}
+          canRegister={["published", "registration_open", "registration_closed"].includes(tournament.status)}
+        />
 
         <div className="bk-layout">
           <div>
@@ -127,6 +137,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
               awards={awards}
               myTeam={isActionError(myTeam) ? null : myTeam}
               loggedIn={!!user}
+              initialTab={initialTab}
             />
 
             {prizes.length > 0 && (

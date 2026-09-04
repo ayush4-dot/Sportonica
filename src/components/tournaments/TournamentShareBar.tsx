@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Link2, Share2, Download, Check } from "lucide-react";
+import { Link2, Share2, Download, Check, ClipboardList } from "lucide-react";
 import { useTheme } from "@/lib/hooks/useTheme";
 
 // Three separate, explicit actions rather than one smart "Share" button —
@@ -10,13 +10,17 @@ import { useTheme } from "@/lib/hooks/useTheme";
 // designed image file. That last one is what makes "Instagram/Facebook
 // Story" show up as a share target at all — the OS only offers Story for
 // image/video files, never for a bare link.
-export default function TournamentShareBar({ id, name }: { id: string; name: string }) {
+export default function TournamentShareBar({
+  id, name, canRegister = false,
+}: { id: string; name: string; canRegister?: boolean }) {
   const [theme] = useTheme();
   const [copied, setCopied] = useState(false);
+  const [regCopied, setRegCopied] = useState(false);
   const [cardBusy, setCardBusy] = useState(false);
   const [cardDone, setCardDone] = useState(false);
 
   const url = () => `${window.location.origin}/tournaments/${id}`;
+  const regUrl = () => `${window.location.origin}/tournaments/${id}?tab=register`;
   const title = `${name} · Sportonica`;
 
   async function copyLink() {
@@ -26,6 +30,16 @@ export default function TournamentShareBar({ id, name }: { id: string; name: str
       setTimeout(() => setCopied(false), 1800);
     } catch {
       /* clipboard blocked (permissions/insecure context) — nothing more we can do here */
+    }
+  }
+
+  async function copyRegLink() {
+    try {
+      await navigator.clipboard.writeText(regUrl());
+      setRegCopied(true);
+      setTimeout(() => setRegCopied(false), 1800);
+    } catch {
+      /* clipboard blocked */
     }
   }
 
@@ -82,6 +96,12 @@ export default function TournamentShareBar({ id, name }: { id: string; name: str
         {copied ? <Check size={13} /> : <Link2 size={13} />}
         {copied ? "Copied" : "Copy link"}
       </button>
+      {canRegister && (
+        <button type="button" className="ts-btn" onClick={copyRegLink}>
+          {regCopied ? <Check size={13} /> : <ClipboardList size={13} />}
+          {regCopied ? "Copied" : "Registration link"}
+        </button>
+      )}
       <button type="button" className="ts-btn" onClick={share}>
         <Share2 size={13} /> Share
       </button>

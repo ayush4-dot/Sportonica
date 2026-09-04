@@ -253,7 +253,7 @@ export default function TournamentRegisterTab({
             <div className="rgt-lock"><LogIn size={20} /></div>
             <h3>Sign in to register your team</h3>
             <p>You&apos;ll manage the team, add players and pay — all from here.</p>
-            <a className="rgt-btn primary" href={`/login?redirect=${encodeURIComponent(`/tournaments/${tournament.id}`)}`}>
+            <a className="rgt-btn primary" href={`/login?redirect=${encodeURIComponent(`/tournaments/${tournament.id}?tab=register`)}`}>
               <LogIn size={15} /> Sign in
             </a>
           </div>
