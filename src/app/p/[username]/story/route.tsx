@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import QRCode from "qrcode";
 import {
   getProfileByUsernameAnon, getPlayerStatsAnon, getPlayerSportsAnon,
   computeBadges, trustLabel,
@@ -45,6 +46,14 @@ export async function GET(
     profile.avatar_url && /\.(jpe?g|png|gif|webp)(\?.*)?$/i.test(profile.avatar_url)
       ? profile.avatar_url
       : null;
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com";
+  // Always dark-on-white regardless of card theme — a QR needs reliable
+  // contrast to scan, which the "glass" (dark) theme's own palette can't
+  // guarantee, so it gets its own fixed-white tile instead of following C.
+  const qrDataUrl = await QRCode.toDataURL(`${siteUrl}/p/${profile.username}`, {
+    margin: 0, width: 240, color: { dark: "#0B0D11", light: "#FFFFFF" },
+  });
 
   const joined = new Date(profile.created_at).toLocaleDateString("en-GB", { month: "short", year: "numeric" });
   const maxGames = Math.max(...sports.map((s) => s.games), 1);
@@ -124,17 +133,26 @@ export async function GET(
         )}
 
         {/* footer brand */}
-        <div style={{ display: "flex", alignItems: "center", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/icons/icon-512.png`}
-            width={68} height={68}
-            style={{ borderRadius: 16, marginRight: 24 }}
-            alt=""
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
-            <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>Kathmandu&apos;s sports platform</div>
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${siteUrl}/icons/icon-512.png`}
+              width={68} height={68}
+              style={{ borderRadius: 16, marginRight: 24 }}
+              alt=""
+            />
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
+              <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>Kathmandu&apos;s sports platform</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
+            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: C.accent, marginTop: 12, display: "flex" }}>
+              SCAN TO VIEW PROFILE
+            </div>
           </div>
         </div>
       </div>

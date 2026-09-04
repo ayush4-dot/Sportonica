@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import QRCode from "qrcode";
 import { getTournament, getDisplayVenueName } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
@@ -55,6 +56,14 @@ export async function GET(
       : null;
 
   const isSingleEvent = tournament.format === "single_event";
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com";
+  // Always dark-on-white regardless of card theme — a QR needs reliable
+  // contrast to scan, which the "glass" (dark) theme's own palette can't
+  // guarantee, so it gets its own fixed-white tile instead of following C.
+  const qrDataUrl = await QRCode.toDataURL(`${siteUrl}/tournaments/${tournament.id}`, {
+    margin: 0, width: 240, color: { dark: "#0B0D11", light: "#FFFFFF" },
+  });
 
   return new ImageResponse(
     (
@@ -120,17 +129,26 @@ export async function GET(
           </div>
 
           {/* footer brand */}
-          <div style={{ display: "flex", alignItems: "center", marginTop: "auto", paddingTop: 56 }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/icons/icon-512.png`}
-              width={68} height={68}
-              style={{ borderRadius: 16, marginRight: 24 }}
-              alt=""
-            />
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
-              <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 56 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${siteUrl}/icons/icon-512.png`}
+                width={68} height={68}
+                style={{ borderRadius: 16, marginRight: 24 }}
+                alt=""
+              />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
+                <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: accent, marginTop: 12, display: "flex" }}>
+                SCAN TO REGISTER
+              </div>
             </div>
           </div>
         </div>
