@@ -1,18 +1,24 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Check, Trophy, Users, UserPlus, X, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
+  Check, Trophy, Users, Plus, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
+  User, Phone, Mail, Hash, MapPin,
 } from "lucide-react";
 import {
-  registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer, uploadTeamLogo,
+  registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
+  updateTeamPlayerGuest, uploadTeamLogo,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
 
-type RosterPlayer = { id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null; jersey_number: number | null; position: string | null };
+type RosterPlayer = {
+  id: string; user_id: string | null; role: string; name: string; username: string | null;
+  avatar_url: string | null; jersey_number: number | null; position: string | null;
+  guest_name: string | null; guest_phone: string | null; guest_email: string | null;
+};
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
 const dateLabel = (iso: string) =>
@@ -44,7 +50,6 @@ export default function TournamentRegisterTab({
   const [logoUploading, setLogoUploading] = useState(false);
   const [iPlay, setIPlay] = useState(false);
   const [ackTerms, setAckTerms] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
 
   function submitLogo(file: File) {
     setLogoUploading(true);
@@ -178,6 +183,12 @@ export default function TournamentRegisterTab({
     });
   }
 
+  async function refetchRoster() {
+    if (!team) return;
+    const r = await getTeamRoster(team.id);
+    if (!isActionError(r)) setRoster(r);
+  }
+
   function removePlayer(p: RosterPlayer) {
     if (!window.confirm(`Remove ${p.name} from the roster?`)) return;
     setErr(null);
@@ -292,13 +303,9 @@ export default function TournamentRegisterTab({
           </div>
           <RosterCard
             team={team} roster={roster} tournament={tournament} managerOnRoster={managerOnRoster}
-            regOpen={regOpen} onAdd={() => setShowAdd(true)} onRemove={removePlayer}
+            regOpen={regOpen} onRemove={removePlayer} onRosterChanged={refetchRoster}
             onToggleIPlay={toggleIPlay} pending={pending} err={err}
           />
-          {showAdd && (
-            <AddPlayerModal teamId={team.id} onClose={() => setShowAdd(false)}
-              onAdded={async () => { const r = await getTeamRoster(team.id); if (!isActionError(r)) setRoster(r); }} />
-          )}
         </>
       ) : (team.status === "rejected" || team.status === "withdrawn") ? (
         /* ── Rejected / withdrawn — register again ──────────────── */
@@ -336,7 +343,7 @@ export default function TournamentRegisterTab({
 
           <RosterCard
             team={team} roster={roster} tournament={tournament} managerOnRoster={managerOnRoster}
-            regOpen={regOpen} onAdd={() => setShowAdd(true)} onRemove={removePlayer}
+            regOpen={regOpen} onRemove={removePlayer} onRosterChanged={refetchRoster}
             onToggleIPlay={toggleIPlay} pending={pending} err={err}
           />
 
@@ -367,11 +374,6 @@ export default function TournamentRegisterTab({
               />
             </div>
           )}
-
-          {showAdd && (
-            <AddPlayerModal teamId={team.id} onClose={() => setShowAdd(false)}
-              onAdded={async () => { const r = await getTeamRoster(team.id); if (!isActionError(r)) setRoster(r); }} />
-          )}
         </>
       )}
     </div>
@@ -393,35 +395,145 @@ function Stepper({ active, paid }: { active: number; paid: boolean }) {
   );
 }
 
-// ── Roster card ────────────────────────────────────────────────────
+// ── Roster: one editable card per player ───────────────────────────
+type PlayerDraft = {
+  key: string;
+  id: string | null;          // roster row id once saved
+  role: "player" | "substitute";
+  name: string;
+  phone: string;
+  email: string;
+  jersey: string;
+  position: string;
+  saving: boolean;
+  saved: boolean;
+  error: string | null;
+  dirty: boolean;
+};
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const draftKey = () =>
+  (typeof crypto !== "undefined" && crypto.randomUUID) ? crypto.randomUUID() : `d${Math.random().toString(36).slice(2)}`;
+
+function blankDraft(): PlayerDraft {
+  return {
+    key: draftKey(), id: null, role: "player",
+    name: "", phone: "", email: "", jersey: "", position: "",
+    saving: false, saved: false, error: null, dirty: false,
+  };
+}
+
+function draftFromPlayer(p: RosterPlayer, prev?: PlayerDraft): PlayerDraft {
+  return {
+    key: prev?.key ?? p.id,
+    id: p.id,
+    role: p.role === "substitute" ? "substitute" : "player",
+    name: p.guest_name ?? (p.name === "Player" ? "" : p.name),
+    phone: p.guest_phone ?? "",
+    email: p.guest_email ?? "",
+    jersey: p.jersey_number != null ? String(p.jersey_number) : "",
+    position: p.position ?? "",
+    saving: false, saved: false, error: null, dirty: false,
+  };
+}
+
+function seedDrafts(guests: RosterPlayer[], minCards: number, maxCards: number, prev?: PlayerDraft[]): PlayerDraft[] {
+  const prevById = new Map((prev ?? []).filter((d) => d.id).map((d) => [d.id as string, d]));
+  const server = guests.map((p) => {
+    const ex = prevById.get(p.id);
+    if (ex && (ex.dirty || ex.saving)) return ex;
+    const fresh = draftFromPlayer(p, ex);
+    return ex ? { ...fresh, saved: ex.saved } : fresh;
+  });
+  const unsaved = (prev ?? []).filter((d) => !d.id && (d.dirty || d.name.trim() || d.phone.trim()));
+  const combined = [...server, ...unsaved];
+  // Show at least the minimum number of slots (like the mockup's "0 of 5"),
+  // and always keep one spare blank card while there's room for more.
+  const target = Math.min(maxCards, Math.max(minCards, server.length + 1));
+  while (combined.length < target) combined.push(blankDraft());
+  return combined.slice(0, Math.max(maxCards, server.length + unsaved.length));
+}
+
 function RosterCard({
-  team, roster, tournament, managerOnRoster, regOpen, onAdd, onRemove, onToggleIPlay, pending, err,
+  team, roster, tournament, managerOnRoster, regOpen, onRemove, onRosterChanged, onToggleIPlay, pending, err,
 }: {
   team: TournamentTeam;
   roster: RosterPlayer[];
   tournament: Tournament;
   managerOnRoster: boolean;
   regOpen: boolean;
-  onAdd: () => void;
   onRemove: (p: RosterPlayer) => void;
+  onRosterChanged: () => Promise<void> | void;
   onToggleIPlay: (next: boolean) => void;
   pending: boolean;
   err: string | null;
 }) {
-  const full = roster.length >= tournament.max_players_per_team;
-  const belowMin = roster.length < tournament.min_players_per_team;
+  const guestPlayers = roster.filter((p) => p.user_id === null);
+  const linkedPlayers = roster.filter((p) => p.user_id !== null && p.user_id !== team.captain_id);
+  const nonGuestCount = roster.length - guestPlayers.length;
+  const maxCards = Math.max(0, tournament.max_players_per_team - nonGuestCount);
+  const minCards = Math.max(0, tournament.min_players_per_team - nonGuestCount);
+
+  const [drafts, setDrafts] = useState<PlayerDraft[]>(() => seedDrafts(guestPlayers, minCards, maxCards));
+
+  // Re-sync while rendering whenever the saved roster changes (add / remove /
+  // link), keeping any card the user is still typing into. This is React's
+  // "adjust state when a prop changes" pattern, not an effect.
+  const rosterSig = `${guestPlayers.map((p) => `${p.id}:${p.jersey_number}:${p.position ?? ""}`).join("|")}#${minCards}#${maxCards}`;
+  const [prevSig, setPrevSig] = useState(rosterSig);
+  if (prevSig !== rosterSig) {
+    setPrevSig(rosterSig);
+    setDrafts((prev) => seedDrafts(guestPlayers, minCards, maxCards, prev));
+  }
+
+  const patch = (key: string, p: Partial<PlayerDraft>) =>
+    setDrafts((prev) => prev.map((d) => (d.key === key ? { ...d, ...p } : d)));
+
+  const edit = (key: string, field: keyof PlayerDraft, value: string) =>
+    patch(key, { [field]: value, dirty: true, saved: false, error: null });
+
+  async function saveDraft(key: string) {
+    const d = drafts.find((x) => x.key === key);
+    if (!d || d.saving || !d.dirty) return;
+    const name = d.name.trim();
+    if (!name) return; // nothing to save until it's named
+    patch(key, { saving: true, error: null });
+    const jersey = d.jersey.trim() ? Number(d.jersey.trim()) : undefined;
+    const res = d.id
+      ? await updateTeamPlayerGuest(d.id, name, d.phone.trim(), d.email.trim() || undefined, jersey, d.position.trim() || undefined)
+      : await addTeamGuestPlayer(team.id, name, d.phone.trim() || undefined, d.email.trim() || undefined, d.role, jersey, d.position.trim() || undefined);
+    if (isActionError(res)) { patch(key, { saving: false, error: res.message }); return; }
+    patch(key, { saving: false, dirty: false, saved: true, id: res.id });
+    await onRosterChanged();
+  }
+
+  function addCard() {
+    setDrafts((prev) => (prev.length >= maxCards ? prev : [...prev, blankDraft()]));
+  }
+
+  function removeCard(d: PlayerDraft) {
+    if (!d.id) { setDrafts((prev) => prev.filter((x) => x.key !== d.key)); return; }
+    const rp = roster.find((x) => x.id === d.id);
+    if (rp) onRemove(rp);
+  }
+
+  const filled = roster.length;
+  const need = tournament.min_players_per_team;
+  const belowMin = filled < need;
+
   return (
     <div className="rgt-card">
       <div className="rgt-roster-head">
         <div>
-          <div className="rgt-step-t" style={{ marginBottom: 2 }}>Roster</div>
+          <div className="rgt-step-t" style={{ marginBottom: 2 }}>Players</div>
           <div className="rgt-hint" style={{ margin: 0 }}>
-            {roster.length} / {tournament.max_players_per_team} players
-            {belowMin && <span style={{ color: "#d97706" }}> · need at least {tournament.min_players_per_team}</span>}
+            {filled} of {need} slots filled{belowMin
+              ? ` — at least ${need} players with name and phone are required.`
+              : " — minimum reached."}
           </div>
         </div>
-        {regOpen && !full && (
-          <button className="rgt-btn primary sm" onClick={onAdd}><UserPlus size={14} /> Add player</button>
+        {regOpen && drafts.length < maxCards && (
+          <button className="rgt-btn primary sm" onClick={addCard}><Plus size={14} /> Add</button>
         )}
       </div>
 
@@ -440,99 +552,126 @@ function RosterCard({
         )}
       </div>
 
-      {roster.length === 0 ? (
-        <div className="rgt-roster-empty">No players yet — add your squad above.</div>
-      ) : (
-        <div className="rgt-roster">
-          {roster.map((p) => (
-            <div key={p.id} className="rgt-player">
-              <span className="rgt-av">{p.name.charAt(0).toUpperCase()}</span>
-              <span className="rgt-player-name">
-                {p.name}
-                {p.jersey_number != null && <span className="rgt-tag">#{p.jersey_number}</span>}
-                {p.position && <span className="rgt-tag">{p.position}</span>}
-                {p.user_id === team.captain_id && <span className="rgt-tag">you</span>}
-                {p.role === "substitute" && <span className="rgt-tag sub">sub</span>}
-              </span>
-              {regOpen && p.user_id !== team.captain_id && (
-                <button className="rgt-x" onClick={() => onRemove(p)} aria-label={`Remove ${p.name}`}><Trash2 size={14} /></button>
+      {/* Players who already have an account — shown read-only here */}
+      {linkedPlayers.map((p, i) => (
+        <div key={p.id} className="rgt-pcard readonly">
+          <div className="rgt-pcard-head">
+            <span className="rgt-pnum">{pad2(i + 1)}</span>
+            <span className="rgt-pav">{p.name.charAt(0).toUpperCase()}</span>
+            <div style={{ flex: 1 }}>
+              <div className="rgt-ptitle">{p.name}</div>
+              <div className="rgt-pcard-sub">
+                Linked account
+                {p.jersey_number != null ? ` · #${p.jersey_number}` : ""}
+                {p.position ? ` · ${p.position}` : ""}
+                {p.role === "substitute" ? " · sub" : ""}
+              </div>
+            </div>
+            {regOpen && (
+              <button className="rgt-pdel" onClick={() => onRemove(p)} aria-label={`Remove ${p.name}`}><Trash2 size={15} /></button>
+            )}
+          </div>
+        </div>
+      ))}
+
+      {/* One editable card per player */}
+      {drafts.map((d, i) => {
+        const num = linkedPlayers.length + i + 1;
+        const status = d.saving
+          ? "Saving…"
+          : d.error
+            ? d.error
+            : d.saved && !d.dirty
+              ? "Saved"
+              : d.id
+                ? "On the roster"
+                : "Not saved yet";
+        return (
+          <div
+            key={d.key}
+            className="rgt-pcard"
+            onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) saveDraft(d.key); }}
+          >
+            <div className="rgt-pcard-head">
+              <span className="rgt-pnum">{pad2(num)}</span>
+              <span className="rgt-pav">{d.name.trim() ? d.name.trim().charAt(0).toUpperCase() : <User size={15} />}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="rgt-ptitle">{d.name.trim() || `Player ${num}`}</div>
+                <div className="rgt-pcard-sub" style={d.error ? { color: "#ef4444" } : d.saved && !d.dirty ? { color: "var(--g)" } : undefined}>
+                  {status}
+                </div>
+              </div>
+              {regOpen && (
+                <button className="rgt-pdel" onClick={() => removeCard(d)} aria-label={`Remove player ${num}`} disabled={d.saving}>
+                  <Trash2 size={15} />
+                </button>
               )}
             </div>
-          ))}
-        </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Player name<span className="rgt-req">*</span></label>
+              <div className="rgt-ig">
+                <User size={16} />
+                <input className="rgt-in" value={d.name} disabled={!regOpen}
+                  onChange={(e) => edit(d.key, "name", e.target.value)} placeholder="Full name" />
+              </div>
+            </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Phone number<span className="rgt-req">*</span></label>
+              <div className="rgt-ig">
+                <Phone size={16} />
+                <input className="rgt-in" inputMode="tel" value={d.phone} disabled={!regOpen}
+                  onChange={(e) => edit(d.key, "phone", e.target.value)} placeholder="98XXXXXXXX" />
+              </div>
+            </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Email</label>
+              <div className="rgt-ig">
+                <Mail size={16} />
+                <input className="rgt-in" type="email" value={d.email} disabled={!regOpen}
+                  onChange={(e) => edit(d.key, "email", e.target.value)} placeholder="player@example.com" />
+              </div>
+              <p className="rgt-fhint">Lets this player sign in later and see their own stats.</p>
+            </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Jersey no.</label>
+              <div className="rgt-ig">
+                <Hash size={16} />
+                <input className="rgt-in" type="number" min={1} max={99} value={d.jersey} disabled={!regOpen}
+                  onChange={(e) => edit(d.key, "jersey", e.target.value)} placeholder="e.g. 10" />
+              </div>
+              <p className="rgt-fhint">1–99, must be unique in the squad.</p>
+            </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Position</label>
+              <div className="rgt-ig">
+                <MapPin size={16} />
+                <input className="rgt-in" value={d.position} disabled={!regOpen}
+                  onChange={(e) => edit(d.key, "position", e.target.value)} placeholder="e.g. Goalkeeper" />
+              </div>
+            </div>
+
+            <div className="rgt-field">
+              <label className="rgt-flabel">Squad role</label>
+              <select className="rgt-in" value={d.role} disabled={!regOpen}
+                onChange={(e) => edit(d.key, "role", e.target.value)}>
+                <option value="player">Player</option>
+                <option value="substitute">Substitute</option>
+              </select>
+            </div>
+          </div>
+        );
+      })}
+
+      {regOpen && drafts.length < maxCards && (
+        <button className="rgt-btn rgt-addplayer" onClick={addCard}><Plus size={15} /> Add another player</button>
       )}
+
       {err && <div className="rgt-err">{err}</div>}
-    </div>
-  );
-}
-
-// ── Add-player modal (name + optional email/phone) ─────────────────
-function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose: () => void; onAdded: () => void }) {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [jersey, setJersey] = useState("");
-  const [position, setPosition] = useState("");
-  const [role, setRole] = useState<"player" | "substitute">("player");
-  const [err, setErr] = useState<string | null>(null);
-  const [justAdded, setJustAdded] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  // Some mobile keyboards/autofill (contact-name suggestions especially)
-  // set the input's DOM value directly without firing a React-visible
-  // event, so `name` state can still read "" even though the field shows
-  // text on screen. Read the live DOM value as a fallback at submit time
-  // instead of trusting only the possibly-stale React state.
-  const nameRef = useRef<HTMLInputElement>(null);
-
-  function add() {
-    const value = name.trim() || nameRef.current?.value.trim() || "";
-    if (!value) { setErr("Enter the player's name."); return; }
-    setErr(null);
-    startTransition(async () => {
-      const res = await addTeamGuestPlayer(
-        teamId, value, phone.trim() || undefined, email.trim() || undefined, role,
-        jersey.trim() ? Number(jersey.trim()) : undefined, position.trim() || undefined,
-      );
-      if (isActionError(res)) { setErr(res.message); return; }
-      setJustAdded(value);
-      setName(""); setEmail(""); setPhone(""); setJersey(""); setPosition(""); setRole("player");
-      onAdded();
-      setTimeout(() => setJustAdded(null), 2500);
-    });
-  }
-
-  return (
-    <div className="rgt-scrim" onClick={onClose}>
-      <div className="rgt-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="rgt-modal-head">
-          <h3>Add a player</h3>
-          <button aria-label="Close" onClick={onClose} className="rgt-x lg"><X size={18} /></button>
-        </div>
-        <p className="rgt-hint" style={{ marginTop: 0 }}>
-          Only a name is required. Add an email so this player can sign in later and see their own stats.
-        </p>
-        <input ref={nameRef} className="rgt-in" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player's name" />
-        <input className="rgt-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" />
-        <input className="rgt-in" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
-        <input
-          className="rgt-in" type="number" min={0} value={jersey}
-          onChange={(e) => setJersey(e.target.value)} placeholder="Jersey number (optional)"
-        />
-        <input
-          className="rgt-in" value={position}
-          onChange={(e) => setPosition(e.target.value)} placeholder="Position (optional)"
-        />
-        <select className="rgt-in" value={role} onChange={(e) => setRole(e.target.value as "player" | "substitute")}>
-          <option value="player">Player</option>
-          <option value="substitute">Substitute</option>
-        </select>
-        {err && <div className="rgt-err">{err}</div>}
-        {justAdded && <div className="rgt-ok"><Check size={14} /> Added {justAdded}.</div>}
-        <div className="rgt-modal-actions">
-          <button className="rgt-btn primary" onClick={add} disabled={pending}>{pending ? "Adding…" : "Add player"}</button>
-          <button className="rgt-btn" onClick={onClose}>Done</button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -627,10 +766,25 @@ const RGT_CSS = `
 }
 [data-theme="paper"] .rgt-in { background: #fbfaf7; border-color: rgba(20,23,30,0.14); }
 .rgt-in:focus { outline: none; border-color: var(--g); box-shadow: 0 0 0 3px rgba(0,135,90,0.14); }
-select.rgt-in { margin-top: 8px; }
 .rgt-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 520px) { .rgt-row { grid-template-columns: 1fr; } }
 .rgt-hint { font-size: 11.5px; opacity: .6; margin: 7px 0 0; line-height: 1.5; }
+
+/* Labelled field group (icon + uppercase label + helper text) */
+.rgt-field { margin-top: 15px; }
+.rgt-pcard .rgt-field:first-of-type { margin-top: 0; }
+.rgt-flabel {
+  display: block; font-size: 11px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; opacity: .58; margin-bottom: 7px;
+}
+.rgt-req { color: #ef4444; margin-left: 3px; }
+.rgt-ig { position: relative; display: flex; align-items: center; }
+.rgt-ig > svg {
+  position: absolute; left: 13px; color: var(--g); opacity: .85; pointer-events: none;
+}
+.rgt-ig .rgt-in { padding-left: 40px; }
+.rgt-field select.rgt-in { margin-top: 0; }
+.rgt-fhint { font-size: 11px; opacity: .55; margin: 6px 0 0; line-height: 1.45; }
 
 .rgt-check { display: flex; align-items: flex-start; gap: 9px; font-size: 13px; opacity: .85; margin-top: 14px; cursor: pointer; line-height: 1.4; }
 .rgt-check input { margin-top: 2px; accent-color: var(--g); width: 16px; height: 16px; flex-shrink: 0; }
@@ -674,27 +828,35 @@ select.rgt-in { margin-top: 8px; }
 .rgt-mini-check { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; opacity: .8; cursor: pointer; white-space: nowrap; }
 .rgt-mini-check input { accent-color: var(--g); }
 
-.rgt-roster { display: flex; flex-direction: column; gap: 6px; }
-.rgt-roster-empty { text-align: center; font-size: 12.5px; opacity: .55; padding: 18px 0; }
-.rgt-player { display: flex; align-items: center; gap: 11px; padding: 9px 10px; border-radius: 11px; background: rgba(255,255,255,0.03); }
-[data-theme="paper"] .rgt-player { background: rgba(20,23,30,0.03); }
-.rgt-player-name { flex: 1; font-size: 13.5px; display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.rgt-tag { font-size: 9.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; background: rgba(0,135,90,0.16); color: var(--g); }
-.rgt-tag.sub { background: rgba(128,128,128,0.18); color: inherit; opacity: .7; }
 .rgt-av {
   width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0; display: grid; place-items: center;
   font-size: 12px; font-weight: 800; color: #fff; background: linear-gradient(150deg, var(--gd), #1e3932);
 }
 .rgt-av.mgr { background: linear-gradient(150deg, var(--g), var(--gd)); }
-.rgt-x { background: none; border: none; color: #ef4444; opacity: .7; cursor: pointer; padding: 4px; display: flex; }
-.rgt-x:hover { opacity: 1; }
-.rgt-x.lg { color: inherit; opacity: .6; width: 40px; height: 40px; align-items: center; justify-content: center; }
 
-.rgt-scrim { position: fixed; inset: 0; background: rgba(6,7,10,0.72); backdrop-filter: blur(6px); z-index: 400; display: grid; place-items: center; padding: 20px; }
-.rgt-modal { width: 100%; max-width: 420px; background: #14171E; color: #F2EDE6; border: 1px solid rgba(242,237,230,0.12); border-radius: 18px; padding: 22px; }
-[data-theme="paper"] .rgt-modal { background: #fff; color: #14171E; border-color: rgba(20,23,30,0.1); }
-.rgt-modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.rgt-modal-head h3 { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; margin: 0; }
-.rgt-modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-.rgt-modal-actions .rgt-btn { flex: 1; }
+/* One card per player */
+.rgt-pcard {
+  border: 1px solid rgba(242,237,230,0.1); border-radius: 15px; padding: 15px; margin-bottom: 10px;
+  background: rgba(255,255,255,0.02);
+}
+[data-theme="paper"] .rgt-pcard { border-color: rgba(20,23,30,0.09); background: rgba(20,23,30,0.015); }
+.rgt-pcard.readonly { opacity: .92; }
+.rgt-pcard-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.rgt-pnum {
+  flex-shrink: 0; width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center;
+  font-size: 11px; font-weight: 800; color: #0a1f16;
+  background: linear-gradient(150deg, #7bd88f, var(--g));
+}
+.rgt-pav {
+  flex-shrink: 0; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center;
+  font-size: 12px; font-weight: 800; color: #fff; background: linear-gradient(150deg, var(--gd), #1e3932);
+}
+.rgt-ptitle { font-size: 13.5px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rgt-pcard-sub { font-size: 10.5px; opacity: .6; margin-top: 1px; }
+.rgt-pdel {
+  flex-shrink: 0; background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #ef4444;
+  width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; cursor: pointer;
+}
+.rgt-pdel:disabled { opacity: .4; cursor: not-allowed; }
+.rgt-addplayer { width: 100%; margin-top: 2px; border-style: dashed; }
 `;
