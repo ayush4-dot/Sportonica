@@ -511,6 +511,7 @@ export async function cancelTournament(id: string, reason: string): Promise<Tour
 export type TeamDetails = {
   clubName: string; clubAddress: string; contactPersonName: string; contactPhone: string; contactEmail: string;
   logoUrl?: string;
+  coachName?: string; coachPhone?: string;
 };
 
 export async function registerTeam(
@@ -527,6 +528,7 @@ export async function registerTeam(
     p_club_name: details.clubName, p_club_address: details.clubAddress,
     p_contact_person_name: details.contactPersonName, p_contact_phone: details.contactPhone,
     p_contact_email: details.contactEmail, p_logo_url: details.logoUrl || null,
+    p_coach_name: details.coachName || null, p_coach_phone: details.coachPhone || null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   revalidatePath(`/tournaments/${tournamentId}`);
@@ -546,6 +548,7 @@ export async function updateTeamDetails(
     p_contact_person_name: details.contactPersonName, p_contact_phone: details.contactPhone,
     p_contact_email: details.contactEmail, p_manager_name: managerName, p_manager_phone: managerPhone,
     p_logo_url: details.logoUrl || null,
+    p_coach_name: details.coachName || null, p_coach_phone: details.coachPhone || null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeam;
@@ -722,15 +725,17 @@ export async function updateTeamName(teamId: string, name: string): Promise<Tour
   return data as TournamentTeam;
 }
 
-// Admin/organizer-only — set or edit a team's manager after the fact
-// (registered without one, or fixing a typo).
+// Admin/organizer-only — set or edit a team's manager (and optional
+// coach) after the fact (registered without one, or fixing a typo).
 export async function updateTeamManager(
-  teamId: string, managerName?: string, managerPhone?: string
+  teamId: string, managerName?: string, managerPhone?: string,
+  coachName?: string, coachPhone?: string,
 ): Promise<TournamentTeam | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("update_team_manager", {
     p_team_id: teamId, p_manager_name: managerName || null, p_manager_phone: managerPhone || null,
+    p_coach_name: coachName || null, p_coach_phone: coachPhone || null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeam;
