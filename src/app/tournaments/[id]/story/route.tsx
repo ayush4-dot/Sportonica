@@ -66,8 +66,10 @@ export async function GET(
   // Always dark-on-white regardless of card theme — a QR needs reliable
   // contrast to scan, which the "glass" (dark) theme's own palette can't
   // guarantee, so it gets its own fixed-white tile instead of following C.
+  // `margin: 2` keeps the mandatory quiet zone; a high render width means
+  // it stays crisp at the larger on-card size.
   const qrDataUrl = await QRCode.toDataURL(qrTarget, {
-    margin: 0, width: 240, color: { dark: "#0B0D11", light: "#FFFFFF" },
+    margin: 2, width: 480, errorCorrectionLevel: "M", color: { dark: "#0B0D11", light: "#FFFFFF" },
   });
 
   return new ImageResponse(
@@ -149,9 +151,11 @@ export async function GET(
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
-              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: accent, marginTop: 12, display: "flex" }}>
+              <div style={{ display: "flex", padding: 14, background: "#FFFFFF", borderRadius: 18 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrDataUrl} width={220} height={220} alt="" />
+              </div>
+              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 3, color: accent, marginTop: 14, display: "flex" }}>
                 {canRegister ? "SCAN TO REGISTER" : "SCAN FOR DETAILS"}
               </div>
             </div>
