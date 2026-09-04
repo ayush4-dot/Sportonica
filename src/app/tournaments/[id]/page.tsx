@@ -62,11 +62,29 @@ export default async function TournamentDetailPage({ params }: { params: Promise
   }
 
   const phoneHref = tournament.contact_phone ? telHref(tournament.contact_phone) : null;
+  // The "Other" prize field is one freeform text input — organizers commonly
+  // list several awards as "(Name: Amount) (Name: Amount) …". When every
+  // parenthesized group follows that "name: amount" shape, split it into
+  // its own clean rows instead of dumping one run-on line under "Other".
+  // Anything that doesn't match the shape (plain prose, no parens) falls
+  // back to a single row, laid out to wrap safely instead of overlapping.
+  function splitOtherPrizes(text: string): [string, string][] | null {
+    const groups = [...text.matchAll(/\(([^)]+)\)/g)].map((m) => m[1].trim()).filter(Boolean);
+    if (groups.length === 0) return null;
+    const rows: [string, string][] = [];
+    for (const g of groups) {
+      const i = g.indexOf(":");
+      if (i === -1) return null;
+      rows.push([g.slice(0, i).trim(), g.slice(i + 1).trim()]);
+    }
+    return rows;
+  }
+  const otherPrizes = tournament.prize_other ? splitOtherPrizes(tournament.prize_other) : null;
   const prizes = [
     tournament.prize_winner && ["Winner", tournament.prize_winner],
     tournament.prize_runner_up && ["Runner-up", tournament.prize_runner_up],
     tournament.prize_mvp && ["MVP", tournament.prize_mvp],
-    tournament.prize_other && ["Other", tournament.prize_other],
+    ...(otherPrizes ?? (tournament.prize_other ? [["Other", tournament.prize_other]] : [])),
   ].filter(Boolean) as [string, string][];
 
   return (
@@ -114,8 +132,10 @@ export default async function TournamentDetailPage({ params }: { params: Promise
             {prizes.length > 0 && (
               <div className="bk-panel">
                 <h3>Prizes</h3>
-                {prizes.map(([label, value]) => (
-                  <div key={label} className="bk-sum-row"><span className="lbl">{label}</span><span className="val">{value}</span></div>
+                {prizes.map(([label, value], i) => (
+                  <div key={`${label}-${i}`} className={`bk-sum-row${otherPrizes === null && label === "Other" ? " wrap" : ""}`}>
+                    <span className="lbl">{label}</span><span className="val">{value}</span>
+                  </div>
                 ))}
               </div>
             )}

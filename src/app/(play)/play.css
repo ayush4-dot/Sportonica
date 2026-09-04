@@ -225,9 +225,15 @@
 
 /* Sticky summary / checkout */
 .bk-summary { position: sticky; top: 100px; }
-.bk-sum-row { display: flex; justify-content: space-between; align-items: baseline; padding: 9px 0; font-size: 14px; }
-.bk-sum-row .lbl { color: var(--dim); }
-.bk-sum-row .val { font-family: 'Inter', sans-serif; font-weight: 600; }
+.bk-sum-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 9px 0; font-size: 14px; }
+.bk-sum-row .lbl { color: var(--dim); flex-shrink: 0; }
+.bk-sum-row .val { font-family: 'Inter', sans-serif; font-weight: 600; text-align: right; }
+/* Long freeform values (e.g. a catch-all "Other" prize entry) can't sit
+   flush against the label on one baseline without crowding or
+   overlapping it — stack label above value instead of fighting for
+   the same line. */
+.bk-sum-row.wrap { flex-direction: column; align-items: flex-start; gap: 4px; }
+.bk-sum-row.wrap .val { text-align: left; line-height: 1.6; }
 .bk-sum-total { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 14px; }
 .bk-sum-total .val { font-size: 22px; color: var(--sodium); }
 
