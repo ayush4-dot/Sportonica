@@ -27,6 +27,15 @@ const TAB_ICON: Record<Tab, ComponentType<{ size?: number }>> = {
   "Player Stats": BarChart3, Teams: Users,
 };
 
+const tabSlug = (t: Tab) => t.toLowerCase().replace(/\s+/g, "-");
+// Accepts "register", "player-stats", "playerstats", "Teams", … from a
+// shared/QR link and maps it to a real tab (case- and separator-insensitive).
+function tabFromParam(raw: string | null | undefined): Tab | null {
+  if (!raw) return null;
+  const norm = raw.toLowerCase().replace(/[\s_-]+/g, "");
+  return TABS.find((t) => t.toLowerCase().replace(/[\s_-]+/g, "") === norm) ?? null;
+}
+
 function statusInfo(status: Tournament["status"]): { label: string; cls: string } {
   if (status === "live") return { label: "Ongoing", cls: "ongoing" };
   if (status === "completed") return { label: "Completed", cls: "completed" };
@@ -35,7 +44,7 @@ function statusInfo(status: Tournament["status"]): { label: string; cls: string 
 }
 
 export default function EventTabs({
-  tournament, teams, matches, standingsByGroup, playerStats, awards, myTeam, loggedIn,
+  tournament, teams, matches, standingsByGroup, playerStats, awards, myTeam, loggedIn, initialTab,
 }: {
   tournament: Tournament;
   teams: TournamentTeam[];
@@ -45,6 +54,9 @@ export default function EventTabs({
   awards: TournamentAwards;
   myTeam: TournamentTeam | null;
   loggedIn: boolean;
+  // ?tab= from the URL (e.g. a "register straight away" QR / share link),
+  // resolved server-side and passed down so the first paint is right.
+  initialTab?: string;
 }) {
   const confirmedTeams = teams.filter((t) => t.status === "confirmed");
   const hasKnockout = matches.some((m) => m.stage === "knockout");
@@ -63,8 +75,20 @@ export default function EventTabs({
     if (t === "Register" && !showRegister) return false;
     return true;
   });
-  const [tab, setTab] = useState<Tab>("Overview");
+  const [tab, setTab] = useState<Tab>(() => tabFromParam(initialTab) ?? "Overview");
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
+
+  // Keep the URL in sync so the current tab is shareable — plain
+  // history.replaceState, no server round-trip for a client-only switch.
+  const selectTab = (t: Tab) => {
+    setTab(t);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      if (t === "Overview") url.searchParams.delete("tab");
+      else url.searchParams.set("tab", tabSlug(t));
+      window.history.replaceState(window.history.state, "", url);
+    }
+  };
   const { user, loading: authLoading } = useProfile();
   const pathname = usePathname();
 
@@ -119,7 +143,7 @@ export default function EventTabs({
             return (
               <button
                 key={t} ref={(el) => { if (el) tabRefs.current[t] = el; }}
-                className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => setTab(t)}
+                className={`ev2-tab ${activeTab === t ? "on" : ""}`} onClick={() => selectTab(t)}
               >
                 <Icon size={15} /> {t}
               </button>

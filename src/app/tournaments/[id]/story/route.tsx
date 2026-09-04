@@ -58,10 +58,15 @@ export async function GET(
   const isSingleEvent = tournament.format === "single_event";
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com";
+  // While registration is a live concept, the QR drops the scanner
+  // straight onto the Register tab (?tab=register) rather than the
+  // Overview — the card literally says "scan to register".
+  const canRegister = ["published", "registration_open", "registration_closed"].includes(tournament.status);
+  const qrTarget = `${siteUrl}/tournaments/${tournament.id}${canRegister ? "?tab=register" : ""}`;
   // Always dark-on-white regardless of card theme — a QR needs reliable
   // contrast to scan, which the "glass" (dark) theme's own palette can't
   // guarantee, so it gets its own fixed-white tile instead of following C.
-  const qrDataUrl = await QRCode.toDataURL(`${siteUrl}/tournaments/${tournament.id}`, {
+  const qrDataUrl = await QRCode.toDataURL(qrTarget, {
     margin: 0, width: 240, color: { dark: "#0B0D11", light: "#FFFFFF" },
   });
 
@@ -147,7 +152,7 @@ export async function GET(
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
               <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: accent, marginTop: 12, display: "flex" }}>
-                SCAN TO REGISTER
+                {canRegister ? "SCAN TO REGISTER" : "SCAN FOR DETAILS"}
               </div>
             </div>
           </div>
