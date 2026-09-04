@@ -105,7 +105,7 @@ export async function GET(
             <Cell label="ENTRY FEE" value={tournament.fee > 0 ? money(tournament.fee) : "Free"} color={accent} C={C} />
             <Cell
               label={isSingleEvent ? "SPOTS" : "MAX TEAMS"}
-              value={String(tournament.max_teams)}
+              value={tournament.max_teams == null ? "Unlimited" : String(tournament.max_teams)}
               color={C.text}
               C={C}
             />

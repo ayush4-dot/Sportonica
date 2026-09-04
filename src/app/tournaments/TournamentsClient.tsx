@@ -112,7 +112,7 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
                   <div className="rc-when">{completed ? "Completed" : when(item.when)}</div>
                   <div className="rc-foot">
                     {item.kind === "tournament"
-                      ? <span style={{ color: item.sportColor, display: "inline-flex", alignItems: "center", gap: 4 }}><Users size={11} /> Up to {item.maxTeams} teams</span>
+                      ? <span style={{ color: item.sportColor, display: "inline-flex", alignItems: "center", gap: 4 }}><Users size={11} /> {item.maxTeams == null ? "Unlimited teams" : `Up to ${item.maxTeams} teams`}</span>
                       : <span style={{ color: item.sportColor }}>{item.slotsRemaining} spots left</span>}
                     <span>{item.fee === 0 ? "Free" : `Rs ${item.fee}`}</span>
                   </div>

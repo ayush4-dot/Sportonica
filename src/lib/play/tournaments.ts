@@ -9,7 +9,7 @@ import type { RailEvent } from "@/lib/play/homeRails";
 // uses for events + Play Together games.
 export type TournamentBrowseItem =
   | { kind: "event"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; slotsRemaining: number; fee: number; badge: "official" | "platform"; bannerUrl: string | null }
-  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; maxTeams: number; fee: number; bannerUrl: string | null; completed: boolean };
+  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; maxTeams: number | null; fee: number; bannerUrl: string | null; completed: boolean };
 
 // Cookie-free so /tournaments can be edge-cached (revalidate) instead of
 // re-rendered against Sydney every request. Both queries are the same

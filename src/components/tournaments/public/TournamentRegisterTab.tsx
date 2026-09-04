@@ -58,7 +58,7 @@ export default function TournamentRegisterTab({
   }
 
   const managerOnRoster = !!team && roster.some((p) => p.user_id === team.captain_id);
-  const openSlots = Math.max(0, tournament.max_teams - confirmedCount);
+  const openSlots = tournament.max_teams == null ? null : Math.max(0, tournament.max_teams - confirmedCount);
   const regOpen = tournament.status === "registration_open";
   const paid = tournament.fee > 0;
 
@@ -208,7 +208,7 @@ export default function TournamentRegisterTab({
         </div>
         <div className="rgt-fact">
           <Users size={13} />
-          <span>{openSlots > 0 ? `${openSlots} of ${tournament.max_teams} slots open` : "Full"}</span>
+          <span>{openSlots === null ? "Unlimited teams" : openSlots > 0 ? `${openSlots} of ${tournament.max_teams} slots open` : "Full"}</span>
         </div>
       </div>
     </div>

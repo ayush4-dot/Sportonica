@@ -79,7 +79,7 @@ export default function TournamentForm({
   const [matchMins, setMatchMins] = useState(existing?.match_duration_mins ?? 45);
 
   const [format, setFormat] = useState<TournamentFormat>(existing?.format ?? "knockout");
-  const [maxTeams, setMaxTeams] = useState(existing?.max_teams ?? 8);
+  const [maxTeams, setMaxTeams] = useState<number | null>(existing?.max_teams ?? 8);
   const [minPlayers, setMinPlayers] = useState(existing?.min_players_per_team ?? 5);
   const [maxPlayers, setMaxPlayers] = useState(existing?.max_players_per_team ?? 8);
   const [subLimit, setSubLimit] = useState(existing?.substitute_limit ?? 2);
@@ -95,8 +95,12 @@ export default function TournamentForm({
   function chooseEntryType(type: "team" | "individual") {
     setEntryType(type);
     setRegMode(type);
-    if (type === "individual") setFormat("single_event");
-    else if (format === "single_event") setFormat("knockout");
+    if (type === "individual") {
+      setFormat("single_event");
+      // single_event repurposes this field as "Max players" — it must
+      // stay a real number even if the team form left it unlimited.
+      setMaxTeams((v) => v ?? 8);
+    } else if (format === "single_event") setFormat("knockout");
   }
   const [genderRule, setGenderRule] = useState(existing?.gender_rule ?? "");
   const [skillCategory, setSkillCategory] = useState(existing?.skill_category ?? "");
@@ -588,7 +592,23 @@ export default function TournamentForm({
       <div className="ev-row">
         <div className="ev-field">
           <label>{format === "single_event" ? "Max players" : "Max teams"}</label>
-          <input type="number" min={2} value={maxTeams} onChange={(e) => setMaxTeams(Number(e.target.value))} />
+          <input
+            type="number"
+            min={format === "single_event" ? 1 : 2}
+            value={maxTeams ?? ""}
+            disabled={maxTeams === null}
+            onChange={(e) => setMaxTeams(Number(e.target.value))}
+          />
+          {format !== "single_event" && (
+            <label className="ev-check">
+              <input
+                type="checkbox"
+                checked={maxTeams === null}
+                onChange={(e) => setMaxTeams(e.target.checked ? null : 8)}
+              />
+              <span>No limit on number of teams</span>
+            </label>
+          )}
         </div>
         {format !== "single_event" && (
           <div className="ev-field">

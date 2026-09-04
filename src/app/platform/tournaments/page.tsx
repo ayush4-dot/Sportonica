@@ -44,7 +44,7 @@ export default async function PlatformTournamentsPage() {
                 <td className="tc-num tc-dim" style={{ fontSize: 12 }} data-label="Starts">
                   {new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
                 </td>
-                <td className="tc-num" data-label="Teams">{t.max_teams}</td>
+                <td className="tc-num" data-label="Teams">{t.max_teams ?? "∞"}</td>
                 <td data-label="Status"><span className={`tc-badge ${t.status === "pending_approval" ? "warn" : t.status === "cancelled" ? "danger" : t.status === "draft" ? "neutral" : "ok"}`}>{STATUS_LABELS[t.status]}</span></td>
               </tr>
             ))}

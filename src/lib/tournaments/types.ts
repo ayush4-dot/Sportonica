@@ -82,7 +82,8 @@ export interface Tournament {
   registration_closes_at: string;
   match_duration_mins: number | null;
   format: TournamentFormat;
-  max_teams: number;
+  // null = unlimited teams (no registration cap)
+  max_teams: number | null;
   min_players_per_team: number;
   max_players_per_team: number;
   substitute_limit: number;
@@ -301,7 +302,7 @@ export type TournamentDraftInput = Partial<{
   registration_closes_at: string;
   match_duration_mins: number;
   format: TournamentFormat;
-  max_teams: number;
+  max_teams: number | null;
   min_players_per_team: number;
   max_players_per_team: number;
   substitute_limit: number;
