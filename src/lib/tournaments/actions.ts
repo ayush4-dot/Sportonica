@@ -725,6 +725,16 @@ export async function updateTeamName(teamId: string, name: string): Promise<Tour
   return data as TournamentTeam;
 }
 
+// Admin/organizer/venue-manager — permanently delete a registered team
+// (roster cascades). Refused once the team has a recorded match result.
+// Unplayed fixtures rebuild from the remaining confirmed teams.
+export async function deleteTournamentTeam(teamId: string): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("admin_delete_tournament_team", { p_team_id: teamId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
 // Admin/organizer-only — set or edit a team's manager (and optional
 // coach) after the fact (registered without one, or fixing a typo).
 export async function updateTeamManager(

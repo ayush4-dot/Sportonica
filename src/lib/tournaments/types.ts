@@ -352,6 +352,7 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   ROSTER_FULL: "This team's roster is already full.",
   SUBSTITUTE_LIMIT_REACHED: "This team's substitute slots are full.",
   CANNOT_REMOVE_CAPTAIN: "The captain can't be removed from the roster.",
+  TEAM_HAS_RESULTS: "This team has already played a match — it can't be deleted.",
   TEAM_NOT_CONFIRMED: "Only confirmed teams can be seeded.",
   WRONG_FORMAT: "That action doesn't apply to this tournament's format.",
   ALREADY_GENERATED: "Fixtures have already been generated for this tournament.",
