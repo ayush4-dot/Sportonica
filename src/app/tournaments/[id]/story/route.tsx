@@ -121,9 +121,13 @@ export async function GET(
 
           {/* footer brand */}
           <div style={{ display: "flex", alignItems: "center", marginTop: "auto", paddingTop: 56 }}>
-            <div style={{ width: 68, height: 68, background: "#006241", color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 42, fontWeight: 800, marginRight: 24 }}>
-              S
-            </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`${process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com"}/icons/icon-512.png`}
+              width={68} height={68}
+              style={{ borderRadius: 16, marginRight: 24 }}
+              alt=""
+            />
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
               <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
