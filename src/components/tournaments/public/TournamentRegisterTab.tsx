@@ -41,6 +41,8 @@ export default function TournamentRegisterTab({
   const [teamName, setTeamName] = useState("");
   const [managerName, setManagerName] = useState("");
   const [managerPhone, setManagerPhone] = useState("");
+  const [coachName, setCoachName] = useState("");
+  const [coachPhone, setCoachPhone] = useState("");
   const [clubName, setClubName] = useState("");
   const [clubAddress, setClubAddress] = useState("");
   const [contactPersonName, setContactPersonName] = useState("");
@@ -121,12 +123,23 @@ export default function TournamentRegisterTab({
 
         <div className="rgt-row">
           <div>
-            <label className="rgt-label">Manager / coach name</label>
+            <label className="rgt-label">Team manager name</label>
             <input className="rgt-in" value={managerName || existing?.manager_name || ""} onChange={(e) => setManagerName(e.target.value)} placeholder="Who's running the team" />
           </div>
           <div>
-            <label className="rgt-label">Manager / coach phone</label>
+            <label className="rgt-label">Team manager phone</label>
             <input className="rgt-in" value={managerPhone || existing?.manager_phone || ""} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
+          </div>
+        </div>
+
+        <div className="rgt-row">
+          <div>
+            <label className="rgt-label">Coach name <span className="rgt-opt">optional</span></label>
+            <input className="rgt-in" value={coachName || existing?.coach_name || ""} onChange={(e) => setCoachName(e.target.value)} placeholder="Head coach, if any" />
+          </div>
+          <div>
+            <label className="rgt-label">Coach phone <span className="rgt-opt">optional</span></label>
+            <input className="rgt-in" value={coachPhone || existing?.coach_phone || ""} onChange={(e) => setCoachPhone(e.target.value)} placeholder="98XXXXXXXX" />
           </div>
         </div>
         <p className="rgt-hint">Shown on the Teams tab so opponents and organisers can reach you.</p>
@@ -146,9 +159,11 @@ export default function TournamentRegisterTab({
     const effContactPhone = contactPhone.trim() || team?.contact_phone || "";
     const effContactEmail = contactEmail.trim() || team?.contact_email || "";
     const effLogoUrl = logoUrl || team?.logo_url || undefined;
+    const effCoachName = coachName.trim() || team?.coach_name || "";
+    const effCoachPhone = coachPhone.trim() || team?.coach_phone || "";
 
     if (!effName) { setErr("Give your team a name."); return; }
-    if (!effManagerName || !effManagerPhone) { setErr("Enter the team manager/coach's name and phone number."); return; }
+    if (!effManagerName || !effManagerPhone) { setErr("Enter the team manager's name and phone number."); return; }
     if (!effClubName || !effClubAddress) { setErr("Enter the club's name and address."); return; }
     if (!effContactPersonName || !effContactPhone || !effContactEmail) {
       setErr("Enter a contact person's name, phone and email.");
@@ -164,6 +179,7 @@ export default function TournamentRegisterTab({
           clubName: effClubName, clubAddress: effClubAddress,
           contactPersonName: effContactPersonName, contactPhone: effContactPhone,
           contactEmail: effContactEmail, logoUrl: effLogoUrl,
+          coachName: effCoachName || undefined, coachPhone: effCoachPhone || undefined,
         },
       );
       if (isActionError(res)) { setErr(res.message); return; }

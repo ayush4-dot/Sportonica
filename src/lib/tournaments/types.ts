@@ -132,6 +132,8 @@ export interface TournamentTeam {
   // meant to be visible to anyone browsing the tournament.
   manager_name: string | null;
   manager_phone: string | null;
+  coach_name: string | null;
+  coach_phone: string | null;
   logo_url: string | null;
   club_name: string | null;
   club_address: string | null;
@@ -385,8 +387,8 @@ export const TOURNAMENT_ERROR_MESSAGES: Record<string, string> = {
   INVALID_SLOT: "Pick which side (A or B) this feeds into.",
   SAME_MATCH: "A match can't advance into itself.",
   USER_NOT_FOUND: "No account found with that email.",
-  MANAGER_NAME_REQUIRED: "Enter the team manager/coach's name.",
-  MANAGER_PHONE_REQUIRED: "Enter the team manager/coach's phone number.",
+  MANAGER_NAME_REQUIRED: "Enter the team manager's name.",
+  MANAGER_PHONE_REQUIRED: "Enter the team manager's phone number.",
   CLUB_NAME_REQUIRED: "Enter the club name.",
   CLUB_ADDRESS_REQUIRED: "Enter the club's address.",
   CONTACT_PERSON_NAME_REQUIRED: "Enter a contact person's name.",

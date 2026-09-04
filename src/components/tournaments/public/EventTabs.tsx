@@ -563,6 +563,11 @@ function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
                 <Phone size={11} /> {t.manager_name}{t.manager_phone ? ` · ${t.manager_phone}` : ""}
               </div>
             )}
+            {t.coach_name && (
+              <div className="ev2-team-card-sub" style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <Phone size={11} /> Coach: {t.coach_name}{t.coach_phone ? ` · ${t.coach_phone}` : ""}
+              </div>
+            )}
             <div className="ev2-team-card-sub">Tap to view squad</div>
           </button>
         ))}
@@ -598,6 +603,11 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
             {team.manager_name && (
               <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 4 }}>
                 <Phone size={12} /> {team.manager_name}{team.manager_phone ? ` · ${team.manager_phone}` : ""}
+              </div>
+            )}
+            {team.coach_name && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 2 }}>
+                <Phone size={12} /> Coach: {team.coach_name}{team.coach_phone ? ` · ${team.coach_phone}` : ""}
               </div>
             )}
           </div>
