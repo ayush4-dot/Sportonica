@@ -211,7 +211,7 @@ export default function TournamentRegisterTab({
       <div className="rgt-hero-facts">
         <div className="rgt-fact">
           <Wallet size={13} />
-          <span>{paid ? rs(tournament.fee) : "Free entry"}</span>
+          <span>{paid ? rs(tournament.fee) : "Free"}</span>
         </div>
         <div className="rgt-fact">
           <CalendarDays size={13} />
@@ -298,7 +298,7 @@ export default function TournamentRegisterTab({
             <div className="rgt-done-rows">
               <div><span>Team</span><b>{team.name}</b></div>
               <div><span>Players</span><b>{roster.length}</b></div>
-              {paid && <div><span>Entry fee</span><b>{rs(tournament.fee)} · paid</b></div>}
+              {paid && <div><span>Registration fee</span><b>{rs(tournament.fee)} · paid</b></div>}
             </div>
           </div>
           <RosterCard
@@ -349,12 +349,12 @@ export default function TournamentRegisterTab({
 
           {team.status === "payment_pending" && paid && (
             <div className="rgt-card">
-              <div className="rgt-step-t">Pay the entry fee</div>
+              <div className="rgt-step-t">Pay the registration fee</div>
 
               <div className="rgt-paysum">
                 <div className="rgt-paysum-row"><span>Team</span><b>{team.name}</b></div>
                 <div className="rgt-paysum-row"><span>Tournament</span><b>{tournament.name}</b></div>
-                <div className="rgt-paysum-row tot"><span>Entry fee</span><b>{rs(tournament.fee)}</b></div>
+                <div className="rgt-paysum-row tot"><span>Registration fee</span><b>{rs(tournament.fee)}</b></div>
               </div>
 
               <PaymentStep

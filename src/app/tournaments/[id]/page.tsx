@@ -160,7 +160,7 @@ export default async function TournamentDetailPage({ params }: { params: Promise
           <div className="bk-summary">
             <div className="bk-panel">
               <h3>Tournament details</h3>
-              <div className="bk-sum-row"><span className="lbl">Entry fee</span><span className="val">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</span></div>
+              <div className="bk-sum-row"><span className="lbl">Registration fee</span><span className="val">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</span></div>
               <div className="bk-sum-row"><span className="lbl">Team size</span><span className="val">{tournament.min_players_per_team}–{tournament.max_players_per_team} players</span></div>
               <div className="bk-sum-row"><span className="lbl">Max teams</span><span className="val">{tournament.max_teams ?? "Unlimited"}</span></div>
               <div className="bk-sum-row"><span className="lbl">Registration closes</span><span className="val">{when(tournament.registration_closes_at)}</span></div>
