@@ -642,7 +642,7 @@ export default function TournamentForm({
 
       <SectionTitle>Registration & payment</SectionTitle>
       <div className="ev-field">
-        <label>Entry fee per team (Rs — 0 for free)</label>
+        <label>Registration fee per team (Rs — 0 for free)</label>
         <input type="number" min={0} value={fee} onChange={(e) => setFee(Number(e.target.value))} />
       </div>
       {fee > 0 && (

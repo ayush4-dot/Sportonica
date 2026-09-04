@@ -110,7 +110,7 @@ export default function TournamentControlCenter({
       <div className="tc-stats">
         <div className="tc-stat"><div className="tc-stat-l">Teams registered</div><div className="tc-stat-v">{teams.length}<small> / {tournament.max_teams ?? "Unlimited"}</small></div></div>
         <div className="tc-stat"><div className="tc-stat-l">Confirmed</div><div className="tc-stat-v">{confirmedTeams}</div></div>
-        <div className="tc-stat"><div className="tc-stat-l">Entry fee</div><div className="tc-stat-v">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</div></div>
+        <div className="tc-stat"><div className="tc-stat-l">Registration fee</div><div className="tc-stat-v">{tournament.fee > 0 ? money(tournament.fee) : "Free"}</div></div>
         <div className="tc-stat"><div className="tc-stat-l">Starts</div><div className="tc-stat-v" style={{ fontSize: 15 }}>{when(tournament.starts_at)}</div></div>
       </div>
 
@@ -337,7 +337,7 @@ export default function TournamentControlCenter({
           </div>
           {tournament.fee > 0 && !tournament.host_payment_qr_url && (
             <div className="tc-empty" style={{ color: "#d97706" }}>
-              This tournament has an entry fee but no payment QR — add one in Settings so teams can pay you.
+              This tournament has a registration fee but no payment QR — add one in Settings so teams can pay you.
             </div>
           )}
           {(reviewPayments ?? []).length === 0 ? (
