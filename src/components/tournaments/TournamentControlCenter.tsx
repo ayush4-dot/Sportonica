@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Check, Plus, Trash2, X, Users, UserPlus, Pencil } from "lucide-react";
@@ -8,7 +8,7 @@ import {
   openTournamentRegistration, closeTournamentRegistration, cancelTournament, approveTournament, completeTournament,
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
-  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName, setTeamPlayerJerseyNumber,
+  addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName, setTeamPlayerJerseyNumber, setTeamPlayerPosition,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -485,7 +485,7 @@ function WalkinTeamModal({
   const [contactPersonName, setContactPersonName] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
-  const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "", jerseyNumber: "" }]);
+  const [members, setMembers] = useState<WalkinMember[]>([{ name: "", phone: "", email: "", jerseyNumber: "", position: "" }]);
   const [err, setErr] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -494,7 +494,7 @@ function WalkinTeamModal({
   }
   function addMember() {
     if (members.length >= maxMembers) return;
-    setMembers((prev) => [...prev, { name: "", phone: "", email: "", jerseyNumber: "" }]);
+    setMembers((prev) => [...prev, { name: "", phone: "", email: "", jerseyNumber: "", position: "" }]);
   }
   function removeMember(i: number) {
     setMembers((prev) => prev.filter((_, idx) => idx !== i));
@@ -556,7 +556,7 @@ function WalkinTeamModal({
           Members ({members.length}/{maxMembers})
         </div>
         {members.map((m, i) => (
-          <div className="tc-member-row" key={i} style={{ gridTemplateColumns: "1.4fr 1fr 1fr 0.7fr auto" }}>
+          <div className="tc-member-row" key={i} style={{ gridTemplateColumns: "1.4fr 1fr 1fr 0.7fr 0.9fr auto" }}>
             <input value={m.name} onChange={(e) => updateMember(i, "name", e.target.value)} placeholder="Name" />
             <input value={m.phone} onChange={(e) => updateMember(i, "phone", e.target.value)} placeholder="Phone (optional)" />
             <input value={m.email ?? ""} onChange={(e) => updateMember(i, "email", e.target.value)} placeholder="Email (optional)" />
@@ -564,6 +564,7 @@ function WalkinTeamModal({
               type="number" min={0} value={m.jerseyNumber ?? ""}
               onChange={(e) => updateMember(i, "jerseyNumber", e.target.value)} placeholder="Jersey #"
             />
+            <input value={m.position ?? ""} onChange={(e) => updateMember(i, "position", e.target.value)} placeholder="Position (optional)" />
             <button onClick={() => removeMember(i)} disabled={members.length <= 1} aria-label={`Remove member ${i + 1}`} style={{ opacity: members.length <= 1 ? 0.3 : 0.7 }}>
               <Trash2 size={15} />
             </button>
@@ -614,17 +615,27 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   const [wPhone, setWPhone] = useState("");
   const [wEmail, setWEmail] = useState("");
   const [wJersey, setWJersey] = useState("");
+  const [wPosition, setWPosition] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
   const [editJersey, setEditJersey] = useState("");
+  const [editPosition, setEditPosition] = useState("");
   const [jerseyDrafts, setJerseyDrafts] = useState<Record<string, string>>({});
+  const [positionDrafts, setPositionDrafts] = useState<Record<string, string>>({});
   const [managerName, setManagerName] = useState(team.manager_name ?? "");
   const [managerPhone, setManagerPhone] = useState(team.manager_phone ?? "");
   const [savedManagerName, setSavedManagerName] = useState(team.manager_name);
   const [savedManagerPhone, setSavedManagerPhone] = useState(team.manager_phone);
   const [editingManager, setEditingManager] = useState(false);
+  // Some mobile keyboards/autofill (contact-name suggestions especially)
+  // set an input's DOM value directly without firing a React-visible
+  // event, so the name state can still read "" even though the field
+  // shows text on screen. These refs let addWalkin()/saveEdit() fall
+  // back to the live DOM value instead of trusting only React state.
+  const wNameRef = useRef<HTMLInputElement>(null);
+  const editNameRef = useRef<HTMLInputElement>(null);
 
   // Used from remove()/add() below (event handlers, not effects) to
   // refetch after a mutation — the mount effect has its own inline
@@ -684,15 +695,16 @@ function TeamRosterModal({ team, onClose, onChanged }: {
   }
 
   function addWalkin() {
-    if (!wName.trim()) { setErr("Enter the player's name."); return; }
+    const value = wName.trim() || wNameRef.current?.value.trim() || "";
+    if (!value) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await addWalkinTeamPlayer(
-        team.id, wName.trim(), wPhone.trim(), wEmail.trim() || undefined, addRole,
-        wJersey.trim() ? Number(wJersey.trim()) : undefined,
+        team.id, value, wPhone.trim(), wEmail.trim() || undefined, addRole,
+        wJersey.trim() ? Number(wJersey.trim()) : undefined, wPosition.trim() || undefined,
       );
       if (isActionError(res)) { setErr(res.message); return; }
-      setWName(""); setWPhone(""); setWEmail(""); setWJersey("");
+      setWName(""); setWPhone(""); setWEmail(""); setWJersey(""); setWPosition("");
       load();
       onChanged();
     });
@@ -704,6 +716,7 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     setEditPhone(p.guest_phone ?? "");
     setEditEmail(p.guest_email ?? "");
     setEditJersey(p.jersey_number != null ? String(p.jersey_number) : "");
+    setEditPosition(p.position ?? "");
   }
 
   function saveJersey(playerId: string, value: string, current: number | null) {
@@ -717,13 +730,25 @@ function TeamRosterModal({ team, onClose, onChanged }: {
     });
   }
 
+  function savePosition(playerId: string, value: string, current: string | null) {
+    const next = value.trim() || null;
+    if (next === current) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await setTeamPlayerPosition(playerId, next);
+      if (isActionError(res)) { setErr(res.message); return; }
+      load();
+    });
+  }
+
   function saveEdit(playerId: string) {
-    if (!editName.trim()) { setErr("Enter the player's name."); return; }
+    const value = editName.trim() || editNameRef.current?.value.trim() || "";
+    if (!value) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await updateTeamPlayerGuest(
-        playerId, editName.trim(), editPhone.trim(), editEmail.trim() || undefined,
-        editJersey.trim() ? Number(editJersey.trim()) : undefined,
+        playerId, value, editPhone.trim(), editEmail.trim() || undefined,
+        editJersey.trim() ? Number(editJersey.trim()) : undefined, editPosition.trim() || undefined,
       );
       if (isActionError(res)) { setErr(res.message); return; }
       setEditingId(null);
@@ -788,13 +813,17 @@ function TeamRosterModal({ team, onClose, onChanged }: {
             {roster.map((p) => (
               editingId === p.id ? (
                 <div key={p.id} style={{ display: "flex", flexDirection: "column", gap: 6, padding: "10px", borderRadius: 10, background: "rgba(0,98,65,0.06)" }}>
-                  <input value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" style={modalInputStyle} />
+                  <input ref={editNameRef} value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="Name" style={modalInputStyle} />
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     <input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                     <input value={editEmail} onChange={(e) => setEditEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                     <input
                       type="number" min={0} value={editJersey} onChange={(e) => setEditJersey(e.target.value)}
                       placeholder="Jersey #" style={{ ...modalInputStyle, width: 80 }}
+                    />
+                    <input
+                      value={editPosition} onChange={(e) => setEditPosition(e.target.value)}
+                      placeholder="Position (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }}
                     />
                   </div>
                   <div style={{ display: "flex", gap: 6 }}>
@@ -815,6 +844,13 @@ function TeamRosterModal({ team, onClose, onChanged }: {
                     onChange={(e) => setJerseyDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
                     onBlur={(e) => saveJersey(p.id, e.target.value, p.jersey_number)}
                     placeholder="#" style={{ ...modalInputStyle, width: 52, padding: "6px 7px", fontSize: 12.5 }}
+                  />
+                  <input
+                    aria-label={`${p.name}'s position`}
+                    value={positionDrafts[p.id] ?? (p.position ?? "")}
+                    onChange={(e) => setPositionDrafts((prev) => ({ ...prev, [p.id]: e.target.value }))}
+                    onBlur={(e) => savePosition(p.id, e.target.value, p.position)}
+                    placeholder="Position" style={{ ...modalInputStyle, width: 92, padding: "6px 7px", fontSize: 12.5 }}
                   />
                   {!p.user_id && (
                     <button
@@ -883,13 +919,17 @@ function TeamRosterModal({ team, onClose, onChanged }: {
             </>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <input value={wName} onChange={(e) => setWName(e.target.value)} placeholder="Name" style={modalInputStyle} />
+              <input ref={wNameRef} value={wName} onChange={(e) => setWName(e.target.value)} placeholder="Name" style={modalInputStyle} />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <input value={wPhone} onChange={(e) => setWPhone(e.target.value)} placeholder="Phone (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                 <input value={wEmail} onChange={(e) => setWEmail(e.target.value)} placeholder="Email (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }} />
                 <input
                   type="number" min={0} value={wJersey} onChange={(e) => setWJersey(e.target.value)}
                   placeholder="Jersey # (optional)" style={{ ...modalInputStyle, width: 100 }}
+                />
+                <input
+                  value={wPosition} onChange={(e) => setWPosition(e.target.value)}
+                  placeholder="Position (optional)" style={{ ...modalInputStyle, flex: 1, minWidth: 120 }}
                 />
                 <select value={addRole} onChange={(e) => setAddRole(e.target.value as "player" | "substitute")} style={modalInputStyle}>
                   <option value="player">Player</option>

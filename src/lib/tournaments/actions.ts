@@ -582,6 +582,16 @@ export async function setTeamPlayerJerseyNumber(teamPlayerId: string, jerseyNumb
   return data as TournamentTeamPlayer;
 }
 
+// Set/clear one player's position (freeform — "Goalkeeper", "Point
+// Guard", etc.) — works for a guest row or a linked-account row alike.
+export async function setTeamPlayerPosition(teamPlayerId: string, position: string | null): Promise<TournamentTeamPlayer | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_team_player_position", { p_team_player_id: teamPlayerId, p_position: position });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeamPlayer;
+}
+
 // Toggle the manager's own player row after registration — the
 // "I'm also playing" control on the roster step.
 export async function setManagerPlays(teamId: string, plays: boolean): Promise<void | ActionError> {
@@ -621,13 +631,13 @@ export async function removeTeamPlayerAdmin(teamPlayerId: string): Promise<void 
 // an admin/organizer (enforced in add_team_guest_player() in the DB).
 export async function addTeamGuestPlayer(
   teamId: string, name: string, phone?: string, email?: string, role: "player" | "substitute" = "player",
-  jerseyNumber?: number,
+  jerseyNumber?: number, position?: string,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("add_team_guest_player", {
     p_team_id: teamId, p_name: name, p_phone: phone ?? null, p_email: email ?? null, p_role: role,
-    p_jersey_number: jerseyNumber ?? null,
+    p_jersey_number: jerseyNumber ?? null, p_position: position ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
@@ -646,26 +656,26 @@ export async function removeTeamGuestPlayer(teamPlayerId: string): Promise<void 
 // an existing team, and edit one's own name/phone/email afterwards.
 export async function addWalkinTeamPlayer(
   teamId: string, name: string, phone: string, email?: string, role: "player" | "substitute" = "player",
-  jerseyNumber?: number,
+  jerseyNumber?: number, position?: string,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("add_walkin_team_player", {
     p_team_id: teamId, p_name: name, p_phone: phone, p_email: email ?? null, p_role: role,
-    p_jersey_number: jerseyNumber ?? null,
+    p_jersey_number: jerseyNumber ?? null, p_position: position ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
 }
 
 export async function updateTeamPlayerGuest(
-  teamPlayerId: string, name: string, phone: string, email?: string, jerseyNumber?: number,
+  teamPlayerId: string, name: string, phone: string, email?: string, jerseyNumber?: number, position?: string,
 ): Promise<TournamentTeamPlayer | ActionError> {
   const { sb, user } = await requireUser();
   if (!user) return actionError("UNAUTHORIZED");
   const { data, error } = await sb.rpc("update_team_player_guest", {
     p_team_player_id: teamPlayerId, p_name: name, p_phone: phone, p_email: email ?? null,
-    p_jersey_number: jerseyNumber ?? null,
+    p_jersey_number: jerseyNumber ?? null, p_position: position ?? null,
   });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentTeamPlayer;
@@ -689,6 +699,7 @@ export async function createWalkinTeam(
     p_members: members.map((m) => ({
       name: m.name, phone: m.phone, email: m.email || null,
       jersey_number: m.jerseyNumber ? Number(m.jerseyNumber) : null,
+      position: m.position || null,
     })),
     p_manager_name: managerName || null,
     p_manager_phone: managerPhone || null,

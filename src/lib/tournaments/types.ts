@@ -257,10 +257,11 @@ export interface TournamentTeamPlayer {
   guest_email: string | null;
   role: "captain" | "player" | "substitute";
   jersey_number: number | null;
+  position: string | null;
   joined_at: string;
 }
 
-export type WalkinMember = { name: string; phone: string; email?: string; jerseyNumber?: string };
+export type WalkinMember = { name: string; phone: string; email?: string; jerseyNumber?: string; position?: string };
 
 export interface TournamentMatchPlayerStat {
   id: string;

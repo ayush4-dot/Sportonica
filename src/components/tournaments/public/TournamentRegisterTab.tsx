@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check, Trophy, Users, UserPlus, X, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
@@ -12,7 +12,7 @@ import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
 
-type RosterPlayer = { id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null; jersey_number: number | null };
+type RosterPlayer = { id: string; user_id: string | null; role: string; name: string; username: string | null; avatar_url: string | null; jersey_number: number | null; position: string | null };
 
 const rs = (n: number) => `Rs ${Math.round(n).toLocaleString("en-IN")}`;
 const dateLabel = (iso: string) =>
@@ -450,6 +450,7 @@ function RosterCard({
               <span className="rgt-player-name">
                 {p.name}
                 {p.jersey_number != null && <span className="rgt-tag">#{p.jersey_number}</span>}
+                {p.position && <span className="rgt-tag">{p.position}</span>}
                 {p.user_id === team.captain_id && <span className="rgt-tag">you</span>}
                 {p.role === "substitute" && <span className="rgt-tag sub">sub</span>}
               </span>
@@ -471,22 +472,30 @@ function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [jersey, setJersey] = useState("");
+  const [position, setPosition] = useState("");
   const [role, setRole] = useState<"player" | "substitute">("player");
   const [err, setErr] = useState<string | null>(null);
   const [justAdded, setJustAdded] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Some mobile keyboards/autofill (contact-name suggestions especially)
+  // set the input's DOM value directly without firing a React-visible
+  // event, so `name` state can still read "" even though the field shows
+  // text on screen. Read the live DOM value as a fallback at submit time
+  // instead of trusting only the possibly-stale React state.
+  const nameRef = useRef<HTMLInputElement>(null);
 
   function add() {
-    if (!name.trim()) { setErr("Enter the player's name."); return; }
+    const value = name.trim() || nameRef.current?.value.trim() || "";
+    if (!value) { setErr("Enter the player's name."); return; }
     setErr(null);
     startTransition(async () => {
       const res = await addTeamGuestPlayer(
-        teamId, name.trim(), phone.trim() || undefined, email.trim() || undefined, role,
-        jersey.trim() ? Number(jersey.trim()) : undefined,
+        teamId, value, phone.trim() || undefined, email.trim() || undefined, role,
+        jersey.trim() ? Number(jersey.trim()) : undefined, position.trim() || undefined,
       );
       if (isActionError(res)) { setErr(res.message); return; }
-      setJustAdded(name.trim());
-      setName(""); setEmail(""); setPhone(""); setJersey(""); setRole("player");
+      setJustAdded(value);
+      setName(""); setEmail(""); setPhone(""); setJersey(""); setPosition(""); setRole("player");
       onAdded();
       setTimeout(() => setJustAdded(null), 2500);
     });
@@ -502,12 +511,16 @@ function AddPlayerModal({ teamId, onClose, onAdded }: { teamId: string; onClose:
         <p className="rgt-hint" style={{ marginTop: 0 }}>
           Only a name is required. Add an email so this player can sign in later and see their own stats.
         </p>
-        <input className="rgt-in" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player's name" />
+        <input ref={nameRef} className="rgt-in" value={name} onChange={(e) => setName(e.target.value)} placeholder="Player's name" />
         <input className="rgt-in" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" />
         <input className="rgt-in" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone (optional)" />
         <input
           className="rgt-in" type="number" min={0} value={jersey}
           onChange={(e) => setJersey(e.target.value)} placeholder="Jersey number (optional)"
+        />
+        <input
+          className="rgt-in" value={position}
+          onChange={(e) => setPosition(e.target.value)} placeholder="Position (optional)"
         />
         <select className="rgt-in" value={role} onChange={(e) => setRole(e.target.value as "player" | "substitute")}>
           <option value="player">Player</option>
