@@ -9,6 +9,7 @@ import {
   startSingleEvent, createWalkinTeam, markWalkinTeamPaid,
   getTeamRoster, searchPlayersForTeam, addTeamPlayer, removeTeamPlayerAdmin,
   addWalkinTeamPlayer, updateTeamPlayerGuest, updateTeamManager, updateTeamName, setTeamPlayerJerseyNumber, setTeamPlayerPosition,
+  deleteTournamentTeam,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import {
@@ -286,6 +287,16 @@ export default function TournamentControlCenter({
                       >
                         <Download size={13} /> Sheet
                       </a>
+                      <button
+                        className="tc-btn" style={{ padding: "6px 10px", color: "#ef4444", borderColor: "rgba(239,68,68,0.35)" }}
+                        disabled={pending}
+                        onClick={() => {
+                          if (!window.confirm(`Delete ${t.name}? This permanently removes the team and its roster. Unplayed fixtures will be rebuilt.`)) return;
+                          run(() => deleteTournamentTeam(t.id), `${t.name} deleted.`);
+                        }}
+                      >
+                        <Trash2 size={13} /> Delete
+                      </button>
                     </td>
                   </tr>
                 ))}
