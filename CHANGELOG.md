@@ -16,7 +16,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   can't self-set `verification_status` / `payout_cap` / `owner_id`, locks the
   `notifications` insert path, revokes `venue_daily_stats` from `authenticated`,
   and adds a `WITH CHECK` to the `tournament_teams` captain UPDATE policy.
-  Idempotent, not destructive. Not yet applied to production.
+  Idempotent, not destructive. Applied to production 2026-09-03.
 - `[db]` `identity_validation.sql` — enforces email/phone rules at the DB level
   so they can't be bypassed by calling the auth API directly: `is_valid_email()`
   + `normalize_phone()` helpers, a partial unique index on `profiles.phone`, and
@@ -25,7 +25,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   duplicate `PHONE_TAKEN` — aborting the signup transactionally). Adds
   `email_for_phone()` (SECURITY DEFINER) so the app can resolve a phone to its
   account email for phone-based login. Idempotent; normalises existing
-  `profiles.phone` values. Not yet applied to production. Pairs with the
+  `profiles.phone` values. Applied to production 2026-09-03. Pairs with the
   app-code PR `feat/unified-auth-redesign` on `main`.
 - `[db]` `booking_payment_gated.sql` + `booking_no_double.sql` +
   `realtime_availability.sql` — a court slot is BOOKED only once its payment is
@@ -40,7 +40,7 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
   rows. `realtime_availability.sql` adds a world-readable
   `court_availability_pings` table (court + day only) so the picker updates live.
   `check_booked_slots.sql` is a read-only diagnostic. Idempotent, not
-  destructive. Not yet applied to production. Pairs with the app-code PR
+  destructive. Applied to production 2026-09-03. Pairs with the app-code PR
   `feat/payment-gated-booking` on `main`.
 - `[db]` `tournament_team_registration_details.sql` — client-requested fuller
   team profile at registration: club name/address, a contact person
