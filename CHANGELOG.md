@@ -9,6 +9,36 @@ One list, all repos. Tag each entry with the area in brackets: `[web]`,
 ## [Unreleased]
 
 ### Added
+- `[db]` `tournament_admin_delete_team.sql` — `admin_delete_tournament_team()`
+  lets a tournament organiser, a venue manager on the host venue, or a super
+  admin permanently delete one registered team (its roster and match
+  player-stats cascade). Refused (`TEAM_HAS_RESULTS`) once the team has played a
+  real two-team `completed`/`walkover` match. Deletes the team's `payments` rows
+  and any `tournament_matches` referencing it first (the FKs that would block
+  the delete), then `regenerate_tournament_fixtures()` rebuilds the bracket from
+  the remaining confirmed teams when nothing has been played yet. Idempotent.
+  Applied to production 2026-09-04. Pairs with the app-code PR
+  `tournaments/admin-delete-team` on `main`.
+- `[db]` `tournament_team_coach.sql` — splits the single "team manager / coach"
+  contact into two people: the already-required team manager, and a new
+  **optional** coach (`coach_name` / `coach_phone` on `tournament_teams`).
+  `register_team()`, `update_team_details()` and `update_team_manager()` gain
+  trailing optional `p_coach_name` / `p_coach_phone` params — existing callers
+  that omit them keep working, and coach is nullable so nothing breaks.
+  `create_walkin_team()` is deliberately untouched (that path doesn't collect a
+  coach). Idempotent, not destructive — existing teams get `coach_* = null`.
+  Applied to production 2026-09-04. Pairs with the app-code PR
+  `tournaments/team-coach` on `main`.
+- `[web]` Team manager / coach are now separate: the registration form (and
+  "register again") has its own optional Coach name/phone row, the "Manager /
+  coach" labels become "Team manager", and the Control Center's inline manager
+  editor plus the public Teams tab / squad modal show the coach. Organisers /
+  venue managers / super admins get a **Delete** button per team in the
+  Control Center → Registrations table, and a printable **team dossier**
+  (`/organize/tournaments/[id]/teams/sheet`, one team or all) with full profile
+  + roster, ready to save as PDF. The public tournament page takes a `?tab=`
+  deep link, and the share-card QR now drops the scanner straight onto the
+  registration form while registration is open.
 - `[db]` `rls_hardening.sql` — closes privilege holes from the security review:
   removes the direct `court_bookings` INSERT policy (RPC-only now), drops the
   client UPDATE on the legacy `bookings` table, adds guard triggers so a user
