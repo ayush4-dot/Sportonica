@@ -4,6 +4,7 @@ import NavWrapper from '@/components/NavWrapper'
 import PWARegister from '@/components/PWARegister'
 import CapacitorBridge from '@/components/CapacitorBridge'
 import PageTransition from '@/components/PageTransition'
+import Onboarding from '@/components/onboarding/Onboarding'
 
 export const metadata: Metadata = {
   // Social bots need absolute URLs for og:image. In production set
@@ -62,6 +63,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <PageTransition>{children}</PageTransition>
         <PWARegister />
         <CapacitorBridge />
+        <Onboarding />
       </body>
     </html>
   )

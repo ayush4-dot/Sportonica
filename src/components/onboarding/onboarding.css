@@ -1,0 +1,393 @@
+/* ================================================================
+   Sportonica — First-run onboarding.
+   Same "paper" surface and calm easing as the auth pages: slow fades,
+   soft shadows, one gentle drift. Nothing bounces.
+   Shown once (localStorage: sportonica:onboarded), full-screen, above
+   all app chrome.
+   ================================================================ */
+
+.ob {
+  --ob-bg:      #F2EDE6;
+  --ob-ink:     #1e3932;
+  --ob-dim:     rgba(30, 57, 50, 0.62);
+  --ob-faint:   rgba(30, 57, 50, 0.40);
+  --ob-line:    rgba(30, 57, 50, 0.12);
+  --ob-green:   #006241;
+  --ob-green-d: #004a31;
+  --ob-card:    #ffffff;
+
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  background: var(--ob-bg);
+  color: var(--ob-ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  animation: ob-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.ob.ob-out {
+  animation: ob-out 0.32s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes ob-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ob-out { from { opacity: 1; } to { opacity: 0; } }
+
+/* ── top bar: wordmark + skip ── */
+.ob-top {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px clamp(20px, 6vw, 32px) 4px;
+  flex-shrink: 0;
+}
+.ob-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 800;
+  font-size: 16px;
+  letter-spacing: -0.4px;
+}
+.ob-brand img { width: 26px; height: 26px; object-fit: contain; }
+
+.ob-skip {
+  border: none;
+  background: transparent;
+  color: var(--ob-dim);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 8px 4px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.ob-skip:hover { color: var(--ob-ink); }
+
+/* ── slide viewport ── */
+.ob-stage {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.ob-track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  will-change: transform;
+}
+.ob-slide {
+  position: relative;
+  flex: 0 0 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 clamp(20px, 6vw, 32px);
+}
+
+/* ── the "living map" ── */
+.ob-canvas {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 6px calc(clamp(20px, 6vw, 32px) * -1) 0;
+  overflow: hidden;
+}
+.ob-canvas svg.ob-map {
+  position: absolute;
+  inset: -2% -2% -2% -2%;
+  width: 104%;
+  height: 104%;
+  display: block;
+}
+
+/* soft vignette so pins near the edge don't feel clipped */
+.ob-canvas::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to bottom, var(--ob-bg) 0%, transparent 14% 82%, var(--ob-bg) 100%),
+    radial-gradient(120% 80% at 50% 40%, transparent 55%, rgba(242, 237, 230, 0.55) 100%);
+}
+
+/* centre "you" mark */
+.ob-you {
+  position: absolute;
+  top: 44%;
+  left: 50%;
+  width: 88px;
+  height: 88px;
+  margin: -44px 0 0 -44px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 34%, #ffffff 0%, #ffffff 62%, #f2f6f3 100%);
+  box-shadow:
+    0 0 0 1px rgba(0, 74, 49, 0.10),
+    0 0 0 8px rgba(0, 98, 65, 0.06),
+    0 3px 6px rgba(30, 57, 50, 0.10),
+    0 22px 46px -14px rgba(30, 57, 50, 0.5);
+  display: grid;
+  place-items: center;
+  z-index: 4;
+  animation: ob-breathe 5.5s ease-in-out infinite;
+}
+.ob-you img { width: 52px; height: 52px; object-fit: contain; }
+.ob-you::before {
+  content: '';
+  position: absolute;
+  inset: -10px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(0, 98, 65, 0.22);
+  animation: ob-ripple 3.4s ease-out infinite;
+}
+@keyframes ob-ripple {
+  0%   { transform: scale(0.9); opacity: 0.7; }
+  70%  { transform: scale(1.5); opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes ob-breathe {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
+}
+
+/* pins ------------------------------------------------------------- */
+.ob-pin {
+  position: absolute;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  transform: translate(-50%, -50%);
+  animation: ob-float var(--f, 6s) ease-in-out infinite;
+  animation-delay: var(--d, 0s);
+  opacity: 0;
+}
+.ob-pin.ob-show { animation: ob-pin-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards var(--in, 0s), ob-float var(--f, 6s) ease-in-out infinite var(--d, 0s); }
+@keyframes ob-pin-in {
+  from { opacity: 0; transform: translate(-50%, -30%) scale(0.8); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes ob-float {
+  0%, 100% { margin-top: 0; }
+  50%      { margin-top: -9px; }
+}
+
+.ob-pin-photo {
+  position: relative;
+  width: var(--s, 60px);
+  height: var(--s, 60px);
+  border-radius: 999px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #0c3b2c;
+  border: 3.5px solid var(--ob-card);
+  box-shadow:
+    0 0 0 1px rgba(0, 74, 49, 0.9),
+    0 0 0 6px rgba(0, 98, 65, 0.10),
+    0 14px 30px -10px rgba(11, 45, 33, 0.5);
+}
+.ob-pin-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--pos, 50% 30%);
+  transform: scale(1.14);
+  /* real photography — keep it vivid, just nudge it toward one
+     consistent grade so the set feels art-directed */
+  filter: saturate(1.08) contrast(1.04) brightness(1.03);
+}
+/* faint brand tint + a soft bottom shadow (multiply) — enough to bind
+   the set together and seat each pin on the map, not enough to dull
+   the photo */
+.ob-pin-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background:
+    linear-gradient(150deg, rgba(0, 74, 49, 0.06) 0%, transparent 50%, rgba(3, 36, 26, 0.22) 100%),
+    linear-gradient(0deg, rgba(3, 30, 21, 0.20) 0%, transparent 30%);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+/* top sheen (screen) + hairline inner rim */
+.ob-pin-photo::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, transparent 30%);
+  mix-blend-mode: screen;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.16);
+  pointer-events: none;
+}
+.ob-pin-label {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: -0.2px;
+  color: var(--ob-ink);
+  background: var(--ob-card);
+  padding: 5px 11px;
+  border-radius: 999px;
+  white-space: nowrap;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6) inset,
+    0 8px 18px -7px rgba(30, 57, 50, 0.4);
+}
+
+/* chat-bubble variant (slide 2): avatar on top, speech bubble below it
+   with a tail pointing up — same stacking as the venue pins. */
+.ob-pin.is-chat { gap: 8px; }
+.ob-pin.is-chat .ob-pin-photo {
+  width: 52px;
+  height: 52px;
+  border-width: 3px;
+}
+.ob-pin.is-chat .ob-pin-bubble {
+  position: relative;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ob-ink);
+  background: var(--ob-card);
+  padding: 7px 13px;
+  border-radius: 13px;
+  white-space: nowrap;
+  box-shadow: 0 8px 20px -8px rgba(30, 57, 50, 0.38);
+}
+.ob-pin.is-chat .ob-pin-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -4px;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--ob-card);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+/* ── copy block ── */
+.ob-copy {
+  flex-shrink: 0;
+  padding: 8px 0 4px;
+  max-width: 460px;
+}
+.ob-eyebrow {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--ob-green);
+  margin-bottom: 10px;
+}
+.ob-title {
+  font-size: clamp(26px, 7.2vw, 34px);
+  font-weight: 800;
+  letter-spacing: -1.3px;
+  line-height: 1.06;
+  margin: 0 0 10px;
+}
+.ob-title em { font-style: italic; color: var(--ob-green); }
+.ob-sub {
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ob-dim);
+  margin: 0;
+}
+
+/* ── controls ── */
+.ob-foot {
+  flex-shrink: 0;
+  padding: 18px clamp(20px, 6vw, 32px) calc(20px + env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ob-dots {
+  display: flex;
+  gap: 7px;
+  align-self: center;
+}
+.ob-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--ob-faint);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1), background 0.35s;
+}
+.ob-dot.on {
+  width: 22px;
+  background: var(--ob-green);
+}
+
+.ob-cta {
+  position: relative;
+  width: 100%;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 22px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 15.5px;
+  font-weight: 750;
+  letter-spacing: -0.2px;
+  color: #fff;
+  background: linear-gradient(140deg, #0a7a52 0%, var(--ob-green) 48%, var(--ob-green-d) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 14px 32px -12px rgba(0, 98, 65, 0.7);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s;
+}
+.ob-cta:hover { transform: translateY(-2px); box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 20px 42px -14px rgba(0,98,65,0.85); }
+.ob-cta:active { transform: translateY(0); }
+.ob-cta svg { transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1); }
+.ob-cta:hover svg { transform: translateX(3px); }
+
+.ob-signin {
+  align-self: center;
+  border: none;
+  background: transparent;
+  color: var(--ob-dim);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin-top: -4px;
+}
+.ob-signin b { color: var(--ob-green); font-weight: 700; }
+
+/* ── wider screens: keep it phone-shaped, centred ── */
+@media (min-width: 640px) {
+  .ob-stage, .ob-top, .ob-foot { width: 100%; max-width: 460px; margin-left: auto; margin-right: auto; }
+  .ob-canvas { margin-left: -32px; margin-right: -32px; }
+}
+
+/* ── reduced motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .ob, .ob.ob-out,
+  .ob-you, .ob-you::before,
+  .ob-pin, .ob-pin.ob-show,
+  .ob-cta, .ob-cta svg, .ob-dot {
+    animation: none !important;
+    transition: none !important;
+  }
+  .ob-pin { opacity: 1; }
+}
