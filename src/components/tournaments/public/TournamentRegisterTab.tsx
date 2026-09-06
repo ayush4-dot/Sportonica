@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check, Trophy, Users, Plus, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
-  User, Phone, Mail, Hash, MapPin,
+  User, Phone, Hash, MapPin,
 } from "lucide-react";
 import {
   registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
@@ -437,7 +437,6 @@ type PlayerDraft = {
   role: "player" | "substitute";
   name: string;
   phone: string;
-  email: string;
   jersey: string;
   position: string;
   saving: boolean;
@@ -453,7 +452,7 @@ const draftKey = () =>
 function blankDraft(): PlayerDraft {
   return {
     key: draftKey(), id: null, role: "player",
-    name: "", phone: "", email: "", jersey: "", position: "",
+    name: "", phone: "", jersey: "", position: "",
     saving: false, saved: false, error: null, dirty: false,
   };
 }
@@ -465,7 +464,6 @@ function draftFromPlayer(p: RosterPlayer, prev?: PlayerDraft): PlayerDraft {
     role: p.role === "substitute" ? "substitute" : "player",
     name: p.guest_name ?? (p.name === "Player" ? "" : p.name),
     phone: p.guest_phone ?? "",
-    email: p.guest_email ?? "",
     jersey: p.jersey_number != null ? String(p.jersey_number) : "",
     position: p.position ?? "",
     saving: false, saved: false, error: null, dirty: false,
@@ -537,8 +535,8 @@ function RosterCard({
     patch(key, { saving: true, error: null });
     const jersey = d.jersey.trim() ? Number(d.jersey.trim()) : undefined;
     const res = d.id
-      ? await updateTeamPlayerGuest(d.id, name, d.phone.trim(), d.email.trim() || undefined, jersey, d.position.trim() || undefined)
-      : await addTeamGuestPlayer(team.id, name, d.phone.trim() || undefined, d.email.trim() || undefined, d.role, jersey, d.position.trim() || undefined);
+      ? await updateTeamPlayerGuest(d.id, name, d.phone.trim(), undefined, jersey, d.position.trim() || undefined)
+      : await addTeamGuestPlayer(team.id, name, d.phone.trim() || undefined, undefined, d.role, jersey, d.position.trim() || undefined);
     if (isActionError(res)) { patch(key, { saving: false, error: res.message }); return; }
     patch(key, { saving: false, dirty: false, saved: true, id: res.id });
     await onRosterChanged();
@@ -661,16 +659,6 @@ function RosterCard({
                 <input className="rgt-in" inputMode="tel" value={d.phone} disabled={!regOpen}
                   onChange={(e) => edit(d.key, "phone", e.target.value)} placeholder="98XXXXXXXX" />
               </div>
-            </div>
-
-            <div className="rgt-field">
-              <label className="rgt-flabel">Email</label>
-              <div className="rgt-ig">
-                <Mail size={16} />
-                <input className="rgt-in" type="email" value={d.email} disabled={!regOpen}
-                  onChange={(e) => edit(d.key, "email", e.target.value)} placeholder="player@example.com" />
-              </div>
-              <p className="rgt-fhint">Lets this player sign in later and see their own stats.</p>
             </div>
 
             <div className="rgt-field">
