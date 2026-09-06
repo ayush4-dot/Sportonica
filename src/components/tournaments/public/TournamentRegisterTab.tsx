@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import {
   Check, Trophy, Users, Plus, Trash2, Clock, LogIn, CalendarDays, Wallet, ShieldCheck,
@@ -80,69 +80,82 @@ export default function TournamentRegisterTab({
   // same pattern the team-name input already uses (value={teamName ||
   // team.name}), so submitting doesn't silently blank out untouched
   // fields.
-  function renderTeamDetailFields(existing: TournamentTeam | null) {
+  function renderTeamDetailFields(existing: TournamentTeam | null, nameField: ReactNode) {
     return (
       <>
-        <label className="rgt-label">Team logo <span className="rgt-opt">optional</span></label>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {(logoUrl || existing?.logo_url) && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={logoUrl || existing?.logo_url || ""} alt="Team logo" style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
-          )}
-          <input
-            className="rgt-in" type="file" accept="image/jpeg,image/png,image/webp"
-            disabled={logoUploading}
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) submitLogo(f); }}
-          />
-        </div>
-        {logoUploading && <p className="rgt-hint">Uploading…</p>}
-
-        <div className="rgt-row">
-          <div>
-            <label className="rgt-label">Club name</label>
-            <input className="rgt-in" value={clubName || existing?.club_name || ""} onChange={(e) => setClubName(e.target.value)} placeholder="e.g. Everest Sports Club" />
+        <div className="rgt-subcard">
+          <div className="rgt-subcard-t">Team details</div>
+          {nameField}
+          <label className="rgt-label">Team logo <span className="rgt-opt">optional</span></label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {(logoUrl || existing?.logo_url) && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl || existing?.logo_url || ""} alt="Team logo" style={{ width: 40, height: 40, borderRadius: 10, objectFit: "cover" }} />
+            )}
+            <input
+              className="rgt-in" type="file" accept="image/jpeg,image/png,image/webp"
+              disabled={logoUploading}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) submitLogo(f); }}
+            />
           </div>
-          <div>
-            <label className="rgt-label">Club address</label>
-            <input className="rgt-in" value={clubAddress || existing?.club_address || ""} onChange={(e) => setClubAddress(e.target.value)} placeholder="City / area" />
-          </div>
+          {logoUploading && <p className="rgt-hint">Uploading…</p>}
         </div>
 
-        <div className="rgt-row">
-          <div>
-            <label className="rgt-label">Contact person name</label>
-            <input className="rgt-in" value={contactPersonName || existing?.contact_person_name || ""} onChange={(e) => setContactPersonName(e.target.value)} placeholder="Club's point of contact" />
+        <div className="rgt-subcard">
+          <div className="rgt-subcard-t">Club details</div>
+          <div className="rgt-row">
+            <div>
+              <label className="rgt-label">Club name</label>
+              <input className="rgt-in" value={clubName || existing?.club_name || ""} onChange={(e) => setClubName(e.target.value)} placeholder="e.g. Everest Sports Club" />
+            </div>
+            <div>
+              <label className="rgt-label">Club address</label>
+              <input className="rgt-in" value={clubAddress || existing?.club_address || ""} onChange={(e) => setClubAddress(e.target.value)} placeholder="City / area" />
+            </div>
           </div>
-          <div>
-            <label className="rgt-label">Contact phone</label>
-            <input className="rgt-in" value={contactPhone || existing?.contact_phone || ""} onChange={(e) => setContactPhone(e.target.value)} placeholder="98XXXXXXXX" />
-          </div>
-        </div>
-        <label className="rgt-label">Contact email</label>
-        <input className="rgt-in" type="email" value={contactEmail || existing?.contact_email || ""} onChange={(e) => setContactEmail(e.target.value)} placeholder="club@example.com" />
 
-        <div className="rgt-row">
-          <div>
-            <label className="rgt-label">Team manager name</label>
-            <input className="rgt-in" value={managerName || existing?.manager_name || ""} onChange={(e) => setManagerName(e.target.value)} placeholder="Who's running the team" />
+          <div className="rgt-row">
+            <div>
+              <label className="rgt-label">Contact person name</label>
+              <input className="rgt-in" value={contactPersonName || existing?.contact_person_name || ""} onChange={(e) => setContactPersonName(e.target.value)} placeholder="Club's point of contact" />
+            </div>
+            <div>
+              <label className="rgt-label">Contact phone</label>
+              <input className="rgt-in" value={contactPhone || existing?.contact_phone || ""} onChange={(e) => setContactPhone(e.target.value)} placeholder="98XXXXXXXX" />
+            </div>
           </div>
-          <div>
-            <label className="rgt-label">Team manager phone</label>
-            <input className="rgt-in" value={managerPhone || existing?.manager_phone || ""} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
+          <label className="rgt-label">Contact email</label>
+          <input className="rgt-in" type="email" value={contactEmail || existing?.contact_email || ""} onChange={(e) => setContactEmail(e.target.value)} placeholder="club@example.com" />
+        </div>
+
+        <div className="rgt-subcard">
+          <div className="rgt-subcard-t">Team manager details</div>
+          <div className="rgt-row">
+            <div>
+              <label className="rgt-label">Team manager name</label>
+              <input className="rgt-in" value={managerName || existing?.manager_name || ""} onChange={(e) => setManagerName(e.target.value)} placeholder="Who's running the team" />
+            </div>
+            <div>
+              <label className="rgt-label">Team manager phone</label>
+              <input className="rgt-in" value={managerPhone || existing?.manager_phone || ""} onChange={(e) => setManagerPhone(e.target.value)} placeholder="98XXXXXXXX" />
+            </div>
           </div>
         </div>
 
-        <div className="rgt-row">
-          <div>
-            <label className="rgt-label">Coach name <span className="rgt-opt">optional</span></label>
-            <input className="rgt-in" value={coachName || existing?.coach_name || ""} onChange={(e) => setCoachName(e.target.value)} placeholder="Head coach, if any" />
+        <div className="rgt-subcard">
+          <div className="rgt-subcard-t">Coach details</div>
+          <div className="rgt-row">
+            <div>
+              <label className="rgt-label">Coach name <span className="rgt-opt">optional</span></label>
+              <input className="rgt-in" value={coachName || existing?.coach_name || ""} onChange={(e) => setCoachName(e.target.value)} placeholder="Head coach, if any" />
+            </div>
+            <div>
+              <label className="rgt-label">Coach phone <span className="rgt-opt">optional</span></label>
+              <input className="rgt-in" value={coachPhone || existing?.coach_phone || ""} onChange={(e) => setCoachPhone(e.target.value)} placeholder="98XXXXXXXX" />
+            </div>
           </div>
-          <div>
-            <label className="rgt-label">Coach phone <span className="rgt-opt">optional</span></label>
-            <input className="rgt-in" value={coachPhone || existing?.coach_phone || ""} onChange={(e) => setCoachPhone(e.target.value)} placeholder="98XXXXXXXX" />
-          </div>
+          <p className="rgt-hint">Shown on the Teams tab so opponents and organisers can reach you.</p>
         </div>
-        <p className="rgt-hint">Shown on the Teams tab so opponents and organisers can reach you.</p>
       </>
     );
   }
@@ -283,10 +296,13 @@ export default function TournamentRegisterTab({
           <Stepper active={0} paid={paid} />
           <div className="rgt-card">
             <div className="rgt-step-t">Your team</div>
-            <label className="rgt-label">Team name</label>
-            <input className="rgt-in" value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Everest United" />
 
-            {renderTeamDetailFields(null)}
+            {renderTeamDetailFields(null, (
+              <>
+                <label className="rgt-label">Team name</label>
+                <input className="rgt-in" value={teamName} onChange={(e) => setTeamName(e.target.value)} placeholder="e.g. Everest United" />
+              </>
+            ))}
 
             <label className="rgt-check">
               <input type="checkbox" checked={iPlay} onChange={(e) => setIPlay(e.target.checked)} />
@@ -332,10 +348,13 @@ export default function TournamentRegisterTab({
               {team.status === "rejected" ? "Registration wasn't approved" : "You withdrew from this tournament"}
             </div>
             <p className="rgt-hint" style={{ marginTop: 0 }}>You can register again below.</p>
-            <label className="rgt-label">Team name</label>
-            <input className="rgt-in" value={teamName || team.name} onChange={(e) => setTeamName(e.target.value)} />
 
-            {renderTeamDetailFields(team)}
+            {renderTeamDetailFields(team, (
+              <>
+                <label className="rgt-label">Team name</label>
+                <input className="rgt-in" value={teamName || team.name} onChange={(e) => setTeamName(e.target.value)} />
+              </>
+            ))}
 
             <label className="rgt-check">
               <input type="checkbox" checked={ackTerms} onChange={(e) => setAckTerms(e.target.checked)} />
@@ -745,6 +764,17 @@ const RGT_CSS = `
   border-radius: 18px; padding: 20px; margin-bottom: 14px;
 }
 [data-theme="paper"] .rgt-card { background: #fff; border-color: rgba(20,23,30,0.08); box-shadow: 0 1px 4px rgba(20,23,30,0.05); }
+.rgt-subcard {
+  background: rgba(242,237,230,0.04); border: 1px solid rgba(242,237,230,0.09);
+  border-radius: 14px; padding: 14px 16px; margin: 14px 0;
+}
+.rgt-subcard:first-child { margin-top: 0; }
+.rgt-subcard:last-child { margin-bottom: 0; }
+[data-theme="paper"] .rgt-subcard { background: rgba(20,23,30,0.02); border-color: rgba(20,23,30,0.07); }
+.rgt-subcard-t {
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 800; letter-spacing: .06em;
+  text-transform: uppercase; opacity: .55; margin-bottom: 10px;
+}
 .rgt-center { text-align: center; }
 .rgt-center h3 { font-family: 'Inter', sans-serif; font-size: 17px; font-weight: 800; margin: 12px 0 6px; }
 .rgt-center p { font-size: 13.5px; opacity: .7; margin: 0 auto 16px; max-width: 340px; line-height: 1.55; }
