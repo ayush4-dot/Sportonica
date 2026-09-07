@@ -75,7 +75,27 @@ export default function EventTabs({
     if (t === "Register" && !showRegister) return false;
     return true;
   });
-  const [tab, setTab] = useState<Tab>(() => tabFromParam(initialTab) ?? "Overview");
+  // Always hydrate starting on Overview, then flip to the deep-linked tab
+  // (?tab=register from a QR/share link) in an effect once the client is
+  // interactive, instead of starting there directly. Next's streaming SSR
+  // resolves this page's dynamic content through a Suspense boundary and
+  // swaps it into the DOM via an inline script before the hydration
+  // bundle is guaranteed to have run — a real, timing-dependent race. For
+  // Overview that swap is harmless (nothing but static markup depends on
+  // it), but a non-Overview initial tab occasionally lost that race and
+  // never became interactive: no click handlers, no effects, permanently
+  // stuck on the SSR fallback text. Overview has never reproduced that;
+  // this trades one tab-switch's worth of flash for reliably ending up
+  // interactive.
+  const [tab, setTab] = useState<Tab>("Overview");
+  useEffect(() => {
+    const t = tabFromParam(initialTab);
+    if (t) setTab(t);
+    // Only ever apply the URL's tab once, right after mount — not on every
+    // initialTab identity change (selectTab() below already owns the tab
+    // after that).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const activeTab = visibleTabs.includes(tab) ? tab : "Overview";
 
   // Keep the URL in sync so the current tab is shareable — plain
