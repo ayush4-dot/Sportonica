@@ -18,9 +18,15 @@ function sb() {
     // with a synthetic INITIAL_SESSION event, even when nothing changed —
     // resetting the cache on that wiped out the very first getCachedUser()
     // call before it had even resolved, forcing a second real request.
+    // Deferred with setTimeout — Supabase's own auth methods are
+    // serialized behind an internal, non-reentrant lock, and this
+    // fires *during* whatever auth call triggered it (e.g.
+    // signInAnonymously()). getCachedUser() below calls auth.getUser()
+    // on the same client, so reacting synchronously here would try to
+    // reacquire that lock from inside itself and deadlock forever.
     client.auth.onAuthStateChange((event) => {
       if (event === "INITIAL_SESSION") return;
-      cached = null;
+      setTimeout(() => { cached = null; }, 0);
     });
   }
   return client;

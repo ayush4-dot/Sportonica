@@ -11,6 +11,7 @@ import {
   updateTeamPlayerGuest, uploadTeamLogo,
 } from "@/lib/tournaments/actions";
 import { createClient } from "@/lib/supabase/client";
+import { getCachedUser } from "@/lib/supabase/authCache";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
@@ -61,13 +62,26 @@ export default function TournamentRegisterTab({
   // captain_id = auth.uid() checks already baked into register_team()
   // and friends work unchanged for it. router.refresh() re-runs the
   // server component so `loggedIn` flips true and the real form shows.
+  //
+  // Waits on the header's own getCachedUser() first (AppHeader/MagnetDock
+  // /EventTabs all call useProfile(), which fires auth.getUser() on the
+  // same shared Supabase client) rather than firing signInAnonymously()
+  // concurrently with it — no confirmed bug from the concurrency itself,
+  // but two calls racing the same GoTrueClient on mount is worth avoiding
+  // regardless of whether it's ever actually the culprit.
   useEffect(() => {
     if (loggedIn) return;
     let cancelled = false;
-    createClient().auth.signInAnonymously().then(({ error }) => {
-      if (cancelled) return;
-      if (error) { setAnonErr(true); return; }
+    getCachedUser().catch(() => null).then(() => {
+      if (cancelled) return undefined;
+      return createClient().auth.signInAnonymously();
+    }).then((res) => {
+      if (cancelled || !res) return;
+      if (res.error) { setAnonErr(true); return; }
       router.refresh();
+    }).catch(() => {
+      if (cancelled) return;
+      setAnonErr(true);
     });
     return () => { cancelled = true; };
   }, [loggedIn, router]);

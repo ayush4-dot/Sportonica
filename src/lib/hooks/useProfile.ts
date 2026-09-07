@@ -78,10 +78,18 @@ function ensureAuthListener() {
   // Skip the synthetic INITIAL_SESSION event fired right after
   // subscribing — reacting to it re-triggered a second, redundant fetch
   // on top of the one ensureLoaded() already kicks off in subscribe().
+  // Deferred with setTimeout — this fires *during* whatever auth call
+  // triggered it (sign in/out, or another tab's signInAnonymously()),
+  // while Supabase's internal auth lock is still held. ensureLoaded()
+  // calls auth.getUser() on the same client via getCachedUser(), so
+  // reacting synchronously here would try to reacquire that lock from
+  // inside itself and deadlock forever instead of ever resolving.
   sb().auth.onAuthStateChange((event) => {
     if (event === "INITIAL_SESSION") return;
-    inFlight = null;
-    void ensureLoaded();
+    setTimeout(() => {
+      inFlight = null;
+      void ensureLoaded();
+    }, 0);
   });
 }
 
