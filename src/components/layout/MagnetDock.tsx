@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Home, UserPlus, CalendarPlus, MessagesSquare, Trophy } from "lucide-react";
+import { Home, Volleyball, CalendarPlus, MessagesSquare, Trophy } from "lucide-react";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
 
@@ -13,7 +13,7 @@ const ICON = { size: 22, strokeWidth: 2.15, absoluteStrokeWidth: true } as const
 
 const LINKS: Item[] = [
   { label: "Home", href: "/", icon: <Home {...ICON} /> },
-  { label: "Join", href: "/discover", icon: <UserPlus {...ICON} /> },
+  { label: "Play", href: "/discover", icon: <Volleyball {...ICON} /> },
   { label: "Book", href: "/create", icon: <CalendarPlus {...ICON} /> },
   { label: "Events", href: "/tournaments", icon: <Trophy {...ICON} /> },
   { label: "Chat", href: "/messages", icon: <MessagesSquare {...ICON} /> },
@@ -173,7 +173,7 @@ export default function MagnetDock() {
           .dock-item svg { width: 22px; height: 22px; position: relative; z-index: 1; }
           .dock-item.active svg { transform: translateY(-1px); }
           .dock-label, [data-theme="paper"] .dock-label {
-            position: relative; z-index: 1; transform: none; opacity: 1;
+            position: relative; inset: auto; z-index: 1; transform: none; opacity: 1;
             background: none; border: none; box-shadow: none; padding: 0;
             font-size: 9.5px; font-weight: 650; color: inherit; letter-spacing: -0.1px;
           }
