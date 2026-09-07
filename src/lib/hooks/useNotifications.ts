@@ -28,7 +28,13 @@ export type Notification = {
   created_at: string;
 };
 
-export function useNotifications() {
+const COLS = "id, kind, title, body, event_id, squad_id, conversation_id, game_id, tournament_id, read, created_at";
+
+/**
+ * @param limit  how many to hold. The bell needs a handful; the
+ *               /notifications page asks for the full history.
+ */
+export function useNotifications(limit = 30) {
   const supabase = createClient();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,13 +46,13 @@ export function useNotifications() {
     setUserId(user.id);
     const { data } = await supabase
       .from("notifications")
-      .select("id, kind, title, body, event_id, squad_id, conversation_id, game_id, tournament_id, read, created_at")
+      .select(COLS)
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
-      .limit(30);
+      .limit(limit);
     setItems((data ?? []) as Notification[]);
     setLoading(false);
-  }, [supabase]);
+  }, [supabase, limit]);
 
   useEffect(() => {
     load();
@@ -73,5 +79,17 @@ export function useNotifications() {
     await supabase.rpc("mark_notifications_read");
   }, [supabase]);
 
-  return { items, unread, loading, markAllRead, reload: load };
+  const markOneRead = useCallback(async (id: string) => {
+    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
+    await supabase.from("notifications").update({ read: true }).eq("id", id);
+  }, [supabase]);
+
+  // Dismiss = remove the row. Needs the "notifications delete own"
+  // RLS policy (db/notifications_dismiss.sql); optimistic either way.
+  const dismiss = useCallback(async (id: string) => {
+    setItems((prev) => prev.filter((n) => n.id !== id));
+    await supabase.from("notifications").delete().eq("id", id);
+  }, [supabase]);
+
+  return { items, unread, loading, markAllRead, markOneRead, dismiss, reload: load };
 }
