@@ -181,24 +181,29 @@ export default function GlobalSearch() {
       )}
 
       <style>{`
+        /* Ghosted to match the header's icon buttons (.ah-btn): no fill,
+           the same hairline border and green hover, text and shortcut
+           carried at low opacity so it reads as chrome, not a form field. */
         .gs-trigger {
           display: inline-flex; align-items: center; gap: 8px;
-          height: 40px; padding: 0 12px 0 13px; border-radius: 999px;
+          height: 42px; padding: 0 8px 0 14px; border-radius: 999px;
           font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
-          border: 1px solid rgba(20,23,30,.14); background: rgba(255,255,255,.55);
-          color: rgba(20,23,30,.62); white-space: nowrap;
-          transition: border-color .18s, background .18s, color .18s;
+          border: 1px solid rgba(20,23,30,.14); background: transparent;
+          color: inherit; white-space: nowrap;
+          transition: border-color .2s ease, transform .15s ease;
         }
-        .gs-trigger:hover { border-color: rgba(0,98,65,.5); color: #14171E; background: #fff; }
-        .gs-trigger-txt { }
+        :root:not([data-theme="paper"]) .gs-trigger { border-color: rgba(242,237,230,.16); }
+        .gs-trigger svg { opacity: .7; }
+        .gs-trigger:hover { transform: translateY(-1px); border-color: rgba(0,98,65,.55); }
+        .gs-trigger:hover svg { opacity: 1; }
+        .gs-trigger-txt { opacity: .6; }
+        .gs-trigger:hover .gs-trigger-txt { opacity: .9; }
         .gs-kbd {
-          font-family: inherit; font-size: 10.5px; font-weight: 700; letter-spacing: .02em;
-          padding: 2px 6px; border-radius: 6px; border: 1px solid rgba(20,23,30,.16);
-          background: rgba(20,23,30,.04); color: rgba(20,23,30,.5);
+          font-family: inherit; font-size: 10px; font-weight: 700; letter-spacing: .04em; line-height: 1;
+          padding: 3px 6px 2px; border-radius: 6px;
+          border: 1px solid currentColor; background: transparent; color: inherit; opacity: .32;
         }
-        :root:not([data-theme="paper"]) .gs-trigger {
-          border-color: rgba(242,237,230,.16); background: rgba(11,13,17,.4); color: rgba(242,237,230,.6);
-        }
+        .gs-trigger:hover .gs-kbd { opacity: .5; }
 
         .gs-scrim {
           position: fixed; inset: 0; z-index: 600;
@@ -286,7 +291,7 @@ export default function GlobalSearch() {
 
         @media (max-width: 560px) {
           .gs-trigger-txt, .gs-kbd { display: none; }
-          .gs-trigger { width: 40px; padding: 0; justify-content: center; }
+          .gs-trigger { width: 42px; padding: 0; justify-content: center; }
           .gs-scrim { padding: 0; align-items: stretch; }
           .gs-panel { max-width: none; border-radius: 0; max-height: 100dvh; height: 100dvh; }
         }
