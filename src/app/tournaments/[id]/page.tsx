@@ -110,14 +110,14 @@ export default async function TournamentDetailPage({
             <div className="bk-hero-empty"><Trophy size={40} /></div>
           )}
           <div className="bk-hero-grad" />
-          <div className="bk-hero-info">
-            <span className="bk-sport-pill">{tournament.sport}</span>
-            <h1>{tournament.name}</h1>
-            <div className="sub">
-              <span>{venueName}</span>
-              <span>{FORMAT_LABELS[tournament.format]}</span>
-              <span>{when(tournament.starts_at)}</span>
-            </div>
+        </div>
+        <div className="bk-hero-info">
+          <span className="bk-sport-pill">{tournament.sport}</span>
+          <h1>{tournament.name}</h1>
+          <div className="sub">
+            <span>{venueName}</span>
+            <span>{FORMAT_LABELS[tournament.format]}</span>
+            <span>{when(tournament.starts_at)}</span>
           </div>
         </div>
 
