@@ -10,6 +10,7 @@ import {
   registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
   updateTeamPlayerGuest, uploadTeamLogo,
 } from "@/lib/tournaments/actions";
+import { createClient } from "@/lib/supabase/client";
 import { isActionError } from "@/lib/actionError";
 import PaymentStep from "@/components/payments/PaymentStep";
 import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
@@ -52,6 +53,24 @@ export default function TournamentRegisterTab({
   const [logoUploading, setLogoUploading] = useState(false);
   const [iPlay, setIPlay] = useState(false);
   const [ackTerms, setAckTerms] = useState(false);
+  const [anonErr, setAnonErr] = useState(false);
+
+  // No account required to register a team — sign in a fresh anonymous
+  // Supabase session behind the scenes instead of sending the visitor to
+  // /login. @supabase/ssr syncs that session into cookies, so the
+  // captain_id = auth.uid() checks already baked into register_team()
+  // and friends work unchanged for it. router.refresh() re-runs the
+  // server component so `loggedIn` flips true and the real form shows.
+  useEffect(() => {
+    if (loggedIn) return;
+    let cancelled = false;
+    createClient().auth.signInAnonymously().then(({ error }) => {
+      if (cancelled) return;
+      if (error) { setAnonErr(true); return; }
+      router.refresh();
+    });
+    return () => { cancelled = true; };
+  }, [loggedIn, router]);
 
   function submitLogo(file: File) {
     setLogoUploading(true);
@@ -258,17 +277,27 @@ export default function TournamentRegisterTab({
     <div className="rgt">
       <style>{RGT_CSS}</style>
 
-      {/* ── Not signed in ─────────────────────────────────────────── */}
+      {/* ── Setting up (silent anonymous session) ─────────────────── */}
       {!loggedIn ? (
         <>
           {hero}
           <div className="rgt-card rgt-center">
-            <div className="rgt-lock"><LogIn size={20} /></div>
-            <h3>Sign in to register your team</h3>
-            <p>You&apos;ll manage the team, add players and pay — all from here.</p>
-            <a className="rgt-btn primary" href={`/login?redirect=${encodeURIComponent(`/tournaments/${tournament.id}?tab=register`)}`}>
-              <LogIn size={15} /> Sign in
-            </a>
+            {anonErr ? (
+              <>
+                <div className="rgt-lock"><LogIn size={20} /></div>
+                <h3>Sign in to register your team</h3>
+                <p>You&apos;ll manage the team, add players and pay — all from here.</p>
+                <a className="rgt-btn primary" href={`/login?redirect=${encodeURIComponent(`/tournaments/${tournament.id}?tab=register`)}`}>
+                  <LogIn size={15} /> Sign in
+                </a>
+              </>
+            ) : (
+              <>
+                <div className="rgt-lock"><Clock size={20} /></div>
+                <h3>Setting things up…</h3>
+                <p>One moment while we get the registration form ready.</p>
+              </>
+            )}
           </div>
         </>
       ) : !team && !regOpen ? (
