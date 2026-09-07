@@ -32,6 +32,7 @@ export default async function TournamentDetailPage({
   const { tab: initialTab } = await searchParams;
   const tournament = await getTournament(id);
   if (isActionError(tournament) || !tournament) notFound();
+  const hasBanner = !!tournament.banner_url && /^https?:\/\//i.test(tournament.banner_url);
   // Draft/pending_approval tournaments are only visible to their vendor
   // or a super_admin (RLS) — getTournament() already enforces that, so
   // reaching this point with a non-published status means the viewer is
@@ -98,13 +99,13 @@ export default async function TournamentDetailPage({
       <div className="play-wrap" style={{ maxWidth: 1040 }}>
         <Link href="/tournaments" className="bk-back"><ChevronLeft size={16} /> All tournaments</Link>
 
-        <div className="bk-hero bk-hero--poster">
-          {/* banner_url used to be a freeform text field — an old row can hold
-              a bare filename instead of a real URL, which just renders as a
-              broken image rather than falling back cleanly. */}
-          {tournament.banner_url && /^https?:\/\//i.test(tournament.banner_url) ? (
+        {/* banner_url used to be a freeform text field — an old row can hold
+            a bare filename instead of a real URL, which just renders as a
+            broken image rather than falling back cleanly. */}
+        <div className={`bk-hero bk-hero--poster${hasBanner ? " bk-hero--has-img" : ""}`}>
+          {hasBanner ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={tournament.banner_url} alt="" />
+            <img src={tournament.banner_url!} alt="" />
           ) : (
             <div className="bk-hero-empty"><Trophy size={40} /></div>
           )}
