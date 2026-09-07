@@ -33,7 +33,11 @@
 .mz-head h1 {
   font-family: 'Inter', sans-serif;
   font-size: clamp(34px, 5.5vw, 58px); font-weight: 800;
-  letter-spacing: -1.8px; line-height: 1.02; margin: 0;
+  /* Scaled tracking: stays tight/editorial at the 58px ceiling but
+     relaxes toward the 34px floor, where a fixed -1.8px pinched the
+     round lowercase glyphs enough to clip their side bearings on some
+     renderers. */
+  letter-spacing: -0.03em; line-height: 1.08; margin: 0;
 }
 .mz-head h1 em { font-style: normal; color: #006241; }
 .mz.paper .mz-head h1 em { color: #006241; }

@@ -132,6 +132,25 @@ export default function DateStrip({
         }
         .ds-day:hover { transform: translateY(-4px); border-color: rgba(0,98,65,.45); }
 
+        /* Non-selected days on the cream theme were a thin outline over
+           near-matching cream — hard to scan next to the solid green
+           selected pill. Give them a real surface and a firmer border so
+           each reads as a tappable chip, and lift the weekday label out
+           of near-invisibility. */
+        [data-theme="paper"] .ds-day {
+          background: #ffffff;
+          border-color: rgba(20,23,30,.16);
+          box-shadow: 0 1px 2px rgba(20,23,30,.05);
+        }
+        [data-theme="paper"] .ds-day:hover { border-color: rgba(0,98,65,.5); }
+        [data-theme="paper"] .ds-day .ds-num { color: #14171E; }
+        [data-theme="paper"] .ds-day .ds-dow { opacity: .7; }
+        [data-theme="paper"] .ds-day.on { border-color: transparent; box-shadow:
+          inset 0 1px 0 rgba(255,255,255,.35),
+          0 0 0 1px rgba(0,98,65,.35),
+          0 16px 30px -12px rgba(0,98,65,.7); }
+        [data-theme="paper"] .ds-day.on .ds-num { color: #ffffff; }
+
         /* Weekends read warmer, so the week has a rhythm. */
         .ds-day.wknd .ds-dow { color: #006241; opacity: .75; }
 
