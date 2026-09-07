@@ -269,14 +269,15 @@ const CSS = `
   }
 `;
 
+// Real match photos (public/sports/photos/), one per sport in SPORTS_PANELS.
 const SPORT_IMG: Record<string, string> = {
-  Futsal:     "/sports/futsal.jpg",
-  Cricket:    "/sports/cricket.jpg",
-  Basketball: "/sports/basketball.jpg",
-  Volleyball: "/sports/volleyball.jpg",
+  Futsal:     "/sports/photos/futsal.jpg",
+  Cricket:    "/sports/photos/cricket.jpg",
+  Basketball: "/sports/photos/basketball.jpg",
+  Volleyball: "/sports/photos/volleyball.jpg",
   Badminton:  "/sports/photos/badminton.jpg",
-  Pickleball: "/sports/pickleball.jpg",
-  Swimming:   "/sports/swimming.jpg",
+  Pickleball: "/sports/photos/pickleball.jpg",
+  Swimming:   "/sports/photos/swimming.jpg",
 };
 
 export default function HomeClient({ rails }: { rails?: HomeRails }) {
@@ -360,7 +361,7 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
                       className="p-sportchip"
                       aria-label={`Book ${sp.sport} grounds`}
                     >
-                      <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt="" loading="lazy" />
+                      <img className="p-sportchip-img" src={SPORT_IMG[sp.sport]} alt={`${sp.sport} players`} loading="lazy" />
                       <span className="p-sportchip-tint" style={{ background:`${sp.color}22` }} />
                       <span className="p-sportchip-shade" />
                       <span className="p-sportchip-label">{sp.sport}</span>
