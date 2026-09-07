@@ -34,9 +34,9 @@ const teamSheetHref = (tournamentId: string, teamId?: string) =>
   `/organize/tournaments/${tournamentId}/teams/sheet${teamId ? `?team=${teamId}` : ""}`;
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
-const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
+const when = (iso: string | null) => iso ? new Date(iso).toLocaleString("en-GB", {
   day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu",
-});
+}) : "TBD";
 
 type TeamRow = TournamentTeam & { roster_count: number };
 type PaymentRow = { team_id: string; team_name: string; status: string; payment_method: string | null; expected_amount: number; submitted_at: string | null };

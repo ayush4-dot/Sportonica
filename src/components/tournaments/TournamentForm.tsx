@@ -68,6 +68,11 @@ export default function TournamentForm({
   const [description, setDescription] = useState(existing?.description ?? "");
   const [contactPhone, setContactPhone] = useState(existing?.contact_phone ?? "");
 
+  // TBD: publish and open registration before the venue/date is locked
+  // in. existing?.starts_at is only ever null for a tournament already
+  // saved that way, so an explicit false default here (rather than
+  // `!existing?.starts_at`) doesn't mistake "brand new form" for TBD.
+  const [datesTbd, setDatesTbd] = useState(!!existing && existing.starts_at === null);
   const [startsDate, setStartsDate] = useState(toLocalDate(existing?.starts_at) || tomorrowKTM());
   const [startsTime, setStartsTime] = useState(toLocalTime(existing?.starts_at) || "09:00");
   const [endsDate, setEndsDate] = useState(toLocalDate(existing?.ends_at) || tomorrowKTM());
@@ -239,8 +244,8 @@ export default function TournamentForm({
       banner_url: bannerUrl.trim() || undefined,
       description: description.trim() || undefined,
       contact_phone: contactPhone.trim() || undefined,
-      starts_at: combine(startsDate, startsTime),
-      ends_at: combine(endsDate, endsTime),
+      starts_at: datesTbd ? null : combine(startsDate, startsTime),
+      ends_at: datesTbd ? null : combine(endsDate, endsTime),
       registration_opens_at: combine(regOpenDate, regOpenTime),
       registration_closes_at: combine(regCloseDate, regCloseTime),
       match_duration_mins: matchMins,
@@ -278,19 +283,22 @@ export default function TournamentForm({
     } else if (!venueId) {
       return "Pick a venue.";
     }
-    if (!startsDate) return "Set a start date.";
-    if (!endsDate) return "Set an end date.";
+    if (!datesTbd) {
+      if (!startsDate) return "Set a start date.";
+      if (!endsDate) return "Set an end date.";
+    }
     if (!regOpenDate) return "Set when registration opens.";
     if (!regCloseDate) return "Set when registration closes.";
-    if (combine(endsDate, endsTime) <= combine(startsDate, startsTime)) return "End time must be after the start time.";
-    if (combine(regCloseDate, regCloseTime) > combine(startsDate, startsTime)) return "Registration must close before the tournament starts.";
+    if (!datesTbd && combine(endsDate, endsTime) <= combine(startsDate, startsTime)) return "End time must be after the start time.";
+    if (!datesTbd && combine(regCloseDate, regCloseTime) > combine(startsDate, startsTime)) return "Registration must close before the tournament starts.";
     // A tournament that already ended (or whose registration window
     // already closed) before it's even published silently vanishes from
     // /tournaments and rejects every registration with "closed" — with no
     // hint anywhere why. Catching it here, at save time, is the only place
-    // that can explain it clearly.
+    // that can explain it clearly. Skipped for TBD dates — there's no end
+    // time yet to check against.
     const nowIso = new Date().toISOString();
-    if (combine(endsDate, endsTime) <= nowIso) return "The tournament's end time has already passed — pick a future date.";
+    if (!datesTbd && combine(endsDate, endsTime) <= nowIso) return "The tournament's end time has already passed — pick a future date.";
     if (combine(regCloseDate, regCloseTime) <= nowIso) return "Registration closes in the past — pick a future date/time.";
     if (format !== "single_event" && maxPlayers < minPlayers) return "Max players per team can't be less than the minimum.";
     // A paid tournament with no QR is a foot-gun: the payer checkout would
@@ -510,26 +518,34 @@ export default function TournamentForm({
       </div>
 
       <SectionTitle>Schedule</SectionTitle>
-      <div className="ev-row">
-        <div className="ev-field">
-          <label>Starts</label>
-          <input type="date" value={startsDate} onChange={(e) => setStartsDate(e.target.value)} />
-        </div>
-        <div className="ev-field">
-          <label>Start time</label>
-          <input type="time" value={startsTime} onChange={(e) => setStartsTime(e.target.value)} />
-        </div>
-      </div>
-      <div className="ev-row">
-        <div className="ev-field">
-          <label>Ends</label>
-          <input type="date" value={endsDate} onChange={(e) => setEndsDate(e.target.value)} />
-        </div>
-        <div className="ev-field">
-          <label>End time</label>
-          <input type="time" value={endsTime} onChange={(e) => setEndsTime(e.target.value)} />
-        </div>
-      </div>
+      <label className="ev-check">
+        <input type="checkbox" checked={datesTbd} onChange={(e) => setDatesTbd(e.target.checked)} />
+        <span>Date TBD — venue/date not locked in yet, decide later</span>
+      </label>
+      {!datesTbd && (
+        <>
+          <div className="ev-row">
+            <div className="ev-field">
+              <label>Starts</label>
+              <input type="date" value={startsDate} onChange={(e) => setStartsDate(e.target.value)} />
+            </div>
+            <div className="ev-field">
+              <label>Start time</label>
+              <input type="time" value={startsTime} onChange={(e) => setStartsTime(e.target.value)} />
+            </div>
+          </div>
+          <div className="ev-row">
+            <div className="ev-field">
+              <label>Ends</label>
+              <input type="date" value={endsDate} onChange={(e) => setEndsDate(e.target.value)} />
+            </div>
+            <div className="ev-field">
+              <label>End time</label>
+              <input type="time" value={endsTime} onChange={(e) => setEndsTime(e.target.value)} />
+            </div>
+          </div>
+        </>
+      )}
       <div className="ev-row">
         <div className="ev-field">
           <label>Registration opens</label>

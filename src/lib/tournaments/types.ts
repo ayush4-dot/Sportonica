@@ -76,8 +76,10 @@ export interface Tournament {
   banner_url: string | null;
   description: string | null;
   contact_phone: string | null;
-  starts_at: string;
-  ends_at: string;
+  // null = dates not locked in yet ("TBD") — the organizer can publish
+  // and open registration before committing to an exact start/end.
+  starts_at: string | null;
+  ends_at: string | null;
   registration_opens_at: string;
   registration_closes_at: string;
   match_duration_mins: number | null;
@@ -299,8 +301,8 @@ export type TournamentDraftInput = Partial<{
   banner_url: string;
   description: string;
   contact_phone: string;
-  starts_at: string;
-  ends_at: string;
+  starts_at: string | null;
+  ends_at: string | null;
   registration_opens_at: string;
   registration_closes_at: string;
   match_duration_mins: number;

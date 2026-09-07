@@ -75,9 +75,11 @@ export async function listPublicTournaments(): Promise<(Tournament & { venue_nam
     // Upcoming/ongoing tournaments still need the ends_at guard (a
     // published tournament whose dates slipped into the past without a
     // status change shouldn't linger); completed ones are exempt since
-    // they're meant to stay browsable as a result, not a listing.
-    .or(`ends_at.gte.${nowIso},status.eq.completed`)
-    .order("starts_at", { ascending: true })
+    // they're meant to stay browsable as a result, not a listing. A TBD
+    // tournament has no ends_at yet — keep it listed rather than letting
+    // a null fail the "still upcoming" check.
+    .or(`ends_at.gte.${nowIso},ends_at.is.null,status.eq.completed`)
+    .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(100);
   if (error) return actionError(error.message);
   return ((data ?? []) as unknown as (Tournament & { venues: { name: string } | null })[]).map((t) => {

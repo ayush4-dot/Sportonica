@@ -9,7 +9,8 @@ import { whatsappNotifyUrl } from "@/lib/payments/types";
 
 const KTM = "Asia/Kathmandu";
 
-export function fmtWhen(iso: string) {
+export function fmtWhen(iso: string | null) {
+  if (!iso) return "TBD";
   const d = new Date(iso);
   return d.toLocaleString("en-GB", {
     weekday: "short", day: "numeric", month: "short",
@@ -162,8 +163,9 @@ Notify on WhatsApp: ${whatsappNotifyUrl(
 // ── 7. Customer: payment approved, booking confirmed ─────────────
 export function paymentApproved(p: {
   to: string; playerName: string; bookingLabel: string; amount: number;
-  venue: string; startsAt: string; endsAt: string;
+  venue: string; startsAt: string | null; endsAt: string | null;
 }): Mail {
+  const when = p.startsAt ? `${fmtWhen(p.startsAt)} – ${fmtWhen(p.endsAt).split(", ").pop()}` : "TBD";
   return {
     to: p.to,
     subject: `Booking confirmed — ${p.bookingLabel}`,
@@ -174,7 +176,7 @@ Payment verified. Your booking is confirmed.
   Booking   ${p.bookingLabel}
   Amount    ${rs(p.amount)}
   Venue     ${p.venue}
-  When      ${fmtWhen(p.startsAt)} – ${fmtWhen(p.endsAt).split(", ").pop()}
+  When      ${when}
 
 See you on the pitch.
 

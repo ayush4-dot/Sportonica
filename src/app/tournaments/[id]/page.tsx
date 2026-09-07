@@ -18,9 +18,9 @@ import "@/app/platform/events/events.css";
 export const dynamic = "force-dynamic";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
-const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
+const when = (iso: string | null) => iso ? new Date(iso).toLocaleString("en-GB", {
   weekday: "short", day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu",
-});
+}) : "Date TBD";
 
 export default async function TournamentDetailPage({
   params, searchParams,

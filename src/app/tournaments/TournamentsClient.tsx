@@ -8,7 +8,8 @@ import CardShareButton from "@/components/tournaments/CardShareButton";
 
 const KTM = "Asia/Kathmandu";
 
-function when(iso: string) {
+function when(iso: string | null) {
+  if (!iso) return "Date TBD";
   const d = new Date(iso);
   const key = (x: Date) => x.toLocaleDateString("en-CA", { timeZone: KTM });
   const time = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM });

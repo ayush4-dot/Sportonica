@@ -8,12 +8,12 @@ import { sportColor } from "@/lib/sports";
 export const runtime = "nodejs";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
-const when = (iso: string) => new Date(iso).toLocaleString("en-GB", {
+const when = (iso: string | null) => iso ? new Date(iso).toLocaleString("en-GB", {
   weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kathmandu",
-});
-const time = (iso: string) => new Date(iso).toLocaleTimeString("en-GB", {
+}) : "Date TBD";
+const time = (iso: string | null) => iso ? new Date(iso).toLocaleTimeString("en-GB", {
   hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kathmandu",
-});
+}) : "";
 
 // 9:16 story card — 1080x1920, same shape as /p/[username]/story. Built for
 // the "Download/share card" button so a tournament can go straight to an

@@ -551,8 +551,10 @@ async function paymentContext(paymentId: string) {
     return {
       payment, label, customerName,
       venueName: venueName ?? "the venue",
-      startsAt: t?.starts_at ?? new Date().toISOString(),
-      endsAt: t?.ends_at ?? new Date().toISOString(),
+      // null = the tournament's dates are still TBD — the email
+      // template shows "TBD" rather than a misleading fallback date.
+      startsAt: t?.starts_at ?? null,
+      endsAt: t?.ends_at ?? null,
       tournamentId: t?.id ?? null,
       tournamentOwnerId: t?.owner_id ?? null,
     };

@@ -9,9 +9,9 @@ export const contentType = "image/png";
 export const alt = "Tournament card";
 
 const money = (n: number) => "Rs " + Math.round(n).toLocaleString("en-IN");
-const when = (iso: string) => new Date(iso).toLocaleDateString("en-GB", {
+const when = (iso: string | null) => iso ? new Date(iso).toLocaleDateString("en-GB", {
   day: "numeric", month: "short", timeZone: "Asia/Kathmandu",
-});
+}) : "Date TBD";
 
 // Rendered on the fly whenever a tournament link is pasted into WhatsApp,
 // Facebook, iMessage, Slack, etc — this is the preview card those apps show,

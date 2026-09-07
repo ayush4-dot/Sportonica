@@ -9,7 +9,8 @@ import type { RailEvent } from "@/lib/play/homeRails";
 // uses for events + Play Together games.
 export type TournamentBrowseItem =
   | { kind: "event"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; slotsRemaining: number; fee: number; badge: "official" | "platform"; bannerUrl: string | null }
-  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string; maxTeams: number | null; fee: number; bannerUrl: string | null; completed: boolean };
+  // when: null = the tournament's dates are still TBD.
+  | { kind: "tournament"; id: string; sport: string; sportColor: string; title: string; organizerName: string | null; venue: string; when: string | null; maxTeams: number | null; fee: number; bannerUrl: string | null; completed: boolean };
 
 // Cookie-free so /tournaments can be edge-cached (revalidate) instead of
 // re-rendered against Sydney every request. Both queries are the same
@@ -36,8 +37,11 @@ async function listPublicTournamentRows(): Promise<(Tournament & { venue_name: s
     .from("tournaments")
     .select("*, venues(name)")
     .in("status", ["published", "registration_open", "registration_closed", "live", "completed"])
-    .or(`ends_at.gte.${nowIso},status.eq.completed`)
-    .order("starts_at", { ascending: true })
+    // A TBD tournament has no ends_at yet to compare against — keep it
+    // listed (it's neither past nor completed) rather than letting a
+    // null fail the "still upcoming" check and vanish from the page.
+    .or(`ends_at.gte.${nowIso},ends_at.is.null,status.eq.completed`)
+    .order("starts_at", { ascending: true, nullsFirst: false })
     .limit(100);
   return ((data ?? []) as unknown as (Tournament & { venues: { name: string } | null })[]).map((t) => {
     const { venues, ...rest } = t;
@@ -65,8 +69,12 @@ export async function listTournaments(): Promise<TournamentBrowseItem[]> {
   // Upcoming/live first (soonest first); completed tournaments sink to
   // the bottom, most-recently-finished first, so the browse page reads
   // as "what's on" rather than a mixed timeline of past and future.
+  // A TBD tournament (when: null) sorts after every dated item — there's
+  // nothing to compare it against yet.
   const isDone = (i: TournamentBrowseItem) => i.kind === "tournament" && i.completed;
-  const active = [...eventItems, ...tournamentItems].filter((i) => !isDone(i)).sort((a, b) => a.when.localeCompare(b.when));
-  const done = tournamentItems.filter(isDone).sort((a, b) => b.when.localeCompare(a.when));
+  const byWhenAsc = (a: TournamentBrowseItem, b: TournamentBrowseItem) =>
+    a.when === b.when ? 0 : a.when === null ? 1 : b.when === null ? -1 : a.when.localeCompare(b.when);
+  const active = [...eventItems, ...tournamentItems].filter((i) => !isDone(i)).sort(byWhenAsc);
+  const done = tournamentItems.filter(isDone).sort((a, b) => byWhenAsc(b, a));
   return [...active, ...done];
 }

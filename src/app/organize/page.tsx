@@ -84,7 +84,7 @@ export default async function OrganizePage() {
                 <td className="adm-dim" data-label="Sport">{t.sport}</td>
                 <td className="adm-dim" style={{ textTransform: "capitalize" }} data-label="Format">{t.format.replace("_", " + ")}</td>
                 <td className="adm-num adm-dim" style={{ fontSize: 12 }} data-label="Starts">
-                  {new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
+                  {t.starts_at ? new Date(t.starts_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "TBD"}
                 </td>
                 <td className="adm-num" data-label="Teams">{t.max_teams ?? "∞"}</td>
                 <td data-label="Status"><span className={`adm-badge ${STATUS_BADGE[t.status]}`}>{STATUS_LABELS[t.status]}</span></td>
