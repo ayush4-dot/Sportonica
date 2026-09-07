@@ -35,8 +35,14 @@ export async function middleware(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
+  // Anonymous sessions (silently created for tournament registration —
+  // see TournamentRegisterTab) aren't real accounts: no profile row,
+  // nothing to onboard. Treat them as signed-out for these two gates so
+  // a stray /profile or /welcome link gets a clean, real redirect here
+  // instead of reaching a page with nothing to show for that user.
+  const isRealUser = !!user && !user.is_anonymous
 
-  if (!user && (path.startsWith('/profile') || path.startsWith('/welcome'))) {
+  if (!isRealUser && (path.startsWith('/profile') || path.startsWith('/welcome'))) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirect', path)
     return NextResponse.redirect(loginUrl)

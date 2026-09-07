@@ -34,7 +34,15 @@ function sb() {
 
 export function getCachedUser(): Promise<User | null> {
   if (!cached) {
-    cached = sb().auth.getUser().then(({ data }) => data.user);
+    // Anonymous sessions (created silently for tournament registration —
+    // see TournamentRegisterTab) aren't real accounts: no profile row to
+    // show, no friends, nothing to notify. Every caller of this function
+    // treats a non-null user as "show the logged-in UI" (header/dock
+    // profile link → /profile, notifications, friend requests, E2E key
+    // setup), and /profile 404/misbehaves for a user with no profile row.
+    // Filtering them out here, once, keeps that whole surface showing
+    // "sign in" as it did before anonymous registration existed.
+    cached = sb().auth.getUser().then(({ data }) => data.user?.is_anonymous ? null : data.user);
   }
   return cached;
 }
