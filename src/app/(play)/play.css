@@ -179,8 +179,16 @@
    off real content whenever an organizer's upload didn't happen to
    match the 21/9 (16/10 on phones) box exactly. Venue photos on the
    other two pages that share .bk-hero are fine cropped, so this is
-   scoped to the tournament page only. */
-.bk-hero.bk-hero--poster img { object-fit: contain; }
+   scoped to the tournament page only.
+   Switching to object-fit:contain alone just traded cropping for
+   letterboxing — the fixed-ratio box stayed, so any poster that
+   didn't match it left visible background bars. Instead, once a real
+   banner is present (:has(img)), drop the fixed ratio entirely and
+   let the box take the image's own natural shape — nothing to crop,
+   nothing to pad. aspect-ratio still applies with no image, so the
+   trophy fallback keeps a sized box to center in. */
+.bk-hero--poster:has(img) { aspect-ratio: auto; }
+.bk-hero--poster img { width: 100%; height: auto; display: block; object-fit: unset; }
 .bk-hero-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); }
 .bk-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(11,13,17,0.9), transparent 60%); }
 .bk-hero-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px; z-index: 2; }

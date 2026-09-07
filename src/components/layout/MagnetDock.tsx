@@ -147,9 +147,8 @@ export default function MagnetDock() {
             box-shadow: 0 -8px 24px -14px rgba(0,0,0,0.4);
           }
           [data-theme="paper"] .dock { border-top-color: rgba(20,23,30,0.12); box-shadow: 0 -8px 24px -14px rgba(20,23,30,0.15); }
-          .dock > div { width: auto !important; flex: 1; }
           .dock-item {
-            width: 100% !important; height: auto; flex-direction: column;
+            flex: 1 1 0%; width: auto !important; height: auto; flex-direction: column;
             gap: 4px; padding: 7px 4px 5px; border-radius: 14px;
             transform: none !important;
             background: none !important; border-color: transparent !important;
