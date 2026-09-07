@@ -98,7 +98,7 @@ export default async function TournamentDetailPage({
       <div className="play-wrap" style={{ maxWidth: 1040 }}>
         <Link href="/tournaments" className="bk-back"><ChevronLeft size={16} /> All tournaments</Link>
 
-        <div className="bk-hero">
+        <div className="bk-hero bk-hero--poster">
           {/* banner_url used to be a freeform text field — an old row can hold
               a bare filename instead of a real URL, which just renders as a
               broken image rather than falling back cleanly. */}
