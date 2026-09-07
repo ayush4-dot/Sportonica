@@ -2,17 +2,21 @@
 
 import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { Home, Volleyball, CalendarPlus, MessagesSquare, Trophy, LogIn } from "lucide-react";
-import { useProfile } from "@/lib/hooks/useProfile";
+import { Home, UserPlus, CalendarPlus, MessagesSquare, Trophy } from "lucide-react";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
 
+// Crisp, confident line weight — heavier than lucide's default 2, with a
+// constant absolute stroke so the icons stay razor-sharp through the
+// desktop magnify scale and on any pixel density.
+const ICON = { size: 22, strokeWidth: 2.15, absoluteStrokeWidth: true } as const;
+
 const LINKS: Item[] = [
-  { label: "Home", href: "/", icon: <Home size={20} /> },
-  { label: "Play", href: "/discover", icon: <Volleyball size={20} /> },
-  { label: "Book", href: "/create", icon: <CalendarPlus size={20} /> },
-  { label: "Events", href: "/tournaments", icon: <Trophy size={20} /> },
-  { label: "Chat", href: "/messages", icon: <MessagesSquare size={20} /> },
+  { label: "Home", href: "/", icon: <Home {...ICON} /> },
+  { label: "Join", href: "/discover", icon: <UserPlus {...ICON} /> },
+  { label: "Book", href: "/create", icon: <CalendarPlus {...ICON} /> },
+  { label: "Events", href: "/tournaments", icon: <Trophy {...ICON} /> },
+  { label: "Chat", href: "/messages", icon: <MessagesSquare {...ICON} /> },
 ];
 
 // Magnify curve: how much a dock item scales based on distance (in item
@@ -30,23 +34,11 @@ export default function MagnetDock() {
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
 
-  // Shared with the header/nav instead of each firing its own auth +
-  // profile round-trip on mount — noticeable savings on mobile.
-  const { user, profile } = useProfile();
-
   // Hide dock on admin/organizer/platform consoles, auth pages (they have their own chrome).
   const hidden =
     pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/organize")
     || pathname.startsWith("/login") || pathname.startsWith("/signup");
   if (hidden) return null;
-
-  const firstName =
-    profile?.full_name?.trim().split(" ")[0] ??
-    user?.email?.split("@")[0] ?? "Account";
-  // Venue owners/admins land on their console here, same as the old
-  // account dropdown's "Venue console" entry — /admin was always their
-  // real destination, /profile was never it.
-  const isOwner = profile?.role === "venue_owner" || profile?.role === "admin";
 
   // "Chat" covers all three social tabs (Messages/Players/Groups), not just its own href.
   const CHAT_PREFIXES = ["/messages", "/players", "/league"];
@@ -55,13 +47,6 @@ export default function MagnetDock() {
     if (href === "/messages") return CHAT_PREFIXES.some((p) => pathname.startsWith(p));
     return pathname.startsWith(href);
   };
-
-  // Profile is the single account entry point now (holds settings, console
-  // links for owners/admins, and logout — see src/app/profile/ProfileHub.tsx)
-  // — no separate account item/dropdown here any more. Lives at index =
-  // LINKS.length for the magnify math.
-  const profileIdx = LINKS.length;
-  const profileActive = pathname.startsWith("/profile");
 
   return (
     <>
@@ -83,17 +68,31 @@ export default function MagnetDock() {
         .dock-item {
           position: relative; width: 46px; height: 46px; border-radius: 15px;
           display: grid; place-items: center; cursor: pointer;
-          color: color-mix(in srgb, var(--chalk, #F2EDE6) 70%, transparent);
+          color: color-mix(in srgb, var(--chalk, #F2EDE6) 72%, transparent);
           background: rgba(255,255,255,0.04);
           border: 1px solid transparent; text-decoration: none;
           transition: transform 0.28s cubic-bezier(0.34,1.56,0.64,1),
-                      background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+                      background 0.25s ease, color 0.25s ease, border-color 0.25s ease,
+                      box-shadow 0.25s ease;
           transform-origin: center center;
         }
-        .dock-item:hover { color: var(--chalk, #F2EDE6); background: rgba(255,255,255,0.09); }
+        .dock-item svg {
+          shape-rendering: geometricPrecision;
+          transition: filter 0.25s ease, transform 0.28s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        .dock-item:hover {
+          color: var(--chalk, #F2EDE6); background: rgba(255,255,255,0.09);
+        }
+        .dock-item:hover svg { filter: drop-shadow(0 3px 8px rgba(0,0,0,0.35)); }
         .dock-item.active {
-          color: #006241; background: rgba(0,98,65,0.14);
-          border-color: rgba(0,98,65,0.3);
+          color: #00a06a;
+          background: linear-gradient(140deg, rgba(0,160,106,0.22), rgba(0,98,65,0.12));
+          border-color: rgba(0,160,106,0.4);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.14),
+                      0 8px 22px -10px rgba(0,120,80,0.7);
+        }
+        .dock-item.active svg {
+          filter: drop-shadow(0 2px 9px rgba(0,160,106,0.55));
         }
         /* label that slides in from the right-hand side */
         .dock-label {
@@ -112,11 +111,6 @@ export default function MagnetDock() {
           content: ''; position: absolute; left: 100%; top: 50%; transform: translateY(-50%);
           border: 5px solid transparent; border-left-color: var(--ink, #0B0D11);
         }
-        .dock-avatar {
-          width: 26px; height: 26px; border-radius: 50%; background: #F2EDE6;
-          border: 1px solid rgba(0,98,65,0.3);
-          display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #006241;
-        }
         /* ── Paper theme ── */
         [data-theme="paper"] .dock {
           background: rgba(255,255,255,0.7);
@@ -125,7 +119,15 @@ export default function MagnetDock() {
         }
         [data-theme="paper"] .dock-item { background: rgba(20,23,30,0.05); color: rgba(20,23,30,0.7); }
         [data-theme="paper"] .dock-item:hover { background: rgba(20,23,30,0.1); color: #14171E; }
-        [data-theme="paper"] .dock-item.active { color: #006241; background: rgba(0,98,65,0.16); border-color: rgba(0,98,65,0.4); }
+        [data-theme="paper"] .dock-item:hover svg { filter: drop-shadow(0 2px 6px rgba(20,23,30,0.18)); }
+        [data-theme="paper"] .dock-item.active {
+          color: #006241;
+          background: linear-gradient(140deg, rgba(0,98,65,0.2), rgba(0,98,65,0.08));
+          border-color: rgba(0,98,65,0.45);
+          box-shadow: inset 0 1px 0 rgba(255,255,255,0.6),
+                      0 8px 20px -10px rgba(0,98,65,0.5);
+        }
+        [data-theme="paper"] .dock-item.active svg { filter: drop-shadow(0 2px 7px rgba(0,98,65,0.4)); }
         [data-theme="paper"] .dock-label { background: #14171E; color: #F2EDE6; border-color: rgba(20,23,30,0.2); }
         [data-theme="paper"] .dock-label::after { border-left-color: #14171E; }
 
@@ -148,16 +150,34 @@ export default function MagnetDock() {
           .dock > div { width: auto !important; flex: 1; }
           .dock-item {
             width: 100% !important; height: auto; flex-direction: column;
-            gap: 3px; padding: 6px 4px; border-radius: 13px;
+            gap: 4px; padding: 7px 4px 5px; border-radius: 14px;
             transform: none !important;
+            background: none !important; border-color: transparent !important;
+            box-shadow: none !important;
           }
-          .dock-item svg { width: 19px; height: 19px; }
-          .dock-avatar { width: 22px; height: 22px; font-size: 11px; }
+          /* Material-style highlight pill that sits behind the icon only. */
+          .dock-item::before {
+            content: ''; position: absolute; top: 4px; left: 50%;
+            width: 46px; height: 30px; border-radius: 999px;
+            transform: translateX(-50%) scale(0.55);
+            background: linear-gradient(140deg, rgba(0,160,106,0.28), rgba(0,98,65,0.14));
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.22s ease, transform 0.32s cubic-bezier(0.34,1.6,0.64,1);
+          }
+          [data-theme="paper"] .dock-item::before {
+            background: linear-gradient(140deg, rgba(0,98,65,0.2), rgba(0,98,65,0.08));
+          }
+          .dock-item.active::before { opacity: 1; transform: translateX(-50%) scale(1); }
+          .dock-item.active { color: #00a06a; }
+          [data-theme="paper"] .dock-item.active { color: #006241; }
+          .dock-item svg { width: 22px; height: 22px; position: relative; z-index: 1; }
+          .dock-item.active svg { transform: translateY(-1px); }
           .dock-label, [data-theme="paper"] .dock-label {
-            position: static; transform: none; opacity: 1; background: none; border: none;
-            box-shadow: none; padding: 0; font-size: 9.5px; font-weight: 600;
-            color: inherit; letter-spacing: -0.2px;
+            position: relative; z-index: 1; transform: none; opacity: 1;
+            background: none; border: none; box-shadow: none; padding: 0;
+            font-size: 9.5px; font-weight: 650; color: inherit; letter-spacing: -0.1px;
           }
+          .dock-item.active .dock-label { font-weight: 800; }
           .dock-label::after { display: none; }
         }
         @media (max-width: 360px) {
@@ -166,6 +186,8 @@ export default function MagnetDock() {
         }
         @media (prefers-reduced-motion: reduce) {
           .dock-item { transform: none !important; transition: background 0.2s, color 0.2s; }
+          .dock-item svg, .dock-item.active svg { transform: none !important; }
+          .dock-item::before { transition: opacity 0.2s ease; }
         }
       `}</style>
 
@@ -185,19 +207,6 @@ export default function MagnetDock() {
             </a>
           );
         })}
-
-        {/* Profile — the single account entry point. Logged out, it goes
-            straight to login rather than through /profile's own redirect.
-            Owners/admins go straight to their console, same as before. */}
-        <a
-          href={!user ? `/login?redirect=${encodeURIComponent(pathname)}` : isOwner ? "/admin" : "/profile"}
-          className={`dock-item ${profileActive ? "active" : ""}`}
-          style={{ transform: `scale(${hoverIdx === null ? 1 : magnify(profileIdx - hoverIdx)})`, width: 46 }}
-          onMouseEnter={() => setHoverIdx(profileIdx)}
-        >
-          {user ? <div className="dock-avatar">{firstName.charAt(0).toUpperCase()}</div> : <LogIn size={20} />}
-          <span className="dock-label">{user ? (isOwner ? "Console" : "Profile") : "Sign in"}</span>
-        </a>
       </div>
     </>
   );

@@ -274,7 +274,7 @@ const SPORT_IMG: Record<string, string> = {
   Cricket:    "/sports/cricket.jpg",
   Basketball: "/sports/basketball.jpg",
   Volleyball: "/sports/volleyball.jpg",
-  Badminton:  "/sports/badminton.jpg",
+  Badminton:  "/sports/photos/badminton.jpg",
   Pickleball: "/sports/pickleball.jpg",
   Swimming:   "/sports/swimming.jpg",
 };

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList, Trophy } from "lucide-react";
+import { ChevronDown, MapPin, Check, Navigation, Loader2, ClipboardList, Trophy, LogIn } from "lucide-react";
 import { useProfile } from "@/lib/hooks/useProfile";
 import { CITIES, useCity, greeting, nearestCity, nearestArea, type City, type Area } from "@/lib/city";
 import { getMyRole } from "@/lib/organizer/actions";
@@ -16,7 +16,7 @@ import OrganizerAccessModal from "./OrganizerAccessModal";
 export default function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const { profile } = useProfile();
+  const { profile, user, loading } = useProfile();
   const { city, area, setCity, ready } = useCity();
   const [step, setStep] = useState<City | null>(null);   // city whose areas are showing
   const [q, setQ] = useState("");
@@ -133,19 +133,26 @@ export default function AppHeader() {
         <div className="ah-in">
           {/* left — who and where */}
           <div className="ah-l">
-            <Link href={profile ? "/profile" : `/login?redirect=${encodeURIComponent(pathname)}`} className="ah-av" aria-label="Profile">
-              {profile?.avatar_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={profile.avatar_url} alt="" />
-              ) : initial ? (
-                <span>{initial}</span>
-              ) : (
-                // Logged out — no user to show an initial for, so show the
-                // site mark instead of a meaningless "S".
-                // eslint-disable-next-line @next/next/no-img-element
+            {user ? (
+              <Link href="/profile" className="ah-av" aria-label="Profile">
+                {profile?.avatar_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={profile.avatar_url} alt="" />
+                ) : initial ? (
+                  <span>{initial}</span>
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src="/icons/mark.png" alt="" className="ah-av-mark" />
+                )}
+              </Link>
+            ) : (
+              // Logged out — the brand mark, not a login link. Sign-in lives
+              // as its own button in the top-right actions.
+              <div className="ah-av" aria-hidden="true">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/icons/mark.png" alt="" className="ah-av-mark" />
-              )}
-            </Link>
+              </div>
+            )}
 
             <div className="ah-txt">
               <p className="ah-hi">
@@ -228,24 +235,36 @@ export default function AppHeader() {
 
           {/* right — actions */}
           <div className="ah-r">
-            <Link
-              href="/my-games"
-              className={`ah-btn ${pathname.startsWith("/my-games") ? "on" : ""}`}
-              aria-label="My games"
-            >
-              <ClipboardList size={19} />
-            </Link>
-            <button
-              type="button"
-              className={`ah-btn ${pathname.startsWith("/organize") ? "on" : ""}`}
-              aria-label="Organize a tournament"
-              title="Organize a tournament"
-              onClick={onOrganizeClick}
-              disabled={checkingOrganizer}
-            >
-              <Trophy size={19} />
-            </button>
-            <NotificationBell inline />
+            {user ? (
+              <>
+                <Link
+                  href="/my-games"
+                  className={`ah-btn ${pathname.startsWith("/my-games") ? "on" : ""}`}
+                  aria-label="My games"
+                >
+                  <ClipboardList size={19} strokeWidth={2.15} absoluteStrokeWidth />
+                </Link>
+                <button
+                  type="button"
+                  className={`ah-btn ${pathname.startsWith("/organize") ? "on" : ""}`}
+                  aria-label="Organize a tournament"
+                  title="Organize a tournament"
+                  onClick={onOrganizeClick}
+                  disabled={checkingOrganizer}
+                >
+                  <Trophy size={19} strokeWidth={2.15} absoluteStrokeWidth />
+                </button>
+                <NotificationBell inline />
+              </>
+            ) : loading ? null : (
+              <Link
+                href={`/login?redirect=${encodeURIComponent(pathname)}`}
+                className="ah-signin"
+              >
+                <LogIn size={17} strokeWidth={2.4} absoluteStrokeWidth />
+                <span>Sign in</span>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -336,9 +355,39 @@ export default function AppHeader() {
           transition:border-color .2s, background .2s, color .2s, transform .15s;
         }
         [data-theme="paper"] .ah-btn { border-color:rgba(20,23,30,.14); }
+        .ah-btn svg { shape-rendering:geometricPrecision; transition:filter .2s ease; }
         .ah-btn:hover { transform:translateY(-1px); border-color:rgba(0,98,65,.55); }
-        .ah-btn.on { border-color:#006241; color:#006241; background:rgba(0,98,65,.12); }
+        .ah-btn:hover svg { filter:drop-shadow(0 2px 7px rgba(0,98,65,.4)); }
+        .ah-btn.on {
+          border-color:rgba(0,98,65,.55); color:#006241;
+          background:linear-gradient(140deg, rgba(0,98,65,.18), rgba(0,98,65,.08));
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 6px 16px -8px rgba(0,98,65,.5);
+        }
+        .ah-btn.on svg { filter:drop-shadow(0 2px 7px rgba(0,98,65,.45)); }
         .ah-btn:disabled { opacity:.5; cursor:default; }
+
+        .ah-signin {
+          display:inline-flex; align-items:center; gap:7px;
+          height:42px; padding:0 18px; border-radius:999px;
+          background:linear-gradient(140deg,#00875a 0%,#006241 55%,#004d33 100%);
+          color:#fff; text-decoration:none;
+          font-family:inherit; font-size:13.5px; font-weight:750; letter-spacing:-.2px;
+          border:1px solid rgba(255,255,255,.14); white-space:nowrap;
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.22),
+                     0 10px 24px -10px rgba(0,120,80,.95);
+          transition:transform .15s ease, box-shadow .22s ease, filter .22s ease;
+        }
+        .ah-signin svg { shape-rendering:geometricPrecision; filter:drop-shadow(0 1px 3px rgba(0,40,26,.5)); }
+        .ah-signin:hover {
+          transform:translateY(-1px); filter:brightness(1.06);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.28),
+                     0 14px 30px -10px rgba(0,120,80,1);
+        }
+        .ah-signin:active { transform:translateY(0); }
+        [data-theme="paper"] .ah-signin {
+          border-color:rgba(255,255,255,.16);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 10px 24px -12px rgba(0,98,65,.7);
+        }
 
         .ah-menu {
           position:absolute; top:calc(100% + 10px); left:0; z-index:60;
@@ -426,6 +475,7 @@ export default function AppHeader() {
           .ah-in { padding:9px 16px; gap:10px; }
           .ah-av { width:38px; height:38px; font-size:15px; }
           .ah-btn { width:38px; height:38px; }
+          .ah-signin { height:38px; padding:0 15px; font-size:13px; }
           .ah-pick { font-size:15px; }
           .ah-pick em { display:none; }
           .ah-grid { grid-template-columns:repeat(2,1fr); }
