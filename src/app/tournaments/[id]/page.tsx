@@ -90,7 +90,7 @@ export default async function TournamentDetailPage({
   const prizes = [
     tournament.prize_winner && ["Winner", tournament.prize_winner],
     tournament.prize_runner_up && ["Runner-up", tournament.prize_runner_up],
-    tournament.prize_mvp && ["MVP", tournament.prize_mvp],
+    tournament.prize_mvp && ["Best Player", tournament.prize_mvp],
     ...(otherPrizes ?? (tournament.prize_other ? [["Other", tournament.prize_other]] : [])),
   ].filter(Boolean) as [string, string][];
 
