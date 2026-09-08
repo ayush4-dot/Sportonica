@@ -331,9 +331,8 @@ function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; st
   );
 }
 
-// ── Knockout — geometry-precise connector-line bracket ────────────
+// ── Knockout — round switcher + match list ─────────────────────────
 const MATCH_H = 108;
-const SLOT_GAP = 22;
 
 // "Quarterfinal" -> "QF", "Round of 16" -> "R16", anything unrecognised
 // falls back to initials — a per-card label distinguishing matches
@@ -365,14 +364,8 @@ function matchWhen(m: TournamentMatch): string {
   return m.court_label ? `${when} · ${m.court_label}` : when;
 }
 
-// Matches are now added by hand (no auto-generated pairing tree), so
-// there's no guaranteed relationship between a round's matches and
-// specific matches in the round before it — round 2 might not even
-// have exactly half of round 1's count. Rather than draw connector
-// lines that assume a strict binary tree (and misalign the moment
-// that assumption doesn't hold), each round is its own independently
-// centered column; a plain chevron between columns shows the flow
-// left-to-right without claiming a precision the data can't back up.
+// Which statuses count as "decided" — used to pick the round a viewer
+// lands on by default (see KnockoutTab).
 const KO_DONE = new Set(["completed", "walkover", "cancelled"]);
 
 function matchCode(ms: TournamentMatch[], i: number): string {
@@ -385,8 +378,6 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
 
   const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
   const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
-  const maxCount = byRound.length ? Math.max(...byRound.map((ms) => ms.length)) : 0;
-  const columnHeight = maxCount * MATCH_H + (maxCount - 1) * SLOT_GAP;
 
   // Land on whichever round still has something undecided (the round
   // you'd actually want to check), not always round 1 — falls back to
@@ -401,9 +392,15 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
 
   return (
     <div>
-      {/* Phone: tap between rounds instead of having to discover them
-          by swiping sideways. */}
-      <div className="ev2-bracket-mobile">
+      {/* One round switcher + a single vertical list, on every screen
+          size — no full multi-column bracket tree to discover by
+          scrolling sideways; every match in the picked round is just
+          there. Matches are added by hand (no auto-generated pairing
+          tree), so there's no guaranteed relationship between a
+          round's matches and the round before it anyway — a tree of
+          connector lines would be claiming a precision the data can't
+          back up. */}
+      <div className="ev2-bracket-rounds">
         <div className="ev2-bracket-round-chips">
           {byRound.map((ms, r) => (
             <button key={r} className={`ev2-bracket-chip ${r === safeActiveRound ? "on" : ""}`} onClick={() => setActiveRound(r)}>
@@ -411,28 +408,9 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
             </button>
           ))}
         </div>
-        <div className="ev2-bracket-mobile-list">
+        <div className="ev2-bracket-list">
           {byRound[safeActiveRound].map((m, i) => (
             <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(byRound[safeActiveRound], i)} onClick={() => setSelected(m)} />
-          ))}
-        </div>
-      </div>
-
-      {/* Desktop / wide screens: the full bracket, all rounds at once. */}
-      <div className="ev2-bracket-wrap ev2-bracket-desktop">
-        <div className="ev2-bracket">
-          {byRound.map((ms, r) => (
-            <div key={r} style={{ display: "flex", alignItems: "center" }}>
-              {r > 0 && <ChevronRight className="ev2-bracket-arrow" size={18} />}
-              <div className="ev2-bracket-round">
-                <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
-                  {ms.map((m, i) => (
-                    <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(ms, i)} onClick={() => setSelected(m)} />
-                  ))}
-                </div>
-              </div>
-            </div>
           ))}
         </div>
       </div>
