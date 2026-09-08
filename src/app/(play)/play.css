@@ -188,8 +188,17 @@
    drop the fixed ratio entirely and let the box take the image's own
    natural shape — nothing to crop, nothing to pad. aspect-ratio still
    applies with no image, so the trophy fallback keeps a sized box. */
-.bk-hero--poster.bk-hero--has-img { aspect-ratio: auto; }
-.bk-hero--poster.bk-hero--has-img img { width: 100%; height: auto; display: block; object-fit: unset; }
+/* width:100%/height:auto (no cap) was right for the wide designed
+   posters this was written for — a 16:9 banner at 1040px wide comes out
+   ~450px tall on its own — but an organizer who uploads a square club
+   crest instead got a ~1040px-tall hero on desktop, dwarfing everything
+   below it. A bounded box + object-fit:contain keeps "never crop" for
+   any shape while capping how tall any of them can get. */
+.bk-hero--poster.bk-hero--has-img {
+  aspect-ratio: auto; height: clamp(220px, 32vw, 460px);
+  display: flex; align-items: center; justify-content: center;
+}
+.bk-hero--poster.bk-hero--has-img img { width: 100%; height: 100%; display: block; object-fit: contain; }
 .bk-hero-empty { position: absolute; inset: 0; display: grid; place-items: center; color: var(--faint); }
 .bk-hero-grad { position: absolute; inset: 0; background: linear-gradient(to top, rgba(11,13,17,0.9), transparent 60%); }
 .bk-hero-info { position: absolute; bottom: 0; left: 0; right: 0; padding: 32px; z-index: 2; }
