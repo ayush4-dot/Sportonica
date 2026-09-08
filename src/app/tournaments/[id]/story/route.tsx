@@ -78,25 +78,27 @@ export async function GET(
 
         {/* banner strip — "contain", not "cover": a lot of organizers
             upload a padded club crest/logo here rather than a wide event
-            photo, and cover was cropping those hard to fill a 1080x720
-            strip (the crown and banner text got cut clean off). Letting
-            it sit inside the strip at its own aspect ratio, on the same
-            background as the frame, shows the whole thing either way. */}
-        <div style={{ width: "100%", height: 720, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", background: C.hair }}>
+            photo, and cover was cropping those hard to fill the strip
+            (the crown and banner text got cut clean off). Letting it sit
+            at its own aspect ratio, on the same background as the frame,
+            shows the whole thing either way. Kept to a quarter of the
+            card's height, not the ~38% it was — a logo is context, not
+            the headline; the tournament name below it is. */}
+        <div style={{ width: "100%", height: 460, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", background: C.hair }}>
           {safeBanner ? (
             <img src={safeBanner} style={{ width: "100%", height: "100%", objectFit: "contain" }} alt="" />
           ) : (
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${accent}33, ${C.hair})` }}>
-              <div style={{ fontSize: 220, display: "flex", color: accent }}>🏆</div>
+              <div style={{ fontSize: 140, display: "flex", color: accent }}>🏆</div>
             </div>
           )}
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 260, display: "flex", background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 160, display: "flex", background: `linear-gradient(to top, ${C.bg}, transparent)` }} />
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, padding: "0 84px 84px" }}>
 
           {/* eyebrow */}
-          <div style={{ display: "flex", alignItems: "center", fontSize: 26, color: accent, letterSpacing: 6, marginTop: -40 }}>
+          <div style={{ display: "flex", alignItems: "center", fontSize: 26, color: accent, letterSpacing: 6, marginTop: -20 }}>
             TOURNAMENT
             <div style={{ width: 60, height: 2, background: C.hair, marginLeft: 20, marginRight: 20, display: "flex" }} />
             {tournament.sport.toUpperCase()}
