@@ -106,57 +106,65 @@ export async function GET(
             {[venueName, FORMAT_LABELS[tournament.format]].filter(Boolean).join(" · ")}
           </div>
 
-          {/* date/time */}
-          <div style={{ display: "flex", alignItems: "center", marginTop: 44, borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-            <div style={{ fontSize: 54, fontWeight: 800, letterSpacing: -2, color: C.text, display: "flex" }}>
-              {when(tournament.starts_at)}
+          {/* Remaining sections share whatever vertical room is left via
+              space-between, rather than one section grabbing it all with
+              marginTop:"auto" — a short tournament (no banner-worthy
+              detail) used to leave one huge dead gap right above the
+              footer; spreading the same slack across every gap instead
+              keeps the card feeling evenly composed at any content length. */}
+          <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-between", marginTop: 36 }}>
+            {/* date/time */}
+            <div style={{ display: "flex", alignItems: "center", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+              <div style={{ fontSize: 54, fontWeight: 800, letterSpacing: -2, color: C.text, display: "flex" }}>
+                {when(tournament.starts_at)}
+              </div>
+              <div style={{ fontSize: 32, color: C.dim, marginLeft: 20, display: "flex" }}>
+                {time(tournament.starts_at)}
+              </div>
             </div>
-            <div style={{ fontSize: 32, color: C.dim, marginLeft: 20, display: "flex" }}>
-              {time(tournament.starts_at)}
-            </div>
-          </div>
 
-          {/* stats: 2x1 */}
-          <div style={{ display: "flex", marginTop: 56 }}>
-            <Cell label="REGISTRATION FEE" value={tournament.fee > 0 ? money(tournament.fee) : "Free"} color={accent} C={C} />
-            <Cell
-              label={isSingleEvent ? "SPOTS" : "MAX TEAMS"}
-              value={tournament.max_teams == null ? "Unlimited" : String(tournament.max_teams)}
-              color={C.text}
-              C={C}
-            />
-          </div>
-
-          {/* registration window */}
-          <div style={{ display: "flex", flexDirection: "column", marginTop: 56, borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-            <div style={{ fontSize: 26, color: accent, letterSpacing: 5, display: "flex" }}>REGISTRATION CLOSES</div>
-            <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: -1, marginTop: 14, display: "flex" }}>
-              {when(tournament.registration_closes_at)} · {time(tournament.registration_closes_at)}
-            </div>
-          </div>
-
-          {/* footer brand */}
-          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", paddingTop: 56 }}>
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`${siteUrl}/icons/icon-512.png`}
-                width={68} height={68}
-                style={{ borderRadius: 16, marginRight: 24 }}
-                alt=""
+            {/* stats: 2x1 */}
+            <div style={{ display: "flex" }}>
+              <Cell label="REGISTRATION FEE" value={tournament.fee > 0 ? money(tournament.fee) : "Free"} color={accent} C={C} />
+              <Cell
+                label={isSingleEvent ? "SPOTS" : "MAX TEAMS"}
+                value={tournament.max_teams == null ? "Unlimited" : String(tournament.max_teams)}
+                color={C.text}
+                C={C}
               />
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
-                <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
+            </div>
+
+            {/* registration window */}
+            <div style={{ display: "flex", flexDirection: "column", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+              <div style={{ fontSize: 26, color: accent, letterSpacing: 5, display: "flex" }}>REGISTRATION CLOSES</div>
+              <div style={{ fontSize: 44, fontWeight: 700, letterSpacing: -1, marginTop: 14, display: "flex" }}>
+                {when(tournament.registration_closes_at)} · {time(tournament.registration_closes_at)}
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div style={{ display: "flex", padding: 14, background: "#FFFFFF", borderRadius: 18 }}>
+
+            {/* footer brand */}
+            <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+              <div style={{ display: "flex", alignItems: "center" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrDataUrl} width={220} height={220} alt="" />
+                <img
+                  src={`${siteUrl}/icons/icon-512.png`}
+                  width={68} height={68}
+                  style={{ borderRadius: 16, marginRight: 24 }}
+                  alt=""
+                />
+                <div style={{ display: "flex", flexDirection: "column" }}>
+                  <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
+                  <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>sportonica.com/tournaments</div>
+                </div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 3, color: accent, marginTop: 14, display: "flex" }}>
-                {canRegister ? "SCAN TO REGISTER" : "SCAN FOR DETAILS"}
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                <div style={{ display: "flex", padding: 14, background: "#FFFFFF", borderRadius: 18 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={qrDataUrl} width={220} height={220} alt="" />
+                </div>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: 3, color: accent, marginTop: 14, display: "flex" }}>
+                  {canRegister ? "SCAN TO REGISTER" : "SCAN FOR DETAILS"}
+                </div>
               </div>
             </div>
           </div>

@@ -85,13 +85,16 @@ export async function GET(
   const shown = overflow ? dayMatches.slice(0, MAX_ROWS - 1) : dayMatches;
   const rowSlots = overflow ? MAX_ROWS : dayMatches.length;
 
-  // Available list height is fixed regardless of row count — rows (and
-  // their type) shrink to fit rather than the card growing, since
-  // ImageResponse can't size itself to content.
+  // Available list height is fixed regardless of row count — rows shrink
+  // to fit a busy day, but are capped well below that ceiling so a quiet
+  // day (1-2 matches) doesn't stretch into a few giant rows floating in
+  // an otherwise empty card; the list is top-anchored (see justifyContent
+  // below) so any leftover room falls as a plain gap above the footer,
+  // not as padding squeezed around the rows themselves.
   const AVAILABLE = 802;
-  const rowHeight = Math.max(56, Math.min(108, AVAILABLE / rowSlots));
-  const size = rowHeight >= 90 ? { time: 23, team: 27, round: 16, score: 26 }
-    : rowHeight >= 72 ? { time: 20, team: 23, round: 14, score: 23 }
+  const rowHeight = Math.max(56, Math.min(84, AVAILABLE / rowSlots));
+  const size = rowHeight >= 78 ? { time: 21, team: 25, round: 15, score: 24 }
+    : rowHeight >= 66 ? { time: 19, team: 22, round: 13, score: 22 }
     : { time: 17, team: 19, round: 12, score: 19 };
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://www.sportonica.com";
@@ -117,8 +120,11 @@ export async function GET(
           {trim(tournament.name, 46)}{venueName && venueName !== "—" ? ` · ${venueName}` : ""}
         </div>
 
-        {/* list */}
-        <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "center", marginTop: 20 }}>
+        {/* list — top-anchored, not centered: a quiet day with only a
+            couple of matches should read as "a couple of matches, then
+            the brand footer", not as a couple of rows floating in the
+            middle of a mostly-empty card. */}
+        <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "flex-start", marginTop: 32 }}>
           {shown.map((m, i) => {
             const teamA = teamName(m, "a");
             const teamB = teamName(m, "b");
