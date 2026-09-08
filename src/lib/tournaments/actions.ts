@@ -795,6 +795,23 @@ export async function getTournamentMatches(tournamentId: string): Promise<Tourna
   return (data ?? []) as TournamentMatch[];
 }
 
+export async function getMatch(matchId: string): Promise<TournamentMatch | null | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.from("tournament_matches").select("*").eq("id", matchId).maybeSingle();
+  if (error) return actionError(error.message);
+  return data as TournamentMatch | null;
+}
+
+// Just id -> name for a small, known set of teams — the fixture share
+// card needs two team names but not the rest of TournamentTeam.
+export async function getTeamNames(teamIds: string[]): Promise<Record<string, string> | ActionError> {
+  if (teamIds.length === 0) return {};
+  const sb = await createClient();
+  const { data, error } = await sb.from("tournament_teams").select("id,name").in("id", teamIds);
+  if (error) return actionError(error.message);
+  return Object.fromEntries((data ?? []).map((t) => [t.id as string, t.name as string]));
+}
+
 export async function getTournamentAnnouncements(tournamentId: string): Promise<TournamentAnnouncement[] | ActionError> {
   const sb = await createClient();
   const { data, error } = await sb

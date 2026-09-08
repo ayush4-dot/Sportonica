@@ -15,6 +15,7 @@ import {
   type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
 } from "@/lib/tournaments/types";
 import TournamentRegisterTab from "./TournamentRegisterTab";
+import FixtureShareButton from "./FixtureShareButton";
 import "./event-tabs.css";
 
 const KTM = "Asia/Kathmandu";
@@ -189,8 +190,12 @@ export default function EventTabs({
         />
       )}
       {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
-      {activeTab === "Knockout" && <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
-      {activeTab === "Fixtures" && <FixturesPublicTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
+      {activeTab === "Knockout" && (
+        <KnockoutTab tournamentId={tournament.id} matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
+      )}
+      {activeTab === "Fixtures" && (
+        <FixturesPublicTab tournamentId={tournament.id} matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
+      )}
       {activeTab === "Player Stats" && (
         authLoading ? null : user ? <PlayerStatsTab rows={playerStats} /> : <SignInGate what="the player stats" pathname={pathname} />
       )}
@@ -374,7 +379,9 @@ function matchCode(ms: TournamentMatch[], i: number): string {
   return ms.length > 1 ? `${roundShortCode(ms[i].round_label)}${i + 1}` : roundShortCode(ms[i].round_label);
 }
 
-function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+function KnockoutTab({ tournamentId, matches, teamName }: {
+  tournamentId: string; matches: TournamentMatch[]; teamName: (id: string | null) => string;
+}) {
   const [selected, setSelected] = useState<TournamentMatch | null>(null);
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
 
@@ -432,7 +439,7 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
         </div>
       </div>
 
-      {selected && <MatchDetailModal match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
+      {selected && <MatchDetailModal tournamentId={tournamentId} match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
     </div>
   );
 }
@@ -471,10 +478,12 @@ function BracketSlot({ name, winner, score }: { name: string; winner: boolean; s
   );
 }
 
-function MatchDetailModal({ match: m, teamName, onClose }: {
-  match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
+function MatchDetailModal({ tournamentId, match: m, teamName, onClose }: {
+  tournamentId: string; match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
 }) {
   const pill = matchStatusPill(m);
+  const teamAName = m.team_a_id ? teamName(m.team_a_id) : "TBD";
+  const teamBName = m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD";
   return (
     <div className="ev2-scrim" onClick={onClose}>
       <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
@@ -487,8 +496,8 @@ function MatchDetailModal({ match: m, teamName, onClose }: {
         </div>
 
         <div style={{ marginTop: 12, border: "1px solid rgba(242,237,230,0.1)", borderRadius: 12, overflow: "hidden" }}>
-          <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
-          <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+          <BracketSlot name={teamAName} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
+          <BracketSlot name={teamBName} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
         </div>
 
         {m.status === "walkover" && (
@@ -503,13 +512,19 @@ function MatchDetailModal({ match: m, teamName, onClose }: {
 
         <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 14 }}>{matchWhen(m)}</div>
         {m.notes && <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 6 }}>{m.notes}</div>}
+
+        <div style={{ marginTop: 16 }}>
+          <FixtureShareButton tournamentId={tournamentId} matchId={m.id} teamAName={teamAName} teamBName={teamBName} />
+        </div>
       </div>
     </div>
   );
 }
 
 // ── Fixtures (public, read-only, by date) ──────────────────────────
-function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+function FixturesPublicTab({ tournamentId, matches, teamName }: {
+  tournamentId: string; matches: TournamentMatch[]; teamName: (id: string | null) => string;
+}) {
   if (matches.length === 0) return <div className="ev2-empty">Fixtures haven&apos;t been generated yet.</div>;
 
   const sorted = [...matches].sort((a, b) => {
@@ -533,23 +548,28 @@ function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; 
       {[...groups.entries()].map(([date, ms]) => (
         <div key={date}>
           <div className="ev2-fixture-date">{date}</div>
-          {ms.map((m) => (
-            <div key={m.id} className="ev2-fixture">
-              <div className="ev2-fixture-time">
-                {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
+          {ms.map((m) => {
+            const teamAName = m.team_a_id ? teamName(m.team_a_id) : "TBD";
+            const teamBName = m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD";
+            return (
+              <div key={m.id} className="ev2-fixture">
+                <div className="ev2-fixture-time">
+                  {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
+                </div>
+                <div className="ev2-fixture-teams">
+                  <span>{teamAName}</span>
+                  {m.status === "walkover" ? (
+                    <span className="score">w/o</span>
+                  ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
+                    <span className="score">{m.score_a} – {m.score_b}</span>
+                  ) : <span style={{ opacity: 0.4 }}>vs</span>}
+                  <span>{teamBName}</span>
+                </div>
+                <div className="ev2-fixture-round">{m.round_label}</div>
+                <FixtureShareButton tournamentId={tournamentId} matchId={m.id} teamAName={teamAName} teamBName={teamBName} size={13} />
               </div>
-              <div className="ev2-fixture-teams">
-                <span>{m.team_a_id ? teamName(m.team_a_id) : "TBD"}</span>
-                {m.status === "walkover" ? (
-                  <span className="score">w/o</span>
-                ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
-                  <span className="score">{m.score_a} – {m.score_b}</span>
-                ) : <span style={{ opacity: 0.4 }}>vs</span>}
-                <span>{m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"}</span>
-              </div>
-              <div className="ev2-fixture-round">{m.round_label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ))}
     </div>

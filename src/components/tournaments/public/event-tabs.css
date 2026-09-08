@@ -240,10 +240,11 @@
   .ev2-stat-v { font-size: 22px; }
   .ev2-award { padding: 14px; }
   .ev2-team-card { padding: 14px; }
-  .ev2-fixture { padding: 12px; gap: 10px; }
+  .ev2-fixture { padding: 12px; gap: 10px; flex-wrap: wrap; }
   .ev2-fixture-time { width: 44px; font-size: 11px; }
   .ev2-fixture-round { width: auto; text-align: left; }
   .ev2-fixture-teams { font-size: 13px; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
+  .ev2-fixture .fx-share-btn { margin-left: auto; }
   .ev2-table th, .ev2-table td { padding: 9px 8px; font-size: 12.5px; }
 
   .ev2-tab { padding: 10px 14px; font-size: 13px; }
