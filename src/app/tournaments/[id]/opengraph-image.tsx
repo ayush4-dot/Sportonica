@@ -45,9 +45,13 @@ export default async function OG({ params }: { params: Promise<{ id: string }> }
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", background: "#0B0D11", color: "#F2EDE6" }}>
-        <div style={{ width: 440, height: "100%", display: "flex", background: "#13161C" }}>
+        {/* "contain", not "cover" — a club crest/logo banner (padded,
+            roughly square) gets cropped hard by cover in this tall
+            440x630 panel; letterboxing on the panel's own background
+            keeps the whole banner visible either way. */}
+        <div style={{ width: 440, height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#13161C" }}>
           {safeBanner ? (
-            <img src={safeBanner} width={440} height={630} style={{ objectFit: "cover" }} alt="" />
+            <img src={safeBanner} style={{ width: "100%", height: "100%", objectFit: "contain" }} alt="" />
           ) : (
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(160deg, ${accent}33, #13161C)`, fontSize: 140 }}>
               🏆

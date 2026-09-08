@@ -76,10 +76,15 @@ export async function GET(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: C.bg, color: C.text }}>
 
-        {/* banner strip */}
-        <div style={{ width: "100%", height: 720, display: "flex", position: "relative", background: C.hair }}>
+        {/* banner strip — "contain", not "cover": a lot of organizers
+            upload a padded club crest/logo here rather than a wide event
+            photo, and cover was cropping those hard to fill a 1080x720
+            strip (the crown and banner text got cut clean off). Letting
+            it sit inside the strip at its own aspect ratio, on the same
+            background as the frame, shows the whole thing either way. */}
+        <div style={{ width: "100%", height: 720, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", background: C.hair }}>
           {safeBanner ? (
-            <img src={safeBanner} width={1080} height={720} style={{ objectFit: "cover" }} alt="" />
+            <img src={safeBanner} style={{ width: "100%", height: "100%", objectFit: "contain" }} alt="" />
           ) : (
             <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${accent}33, ${C.hair})` }}>
               <div style={{ fontSize: 220, display: "flex", color: accent }}>🏆</div>
