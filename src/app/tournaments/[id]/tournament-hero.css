@@ -25,20 +25,15 @@
   gap: 6px 14px;
   margin-top: 2px;
 }
-.t-hero .sub.t-sub span {
-  display: inline-flex; align-items: center; gap: 6px;
-}
-.t-hero .sub.t-sub span svg { flex-shrink: 0; opacity: 0.7; }
 /* A small dot between items reads as one composed line rather than a
-   row of unrelated fragments separated only by whitespace. */
+   row of unrelated fragments separated only by whitespace. Plain text,
+   no per-item icons — a map-pin/branch/calendar row at 13px read as
+   clutter more than polish; the accent shows up in the date instead. */
 .t-hero .sub.t-sub span + span::before {
-  content: ''; width: 3px; height: 3px; border-radius: 50%;
-  background: currentColor; opacity: 0.4; margin-right: 8px; flex-shrink: 0;
+  content: ''; display: inline-block; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; opacity: 0.4; margin-right: 11px; flex-shrink: 0;
 }
-.t-hero .sub.t-sub .t-sub-date {
-  color: var(--paper); font-weight: 700;
-}
-.t-hero .sub.t-sub .t-sub-date svg { color: var(--t-accent); opacity: 1; }
+.t-hero .sub.t-sub .t-sub-date { color: var(--t-accent); font-weight: 700; }
 
 @media (max-width: 620px) {
   .t-hero .sub.t-sub { gap: 6px 12px; font-size: 12.5px; }

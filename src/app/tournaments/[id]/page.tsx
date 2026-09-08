@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Trophy, MapPin, GitBranch, CalendarClock } from "lucide-react";
+import { ChevronLeft, Trophy } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   getTournament, getDisplayVenueName, getMyTeamForTournament, getTournamentMatches, listTournamentTeams,
@@ -120,9 +120,9 @@ export default async function TournamentDetailPage({
             <span className="bk-sport-pill">{tournament.sport}</span>
             <h1>{tournament.name}</h1>
             <div className="sub t-sub">
-              <span><MapPin size={13} />{venueName}</span>
-              <span><GitBranch size={13} />{FORMAT_LABELS[tournament.format]}</span>
-              <span className="t-sub-date"><CalendarClock size={13} />{when(tournament.starts_at)}</span>
+              <span>{venueName}</span>
+              <span>{FORMAT_LABELS[tournament.format]}</span>
+              <span className="t-sub-date">{when(tournament.starts_at)}</span>
             </div>
           </div>
 
