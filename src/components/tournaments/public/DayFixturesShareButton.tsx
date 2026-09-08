@@ -4,25 +4,23 @@ import { useState } from "react";
 import { Download, Check } from "lucide-react";
 import { useTheme } from "@/lib/hooks/useTheme";
 
-// Per-fixture sibling of TournamentShareBar's "Story / post card" button —
-// same fetch-blob-then-share-or-download dance, but pointed at the
-// single-match card route so a fan can post one fixture (not the whole
-// tournament) straight to a feed post or story.
-export default function FixtureShareButton({
-  tournamentId, matchId, teamAName, teamBName, size = 14,
-}: { tournamentId: string; matchId: string; teamAName: string; teamBName: string; size?: number }) {
+// One button per date group on the public Fixtures tab — downloads/shares
+// that whole day's matches as a single designed card (time, teams, score,
+// round), rather than one card per individual match.
+export default function DayFixturesShareButton({
+  tournamentId, date, dateLabel,
+}: { tournamentId: string; date: string; dateLabel: string }) {
   const [theme] = useTheme();
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(false);
 
-  async function download(e: React.MouseEvent) {
-    e.stopPropagation();
+  async function download() {
     setBusy(true);
     try {
-      const res = await fetch(`/tournaments/${tournamentId}/fixture/${matchId}/card?theme=${theme}`);
+      const res = await fetch(`/tournaments/${tournamentId}/fixtures-card?date=${date}&theme=${theme}`);
       const blob = await res.blob();
-      const file = new File([blob], "fixture-sportonica.png", { type: "image/png" });
-      const title = `${teamAName} vs ${teamBName} · Sportonica`;
+      const file = new File([blob], `fixtures-${date}-sportonica.png`, { type: "image/png" });
+      const title = `Fixtures · ${dateLabel} · Sportonica`;
 
       if (navigator.canShare?.({ files: [file] })) {
         try {
@@ -37,7 +35,7 @@ export default function FixtureShareButton({
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "fixture-sportonica.png";
+      a.download = `fixtures-${date}-sportonica.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -55,11 +53,11 @@ export default function FixtureShareButton({
   return (
     <button
       type="button" onClick={download} disabled={busy}
-      aria-label="Download or share this fixture as a card"
+      aria-label={`Download or share ${dateLabel}'s fixtures as a card`}
       className="fx-share-btn"
     >
-      {done ? <Check size={size} /> : <Download size={size} />}
-      <span>{busy ? "Making card…" : done ? "Saved" : "Share card"}</span>
+      {done ? <Check size={13} /> : <Download size={13} />}
+      <span>{busy ? "Making card…" : done ? "Saved" : "Share this day"}</span>
       <style>{`
         .fx-share-btn {
           display: inline-flex; align-items: center; gap: 6px;

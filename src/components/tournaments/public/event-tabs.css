@@ -108,8 +108,12 @@
 .ev2-empty { text-align: center; padding: 50px 20px; opacity: 0.55; font-size: 13.5px; }
 
 /* ── Fixtures ── */
-.ev2-fixture-date { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; opacity: 0.55; margin: 22px 0 10px; }
+.ev2-fixture-date {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; opacity: 0.55; margin: 22px 0 10px;
+}
 .ev2-fixture-date:first-child { margin-top: 0; }
+.ev2-fixture-date .fx-share-btn { text-transform: none; letter-spacing: normal; opacity: 1; }
 .ev2-fixture {
   display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-radius: 13px; margin-bottom: 8px;
   background: rgba(242,237,230,0.035); border: 1px solid rgba(242,237,230,0.08);
@@ -240,11 +244,10 @@
   .ev2-stat-v { font-size: 22px; }
   .ev2-award { padding: 14px; }
   .ev2-team-card { padding: 14px; }
-  .ev2-fixture { padding: 12px; gap: 10px; flex-wrap: wrap; }
+  .ev2-fixture { padding: 12px; gap: 10px; }
   .ev2-fixture-time { width: 44px; font-size: 11px; }
   .ev2-fixture-round { width: auto; text-align: left; }
   .ev2-fixture-teams { font-size: 13px; gap: 8px; flex-wrap: wrap; justify-content: flex-start; }
-  .ev2-fixture .fx-share-btn { margin-left: auto; }
   .ev2-table th, .ev2-table td { padding: 9px 8px; font-size: 12.5px; }
 
   .ev2-tab { padding: 10px 14px; font-size: 13px; }

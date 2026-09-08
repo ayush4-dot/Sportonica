@@ -15,7 +15,7 @@ import {
   type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
 } from "@/lib/tournaments/types";
 import TournamentRegisterTab from "./TournamentRegisterTab";
-import FixtureShareButton from "./FixtureShareButton";
+import DayFixturesShareButton from "./DayFixturesShareButton";
 import "./event-tabs.css";
 
 const KTM = "Asia/Kathmandu";
@@ -191,7 +191,7 @@ export default function EventTabs({
       )}
       {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
       {activeTab === "Knockout" && (
-        <KnockoutTab tournamentId={tournament.id} matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
+        <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
       )}
       {activeTab === "Fixtures" && (
         <FixturesPublicTab tournamentId={tournament.id} matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />
@@ -379,9 +379,7 @@ function matchCode(ms: TournamentMatch[], i: number): string {
   return ms.length > 1 ? `${roundShortCode(ms[i].round_label)}${i + 1}` : roundShortCode(ms[i].round_label);
 }
 
-function KnockoutTab({ tournamentId, matches, teamName }: {
-  tournamentId: string; matches: TournamentMatch[]; teamName: (id: string | null) => string;
-}) {
+function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
   const [selected, setSelected] = useState<TournamentMatch | null>(null);
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
 
@@ -439,7 +437,7 @@ function KnockoutTab({ tournamentId, matches, teamName }: {
         </div>
       </div>
 
-      {selected && <MatchDetailModal tournamentId={tournamentId} match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
+      {selected && <MatchDetailModal match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
     </div>
   );
 }
@@ -478,8 +476,8 @@ function BracketSlot({ name, winner, score }: { name: string; winner: boolean; s
   );
 }
 
-function MatchDetailModal({ tournamentId, match: m, teamName, onClose }: {
-  tournamentId: string; match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
+function MatchDetailModal({ match: m, teamName, onClose }: {
+  match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
 }) {
   const pill = matchStatusPill(m);
   const teamAName = m.team_a_id ? teamName(m.team_a_id) : "TBD";
@@ -512,10 +510,6 @@ function MatchDetailModal({ tournamentId, match: m, teamName, onClose }: {
 
         <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 14 }}>{matchWhen(m)}</div>
         {m.notes && <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 6 }}>{m.notes}</div>}
-
-        <div style={{ marginTop: 16 }}>
-          <FixtureShareButton tournamentId={tournamentId} matchId={m.id} teamAName={teamAName} teamBName={teamBName} />
-        </div>
       </div>
     </div>
   );
@@ -534,20 +528,27 @@ function FixturesPublicTab({ tournamentId, matches, teamName }: {
     return a.starts_at.localeCompare(b.starts_at);
   });
 
-  const groups = new Map<string, TournamentMatch[]>();
+  // Grouped by the ISO calendar date (KTM) so each group's "Share this
+  // day" button can ask the card route for exactly that date — the
+  // display label above is just for the header, not what's queried on.
+  const groups = new Map<string, { label: string; matches: TournamentMatch[] }>();
   for (const m of sorted) {
-    const key = m.starts_at
+    const key = m.starts_at ? new Date(m.starts_at).toLocaleDateString("en-CA", { timeZone: KTM }) : "tbd";
+    const label = m.starts_at
       ? new Date(m.starts_at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM })
       : "Date to be announced";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(m);
+    if (!groups.has(key)) groups.set(key, { label, matches: [] });
+    groups.get(key)!.matches.push(m);
   }
 
   return (
     <div className="ev2-card">
-      {[...groups.entries()].map(([date, ms]) => (
-        <div key={date}>
-          <div className="ev2-fixture-date">{date}</div>
+      {[...groups.entries()].map(([key, { label, matches: ms }]) => (
+        <div key={key}>
+          <div className="ev2-fixture-date">
+            <span>{label}</span>
+            {key !== "tbd" && <DayFixturesShareButton tournamentId={tournamentId} date={key} dateLabel={label} />}
+          </div>
           {ms.map((m) => {
             const teamAName = m.team_a_id ? teamName(m.team_a_id) : "TBD";
             const teamBName = m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD";
@@ -566,7 +567,6 @@ function FixturesPublicTab({ tournamentId, matches, teamName }: {
                   <span>{teamBName}</span>
                 </div>
                 <div className="ev2-fixture-round">{m.round_label}</div>
-                <FixtureShareButton tournamentId={tournamentId} matchId={m.id} teamAName={teamAName} teamBName={teamBName} size={13} />
               </div>
             );
           })}
