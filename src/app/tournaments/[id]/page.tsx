@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, Trophy } from "lucide-react";
+import { ChevronLeft, Trophy, MapPin, GitBranch, CalendarClock } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   getTournament, getDisplayVenueName, getMyTeamForTournament, getTournamentMatches, listTournamentTeams,
@@ -10,10 +10,12 @@ import { isActionError } from "@/lib/actionError";
 import { FORMAT_LABELS } from "@/lib/tournaments/types";
 import type { TournamentStanding } from "@/lib/tournaments/types";
 import { telHref } from "@/lib/playTogether/types";
+import { sportColor } from "@/lib/sports";
 import TournamentShareBar from "@/components/tournaments/TournamentShareBar";
 import EventTabs from "@/components/tournaments/public/EventTabs";
 import "@/app/(play)/play.css";
 import "@/app/platform/events/events.css";
+import "./tournament-hero.css";
 
 export const dynamic = "force-dynamic";
 
@@ -94,38 +96,43 @@ export default async function TournamentDetailPage({
     ...(otherPrizes ?? (tournament.prize_other ? [["Other", tournament.prize_other]] : [])),
   ].filter(Boolean) as [string, string][];
 
+  const accent = sportColor(tournament.sport);
+
   return (
     <div className="play">
       <div className="play-wrap" style={{ maxWidth: 1040 }}>
         <Link href="/tournaments" className="bk-back"><ChevronLeft size={16} /> All tournaments</Link>
 
-        {/* banner_url used to be a freeform text field — an old row can hold
-            a bare filename instead of a real URL, which just renders as a
-            broken image rather than falling back cleanly. */}
-        <div className={`bk-hero bk-hero--poster${hasBanner ? " bk-hero--has-img" : ""}`}>
-          {hasBanner ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={tournament.banner_url!} alt="" />
-          ) : (
-            <div className="bk-hero-empty"><Trophy size={40} /></div>
-          )}
-          <div className="bk-hero-grad" />
-        </div>
-        <div className="bk-hero-info">
-          <span className="bk-sport-pill">{tournament.sport}</span>
-          <h1>{tournament.name}</h1>
-          <div className="sub">
-            <span>{venueName}</span>
-            <span>{FORMAT_LABELS[tournament.format]}</span>
-            <span>{when(tournament.starts_at)}</span>
+        <div className="t-hero" style={{ "--t-accent": accent } as React.CSSProperties}>
+          {/* banner_url used to be a freeform text field — an old row can hold
+              a bare filename instead of a real URL, which just renders as a
+              broken image rather than falling back cleanly. */}
+          <div className={`bk-hero bk-hero--poster${hasBanner ? " bk-hero--has-img" : ""}`}>
+            {hasBanner ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={tournament.banner_url!} alt="" />
+            ) : (
+              <div className="bk-hero-empty"><Trophy size={40} /></div>
+            )}
+            <div className="bk-hero-grad" />
           </div>
-        </div>
+          <div className="bk-hero-info">
+            <span className="bk-sport-pill">{tournament.sport}</span>
+            <h1>{tournament.name}</h1>
+            <div className="sub t-sub">
+              <span><MapPin size={13} />{venueName}</span>
+              <span><GitBranch size={13} />{FORMAT_LABELS[tournament.format]}</span>
+              <span className="t-sub-date"><CalendarClock size={13} />{when(tournament.starts_at)}</span>
+            </div>
+          </div>
 
-        <TournamentShareBar
-          id={tournament.id}
-          name={tournament.name}
-          canRegister={["published", "registration_open", "registration_closed"].includes(tournament.status)}
-        />
+          <TournamentShareBar
+            id={tournament.id}
+            name={tournament.name}
+            accent={accent}
+            canRegister={["published", "registration_open", "registration_closed"].includes(tournament.status)}
+          />
+        </div>
 
         <div className="bk-layout">
           <div>

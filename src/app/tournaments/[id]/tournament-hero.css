@@ -1,0 +1,45 @@
+/* ================================================================
+   Tournament detail hero — a tournament-scoped skin on top of the
+   shared .bk-hero/.bk-hero-info/.bk-sport-pill/.sub classes (also
+   used, unstyled by anything below, by the venue and booking pages).
+   Everything here is scoped under .t-hero so those other pages are
+   never touched. `--t-accent` is set inline per tournament (the same
+   sport-color used on the downloadable story/fixture cards), so the
+   live page and the card someone downloads read as the same design
+   language instead of one generic green header for every sport.
+   ================================================================ */
+
+.t-hero { margin-bottom: 8px; }
+
+.t-hero .bk-sport-pill {
+  color: var(--t-accent);
+  border-color: color-mix(in srgb, var(--t-accent) 45%, transparent);
+  background: rgba(0,0,0,0.04);
+  background: color-mix(in srgb, var(--t-accent) 12%, transparent);
+}
+
+.t-hero .bk-hero-info h1 { position: relative; }
+
+.t-hero .sub.t-sub {
+  align-items: center;
+  gap: 6px 14px;
+  margin-top: 2px;
+}
+.t-hero .sub.t-sub span {
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.t-hero .sub.t-sub span svg { flex-shrink: 0; opacity: 0.7; }
+/* A small dot between items reads as one composed line rather than a
+   row of unrelated fragments separated only by whitespace. */
+.t-hero .sub.t-sub span + span::before {
+  content: ''; width: 3px; height: 3px; border-radius: 50%;
+  background: currentColor; opacity: 0.4; margin-right: 8px; flex-shrink: 0;
+}
+.t-hero .sub.t-sub .t-sub-date {
+  color: var(--paper); font-weight: 700;
+}
+.t-hero .sub.t-sub .t-sub-date svg { color: var(--t-accent); opacity: 1; }
+
+@media (max-width: 620px) {
+  .t-hero .sub.t-sub { gap: 6px 12px; font-size: 12.5px; }
+}
