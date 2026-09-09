@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { createClient } from "@/lib/supabase/client";
 import { MapPin, ArrowRight, ChevronDown } from "lucide-react";
-import { EventsRail, VenuesRail, GamesRail } from "@/components/home/Rails";
+import { EventsRail, VenuesRail, GamesRail, MatchesRail } from "@/components/home/Rails";
 import "@/components/home/rails.css";
 import type { getHomeRails } from "@/lib/play/homeRails";
 import { useCity, inCity } from "@/lib/city";
@@ -372,6 +372,14 @@ export default function HomeClient({ rails }: { rails?: HomeRails }) {
             </div>
           </div>
         </div>
+
+        {/* ══════════════════════════════════
+            LIVE SCORES — real tournament matches (live, then soonest
+            upcoming, then most recently finished), right under the sport
+            picker so it's the first "something's actually happening"
+            signal on the page.
+        ══════════════════════════════════ */}
+        {rails && rails.matches.length > 0 && <MatchesRail matches={rails.matches} />}
 
         {/* ══════════════════════════════════
             RAILS — the actionable stuff, up top
