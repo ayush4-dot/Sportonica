@@ -112,7 +112,7 @@ function SignupInner() {
           <h2>Find. Book. <em>Play.</em></h2>
           <p>Join as a player to host and find matches — or list your venue and start taking bookings today.</p>
         </div>
-        <div className="auth-foot">KATHMANDU · SINCE 2026</div>
+        <div className="auth-foot">NEPAL · SINCE 2026</div>
       </div>
 
       <div className="auth-form-wrap">
@@ -194,8 +194,8 @@ function RoleCard({ active, onClick, title, desc }: {
     <button type="button" onClick={onClick}
       style={{
         textAlign: "left", cursor: "pointer",
-        background: active ? "rgba(10,143,95,0.16)" : "rgba(0,0,0,0.22)",
-        border: `1px solid ${active ? "rgba(52,211,153,0.5)" : "var(--line-2)"}`,
+        background: active ? "rgba(10,143,95,0.14)" : "color-mix(in srgb, var(--text) 5%, transparent)",
+        border: `1px solid ${active ? "rgba(10,143,95,0.5)" : "var(--line-2)"}`,
         borderRadius: 12, padding: "12px 13px",
         transition: "all 0.3s cubic-bezier(0.22,1,0.36,1)",
         color: "inherit", fontFamily: "inherit",

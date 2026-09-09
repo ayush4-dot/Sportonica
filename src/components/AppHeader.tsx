@@ -12,6 +12,7 @@ import { safeRedirect } from "@/lib/validation/redirect";
 import { isActionError } from "@/lib/actionError";
 import NotificationBell from "./NotificationBell";
 import OrganizerAccessModal from "./OrganizerAccessModal";
+import { isBareChromeRoute } from "@/lib/nav/authRoutes";
 
 export default function AppHeader() {
   const pathname = usePathname();
@@ -30,8 +31,7 @@ export default function AppHeader() {
   const hidden =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/platform") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup");
+    isBareChromeRoute(pathname);
 
   useEffect(() => { if (ready && !city && !hidden) setAsk(true); }, [ready, city, hidden]);
 
