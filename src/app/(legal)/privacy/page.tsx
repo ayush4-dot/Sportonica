@@ -73,7 +73,7 @@ export default function PrivacyPolicyPage() {
             <ul>
               <li>Edit or remove your profile info from your account settings.</li>
               <li>Location access is only requested when you tap &quot;Use my location&quot;, and can be denied.</li>
-              <li>Contact us (below) to request deletion of your account and associated data.</li>
+              <li>Delete your account and associated data yourself from <b>Profile → Login &amp; Security</b>, or contact us (below) if you run into trouble.</li>
             </ul>
           </Section>
 

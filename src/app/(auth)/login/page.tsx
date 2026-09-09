@@ -79,7 +79,7 @@ function LoginInner() {
           <h2>The game&apos;s already on. <em>Come find it.</em></h2>
           <p>Book courts, host matches, and fill your ground — all from one place.</p>
         </div>
-        <div className="auth-foot">KATHMANDU · SINCE 2026</div>
+        <div className="auth-foot">NEPAL · SINCE 2026</div>
       </div>
 
       <div className="auth-form-wrap">
@@ -107,6 +107,18 @@ function LoginInner() {
             autoComplete="current-password"
             onEnter={login}
           />
+
+          <div className="auth-forgot">
+            <Link
+              href={
+                looksLikeEmail(identifier)
+                  ? `/forgot-password?email=${encodeURIComponent(identifier.trim())}`
+                  : "/forgot-password"
+              }
+            >
+              Forgot password?
+            </Link>
+          </div>
 
           {err && <div className="auth-error">{err}</div>}
 
