@@ -364,7 +364,16 @@ export default function BookFilters({
             border-radius:22px 22px 0 0;
             padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));
             animation: bfSheetUp .28s cubic-bezier(.22,1,.36,1) both;
+            /* .bf-panel's default background is a near-transparent glass
+               tint (rgba(...,.035) / rgba(...,.03)) — fine for the desktop
+               inline panel, which just sits on the page's own background,
+               but as a fixed bottom sheet it's stacked on top of the
+               search bar ("Any sport", "Kathmandu", "Filters") and that
+               bar was showing straight through, reading as overlapping
+               text. A bottom sheet needs a properly opaque card behind it. */
+            background:#12151b;
           }
+          [data-theme="paper"] .bf-panel { background:#fff; }
         }
 
         .bf-searchrow {
