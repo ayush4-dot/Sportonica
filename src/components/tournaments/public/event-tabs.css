@@ -84,12 +84,24 @@
 
 .ev2-awards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; }
 .ev2-award {
-  padding: 18px; border-radius: 14px; text-align: center;
-  background: linear-gradient(160deg, rgba(255,193,7,0.1), rgba(255,193,7,0.02));
-  border: 1px solid rgba(255,193,7,0.25);
+  padding: 20px 16px; border-radius: 14px; text-align: center;
+  background: rgba(242,237,230,0.035); border: 1px solid rgba(242,237,230,0.08);
 }
+[data-theme="paper"] .ev2-award { background: #fff; border-color: rgba(20,23,30,0.07); }
+.ev2-award.gold { background: linear-gradient(160deg, rgba(255,193,7,0.12), rgba(255,193,7,0.02)); border-color: rgba(255,193,7,0.3); }
 .ev2-award.silver { background: linear-gradient(160deg, rgba(192,192,192,0.14), rgba(192,192,192,0.02)); border-color: rgba(192,192,192,0.3); }
 .ev2-award.bronze { background: linear-gradient(160deg, rgba(180,120,70,0.14), rgba(180,120,70,0.02)); border-color: rgba(180,120,70,0.3); }
+/* Icon used to just float bare, top-left-ish, at a flat colour — every
+   other identity mark on this page (team crests, player avatars) is a
+   badge, so a trophy sitting there without one was the odd one out.
+   The winner's badge runs a touch bigger — a small hierarchy cue that
+   it's the headline result, not just first in a list. */
+/* A glossy pre-rendered icon already has its own depth/shadow baked
+   in — wrapping it in another badge circle (right for a flat line icon
+   or a crest initial) just double-frames it. Sized and dropped a soft
+   shadow onto the card instead of onto its own circle. */
+.ev2-award-badge { width: 44px; height: 44px; margin: 0 auto 8px; display: block; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.35)); }
+.ev2-award.gold .ev2-award-badge { width: 52px; height: 52px; }
 .ev2-award-l { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; opacity: 0.65; margin-bottom: 6px; }
 .ev2-award-v { font-family: 'Inter', sans-serif; font-weight: 800; font-size: 16px; }
 
@@ -240,6 +252,19 @@
   color: #00875a; font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 800;
 }
 .ev2-team-card-badge img { width: 100%; height: 100%; object-fit: cover; }
+/* Total yellow cards for the team, as a small notification-style badge
+   on the crest itself — same corner-badge convention as an app icon's
+   unread count, so it reads as "a number attached to this team" rather
+   than another line of text competing with the name/contact rows. */
+.ev2-team-card-badge-wrap { position: relative; flex-shrink: 0; }
+.ev2-team-card-yellow {
+  position: absolute; bottom: -3px; right: -4px; z-index: 1;
+  min-width: 15px; height: 15px; padding: 0 3px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 800; line-height: 1;
+  color: #4a2e00; background: #f5c542; border: 1.5px solid #13161c;
+}
+[data-theme="paper"] .ev2-team-card-yellow { border-color: #fff; }
 .ev2-team-card-name { flex: 1 1 auto; min-width: 0; font-weight: 800; font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ev2-team-card-sub { font-size: 12px; opacity: 0.55; }
 

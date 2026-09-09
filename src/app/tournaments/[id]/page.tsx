@@ -159,15 +159,6 @@ export default async function TournamentDetailPage({
               </div>
             )}
 
-            {(tournament.rules_text || tournament.equipment_notes || tournament.venue_rules) && (
-              <div className="bk-panel">
-                <h3>Rules</h3>
-                {tournament.rules_text && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{tournament.rules_text}</p>}
-                {tournament.equipment_notes && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Equipment:</b> {tournament.equipment_notes}</p>}
-                {tournament.venue_rules && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Venue rules:</b> {tournament.venue_rules}</p>}
-              </div>
-            )}
-
             {tournament.refund_policy && (
               <div className="bk-panel">
                 <h3>Refund policy</h3>

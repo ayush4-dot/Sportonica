@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn, Phone, ClipboardList,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, ChevronRight, LogIn, Phone, ClipboardList,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -198,8 +198,25 @@ export default function EventTabs({
         authLoading ? null : user ? <PlayerStatsTab rows={playerStats} teams={teams} /> : <SignInGate what="the player stats" pathname={pathname} />
       )}
       {activeTab === "Teams" && (
-        authLoading ? null : user ? <TeamsTab teams={confirmedTeams} /> : <SignInGate what="the teams and squads" pathname={pathname} />
+        authLoading ? null : user ? <TeamsTab teams={confirmedTeams} playerStats={playerStats} /> : <SignInGate what="the teams and squads" pathname={pathname} />
       )}
+
+      {/* Rules only matter while you're deciding whether to register or
+          getting oriented — once you're checking the table, fixtures, or
+          your bracket match, they're just noise below the fold. */}
+      {(activeTab === "Overview" || activeTab === "Register") && <RulesPanel tournament={tournament} />}
+    </div>
+  );
+}
+
+function RulesPanel({ tournament }: { tournament: Tournament }) {
+  if (!tournament.rules_text && !tournament.equipment_notes && !tournament.venue_rules) return null;
+  return (
+    <div className="bk-panel">
+      <h3>Rules</h3>
+      {tournament.rules_text && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{tournament.rules_text}</p>}
+      {tournament.equipment_notes && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Equipment:</b> {tournament.equipment_notes}</p>}
+      {tournament.venue_rules && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Venue rules:</b> {tournament.venue_rules}</p>}
     </div>
   );
 }
@@ -254,23 +271,32 @@ function OverviewTab({ tournament, teams, matches, awards }: {
         <div className="ev2-card">
           <div className="ev2-card-t">Awards</div>
           <div className="ev2-awards">
+            {/* Glossy 3D medal/trophy renders (Microsoft Fluent Emoji, MIT
+                licensed — github.com/microsoft/fluentui-emoji) instead of
+                flat line icons here: genuinely distinct per tier (trophy
+                vs. an actual silver vs. an actual bronze medal, not the
+                same glyph recoloured) and a deliberate one-section accent,
+                not a site-wide style change. */}
             {awards.winner && (
-              <div className="ev2-award">
-                <Trophy size={20} color="#ffc107" style={{ marginBottom: 8 }} />
+              <div className="ev2-award gold">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/trophy.png" alt="" />
                 <div className="ev2-award-l">Winner</div>
                 <div className="ev2-award-v">{awards.winner}</div>
               </div>
             )}
             {awards.runnerUp && (
               <div className="ev2-award silver">
-                <Medal size={20} color="#b0b0b0" style={{ marginBottom: 8 }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/runner-up.png" alt="" />
                 <div className="ev2-award-l">Runner-up</div>
                 <div className="ev2-award-v">{awards.runnerUp}</div>
               </div>
             )}
             {awards.semifinalists.map((name) => (
               <div className="ev2-award bronze" key={name}>
-                <Medal size={20} color="#b47846" style={{ marginBottom: 8 }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/semifinalist.png" alt="" />
                 <div className="ev2-award-l">Semi-finalist</div>
                 <div className="ev2-award-v">{name}</div>
               </div>
@@ -596,10 +622,12 @@ function FixturesPublicTab({ tournamentId, matches, teams }: {
 
 // ── Player stats leaderboard ────────────────────────────────────
 // Same rank/crest/chip identity as the standings and teams cards —
-// Goals and Assists are the two stats worth a full chip; cards and MOM
-// are secondary, so they're small inline badges next to the name
-// instead of competing for the same width, and only show up when
-// they're actually non-zero rather than padding every row with dashes.
+// Goals and Yellow cards are the two stats worth a full chip; red
+// cards and MOM are secondary, small inline badges next to the name,
+// only showing up when actually non-zero rather than padding every
+// row with dashes. (Yellow used to be one of those small badges too,
+// alongside an Assists chip — promoted to its own chip and Assists
+// dropped, so it isn't shown twice.)
 function PlayerStatsTab({ rows, teams }: { rows: TournamentPlayerStatRow[]; teams: TournamentTeam[] }) {
   if (rows.length === 0) return <div className="ev2-empty">No player stats recorded yet.</div>;
   return (
@@ -614,16 +642,15 @@ function PlayerStatsTab({ rows, teams }: { rows: TournamentPlayerStatRow[]; team
               <span className="ev2-srow-name">{r.player_name}</span>
               <span className="ev2-prow-team">{r.team_name}</span>
             </div>
-            {(r.yellow_cards > 0 || r.red_cards > 0 || r.mom_count > 0) && (
+            {(r.red_cards > 0 || r.mom_count > 0) && (
               <div className="ev2-prow-badges">
-                {r.yellow_cards > 0 && <span className="ev2-prow-badge yellow">{r.yellow_cards}</span>}
                 {r.red_cards > 0 && <span className="ev2-prow-badge red">{r.red_cards}</span>}
                 {r.mom_count > 0 && <span className="ev2-prow-badge mom"><Star size={9} fill="currentColor" />{r.mom_count}</span>}
               </div>
             )}
             <div className="ev2-srow-stats">
               <div className="ev2-schip"><span className="l">Goals</span><span className="v">{r.goals}</span></div>
-              <div className="ev2-schip"><span className="l">Assists</span><span className="v">{r.assists}</span></div>
+              <div className="ev2-schip"><span className="l">Yellow</span><span className="v">{r.yellow_cards}</span></div>
             </div>
           </div>
         );
@@ -635,22 +662,33 @@ function PlayerStatsTab({ rows, teams }: { rows: TournamentPlayerStatRow[]; team
 // ── Teams + squad viewer ────────────────────────────────────────
 type RosterPlayer = { id: string; role: string; name: string; is_linked: boolean };
 
-function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
+function TeamsTab({ teams, playerStats }: { teams: TournamentTeam[]; playerStats: TournamentPlayerStatRow[] }) {
   const [open, setOpen] = useState<TournamentTeam | null>(null);
   if (teams.length === 0) return <div className="ev2-empty">No confirmed teams yet.</div>;
+
+  // Total yellow cards across the whole team, not per player — a quick
+  // "this team's picked up a lot of cards" signal right on the crest,
+  // same spot the Player Stats tab shows an individual's card count.
+  const teamYellows = new Map<string, number>();
+  for (const r of playerStats) teamYellows.set(r.team_id, (teamYellows.get(r.team_id) ?? 0) + r.yellow_cards);
 
   return (
     <div>
       <div className="ev2-team-grid">
-        {teams.map((t, i) => (
+        {teams.map((t, i) => {
+          const yellows = teamYellows.get(t.id) ?? 0;
+          return (
           <button key={t.id} className="ev2-team-card" onClick={() => setOpen(t)}>
             <div className="ev2-team-card-head">
               <span className="ev2-team-card-rank">{i + 1}</span>
-              <span className="ev2-team-card-badge">
-                {t.logo_url
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={t.logo_url} alt="" />
-                  : t.name.charAt(0).toUpperCase()}
+              <span className="ev2-team-card-badge-wrap">
+                <span className="ev2-team-card-badge">
+                  {t.logo_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={t.logo_url} alt="" />
+                    : t.name.charAt(0).toUpperCase()}
+                </span>
+                {yellows > 0 && <span className="ev2-team-card-yellow" title={`${yellows} yellow card${yellows === 1 ? "" : "s"}`}>{yellows}</span>}
               </span>
               <div className="ev2-team-card-name">{t.name}</div>
             </div>
@@ -666,7 +704,8 @@ function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
             )}
             <div className="ev2-team-card-sub">Tap to view squad</div>
           </button>
-        ))}
+          );
+        })}
       </div>
       {open && <SquadModal team={open} onClose={() => setOpen(null)} />}
     </div>
