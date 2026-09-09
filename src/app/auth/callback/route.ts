@@ -26,6 +26,13 @@ export async function GET(request: Request) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return NextResponse.redirect(`${origin}/login`);
 
+  // Password-recovery links come through here too. The session is now set;
+  // send them straight to the reset form — skip the profile/role dance,
+  // which would otherwise divert a mid-onboarding user to /welcome.
+  if (next === "/reset-password") {
+    return NextResponse.redirect(`${origin}/reset-password`);
+  }
+
   // Make sure a profile row exists — the signup trigger only fires for
   // email signups on some setups, so create one here if it's missing.
   const { data: profile } = await sb

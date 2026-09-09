@@ -243,6 +243,20 @@
   border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
 }
 
+.auth-forgot { margin: -4px 0 4px; text-align: right; }
+.auth-forgot a {
+  font-size: 12.5px; color: var(--dim); text-decoration: none;
+  transition: color 0.25s ease;
+}
+.auth-forgot a:hover { color: var(--sodium-2); }
+
+.auth-check-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; border-radius: 14px; margin-bottom: 16px;
+  color: var(--sodium-2);
+  background: rgba(52,211,153,0.12); border: 1px solid rgba(52,211,153,0.3);
+}
+
 .auth-alt { margin-top: 22px; font-size: 13.5px; color: var(--dim); text-align: center; }
 .auth-alt a {
   color: var(--sodium-2); text-decoration: none; font-weight: 700;
@@ -421,36 +435,71 @@
   .abtn-spin { animation: abtnspin 0.8s linear infinite !important; }
 }
 
-/* ── Paper (light) theme ── */
+/* ════════════════════════════════════════════════════════════════
+   Auth theme — plain cream.
+   A single flat cream fill (no gradient, no texture, no blur), a solid
+   white card, dark text. Flat colour has no banding or compression, so
+   it stays pin-sharp at any resolution.
+   ════════════════════════════════════════════════════════════════ */
 [data-theme="paper"] .auth {
-  --bg:        #EFEAE1;
-  --bg-2:      #F6F2EB;
-  --panel:     rgba(255,255,255,0.7);
+  --bg:        #F4EDDE;
+  --bg-2:      #F4EDDE;
+  --panel:     #FFFFFF;
   --panel-solid: #FFFFFF;
-  --line:      rgba(20,23,30,0.1);
-  --line-2:    rgba(20,23,30,0.14);
-  --text:      #17241f;
-  --dim:       #5f756d;
-  --faint:     #94a49c;
+  --line:      rgba(40,32,18,0.12);
+  --line-2:    rgba(40,32,18,0.16);
+  --text:      #211d14;
+  --dim:       #6a6353;
+  --faint:     #9a9282;
   --sodium:    #067a50;
   --sodium-2:  #0a8f5f;
   --pink:      #067a50;
-  --glass-brd: rgba(20,23,30,0.10);
-  background:
-    radial-gradient(1200px 800px at 12% -10%, rgba(10,143,95,0.16), transparent 60%),
-    radial-gradient(900px 700px at 100% 110%, rgba(6,122,80,0.10), transparent 55%),
-    linear-gradient(180deg, var(--bg), var(--bg-2));
+  --glass-brd: rgba(40,32,18,0.12);
+  background: #F4EDDE;
 }
-[data-theme="paper"] .auth::after { mix-blend-mode: multiply; opacity: 0.25; }
+[data-theme="paper"] .auth::before,
+[data-theme="paper"] .auth::after,
+[data-theme="paper"] .auth-stage::before,
+[data-theme="paper"] .auth-stage::after,
+[data-theme="paper"] .auth-form-wrap::before { display: none; }
+
+/* left panel: nothing behind it — just the tagline */
+[data-theme="paper"] .auth-stage {
+  background: none;
+  border-right: 1px solid var(--line);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+[data-theme="paper"] .auth-brand-mark {
+  filter: none;
+  animation: none;
+}
+[data-theme="paper"] .auth-tagline h2 em {
+  background: linear-gradient(120deg, var(--sodium-2), var(--sodium));
+  -webkit-background-clip: text; background-clip: text;
+}
+
+/* the card — a solid white panel, no backdrop blur */
 [data-theme="paper"] .auth-card {
-  background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,255,255,0.78));
-  box-shadow: 0 30px 70px -28px rgba(30,57,50,0.28), 0 1px 0 rgba(255,255,255,0.9) inset;
+  background: #ffffff;
+  border-color: rgba(40,32,18,0.10);
+  box-shadow:
+    0 32px 70px -30px rgba(40,32,18,0.28),
+    0 8px 22px -12px rgba(40,32,18,0.14),
+    0 1px 0 rgba(255,255,255,0.9) inset;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
+[data-theme="paper"] .auth-card::before {
+  opacity: 0.35;
+  background: linear-gradient(130deg, rgba(10,143,95,0.4), rgba(255,255,255,0.04) 42%, rgba(6,122,80,0.3));
+}
+
 [data-theme="paper"] .auth-input,
-[data-theme="paper"] .afield-input { background: rgba(255,255,255,0.8); }
+[data-theme="paper"] .afield-input { background: #faf7f0; }
 [data-theme="paper"] .auth-input:focus,
 [data-theme="paper"] .afield-input:focus { background: #fff; }
 [data-theme="paper"] .auth-btn, [data-theme="paper"] .abtn { color: #fff; }
 [data-theme="paper"] .ident-badge.mobile { color: #0369a1; background: rgba(3,105,161,0.10); }
-[data-theme="paper"] .pwstr-bar { background: rgba(20,23,30,0.15); }
-[data-theme="paper"] .auth-card-glow { background: radial-gradient(circle, rgba(10,143,95,0.14), transparent 65%); }
+[data-theme="paper"] .pwstr-bar { background: rgba(40,32,18,0.15); }
+[data-theme="paper"] .auth-card-glow { background: radial-gradient(circle, rgba(10,143,95,0.12), transparent 65%); }

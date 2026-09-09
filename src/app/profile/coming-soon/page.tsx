@@ -3,10 +3,6 @@ import { ArrowLeft } from "lucide-react";
 import "../../p/profile.css";
 
 const SECTIONS: Record<string, { title: string; body: string }> = {
-  security: {
-    title: "Login & Security",
-    body: "Password and login-security controls are on the way. For now, use \"Forgot password\" on the login screen to reset your password.",
-  },
   notifications: {
     title: "Notifications",
     body: "Fine-grained notification preferences are on the way. You'll keep getting the notifications you get today via the bell icon in the meantime.",

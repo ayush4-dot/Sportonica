@@ -5,6 +5,7 @@ import AppHeader from "./AppHeader";
 import NearbyPopup from "./NearbyPopup";
 import AnimatedBackground from "./AnimatedBackground";
 import EnsureE2EKey from "./EnsureE2EKey";
+import { isBareChromeRoute } from "@/lib/nav/authRoutes";
 
 // Global chrome: the animated backdrop, the magnet dock, the top-right
 // actions, and the "Near me" popup.
@@ -15,8 +16,7 @@ export default function NavWrapper() {
   const hideChrome =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/platform") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup");
+    isBareChromeRoute(pathname);
 
   return (
     <>

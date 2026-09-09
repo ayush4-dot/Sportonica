@@ -5,6 +5,8 @@ import { createServiceClient } from "@/lib/supabase/admin";
 import { actionError, type ActionError } from "@/lib/actionError";
 import { isValidLocalPhone, normalizePhone } from "@/lib/validation/identity";
 
+const SUPPORT_EMAIL = "support@sportonica.com";
+
 // Internal e-mail synthesised for a phone-only account. The user never
 // sees or types it — phone login resolves it back via email_for_phone().
 // A dedicated subdomain keeps it from ever colliding with a real address.
@@ -86,4 +88,46 @@ export async function signUpWithPhone(input: {
   }
 
   return { email };
+}
+
+// Permanent, self-serve account deletion. Supabase Auth has no "delete my
+// own user" client call — it needs the admin API, same as phone signup.
+// Deleting the auth user cascades to `profiles` (profiles.id references
+// auth.users on delete cascade); other tables that reference the profile
+// with ON DELETE RESTRICT will make deleteUser() fail, and the user is
+// told to email support (a SECURITY DEFINER `delete_own_account()` RPC on
+// the `changes` branch is the proper long-term fix).
+export async function deleteMyAccount(): Promise<{ ok: true } | ActionError> {
+  const sb = await createClient();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user || user.is_anonymous) return actionError("You're not signed in.");
+
+  let admin;
+  try {
+    admin = createServiceClient();
+  } catch {
+    return actionError(
+      `Account deletion isn't available right now — email ${SUPPORT_EMAIL} and we'll remove your account.`,
+    );
+  }
+
+  // Best-effort: clear the user's uploaded avatars (avatars/<uid>/…).
+  try {
+    const { data: files } = await admin.storage.from("avatars").list(user.id);
+    if (files?.length) {
+      await admin.storage.from("avatars").remove(files.map((f) => `${user.id}/${f.name}`));
+    }
+  } catch (e) {
+    console.error("[deleteMyAccount] avatar cleanup failed:", e);
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) {
+    console.error("[deleteMyAccount]", error.message);
+    return actionError(
+      `We couldn't delete your account automatically. Email ${SUPPORT_EMAIL} and we'll take care of it.`,
+    );
+  }
+
+  return { ok: true };
 }

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, useMotionValue, animate } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { isBareChromeRoute } from "@/lib/nav/authRoutes";
 import "./onboarding.css";
 
 /* First-run onboarding. Renders once per device — a full-screen paper
@@ -207,11 +208,10 @@ export default function Onboarding() {
   const blocked =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/platform") ||
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/signup") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/welcome") ||
-    pathname.startsWith("/offline");
+    pathname.startsWith("/offline") ||
+    isBareChromeRoute(pathname);
 
   useEffect(() => {
     if (blocked) return;
