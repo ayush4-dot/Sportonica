@@ -38,11 +38,11 @@ export default function CardShareButton({ href, title }: { href: string; title: 
         .cs-btn {
           position: absolute; top: 12px; right: 12px; z-index: 4;
           width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
-          display: grid; place-items: center; color: #fff;
+          display: grid; place-items: center; color: #14171E;
           background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.32);
           backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
           box-shadow: 0 4px 14px -6px rgba(0,0,0,0.45);
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+          filter: drop-shadow(0 1px 1px rgba(255,255,255,0.4));
           transition: transform .22s cubic-bezier(.22,1,.36,1), background .22s ease;
         }
         .cs-btn:hover { transform: scale(1.04); background: rgba(255,255,255,0.3); }
