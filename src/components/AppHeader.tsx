@@ -12,6 +12,7 @@ import { safeRedirect } from "@/lib/validation/redirect";
 import { isActionError } from "@/lib/actionError";
 import NotificationBell from "./NotificationBell";
 import OrganizerAccessModal from "./OrganizerAccessModal";
+import GlobalSearch from "./search/GlobalSearch";
 import { isBareChromeRoute } from "@/lib/nav/authRoutes";
 
 export default function AppHeader() {
@@ -235,6 +236,7 @@ export default function AppHeader() {
 
           {/* right — actions */}
           <div className="ah-r">
+            <GlobalSearch />
             {user ? (
               <>
                 <Link

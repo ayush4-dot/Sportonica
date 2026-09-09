@@ -2,51 +2,14 @@
 
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, UserPlus, UserMinus, Zap, Calendar, Check, Users, MessageCircle, Receipt, ShieldCheck, ShieldX, Wallet, Clock3, AlertTriangle, XCircle } from "lucide-react";
-import { useNotifications, type Notification } from "@/lib/hooks/useNotifications";
+import { Bell, Check, ArrowRight } from "lucide-react";
+import { useNotifications } from "@/lib/hooks/useNotifications";
+import { notificationHref } from "@/lib/notifications/routing";
+import { NotificationIcon, notificationTimeAgo } from "./notifications/NotificationIcon";
 
-function timeAgo(iso: string): string {
-  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
-}
-
-function iconFor(kind: Notification["kind"]) {
-  switch (kind) {
-    case "joined": return <UserPlus size={16} />;
-    case "left": return <UserMinus size={16} />;
-    case "spots_needed": return <Zap size={16} />;
-    case "event": return <Calendar size={16} />;
-    case "friend_request": return <Users size={16} />;
-    case "friend_accepted": return <MessageCircle size={16} />;
-    case "payment_submitted": return <Receipt size={16} />;
-    case "payment_approved": return <ShieldCheck size={16} />;
-    case "payment_rejected": return <ShieldX size={16} />;
-    case "game_join_requested": return <Users size={16} />;
-    case "game_join_rejected": return <XCircle size={16} />;
-    case "game_payment_required":
-    case "game_payment_reminder": return <Wallet size={16} />;
-    case "game_payment_submitted":
-    case "game_host_payment_submitted": return <Receipt size={16} />;
-    case "game_payment_verified": return <ShieldCheck size={16} />;
-    case "game_payment_rejected": return <AlertTriangle size={16} />;
-    case "game_payment_expired":
-    case "game_host_payment_expired": return <Clock3 size={16} />;
-    case "game_payment_cash_selected": return <Wallet size={16} />;
-    case "game_published":
-    case "game_joined": return <Calendar size={16} />;
-    case "game_left":
-    case "game_cancelled": return <UserMinus size={16} />;
-    case "tournament_published":
-    case "tournament_announcement": return <Calendar size={16} />;
-    case "tournament_registration_submitted": return <Receipt size={16} />;
-    case "tournament_payment_verified": return <ShieldCheck size={16} />;
-    case "tournament_payment_rejected": return <ShieldX size={16} />;
-    default: return <Bell size={16} />;
-  }
-}
+// The dropdown is a quick peek — the full history, filters and dismiss
+// live on /notifications.
+const PEEK = 6;
 
 export default function NotificationBell({ inline = false }: { inline?: boolean }) {
   const pathname = usePathname();
@@ -145,6 +108,13 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
         .notif-time { font-size: 11px; opacity: 0.45; margin-top: 3px; }
         .notif-dot { width: 7px; height: 7px; border-radius: 999px; background: #006241; flex-shrink: 0; margin-top: 6px; }
         .notif-empty { padding: 40px 20px; text-align: center; font-size: 13px; opacity: 0.5; }
+        .notif-seeall {
+          display: flex; align-items: center; justify-content: center; gap: 6px;
+          width: 100%; margin-top: 4px; padding: 11px; border-radius: 12px;
+          border: none; cursor: pointer; font-family: inherit; font-size: 12.5px; font-weight: 700;
+          color: #006241; background: rgba(0,98,65,0.09);
+        }
+        .notif-seeall:hover { background: rgba(0,98,65,0.16); }
         @media (max-width: 780px) {
           .notif-wrap { top: calc(12px + env(safe-area-inset-top,0px)); right: calc(12px + env(safe-area-inset-right,0px)); }
           .notif-btn { width: 38px; height: 38px; }
@@ -178,40 +148,29 @@ export default function NotificationBell({ inline = false }: { inline?: boolean 
                 No notifications yet.<br />When players join your games, you&apos;ll see it here.
               </div>
             ) : (
-              items.map((n) => (
-                <div
-                  key={n.id}
-                  className="notif-item"
-                  onClick={() => {
-                    // Host-facing Play Together kinds land on the manage
-                    // console (where the approve/verify actions live);
-                    // every other game_id notification — including all the
-                    // payment-reminder kinds — goes to the player's game
-                    // page, which auto-opens the pay/upload-proof popup
-                    // itself while a request is payment_pending/rejected
-                    // (see PlayTogetherJoinPanel).
-                    const hostFacing = n.kind === "game_join_requested"
-                      || n.kind === "game_host_payment_submitted"
-                      || n.kind === "game_host_payment_expired"
-                      || n.kind === "game_payment_cash_selected";
-                    if (n.kind === "friend_request" || n.kind === "friend_accepted") router.push("/players");
-                    else if (n.conversation_id) router.push(`/messages/${n.conversation_id}`);
-                    else if (n.squad_id) router.push(`/league/${n.squad_id}`);
-                    else if (n.game_id) router.push(hostFacing ? `/play-together/${n.game_id}/manage` : `/play-together/${n.game_id}`);
-                    else if (n.tournament_id) router.push(`/tournaments/${n.tournament_id}`);
-                    else if (n.event_id) router.push(`/game/${n.event_id}`);
-                    setOpen(false);
-                  }}
-                >
-                  <div className="notif-ic">{iconFor(n.kind)}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="notif-title">{n.title}</div>
-                    {n.body && <div className="notif-body">{n.body}</div>}
-                    <div className="notif-time">{timeAgo(n.created_at)}</div>
+              <>
+                {items.slice(0, PEEK).map((n) => (
+                  <div
+                    key={n.id}
+                    className="notif-item"
+                    onClick={() => { router.push(notificationHref(n)); setOpen(false); }}
+                  >
+                    <div className="notif-ic"><NotificationIcon kind={n.kind} /></div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="notif-title">{n.title}</div>
+                      {n.body && <div className="notif-body">{n.body}</div>}
+                      <div className="notif-time">{notificationTimeAgo(n.created_at)}</div>
+                    </div>
+                    {!n.read && <div className="notif-dot" />}
                   </div>
-                  {!n.read && <div className="notif-dot" />}
-                </div>
-              ))
+                ))}
+                <button
+                  className="notif-seeall"
+                  onClick={() => { router.push("/notifications"); setOpen(false); }}
+                >
+                  See all notifications <ArrowRight size={13} />
+                </button>
+              </>
             )}
           </div>
         )}
