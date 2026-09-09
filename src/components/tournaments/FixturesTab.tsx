@@ -692,7 +692,29 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
           </select>
         )}
         {showHistory && <MatchHistoryPanel matchId={match.id} />}
-        {match.status === "cancelled" || match.team_b_id === null ? null : !bothSet ? (
+        {match.status === "cancelled" ? null : match.team_b_id === null ? (
+          // Only one side of the slot is filled — the other team never
+          // showed up in the bracket (odd team count, a withdrawal, …).
+          // update_match_teams() completes a match as a bye whenever
+          // team B is left null, same mechanism the "Edit teams" pencil
+          // above already uses — this just makes it a one-click action
+          // instead of something you'd only find by opening that editor
+          // and noticing Team B's "TBD / bye" placeholder.
+          match.team_a_id && !done ? (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span className="tc-dim" style={{ fontSize: 12 }}>No opponent assigned —</span>
+              <button
+                className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
+                onClick={() => {
+                  if (!window.confirm(`Give ${teamName(match.team_a_id)} a bye? They'll advance immediately with no match played.`)) return;
+                  onUpdateTeams(match.team_a_id!, undefined);
+                }}
+              >
+                Give {teamName(match.team_a_id)} a bye
+              </button>
+            </div>
+          ) : null
+        ) : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
