@@ -33,11 +33,23 @@ export default function PWARegister() {
     // website) once you're already running inside it.
     if (Capacitor.isNativePlatform()) return;
 
-    // 1. Register the service worker.
+    // 1. Register the service worker — production only. In dev, Turbopack
+    // reuses chunk URLs across edits, so the SW's asset cache serves a
+    // stale JS/CSS chunk and the app looks broken until you clear storage.
+    // Actively tear down any SW/cache a previous prod-like run left behind.
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch((e) =>
-        console.error("[pwa] service worker failed:", e)
-      );
+      if (process.env.NODE_ENV === "production") {
+        navigator.serviceWorker.register("/sw.js").catch((e) =>
+          console.error("[pwa] service worker failed:", e)
+        );
+      } else {
+        navigator.serviceWorker.getRegistrations()
+          .then((regs) => regs.forEach((r) => r.unregister()))
+          .catch(() => {});
+        window.caches?.keys()
+          .then((keys) => keys.forEach((k) => caches.delete(k)))
+          .catch(() => {});
+      }
     }
 
     // Already installed, or dismissed before → stay quiet.

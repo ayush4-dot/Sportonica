@@ -35,6 +35,22 @@ export interface RailVenue {
   from_price: number | null;
 }
 
+export interface RailMatch {
+  id: string;
+  tournamentId: string;
+  tournamentName: string;
+  sport: string;
+  format: string;
+  roundLabel: string;
+  status: "live" | "scheduled" | "completed";
+  startsAt: string | null;
+  teamA: { id: string; name: string; logoUrl: string | null };
+  teamB: { id: string; name: string; logoUrl: string | null };
+  scoreA: number | null;
+  scoreB: number | null;
+  winnerTeamId: string | null;
+}
+
 /**
  * Everything the homepage rails need, in one round trip.
  * Official events = venue_event | platform_event — the organised stuff,
@@ -61,7 +77,12 @@ export async function getHomeRails() {
   // whose mapping this mirrors). host is embedded via the games.host_id
   // FK (games_host_id_fkey, Postgres's default constraint name for an
   // inline `references` with no explicit name) for one round trip.
-  const [officialRes, gamesRes, venuesRes, playTogetherRes, singleEventRes] = await Promise.all([
+  // Match columns shared by the live/upcoming/completed queries below —
+  // a single string keeps the three selects (and any future one) from
+  // drifting out of sync with each other.
+  const MATCH_COLS = "id,tournament_id,round_label,status,starts_at,team_a_id,team_b_id,score_a,score_b,winner_team_id";
+
+  const [officialRes, gamesRes, venuesRes, playTogetherRes, singleEventRes, liveMatchRes, upcomingMatchRes, completedMatchRes] = await Promise.all([
     sb.from("events_full")
       .select("*")
       .in("event_type", ["venue_event", "platform_event"])
@@ -100,6 +121,31 @@ export async function getHomeRails() {
       .gt("starts_at", nowIso)
       .order("starts_at", { ascending: true })
       .limit(8),
+    // Live scores rail — three disjoint status buckets fetched separately
+    // (rather than one query ordered by status) so the rail can always
+    // show live matches first, then the soonest upcoming ones, then the
+    // most recently finished ones, instead of an arbitrary status sort.
+    sb.from("tournament_matches")
+      .select(MATCH_COLS)
+      .eq("status", "live")
+      .not("team_a_id", "is", null).not("team_b_id", "is", null)
+      .order("starts_at", { ascending: true })
+      .limit(6),
+    sb.from("tournament_matches")
+      .select(MATCH_COLS)
+      .eq("status", "scheduled")
+      .not("team_a_id", "is", null).not("team_b_id", "is", null)
+      .not("starts_at", "is", null)
+      .gte("starts_at", nowIso)
+      .order("starts_at", { ascending: true })
+      .limit(6),
+    sb.from("tournament_matches")
+      .select(MATCH_COLS)
+      .eq("status", "completed")
+      .not("team_a_id", "is", null).not("team_b_id", "is", null)
+      .not("score_a", "is", null).not("score_b", "is", null)
+      .order("starts_at", { ascending: false })
+      .limit(6),
   ]);
 
   // Confirmed-player count per game — needs the IDs from the query above,
@@ -187,9 +233,67 @@ export async function getHomeRails() {
     .sort((a, b) => new Date(a.event_date).getTime() - new Date(b.event_date).getTime())
     .slice(0, 8);
 
+  // Live scores rail — live matches first, then soonest upcoming, then
+  // most recently finished, capped to a homepage-sized teaser. Needs
+  // team names/logos and the parent tournament's name/sport/format,
+  // neither of which the match row carries — batched in by id (like
+  // tConfirmed above) rather than embedded, since tournament_matches has
+  // two FKs into tournament_teams (team_a_id/team_b_id) and PostgREST
+  // embedding needs the constraint name to disambiguate which is which.
+  type RawMatch = {
+    id: string; tournament_id: string; round_label: string; status: string; starts_at: string | null;
+    team_a_id: string; team_b_id: string; score_a: number | null; score_b: number | null; winner_team_id: string | null;
+  };
+  const rawMatches = [
+    ...(liveMatchRes.data ?? []) as RawMatch[],
+    ...(upcomingMatchRes.data ?? []) as RawMatch[],
+    ...(completedMatchRes.data ?? []) as RawMatch[],
+  ].slice(0, 8);
+
+  const matchTournamentIds = [...new Set(rawMatches.map((m) => m.tournament_id))];
+  const matchTeamIds = [...new Set(rawMatches.flatMap((m) => [m.team_a_id, m.team_b_id]))];
+  const [{ data: matchTournaments }, { data: matchTeams }] = await Promise.all([
+    matchTournamentIds.length
+      ? sb.from("tournaments").select("id,name,sport,format,status")
+          .in("id", matchTournamentIds)
+          .in("status", ["registration_open", "registration_closed", "live", "completed"])
+      : Promise.resolve({ data: [] as { id: string; name: string; sport: string; format: string; status: string }[] }),
+    matchTeamIds.length
+      ? sb.from("tournament_teams").select("id,name,logo_url").in("id", matchTeamIds)
+      : Promise.resolve({ data: [] as { id: string; name: string; logo_url: string | null }[] }),
+  ]);
+  const tournamentById = new Map((matchTournaments ?? []).map((t) => [t.id, t]));
+  const teamById = new Map((matchTeams ?? []).map((t) => [t.id, t]));
+
+  const matches: RailMatch[] = rawMatches.flatMap((m) => {
+    const t = tournamentById.get(m.tournament_id);
+    const a = teamById.get(m.team_a_id);
+    const b = teamById.get(m.team_b_id);
+    // A tournament missing here means it failed the public-status filter
+    // above (e.g. was pulled back to draft) — drop the match rather than
+    // show a scorecard for something no longer publicly listed.
+    if (!t || !a || !b) return [];
+    return [{
+      id: m.id,
+      tournamentId: m.tournament_id,
+      tournamentName: t.name,
+      sport: t.sport,
+      format: t.format,
+      roundLabel: m.round_label,
+      status: m.status as RailMatch["status"],
+      startsAt: m.starts_at,
+      teamA: { id: a.id, name: a.name, logoUrl: a.logo_url },
+      teamB: { id: b.id, name: b.name, logoUrl: b.logo_url },
+      scoreA: m.score_a,
+      scoreB: m.score_b,
+      winnerTeamId: m.winner_team_id,
+    }];
+  });
+
   return {
     official,
     games,
+    matches,
     venues: (venuesRes.data ?? []).map((v) => {
       const { courts, ...venue } = v as typeof v & {
         courts: { base_price: number; status: string }[] | null;

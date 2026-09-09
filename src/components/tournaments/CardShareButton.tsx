@@ -33,16 +33,20 @@ export default function CardShareButton({ href, title }: { href: string; title: 
 
   return (
     <button type="button" className="cs-btn" onClick={share} aria-label="Share">
-      {copied ? <Check size={13} /> : <Share2 size={13} />}
+      {copied ? <Check size={15} /> : <Share2 size={15} />}
       <style>{`
         .cs-btn {
-          position: absolute; top: 10px; right: 10px; z-index: 4;
-          width: 30px; height: 30px; border-radius: 50%; border: none; cursor: pointer;
+          position: absolute; top: 12px; right: 12px; z-index: 4;
+          width: 44px; height: 44px; border-radius: 50%; cursor: pointer;
           display: grid; place-items: center; color: #fff;
-          background: rgba(11,13,17,0.55); backdrop-filter: blur(4px);
-          transition: background 0.2s, transform 0.2s;
+          background: rgba(255,255,255,0.16); border: 1px solid rgba(255,255,255,0.32);
+          backdrop-filter: blur(16px) saturate(160%); -webkit-backdrop-filter: blur(16px) saturate(160%);
+          box-shadow: 0 4px 14px -6px rgba(0,0,0,0.45);
+          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.35));
+          transition: transform .22s cubic-bezier(.22,1,.36,1), background .22s ease;
         }
-        .cs-btn:hover { background: #006241; transform: scale(1.06); }
+        .cs-btn:hover { transform: scale(1.04); background: rgba(255,255,255,0.3); }
+        .cs-btn:active { transform: scale(0.97); }
       `}</style>
     </button>
   );

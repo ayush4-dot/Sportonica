@@ -4,7 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, Trophy, Medal, ChevronRight, LogIn, Phone, ClipboardList,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, ChevronRight, LogIn, Phone, ClipboardList,
 } from "lucide-react";
 import { getTeamRosterPublic } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
@@ -15,6 +15,7 @@ import {
   type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
 } from "@/lib/tournaments/types";
 import TournamentRegisterTab from "./TournamentRegisterTab";
+import DayFixturesShareButton from "./DayFixturesShareButton";
 import "./event-tabs.css";
 
 const KTM = "Asia/Kathmandu";
@@ -188,15 +189,34 @@ export default function EventTabs({
           confirmedCount={confirmedTeams.length}
         />
       )}
-      {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} />}
-      {activeTab === "Knockout" && <KnockoutTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
-      {activeTab === "Fixtures" && <FixturesPublicTab matches={matches} teamName={(id) => teams.find((t) => t.id === id)?.name ?? "Unknown"} />}
+      {activeTab === "Table" && <TableTab tournament={tournament} standingsByGroup={standingsByGroup} teams={teams} />}
+      {activeTab === "Knockout" && <KnockoutTab matches={matches} teams={teams} />}
+      {activeTab === "Fixtures" && (
+        <FixturesPublicTab tournamentId={tournament.id} matches={matches} teams={teams} />
+      )}
       {activeTab === "Player Stats" && (
-        authLoading ? null : user ? <PlayerStatsTab rows={playerStats} /> : <SignInGate what="the player stats" pathname={pathname} />
+        authLoading ? null : user ? <PlayerStatsTab rows={playerStats} teams={teams} /> : <SignInGate what="the player stats" pathname={pathname} />
       )}
       {activeTab === "Teams" && (
-        authLoading ? null : user ? <TeamsTab teams={confirmedTeams} /> : <SignInGate what="the teams and squads" pathname={pathname} />
+        authLoading ? null : user ? <TeamsTab teams={confirmedTeams} playerStats={playerStats} /> : <SignInGate what="the teams and squads" pathname={pathname} />
       )}
+
+      {/* Rules only matter while you're deciding whether to register or
+          getting oriented — once you're checking the table, fixtures, or
+          your bracket match, they're just noise below the fold. */}
+      {(activeTab === "Overview" || activeTab === "Register") && <RulesPanel tournament={tournament} />}
+    </div>
+  );
+}
+
+function RulesPanel({ tournament }: { tournament: Tournament }) {
+  if (!tournament.rules_text && !tournament.equipment_notes && !tournament.venue_rules) return null;
+  return (
+    <div className="bk-panel">
+      <h3>Rules</h3>
+      {tournament.rules_text && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{tournament.rules_text}</p>}
+      {tournament.equipment_notes && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Equipment:</b> {tournament.equipment_notes}</p>}
+      {tournament.venue_rules && <p style={{ fontSize: 13.5, opacity: 0.8, lineHeight: 1.6 }}><b>Venue rules:</b> {tournament.venue_rules}</p>}
     </div>
   );
 }
@@ -251,23 +271,32 @@ function OverviewTab({ tournament, teams, matches, awards }: {
         <div className="ev2-card">
           <div className="ev2-card-t">Awards</div>
           <div className="ev2-awards">
+            {/* Glossy 3D medal/trophy renders (Microsoft Fluent Emoji, MIT
+                licensed — github.com/microsoft/fluentui-emoji) instead of
+                flat line icons here: genuinely distinct per tier (trophy
+                vs. an actual silver vs. an actual bronze medal, not the
+                same glyph recoloured) and a deliberate one-section accent,
+                not a site-wide style change. */}
             {awards.winner && (
-              <div className="ev2-award">
-                <Trophy size={20} color="#ffc107" style={{ marginBottom: 8 }} />
+              <div className="ev2-award gold">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/trophy.png" alt="" />
                 <div className="ev2-award-l">Winner</div>
                 <div className="ev2-award-v">{awards.winner}</div>
               </div>
             )}
             {awards.runnerUp && (
               <div className="ev2-award silver">
-                <Medal size={20} color="#b0b0b0" style={{ marginBottom: 8 }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/runner-up.png" alt="" />
                 <div className="ev2-award-l">Runner-up</div>
                 <div className="ev2-award-v">{awards.runnerUp}</div>
               </div>
             )}
             {awards.semifinalists.map((name) => (
               <div className="ev2-award bronze" key={name}>
-                <Medal size={20} color="#b47846" style={{ marginBottom: 8 }} />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className="ev2-award-badge" src="/awards/semifinalist.png" alt="" />
                 <div className="ev2-award-l">Semi-finalist</div>
                 <div className="ev2-award-v">{name}</div>
               </div>
@@ -280,45 +309,52 @@ function OverviewTab({ tournament, teams, matches, awards }: {
 }
 
 // ── Table ────────────────────────────────────────────────────────
-function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; standingsByGroup: Record<string, TournamentStanding[]> }) {
+// Rank, crest, name, then the four stats a casual viewer actually scans
+// for (Points, Won, Lost, Drawn) as their own chips — Played/GF/GA/GD
+// are still in the data (TournamentStanding), just not worth the row
+// width for a glance-and-go standings list. One rounded card per team
+// instead of a dense spreadsheet table.
+function TableTab({
+  tournament, standingsByGroup, teams,
+}: {
+  tournament: Tournament;
+  standingsByGroup: Record<string, TournamentStanding[]>;
+  teams: TournamentTeam[];
+}) {
   const groups = Object.keys(standingsByGroup).sort();
   if (groups.length === 0 || groups.every((g) => standingsByGroup[g].length === 0)) {
     return <div className="ev2-empty">No results yet.</div>;
   }
+  const teamLogo = (id: string) => teams.find((t) => t.id === id)?.logo_url ?? null;
   return (
     <div>
       {groups.map((g) => {
         const rows = standingsByGroup[g];
         if (rows.length === 0) return null;
         return (
-          <div key={g} className="ev2-card">
+          <div key={g} className="ev2-standings">
             {tournament.format === "group_knockout" && <div className="ev2-card-t">Group {g}</div>}
-            <div style={{ overflowX: "auto" }}>
-              <table className="ev2-table">
-                <thead>
-                  <tr>
-                    <th>#</th><th>Team</th><th className="num">P</th><th className="num">W</th><th className="num">D</th>
-                    <th className="num">L</th><th className="num">GF</th><th className="num">GA</th><th className="num">GD</th><th className="num">Pts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r, i) => (
-                    <tr key={r.team_id} className={i < 2 ? "top3" : ""}>
-                      <td className="num"><span className="ev2-rank">{i + 1}</span></td>
-                      <td style={{ fontWeight: 700 }}>{r.team_name}</td>
-                      <td className="num">{r.played}</td>
-                      <td className="num">{r.won}</td>
-                      <td className="num">{r.drawn}</td>
-                      <td className="num">{r.lost}</td>
-                      <td className="num">{r.goals_for}</td>
-                      <td className="num">{r.goals_against}</td>
-                      <td className="num">{r.goal_diff > 0 ? `+${r.goal_diff}` : r.goal_diff}</td>
-                      <td className="num" style={{ fontWeight: 800 }}>{r.points}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {rows.map((r, i) => {
+              const logo = teamLogo(r.team_id);
+              return (
+                <div key={r.team_id} className={`ev2-srow${i < 2 ? " top3" : ""}`}>
+                  <span className="ev2-srow-rank">{i + 1}</span>
+                  <span className="ev2-srow-badge">
+                    {logo
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={logo} alt="" />
+                      : r.team_name.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="ev2-srow-name">{r.team_name}</span>
+                  <div className="ev2-srow-stats">
+                    <div className="ev2-schip"><span className="l">Points</span><span className="v">{r.points}</span></div>
+                    <div className="ev2-schip"><span className="l">Won</span><span className="v">{r.won}</span></div>
+                    <div className="ev2-schip"><span className="l">Lost</span><span className="v">{r.lost}</span></div>
+                    <div className="ev2-schip"><span className="l">Drawn</span><span className="v">{r.drawn}</span></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         );
       })}
@@ -326,9 +362,8 @@ function TableTab({ tournament, standingsByGroup }: { tournament: Tournament; st
   );
 }
 
-// ── Knockout — geometry-precise connector-line bracket ────────────
+// ── Knockout — round switcher + match list ─────────────────────────
 const MATCH_H = 108;
-const SLOT_GAP = 22;
 
 // "Quarterfinal" -> "QF", "Round of 16" -> "R16", anything unrecognised
 // falls back to initials — a per-card label distinguishing matches
@@ -360,28 +395,21 @@ function matchWhen(m: TournamentMatch): string {
   return m.court_label ? `${when} · ${m.court_label}` : when;
 }
 
-// Matches are now added by hand (no auto-generated pairing tree), so
-// there's no guaranteed relationship between a round's matches and
-// specific matches in the round before it — round 2 might not even
-// have exactly half of round 1's count. Rather than draw connector
-// lines that assume a strict binary tree (and misalign the moment
-// that assumption doesn't hold), each round is its own independently
-// centered column; a plain chevron between columns shows the flow
-// left-to-right without claiming a precision the data can't back up.
+// Which statuses count as "decided" — used to pick the round a viewer
+// lands on by default (see KnockoutTab).
 const KO_DONE = new Set(["completed", "walkover", "cancelled"]);
 
 function matchCode(ms: TournamentMatch[], i: number): string {
   return ms.length > 1 ? `${roundShortCode(ms[i].round_label)}${i + 1}` : roundShortCode(ms[i].round_label);
 }
 
-function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+function KnockoutTab({ matches, teams }: { matches: TournamentMatch[]; teams: TournamentTeam[] }) {
   const [selected, setSelected] = useState<TournamentMatch | null>(null);
+  const team = (id: string | null) => (id ? teams.find((t) => t.id === id) : undefined);
   const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
 
   const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
   const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
-  const maxCount = byRound.length ? Math.max(...byRound.map((ms) => ms.length)) : 0;
-  const columnHeight = maxCount * MATCH_H + (maxCount - 1) * SLOT_GAP;
 
   // Land on whichever round still has something undecided (the round
   // you'd actually want to check), not always round 1 — falls back to
@@ -396,9 +424,15 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
 
   return (
     <div>
-      {/* Phone: tap between rounds instead of having to discover them
-          by swiping sideways. */}
-      <div className="ev2-bracket-mobile">
+      {/* One round switcher + a single vertical list, on every screen
+          size — no full multi-column bracket tree to discover by
+          scrolling sideways; every match in the picked round is just
+          there. Matches are added by hand (no auto-generated pairing
+          tree), so there's no guaranteed relationship between a
+          round's matches and the round before it anyway — a tree of
+          connector lines would be claiming a precision the data can't
+          back up. */}
+      <div className="ev2-bracket-rounds">
         <div className="ev2-bracket-round-chips">
           {byRound.map((ms, r) => (
             <button key={r} className={`ev2-bracket-chip ${r === safeActiveRound ? "on" : ""}`} onClick={() => setActiveRound(r)}>
@@ -406,41 +440,23 @@ function KnockoutTab({ matches, teamName }: { matches: TournamentMatch[]; teamNa
             </button>
           ))}
         </div>
-        <div className="ev2-bracket-mobile-list">
+        <div className="ev2-bracket-list">
           {byRound[safeActiveRound].map((m, i) => (
-            <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(byRound[safeActiveRound], i)} onClick={() => setSelected(m)} />
+            <BracketMatchCard key={m.id} match={m} team={team} code={matchCode(byRound[safeActiveRound], i)} onClick={() => setSelected(m)} />
           ))}
         </div>
       </div>
 
-      {/* Desktop / wide screens: the full bracket, all rounds at once. */}
-      <div className="ev2-bracket-wrap ev2-bracket-desktop">
-        <div className="ev2-bracket">
-          {byRound.map((ms, r) => (
-            <div key={r} style={{ display: "flex", alignItems: "center" }}>
-              {r > 0 && <ChevronRight className="ev2-bracket-arrow" size={18} />}
-              <div className="ev2-bracket-round">
-                <div className="ev2-bracket-round-label">{ms[0]?.round_label}</div>
-                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", gap: SLOT_GAP, minHeight: columnHeight }}>
-                  {ms.map((m, i) => (
-                    <BracketMatchCard key={m.id} match={m} teamName={teamName} code={matchCode(ms, i)} onClick={() => setSelected(m)} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {selected && <MatchDetailModal match={selected} teamName={teamName} onClose={() => setSelected(null)} />}
+      {selected && <MatchDetailModal match={selected} team={team} onClose={() => setSelected(null)} />}
     </div>
   );
 }
 
-function BracketMatchCard({ match: m, code, teamName, onClick }: {
-  match: TournamentMatch; code: string; teamName: (id: string | null) => string; onClick: () => void;
+function BracketMatchCard({ match: m, code, team, onClick }: {
+  match: TournamentMatch; code: string; team: (id: string | null) => TournamentTeam | undefined; onClick: () => void;
 }) {
   const pill = matchStatusPill(m);
+  const decided = m.winner_team_id != null;
   return (
     <button type="button" className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`} style={{ minHeight: MATCH_H }} onClick={onClick}>
       <div className="ev2-bracket-match-head">
@@ -448,22 +464,30 @@ function BracketMatchCard({ match: m, code, teamName, onClick }: {
         {pill && <span className={`ev2-bracket-pill ${pill.cls}`}>{pill.live && <i className="ev2-live-dot" />}{pill.label}</span>}
         {m.status === "walkover" && <span className="ev2-bracket-pill walkover">Walkover</span>}
       </div>
-      <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
-      <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+      <BracketSlot team={team(m.team_a_id)} fallback="TBD"
+        winner={decided && m.winner_team_id === m.team_a_id} decided={decided} score={m.score_a} />
+      <BracketSlot team={team(m.team_b_id)} fallback={m.team_b_id ? "TBD" : m.status === "completed" ? "Bye" : "TBD"}
+        winner={decided && m.winner_team_id === m.team_b_id} decided={decided} score={m.score_b} />
       <div className="ev2-bracket-meta">{matchWhen(m)}</div>
     </button>
   );
 }
 
-// No team crest/logo upload exists yet — an initial-letter avatar
-// (same visual language used for players/hosts elsewhere) stands in
-// for one, rather than leaving the bracket as bare text rows.
-function BracketSlot({ name, winner, score }: { name: string; winner: boolean; score: number | null }) {
+// Same glassy crest badge as the standings/teams/fixtures cards — a
+// bracket used to be the one place still using a plain flat-colour
+// initial avatar and no real team logo. Once a match is decided, the
+// loser dims instead of just the winner going bold — a clearer "this
+// one's out" signal than weight alone.
+function BracketSlot({ team, fallback, winner, decided, score }: {
+  team: TournamentTeam | undefined; fallback: string; winner: boolean; decided: boolean; score: number | null;
+}) {
+  const name = team?.name ?? fallback;
   const tbd = name === "TBD" || name === "Bye";
+  const loser = decided && !winner && !tbd;
   return (
-    <div className={`ev2-bracket-slot ${winner ? "winner" : ""} ${tbd ? "tbd" : ""}`}>
+    <div className={`ev2-bracket-slot ${winner ? "winner" : ""} ${loser ? "loser" : ""} ${tbd ? "tbd" : ""}`}>
       <span className="ev2-bracket-team">
-        <span className="ev2-bracket-av">{tbd ? "?" : name.charAt(0).toUpperCase()}</span>
+        <TeamCrest name={tbd ? "?" : name} logoUrl={team?.logo_url} size="sm" />
         <span className="ev2-bracket-name">{name}</span>
       </span>
       {score != null && <span className="ev2-bracket-score">{score}</span>}
@@ -471,28 +495,31 @@ function BracketSlot({ name, winner, score }: { name: string; winner: boolean; s
   );
 }
 
-function MatchDetailModal({ match: m, teamName, onClose }: {
-  match: TournamentMatch; teamName: (id: string | null) => string; onClose: () => void;
+function MatchDetailModal({ match: m, team, onClose }: {
+  match: TournamentMatch; team: (id: string | null) => TournamentTeam | undefined; onClose: () => void;
 }) {
   const pill = matchStatusPill(m);
+  const decided = m.winner_team_id != null;
   return (
     <div className="ev2-scrim" onClick={onClose}>
       <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <div className="ev2-modal-head" style={{ alignItems: "center" }}>
           <div>
             <div className="ev2-bracket-round-label" style={{ marginBottom: 4, textAlign: "left" }}>{m.round_label}</div>
             {pill && <span className={`ev2-bracket-pill ${pill.cls}`}>{pill.live && <i className="ev2-live-dot" />}{pill.label}</span>}
           </div>
-          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+          <button aria-label="Close" className="ev2-modal-close" onClick={onClose}><X size={16} /></button>
         </div>
 
-        <div style={{ marginTop: 12, border: "1px solid rgba(242,237,230,0.1)", borderRadius: 12, overflow: "hidden" }}>
-          <BracketSlot name={m.team_a_id ? teamName(m.team_a_id) : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_a_id} score={m.score_a} />
-          <BracketSlot name={m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"} winner={m.winner_team_id != null && m.winner_team_id === m.team_b_id} score={m.score_b} />
+        <div style={{ border: "1px solid rgba(242,237,230,0.1)", borderRadius: 12, overflow: "hidden" }}>
+          <BracketSlot team={team(m.team_a_id)} fallback="TBD"
+            winner={decided && m.winner_team_id === m.team_a_id} decided={decided} score={m.score_a} />
+          <BracketSlot team={team(m.team_b_id)} fallback={m.team_b_id ? "TBD" : m.status === "completed" ? "Bye" : "TBD"}
+            winner={decided && m.winner_team_id === m.team_b_id} decided={decided} score={m.score_b} />
         </div>
 
         {m.status === "walkover" && (
-          <div className="ev2-empty" style={{ padding: "10px 0 0", textAlign: "left" }}>Walkover — {teamName(m.winner_team_id)}</div>
+          <div className="ev2-empty" style={{ padding: "10px 0 0", textAlign: "left" }}>Walkover — {team(m.winner_team_id)?.name ?? "Unknown"}</div>
         )}
         {(m.score_a_et != null && m.score_b_et != null) && (
           <div style={{ opacity: 0.65, fontSize: 12.5, marginTop: 8 }}>Extra time: {m.score_a_et} – {m.score_b_et}</div>
@@ -509,8 +536,23 @@ function MatchDetailModal({ match: m, teamName, onClose }: {
 }
 
 // ── Fixtures (public, read-only, by date) ──────────────────────────
-function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; teamName: (id: string | null) => string }) {
+function TeamCrest({ name, logoUrl, size = "md" }: { name: string; logoUrl?: string | null; size?: "sm" | "md" }) {
+  return (
+    <span className={`ev2-crest${size === "sm" ? " sm" : ""}`}>
+      {logoUrl
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={logoUrl} alt="" />
+        : name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function FixturesPublicTab({ tournamentId, matches, teams }: {
+  tournamentId: string; matches: TournamentMatch[]; teams: TournamentTeam[];
+}) {
   if (matches.length === 0) return <div className="ev2-empty">Fixtures haven&apos;t been generated yet.</div>;
+  const team = (id: string | null) => (id ? teams.find((t) => t.id === id) : undefined);
+  const teamName = (id: string | null) => team(id)?.name ?? "Unknown";
 
   const sorted = [...matches].sort((a, b) => {
     if (!a.starts_at && !b.starts_at) return a.created_at.localeCompare(b.created_at);
@@ -519,37 +561,59 @@ function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; 
     return a.starts_at.localeCompare(b.starts_at);
   });
 
-  const groups = new Map<string, TournamentMatch[]>();
+  // Grouped by the ISO calendar date (KTM) so each group's "Share this
+  // day" button can ask the card route for exactly that date — the
+  // display label above is just for the header, not what's queried on.
+  const groups = new Map<string, { label: string; matches: TournamentMatch[] }>();
   for (const m of sorted) {
-    const key = m.starts_at
+    const key = m.starts_at ? new Date(m.starts_at).toLocaleDateString("en-CA", { timeZone: KTM }) : "tbd";
+    const label = m.starts_at
       ? new Date(m.starts_at).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: KTM })
       : "Date to be announced";
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key)!.push(m);
+    if (!groups.has(key)) groups.set(key, { label, matches: [] });
+    groups.get(key)!.matches.push(m);
   }
 
   return (
     <div className="ev2-card">
-      {[...groups.entries()].map(([date, ms]) => (
-        <div key={date}>
-          <div className="ev2-fixture-date">{date}</div>
-          {ms.map((m) => (
-            <div key={m.id} className="ev2-fixture">
-              <div className="ev2-fixture-time">
-                {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
+      {[...groups.entries()].map(([key, { label, matches: ms }]) => (
+        <div key={key}>
+          <div className="ev2-fixture-date">
+            <span>{label}</span>
+            {key !== "tbd" && <DayFixturesShareButton tournamentId={tournamentId} date={key} dateLabel={label} />}
+          </div>
+          {ms.map((m) => {
+            const teamAName = m.team_a_id ? teamName(m.team_a_id) : "TBD";
+            const teamBName = m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD";
+            const live = m.status === "live";
+            return (
+              <div key={m.id} className="ev2-fixture">
+                <div className="ev2-fixture-time">
+                  {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
+                </div>
+                <div className="ev2-fixture-teams">
+                  <span className="ev2-fixture-side">
+                    <TeamCrest name={teamAName} logoUrl={team(m.team_a_id)?.logo_url} size="sm" />
+                    <span className="ev2-fixture-name">{teamAName}</span>
+                  </span>
+                  <span className="ev2-fixture-mid">
+                    {m.status === "walkover" ? (
+                      <span className="score wo">W/O</span>
+                    ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
+                      <span className="score">{m.score_a} – {m.score_b}</span>
+                    ) : live ? (
+                      <span className="live"><i className="ev2-live-dot" />Live</span>
+                    ) : <span className="vs">vs</span>}
+                  </span>
+                  <span className="ev2-fixture-side reverse">
+                    <span className="ev2-fixture-name">{teamBName}</span>
+                    <TeamCrest name={teamBName} logoUrl={team(m.team_b_id)?.logo_url} size="sm" />
+                  </span>
+                </div>
+                <div className="ev2-fixture-round">{m.round_label}</div>
               </div>
-              <div className="ev2-fixture-teams">
-                <span>{m.team_a_id ? teamName(m.team_a_id) : "TBD"}</span>
-                {m.status === "walkover" ? (
-                  <span className="score">w/o</span>
-                ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
-                  <span className="score">{m.score_a} – {m.score_b}</span>
-                ) : <span style={{ opacity: 0.4 }}>vs</span>}
-                <span>{m.team_b_id ? teamName(m.team_b_id) : m.status === "completed" ? "Bye" : "TBD"}</span>
-              </div>
-              <div className="ev2-fixture-round">{m.round_label}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ))}
     </div>
@@ -557,34 +621,40 @@ function FixturesPublicTab({ matches, teamName }: { matches: TournamentMatch[]; 
 }
 
 // ── Player stats leaderboard ────────────────────────────────────
-function PlayerStatsTab({ rows }: { rows: TournamentPlayerStatRow[] }) {
+// Same rank/crest/chip identity as the standings and teams cards —
+// Goals and Yellow cards are the two stats worth a full chip; red
+// cards and MOM are secondary, small inline badges next to the name,
+// only showing up when actually non-zero rather than padding every
+// row with dashes. (Yellow used to be one of those small badges too,
+// alongside an Assists chip — promoted to its own chip and Assists
+// dropped, so it isn't shown twice.)
+function PlayerStatsTab({ rows, teams }: { rows: TournamentPlayerStatRow[]; teams: TournamentTeam[] }) {
   if (rows.length === 0) return <div className="ev2-empty">No player stats recorded yet.</div>;
   return (
-    <div className="ev2-card">
-      <div style={{ overflowX: "auto" }}>
-        <table className="ev2-table">
-          <thead>
-            <tr>
-              <th>#</th><th>Player</th><th>Team</th>
-              <th className="num">G</th><th className="num">A</th><th className="num">Y</th><th className="num">R</th><th className="num">MOM</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={r.team_player_id}>
-                <td className="num"><span className="ev2-rank">{i + 1}</span></td>
-                <td style={{ fontWeight: 700 }}>{r.player_name}</td>
-                <td style={{ opacity: 0.65 }}>{r.team_name}</td>
-                <td className="num" style={{ fontWeight: 800 }}>{r.goals}</td>
-                <td className="num">{r.assists}</td>
-                <td className="num">{r.yellow_cards > 0 ? <span style={{ color: "#d97706" }}>{r.yellow_cards}</span> : "—"}</td>
-                <td className="num">{r.red_cards > 0 ? <span style={{ color: "#ef4444" }}>{r.red_cards}</span> : "—"}</td>
-                <td className="num">{r.mom_count > 0 ? <span className="ev2-mom-star">{"★".repeat(Math.min(r.mom_count, 3))}</span> : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="ev2-standings">
+      {rows.map((r, i) => {
+        const logo = teams.find((t) => t.id === r.team_id)?.logo_url;
+        return (
+          <div key={r.team_player_id} className={`ev2-srow${i < 2 ? " top3" : ""}`}>
+            <span className="ev2-srow-rank">{i + 1}</span>
+            <TeamCrest name={r.player_name} logoUrl={logo} />
+            <div className="ev2-prow-id">
+              <span className="ev2-srow-name">{r.player_name}</span>
+              <span className="ev2-prow-team">{r.team_name}</span>
+            </div>
+            {(r.red_cards > 0 || r.mom_count > 0) && (
+              <div className="ev2-prow-badges">
+                {r.red_cards > 0 && <span className="ev2-prow-badge red">{r.red_cards}</span>}
+                {r.mom_count > 0 && <span className="ev2-prow-badge mom"><Star size={9} fill="currentColor" />{r.mom_count}</span>}
+              </div>
+            )}
+            <div className="ev2-srow-stats">
+              <div className="ev2-schip"><span className="l">Goals</span><span className="v">{r.goals}</span></div>
+              <div className="ev2-schip"><span className="l">Yellow</span><span className="v">{r.yellow_cards}</span></div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -592,16 +662,36 @@ function PlayerStatsTab({ rows }: { rows: TournamentPlayerStatRow[] }) {
 // ── Teams + squad viewer ────────────────────────────────────────
 type RosterPlayer = { id: string; role: string; name: string; is_linked: boolean };
 
-function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
+function TeamsTab({ teams, playerStats }: { teams: TournamentTeam[]; playerStats: TournamentPlayerStatRow[] }) {
   const [open, setOpen] = useState<TournamentTeam | null>(null);
   if (teams.length === 0) return <div className="ev2-empty">No confirmed teams yet.</div>;
+
+  // Total yellow cards across the whole team, not per player — a quick
+  // "this team's picked up a lot of cards" signal right on the crest,
+  // same spot the Player Stats tab shows an individual's card count.
+  const teamYellows = new Map<string, number>();
+  for (const r of playerStats) teamYellows.set(r.team_id, (teamYellows.get(r.team_id) ?? 0) + r.yellow_cards);
 
   return (
     <div>
       <div className="ev2-team-grid">
-        {teams.map((t) => (
+        {teams.map((t, i) => {
+          const yellows = teamYellows.get(t.id) ?? 0;
+          return (
           <button key={t.id} className="ev2-team-card" onClick={() => setOpen(t)}>
-            <div className="ev2-team-card-name">{t.name}</div>
+            <div className="ev2-team-card-head">
+              <span className="ev2-team-card-rank">{i + 1}</span>
+              <span className="ev2-team-card-badge-wrap">
+                <span className="ev2-team-card-badge">
+                  {t.logo_url
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={t.logo_url} alt="" />
+                    : t.name.charAt(0).toUpperCase()}
+                </span>
+                {yellows > 0 && <span className="ev2-team-card-yellow" title={`${yellows} yellow card${yellows === 1 ? "" : "s"}`}>{yellows}</span>}
+              </span>
+              <div className="ev2-team-card-name">{t.name}</div>
+            </div>
             {t.manager_name && (
               <div className="ev2-team-card-sub" style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <Phone size={11} /> {t.manager_name}{t.manager_phone ? ` · ${t.manager_phone}` : ""}
@@ -614,7 +704,8 @@ function TeamsTab({ teams }: { teams: TournamentTeam[] }) {
             )}
             <div className="ev2-team-card-sub">Tap to view squad</div>
           </button>
-        ))}
+          );
+        })}
       </div>
       {open && <SquadModal team={open} onClose={() => setOpen(null)} />}
     </div>
@@ -641,21 +732,29 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
   return (
     <div className="ev2-scrim" onClick={onClose}>
       <div className="ev2-modal" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
-          <div>
-            <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>{team.name}</h3>
-            {team.manager_name && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 4 }}>
-                <Phone size={12} /> {team.manager_name}{team.manager_phone ? ` · ${team.manager_phone}` : ""}
-              </div>
-            )}
-            {team.coach_name && (
-              <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 2 }}>
-                <Phone size={12} /> Coach: {team.coach_name}{team.coach_phone ? ` · ${team.coach_phone}` : ""}
-              </div>
-            )}
+        <div className="ev2-modal-head">
+          <div className="ev2-modal-id">
+            <span className="ev2-team-card-badge">
+              {team.logo_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={team.logo_url} alt="" />
+                : team.name.charAt(0).toUpperCase()}
+            </span>
+            <div style={{ minWidth: 0 }}>
+              <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 17, fontWeight: 800 }}>{team.name}</h3>
+              {team.manager_name && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 4 }}>
+                  <Phone size={12} /> {team.manager_name}{team.manager_phone ? ` · ${team.manager_phone}` : ""}
+                </div>
+              )}
+              {team.coach_name && (
+                <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, opacity: 0.65, marginTop: 2 }}>
+                  <Phone size={12} /> Coach: {team.coach_name}{team.coach_phone ? ` · ${team.coach_phone}` : ""}
+                </div>
+              )}
+            </div>
           </div>
-          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center", flexShrink: 0 }}><X size={18} /></button>
+          <button aria-label="Close" className="ev2-modal-close" onClick={onClose}><X size={16} /></button>
         </div>
         {loading ? (
           <div className="ev2-empty">Loading squad…</div>
@@ -667,10 +766,10 @@ function SquadModal({ team, onClose }: { team: TournamentTeam; onClose: () => vo
               <div key={p.id} className="ev2-squad-row">
                 <span className="ev2-squad-av">{p.name.charAt(0).toUpperCase()}</span>
                 <span style={{ flex: 1, fontSize: 13.5 }}>{p.name}</span>
-                {p.role === "captain" && <Star size={13} style={{ opacity: 0.6 }} />}
-                {p.role === "substitute" && <span style={{ fontSize: 11, opacity: 0.5 }}>Sub</span>}
+                {p.role === "captain" && <Star size={13} className="ev2-squad-star" fill="currentColor" />}
+                {p.role === "substitute" && <span className="ev2-squad-sub">Sub</span>}
                 {!p.is_linked && !user && (
-                  <span style={{ fontSize: 10.5, opacity: 0.5, fontStyle: "italic" }}>Not linked</span>
+                  <span className="ev2-squad-unlinked">Not linked</span>
                 )}
               </div>
             ))}

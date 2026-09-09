@@ -730,7 +730,7 @@ export default function TournamentForm({
       </div>
       <div className="ev-row">
         <div className="ev-field">
-          <label>MVP</label>
+          <label>Best Player</label>
           <input value={prizeMvp} onChange={(e) => setPrizeMvp(e.target.value)} />
         </div>
         <div className="ev-field">

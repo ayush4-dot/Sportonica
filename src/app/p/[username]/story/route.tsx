@@ -88,70 +88,80 @@ export async function GET(
           )}
         </div>
 
-        {/* stats: 2x2 */}
-        <div style={{ display: "flex", marginTop: 76, borderTop: `2px solid ${C.hair}`, paddingTop: 46 }}>
-          <Cell label="GAMES PLAYED" value={String(stats.games_played)} color={C.text} C={C} />
-          <Cell label="SHOW-UP RATE" value={stats.reliability !== null ? `${stats.reliability}%` : "—"} color={trust.color} C={C} />
-        </div>
-        <div style={{ display: "flex", marginTop: 40 }}>
-          <Cell label="GAMES HOSTED" value={String(stats.games_hosted)} color={C.text} C={C} />
-          <Cell label={`TRUST · ${trust.label.toUpperCase()}`} value={String(profile.trust_score ?? 50)} color={trust.color} C={C} />
-        </div>
-
-        {/* sports */}
-        {sports.length > 0 && (
-          <div style={{ display: "flex", flexDirection: "column", marginTop: 76, borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-            <div style={{ fontSize: 26, color: C.accent, letterSpacing: 5, display: "flex" }}>SPORTS</div>
-            {sports.slice(0, 3).map((s) => (
-              <div key={s.sport} style={{ display: "flex", flexDirection: "column", marginTop: 30 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                  <div style={{ fontSize: 46, fontWeight: 700, letterSpacing: -1, display: "flex" }}>{s.sport}</div>
-                  <div style={{ fontSize: 28, color: C.dim, display: "flex" }}>{`${s.games} game${s.games !== 1 ? "s" : ""}`}</div>
-                </div>
-                <div style={{ display: "flex", height: 4, background: C.hair, marginTop: 14 }}>
-                  <div style={{ width: `${(s.games / maxGames) * 100}%`, background: sportColor(normalizeSport(s.sport)), display: "flex" }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* badges */}
-        {badges.length > 0 && (
-          <div style={{ display: "flex", marginTop: 60, flexWrap: "wrap" }}>
-            {badges.slice(0, 3).map((b) => (
-              <div key={b.key}
-                style={{
-                  display: "flex", alignItems: "center", fontSize: 26, fontWeight: 700,
-                  color: b.color, border: `2px solid ${b.color}66`,
-                  padding: "16px 26px", marginRight: 16, marginBottom: 16,
-                }}>
-                {b.label}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* footer brand */}
-        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginTop: "auto", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`${siteUrl}/icons/icon-512.png`}
-              width={68} height={68}
-              style={{ borderRadius: 16, marginRight: 24 }}
-              alt=""
-            />
-            <div style={{ display: "flex", flexDirection: "column" }}>
-              <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
-              <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>Kathmandu&apos;s sports platform</div>
+        {/* Stats, sports and badges vary a lot in how much room they need
+            (badges/sports can be empty) — space-between spreads whatever
+            is left over evenly across the sections that exist, instead of
+            a fixed marginTop:"auto" on the footer dumping it all into one
+            gap right above it (a sparse profile used to read as a mostly
+            empty card). */}
+        <div style={{ display: "flex", flexDirection: "column", flexGrow: 1, justifyContent: "space-between", marginTop: 44 }}>
+          {/* stats: 2x2 */}
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ display: "flex", borderTop: `2px solid ${C.hair}`, paddingTop: 46 }}>
+              <Cell label="GAMES PLAYED" value={String(stats.games_played)} color={C.text} C={C} />
+              <Cell label="SHOW-UP RATE" value={stats.reliability !== null ? `${stats.reliability}%` : "—"} color={trust.color} C={C} />
+            </div>
+            <div style={{ display: "flex", marginTop: 40 }}>
+              <Cell label="GAMES HOSTED" value={String(stats.games_hosted)} color={C.text} C={C} />
+              <Cell label={`TRUST · ${trust.label.toUpperCase()}`} value={String(profile.trust_score ?? 50)} color={trust.color} C={C} />
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
-            <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: C.accent, marginTop: 12, display: "flex" }}>
-              SCAN TO VIEW PROFILE
+
+          {/* sports */}
+          {sports.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+              <div style={{ fontSize: 26, color: C.accent, letterSpacing: 5, display: "flex" }}>SPORTS</div>
+              {sports.slice(0, 3).map((s) => (
+                <div key={s.sport} style={{ display: "flex", flexDirection: "column", marginTop: 30 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                    <div style={{ fontSize: 46, fontWeight: 700, letterSpacing: -1, display: "flex" }}>{s.sport}</div>
+                    <div style={{ fontSize: 28, color: C.dim, display: "flex" }}>{`${s.games} game${s.games !== 1 ? "s" : ""}`}</div>
+                  </div>
+                  <div style={{ display: "flex", height: 4, background: C.hair, marginTop: 14 }}>
+                    <div style={{ width: `${(s.games / maxGames) * 100}%`, background: sportColor(normalizeSport(s.sport)), display: "flex" }} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* badges */}
+          {badges.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap" }}>
+              {badges.slice(0, 3).map((b) => (
+                <div key={b.key}
+                  style={{
+                    display: "flex", alignItems: "center", fontSize: 26, fontWeight: 700,
+                    color: b.color, border: `2px solid ${b.color}66`,
+                    padding: "16px 26px", marginRight: 16, marginBottom: 16,
+                  }}>
+                  {b.label}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* footer brand */}
+          <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", borderTop: `2px solid ${C.hair}`, paddingTop: 40 }}>
+            <div style={{ display: "flex", alignItems: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${siteUrl}/icons/icon-512.png`}
+                width={68} height={68}
+                style={{ borderRadius: 16, marginRight: 24 }}
+                alt=""
+              />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <div style={{ fontSize: 40, fontWeight: 800, display: "flex" }}>Sportonica</div>
+                <div style={{ fontSize: 24, color: C.faint, display: "flex" }}>Kathmandu&apos;s sports platform</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={qrDataUrl} width={140} height={140} style={{ borderRadius: 12 }} alt="" />
+              <div style={{ fontSize: 20, fontWeight: 700, letterSpacing: 3, color: C.accent, marginTop: 12, display: "flex" }}>
+                SCAN TO VIEW PROFILE
+              </div>
             </div>
           </div>
         </div>

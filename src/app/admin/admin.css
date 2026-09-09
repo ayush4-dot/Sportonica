@@ -131,7 +131,14 @@
 .adm-stat-delta.down { color: var(--a-pink); }
 
 /* ── Tables ── */
-.adm-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+/* separate, not collapse: a sticky <th> (see the desktop rule further
+   down) doesn't reliably stick inside a border-collapse table — it's a
+   longstanding cross-browser quirk — and was showing up as the sticky
+   header row rendering on top of / overlapping the first body row
+   instead of pushing it down (e.g. the "Status" header text colliding
+   with the first row's status badge on /organize). border-spacing: 0
+   keeps the cell borders looking identical to collapsed ones. */
+.adm-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; }
 .adm-table th {
   text-align: left; font-family: var(--a-mono); font-size: 10px;
   letter-spacing: 0.1em; text-transform: uppercase; color: var(--a-faint);
@@ -437,10 +444,22 @@
 .adm-stat-delta.down { text-shadow: 0 0 14px rgba(239,68,68,.35); }
 
 /* ── Tables ──────────────────────────────────────────────────── */
+/* Not sticky. This table sits inside a horizontally-scrolling wrapper
+   (overflow-x: auto in the page, e.g. /organize) — per the CSS Overflow
+   spec, setting overflow-x to anything but visible forces the other
+   axis's computed value to auto too, even when left unset. That makes
+   the wrapper (sized to fit the table, nothing taller) the <th>'s
+   nearest scrolling ancestor instead of the page/viewport, so `top:
+   60px` tried to stick 60px into a box barely taller than one row —
+   the header ended up pinned on top of the first body row instead of
+   above it (e.g. "Status" overlapping the first row's status badge on
+   /organize). Confirmed by removing `position: sticky` entirely: the
+   overlap is gone and the table just scrolls normally. Properly fixing
+   the wrapper so sticky works would mean touching every page built on
+   this table, well past the size of the actual bug — dropping the
+   sticky-while-scrolling behavior is the safe fix. */
 .adm-table th {
-  position: sticky; top: 60px; z-index: 2;
   background: linear-gradient(180deg, var(--a-panel), rgba(19,22,28,.96));
-  backdrop-filter: blur(8px);
 }
 [data-theme="paper"] .adm-table th {
   background: linear-gradient(180deg, var(--a-panel), rgba(242,237,230,.9));

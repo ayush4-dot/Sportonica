@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRef } from "react";
 import { MapPin, Users, ChevronLeft, ChevronRight, ImageIcon, ShieldCheck, Star, Check } from "lucide-react";
 import { sportColor } from "@/lib/sports";
-import type { RailEvent, RailVenue } from "@/lib/play/homeRails";
+import type { RailEvent, RailVenue, RailMatch } from "@/lib/play/homeRails";
 
 const KTM = "Asia/Kathmandu";
 
@@ -148,6 +148,102 @@ export function GamesRail({ games }: { games: RailEvent[] }) {
           </Link>
         );
       })}
+    </Rail>
+  );
+}
+
+function TeamBadge({ name, logoUrl }: { name: string; logoUrl: string | null }) {
+  return (
+    <span className="rc-match-badge">
+      {logoUrl
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={logoUrl} alt="" />
+        : name.charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+function MatchSide({ team }: { team: RailMatch["teamA"] }) {
+  return (
+    <div className="rc-match-side">
+      <TeamBadge name={team.name} logoUrl={team.logoUrl} />
+      <span className="rc-match-side-name">{team.name}</span>
+    </div>
+  );
+}
+
+// The site-wide sport colours (sportColor()) are tuned for tinting a
+// light chip or a thin stripe — on this card's dark floodlit background
+// they read as muted. A brighter, more saturated version per sport reads
+// better here specifically; only Futsal is set for now (the only sport
+// with live matches today) rather than guessing brightened values for
+// the other six sports without a reference for them.
+const MATCH_ACCENT: Record<string, string> = {
+  Futsal: "#539C49",
+};
+
+function MatchCard({ m }: { m: RailMatch }) {
+  const accent = MATCH_ACCENT[m.sport] ?? sportColor(m.sport);
+  const live = m.status === "live";
+  const completed = m.status === "completed";
+  const started = live || completed;
+  const aWon = completed && m.winnerTeamId === m.teamA.id;
+  const bWon = completed && m.winnerTeamId === m.teamB.id;
+  // single_event tournaments never generate a bracket/table, so the
+  // Knockout/Table/Fixtures tabs don't exist there (see EventTabs'
+  // NOT_FOR_SINGLE_EVENT) — the footer just links to the tournament
+  // itself instead of a tab that would 404 into the Overview tab anyway.
+  const hasTabs = m.format !== "single_event";
+  const standingsTab = m.format === "knockout" ? "knockout" : "table";
+  const standingsLabel = m.format === "knockout" ? "Bracket" : "Table";
+
+  return (
+    <article className="rc rc-match" style={{ ["--rc-accent" as string]: accent }}>
+      <Link href={`/tournaments/${m.tournamentId}`} className="rc-match-hit">
+        <div className="rc-match-comp">{m.tournamentName}</div>
+        <div className="rc-match-meta">{m.sport} · {m.roundLabel}</div>
+
+        <div className="rc-match-vs">
+          <MatchSide team={m.teamA} />
+
+          <div className="rc-match-center">
+            {started ? (
+              <div className="rc-match-bigscore">
+                <span className={bWon ? "lose" : ""}>{m.scoreA}</span>
+                <i>:</i>
+                <span className={aWon ? "lose" : ""}>{m.scoreB}</span>
+              </div>
+            ) : (
+              <div className="rc-match-bigscore vs">VS</div>
+            )}
+            <div className={`rc-match-pill${live ? " live" : ""}`}>
+              {live ? <><i className="rc-live-dot" />Live</> : completed ? "Full-time" : m.startsAt ? when(m.startsAt) : "TBD"}
+            </div>
+          </div>
+
+          <MatchSide team={m.teamB} />
+        </div>
+      </Link>
+
+      {hasTabs && (
+        <div className="rc-match-foot">
+          <Link href={`/tournaments/${m.tournamentId}?tab=fixtures`}>Fixtures</Link>
+          <Link href={`/tournaments/${m.tournamentId}?tab=${standingsTab}`}>{standingsLabel}</Link>
+        </div>
+      )}
+    </article>
+  );
+}
+
+export function MatchesRail({ matches }: { matches: RailMatch[] }) {
+  if (matches.length === 0) return null;
+  return (
+    <Rail
+      title="Live scores"
+      sub="Live and upcoming matches from tournaments on Sportonica."
+      href="/tournaments" hrefLabel="See all tournaments"
+    >
+      {matches.map((m) => <MatchCard key={m.id} m={m} />)}
     </Rail>
   );
 }

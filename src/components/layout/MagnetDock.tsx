@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { Home, Volleyball, CalendarPlus, MessagesSquare, Trophy } from "lucide-react";
+import { isBareChromeRoute } from "@/lib/nav/authRoutes";
 
 type Item = { label: string; href: string; icon: React.ReactNode };
 
@@ -37,7 +38,7 @@ export default function MagnetDock() {
   // Hide dock on admin/organizer/platform consoles, auth pages (they have their own chrome).
   const hidden =
     pathname.startsWith("/admin") || pathname.startsWith("/platform") || pathname.startsWith("/organize")
-    || pathname.startsWith("/login") || pathname.startsWith("/signup");
+    || isBareChromeRoute(pathname);
   if (hidden) return null;
 
   // "Chat" covers all three social tabs (Messages/Players/Groups), not just its own href.

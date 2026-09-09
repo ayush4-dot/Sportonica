@@ -154,7 +154,7 @@ export default function ProfileHub({
           )}
           <Row href="/profile/edit" icon={<Pencil size={16} />} label="Edit Profile" />
           <Row href="/profile/payments" icon={<Wallet size={16} />} label="Payments" />
-          <Row href="/profile/coming-soon?section=security" icon={<KeyRound size={16} />} label="Login &amp; Security" />
+          <Row href="/profile/security" icon={<KeyRound size={16} />} label="Login &amp; Security" />
           <Row href="/profile/coming-soon?section=notifications" icon={<Bell size={16} />} label="Notifications" />
           <Row href="/profile/coming-soon?section=preferences" icon={<SlidersHorizontal size={16} />} label="Preferences" />
           <Row href="/profile/coming-soon?section=privacy" icon={<ShieldQuestion size={16} />} label="Privacy" />
