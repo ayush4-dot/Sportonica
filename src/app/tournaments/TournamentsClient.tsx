@@ -5,6 +5,7 @@ import Link from "next/link";
 import { MapPin, Star, Check, Trophy, Users } from "lucide-react";
 import type { TournamentBrowseItem } from "@/lib/play/tournaments";
 import CardShareButton from "@/components/tournaments/CardShareButton";
+import "./tournament-cards.css";
 
 const KTM = "Asia/Kathmandu";
 
@@ -30,7 +31,7 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
   const shown = sport ? items.filter((e) => e.sport === sport) : items;
 
   return (
-    <div className="play">
+    <div className="play tourn-page">
       <div className="play-wrap">
         <div className="play-hero">
           <h1>Tournaments <em>& events.</em></h1>
@@ -75,47 +76,51 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
             {shown.map((item) => {
               const href = item.kind === "tournament" ? `/tournaments/${item.id}` : `/game/${item.id}`;
               const completed = item.kind === "tournament" && item.completed;
+              const hasImg = item.bannerUrl && /^https?:\/\//i.test(item.bannerUrl);
+              // The "Completed" chip above already says the status — repeating
+              // the word here instead of the actual date it happened is just
+              // noise. Showing when it happened is more useful either way.
+              const dateLabel = when(item.when);
               return (
                 <Link
-                  key={`${item.kind}-${item.id}`} href={href} className="rc rc-event rc-venue"
-                  style={{ ["--rc-accent" as string]: item.sportColor, opacity: completed ? 0.72 : 1 }}
+                  key={`${item.kind}-${item.id}`} href={href} className="tc-card"
+                  data-completed={completed} style={{ ["--tc-accent" as string]: item.sportColor }}
                 >
-                  <CardShareButton href={href} title={`${item.title} · Sportonica`} />
-                  <div className="rc-img">
-                    {item.bannerUrl && /^https?:\/\//i.test(item.bannerUrl) ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={item.bannerUrl} alt="" loading="lazy" />
+                  <div className="tc-media">
+                    {hasImg ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className="tc-media-bg" src={item.bannerUrl!} alt="" aria-hidden="true" />
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img className="tc-media-fg" src={item.bannerUrl!} alt="" loading="lazy" />
+                      </>
                     ) : (
-                      <div className="rc-img-empty"><Trophy size={28} /></div>
+                      <div className="tc-media-empty"><Trophy size={30} /></div>
                     )}
+                    <span className={`tc-status${completed ? " done" : ""}`}>
+                      {completed
+                        ? <><Check size={11} /> Completed</>
+                        : item.kind === "tournament"
+                        ? <><Trophy size={11} /> Tournament</>
+                        : item.badge === "platform" ? <><Star size={11} /> Sportonica</> : <><Check size={11} /> Official</>}
+                    </span>
+                    <CardShareButton href={href} title={`${item.title} · Sportonica`} />
                   </div>
-                  <div className="rc-badge" style={
-                    completed
-                      ? { color: "#8a8a8a", borderColor: "rgba(128,128,128,.4)", background: "rgba(128,128,128,.14)" }
-                      : item.kind === "tournament"
-                      ? { color: "#006241", borderColor: "rgba(0,98,65,.4)", background: "rgba(0,98,65,.12)" }
-                      : {
-                          color: item.badge === "platform" ? "#006241" : "#2E7D5B",
-                          borderColor: item.badge === "platform" ? "rgba(0,98,65,.4)" : "rgba(46,125,91,.4)",
-                          background: item.badge === "platform" ? "rgba(0,98,65,.12)" : "rgba(46,125,91,.12)",
-                        }
-                  }>
-                    {completed
-                      ? <><Check size={10} /> Completed</>
-                      : item.kind === "tournament"
-                      ? <><Trophy size={10} /> Tournament</>
-                      : item.badge === "platform" ? <><Star size={10} /> Sportonica</> : <><Check size={10} /> Official</>}
-                  </div>
-                  <div className="rc-sport" style={{ color: item.sportColor }}>{item.sport}</div>
-                  <div className="rc-title">{item.title}</div>
-                  {item.organizerName && <div className="rc-by">by {item.organizerName}</div>}
-                  <div className="rc-meta"><MapPin size={11} /> {item.venue}</div>
-                  <div className="rc-when">{completed ? "Completed" : when(item.when)}</div>
-                  <div className="rc-foot">
-                    {item.kind === "tournament"
-                      ? <span style={{ color: item.sportColor, display: "inline-flex", alignItems: "center", gap: 4 }}><Users size={11} /> {item.maxTeams == null ? "Unlimited teams" : `Up to ${item.maxTeams} teams`}</span>
-                      : <span style={{ color: item.sportColor }}>{item.slotsRemaining} spots left</span>}
-                    <span>{item.fee === 0 ? "Free" : `Rs ${item.fee}`}</span>
+
+                  <div className="tc-body">
+                    <span className="tc-sport">{item.sport}</span>
+                    <h3 className="tc-title">{item.title}</h3>
+                    {item.organizerName && <div className="tc-org">by {item.organizerName}</div>}
+
+                    <div className="tc-loc"><MapPin size={13} /><span>{item.venue}</span></div>
+                    <div className={`tc-date${!item.when ? " tbd" : ""}`}>{dateLabel}</div>
+
+                    <div className="tc-foot">
+                      {item.kind === "tournament"
+                        ? <span className="tc-foot-meta"><Users size={13} /> {item.maxTeams == null ? "Unlimited teams" : `Up to ${item.maxTeams} teams`}</span>
+                        : <span className="tc-foot-meta"><Users size={13} /> {item.slotsRemaining} spots left</span>}
+                      <span className={`tc-foot-price${item.fee === 0 ? " free" : ""}`}>{item.fee === 0 ? "Free" : `Rs ${item.fee}`}</span>
+                    </div>
                   </div>
                 </Link>
               );
@@ -133,16 +138,6 @@ export default function TournamentsClient({ items }: { items: TournamentBrowseIt
         }
         .tourn-chip:hover { border-color: rgba(0,98,65,0.4); color: var(--paper); }
         .tourn-chip.on { border-color: #006241; color: #006241; background: rgba(0,98,65,0.12); }
-        .tourn-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(272px, 1fr));
-          gap: 16px;
-        }
-        .tourn-grid .rc { width: auto; }
-        @media (max-width: 560px) {
-          .tourn-grid { grid-template-columns: 1fr; gap: 14px; }
-          .tourn-grid .rc-img { height: 168px; }
-        }
       `}</style>
     </div>
   );

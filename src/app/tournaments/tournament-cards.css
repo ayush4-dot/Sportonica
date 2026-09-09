@@ -1,0 +1,190 @@
+/* ================================================================
+   Tournament browse cards — v2. Not a reuse of the shared .rc/.rc-event
+   classes the homepage rails use (EventsRail/VenuesRail/GamesRail):
+   this page gets its own language so restyling it never touches the
+   homepage.
+
+   The structural idea: the info panel is a rounded sheet that overlaps
+   the bottom of the poster (negative margin pulling it up), not a
+   stack of [image block] then [white box] — the poster is the card,
+   the text floats on top of it, closer to an Apple Music/TV card than
+   a SaaS listing row.
+   ================================================================ */
+
+.tourn-page { position: relative; isolation: isolate; }
+.tourn-page::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  top: -140px; left: 50%; transform: translateX(-50%);
+  width: min(900px, 140vw); height: 560px;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--sodium) 13%, transparent), transparent 72%);
+}
+
+.tourn-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px 24px;
+  align-items: start; /* content-driven height — a short card never drags an empty footer down to match a taller neighbour */
+}
+@media (max-width: 1024px) { .tourn-grid { grid-template-columns: repeat(2, 1fr); gap: 24px 20px; } }
+@media (max-width: 640px)  { .tourn-grid { grid-template-columns: 1fr; gap: 22px; } }
+
+/* ── Card wrapper — just a positioning context. All the visible
+   surface (background, border, shadow) lives on .tc-media and
+   .tc-body separately so the sheet can overlap the poster. ── */
+.tc-card { position: relative; display: block; text-decoration: none; color: inherit; }
+.tc-card:focus-visible { outline: 2px solid var(--sodium); outline-offset: 4px; border-radius: 26px; }
+
+/* Signature ambient wash — a soft green bloom behind the card, not a
+   literal overlay on top of the opaque sheet (which would just hide
+   under it). Reads as atmosphere around the object, "heavenly" rather
+   than a glow slapped on the surface. */
+.tc-card::before {
+  content: ''; position: absolute; z-index: -1; pointer-events: none;
+  top: -10px; left: 6%; right: 6%; height: 62%;
+  background: radial-gradient(ellipse at 50% 0%, color-mix(in srgb, var(--sodium) 15%, transparent), transparent 70%);
+  filter: blur(22px); opacity: 0; transition: opacity .35s ease;
+}
+.tc-card:hover::before, .tc-card:focus-visible::before { opacity: 1; }
+
+.tc-card, .tc-media, .tc-body { transition: transform .28s cubic-bezier(.22,1,.36,1); }
+.tc-card:hover .tc-media { transform: translateY(-4px); }
+.tc-card:hover .tc-body { transform: translateY(-4px); }
+.tc-card:active .tc-media, .tc-card:active .tc-body { transform: translateY(-1px) scale(0.997); }
+
+/* ── Media — the poster is the hero, full stop. Never cropped: a
+   blurred, darkened copy of the same image fills the 16:9 frame, the
+   real image sits on top at its true ratio via object-fit:contain.
+   Rounded on all four corners — the body sheet covers the bottom two
+   once it overlaps, but rounding all four means there's no square
+   corner flash while the image is still loading. ── */
+/* A poster's own background is often flat white (a logo/crest on a
+   white canvas, e.g. the Royal FC crest) — blurring THAT SAME image
+   for the backdrop just produces more pale white, so the "atmosphere"
+   did nothing and the letterboxed area still read as plain empty
+   space. The base is a rich gradient anchored to the tournament's own
+   sport colour instead, so there's always real depth and colour back
+   there; the blurred poster sits on top at partial opacity, adding the
+   image's own texture/colour without being able to wash the whole
+   thing out to white. Every poster gets a deliberate, designed
+   backdrop, not a hue that depends on what happened to be in the shot. */
+.tc-media {
+  position: relative; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 26px;
+  background: radial-gradient(130% 130% at 50% 12%,
+    color-mix(in srgb, var(--tc-accent, var(--sodium)) 62%, #10151a),
+    color-mix(in srgb, var(--tc-accent, var(--sodium)) 22%, #05070a) 62%,
+    #05070a 100%);
+}
+.tc-media-bg {
+  position: absolute; inset: -14%; width: 128%; height: 128%; object-fit: cover;
+  filter: blur(30px) saturate(1.4) brightness(0.82);
+  opacity: 0.6;
+}
+/* A logo/crest poster (square-ish, like the Royal FC crest) is tall
+   enough to touch both the top and bottom of the 16:9 frame under
+   contain — its bottom edge then sits exactly where the body sheet
+   overlaps upward, and the sheet covers real poster pixels (the
+   "Estd 2073" ribbon), not backdrop. Reserving a bottom safe-zone here
+   (bigger than the sheet's overlap below) guarantees the artwork
+   itself never renders into that region — only the coloured backdrop
+   ever sits under the sheet. */
+.tc-media-fg {
+  position: absolute; z-index: 1; inset: 0 0 30px 0;
+  object-fit: contain; transition: transform .45s cubic-bezier(.22,1,.36,1);
+}
+.tc-card:hover .tc-media-fg { transform: scale(1.015); }
+.tc-media-empty {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: #fff; opacity: 0.75;
+}
+/* A faint top highlight on the frame itself, like light catching the
+   edge of glass — the kind of detail that reads as "considered" rather
+   than a flat rectangle, without adding another visible layer. */
+.tc-media::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.16), inset 0 0 0 1px rgba(255,255,255,0.06);
+}
+.tc-card[data-completed="true"] .tc-media-fg { filter: saturate(0.8); }
+.tc-card[data-completed="true"] .tc-media-bg { filter: blur(30px) saturate(1) brightness(0.6); opacity: 0.5; }
+.tc-card[data-completed="true"] .tc-media {
+  background: radial-gradient(130% 130% at 50% 12%,
+    color-mix(in srgb, var(--tc-accent, var(--sodium)) 38%, #14171c),
+    color-mix(in srgb, var(--tc-accent, var(--sodium)) 14%, #05070a) 62%,
+    #05070a 100%);
+}
+
+/* Floating status — on the poster itself, top-left, a glass pill. Live/
+   upcoming gets a tint of the tournament's own colour (this is the one
+   worth noticing); completed goes fully neutral — the distinction does
+   real work instead of both states looking like the same grey chip. */
+.tc-status {
+  position: absolute; top: 14px; left: 14px; z-index: 3;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: 'Inter', sans-serif; font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 6px 11px; border-radius: 999px; color: #fff;
+  background: color-mix(in srgb, var(--tc-accent, var(--sodium)) 55%, rgba(20,23,30,0.5));
+  border: 1px solid rgba(255,255,255,0.28);
+  backdrop-filter: blur(10px) saturate(160%); -webkit-backdrop-filter: blur(10px) saturate(160%);
+}
+.tc-status.done { background: rgba(20,23,30,0.5); border-color: rgba(255,255,255,0.2); }
+
+/* ── Body — the floating sheet. Negative margin pulls it up over the
+   poster's lower edge; its own top corners create the "rounded shelf"
+   look, the poster's rounded bottom corners are simply covered. ── */
+.tc-body {
+  position: relative; z-index: 2; margin: -22px 8px 0;
+  background: var(--ink-2); border-radius: 22px;
+  /* A hint of the card's own sport colour in the border even at rest —
+     each card carries a trace of its identity, not just on hover. */
+  border: 1px solid color-mix(in srgb, var(--tc-accent, var(--sodium)) 14%, var(--line));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05), 0 20px 40px -24px rgba(0,0,0,0.45);
+  padding: 18px 18px 16px;
+  display: flex; flex-direction: column;
+  transition: border-color .28s ease, box-shadow .28s ease;
+}
+[data-theme="paper"] .tc-body { box-shadow: 0 1px 2px rgba(20,23,30,0.05), 0 22px 44px -26px rgba(20,23,30,0.2); }
+.tc-card:hover .tc-body {
+  border-color: color-mix(in srgb, var(--tc-accent, var(--sodium)) 32%, var(--line));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.07), 0 26px 48px -22px rgba(0,0,0,0.55);
+}
+[data-theme="paper"] .tc-card:hover .tc-body { box-shadow: 0 1px 2px rgba(20,23,30,0.07), 0 28px 52px -24px rgba(20,23,30,0.26); }
+
+.tc-sport {
+  display: block; font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--tc-accent, var(--sodium));
+  margin-bottom: 8px;
+}
+.tc-title {
+  font-family: 'Inter', sans-serif; font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+  line-height: 1.25; margin: 0 0 6px; transition: color .2s ease;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tc-card:hover .tc-title { color: var(--tc-accent, var(--sodium)); }
+.tc-org { font-size: 12.5px; color: var(--dim); margin-bottom: 12px; }
+
+.tc-loc { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 12.5px; color: var(--dim); margin-bottom: 6px; }
+.tc-loc svg { flex-shrink: 0; opacity: 0.7; }
+.tc-loc span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.tc-date {
+  font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700;
+  color: var(--tc-accent, var(--sodium)); margin-bottom: 16px;
+}
+.tc-date.tbd { color: var(--faint); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; }
+
+/* Fixed rhythm instead of an auto margin shoving this to the bottom of
+   a stretched card — a short card's footer now sits right under the
+   date, not stranded under a slab of empty space. A tinted background
+   band separates it from the info above instead of a literal rule
+   line — quieter, and it doubles as a resting place for the price. */
+.tc-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 12px; padding: 10px 12px;
+  border-radius: 14px; background: color-mix(in srgb, var(--tc-accent, var(--sodium)) 6%, transparent);
+}
+.tc-foot-meta { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--dim); }
+.tc-foot-meta svg { opacity: 0.7; flex-shrink: 0; }
+.tc-foot-price { font-family: 'Inter', sans-serif; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; flex-shrink: 0; }
+.tc-foot-price.free { color: var(--tc-accent, var(--sodium)); }
+
+@media (max-width: 640px) {
+  .tc-title { font-size: 18px; }
+  .tc-body { margin: -20px 4px 0; padding: 16px 16px 14px; }
+}
