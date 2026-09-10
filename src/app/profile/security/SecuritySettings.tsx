@@ -1,22 +1,13 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
-import { Check, Lock, ShieldAlert } from "lucide-react";
+import { useState, useTransition } from "react";
+import { Check, Lock, ShieldAlert, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { PASSWORD_MIN } from "@/lib/validation/password";
-import type { DeletionContext } from "@/lib/auth/deleteAccount";
-import DeleteAccountDialog from "./DeleteAccountDialog";
 
-export default function SecuritySettings({
-  name,
-  deletionContext,
-}: {
-  name: string;
-  deletionContext: DeletionContext;
-}) {
+export default function SecuritySettings({ name }: { name: string }) {
   const [pending, startTransition] = useTransition();
-  const router = useRouter();
 
   // ── Change password ──
   const [pw, setPw] = useState("");
@@ -46,20 +37,24 @@ export default function SecuritySettings({
   }
 
   // ── Delete account ──
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [dialogStep, setDialogStep] = useState<"warning" | "ready">("warning");
+  const [armed, setArmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
 
-  // Coming back from the Google re-auth round trip lands here with ?reauth=1.
-  // Re-open the dialog straight at the final confirmation step; the server
-  // still independently checks that the session is freshly authenticated.
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("reauth") === "1") {
-      setDialogStep("ready");
-      setDialogOpen(true);
-      router.replace("/profile/security");
+  async function deleteAccount() {
+    setDeleting(true);
+    setDelErr(null);
+    const res = await deleteMyAccount();
+    if (res.ok) {
+      try { await createClient().auth.signOut({ scope: "global" }); } catch { /* leaving regardless */ }
+      try { localStorage.clear(); sessionStorage.clear(); } catch { /* private mode */ }
+      window.location.href = "/";
+      return;
     }
-  }, [router]);
+    setDeleting(false);
+    setArmed(false);
+    setDelErr(res.message);
+  }
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -96,23 +91,43 @@ export default function SecuritySettings({
           <ShieldAlert size={16} aria-hidden /> Delete Account
         </h2>
         <p>
-          Permanently remove your Sportonica account and associated personal data. Future
-          bookings are cancelled, and some records are anonymised rather than deleted where
-          they must be kept for legal or accounting reasons. This can&apos;t be undone.
+          Permanently removes your Sportonica account and personal data, {name}. Upcoming bookings
+          are cancelled; a few records (payments, past bookings) are kept without your name for
+          legal and accounting reasons. This can&apos;t be undone —{" "}
+          <a href="/account-deletion" target="_blank" rel="noopener" style={{ color: "#dc2626", fontWeight: 600 }}>
+            what gets deleted
+          </a>.
         </p>
-        <button type="button" className="pf-danger-btn" onClick={() => { setDialogStep("warning"); setDialogOpen(true); }}>
-          Delete Account
-        </button>
-      </div>
 
-      <DeleteAccountDialog
-        key={dialogOpen ? `${dialogStep}-open` : "closed"}
-        open={dialogOpen}
-        initialStep={dialogStep}
-        onClose={() => setDialogOpen(false)}
-        ctx={deletionContext}
-        name={name}
-      />
+        {delErr && (
+          <div role="alert" style={{ color: "#dc2626", fontSize: 12.5, margin: "0 0 12px", lineHeight: 1.5 }}>
+            {delErr}
+          </div>
+        )}
+
+        {!armed ? (
+          <button type="button" className="pf-danger-btn" onClick={() => { setDelErr(null); setArmed(true); }}>
+            Delete Account
+          </button>
+        ) : (
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="pf-danger-btn"
+              style={{ background: "#dc2626", borderColor: "#dc2626", color: "#fff" }}
+              onClick={deleteAccount}
+              disabled={deleting}
+            >
+              {deleting
+                ? <><Loader2 size={15} className="pf-spin" /> Deleting…</>
+                : "Yes, delete my account"}
+            </button>
+            <button type="button" className="pf-danger-btn" onClick={() => setArmed(false)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
 
       <style>{`
         .pf-in {
@@ -122,6 +137,9 @@ export default function SecuritySettings({
           font-family: inherit; font-size: 14px;
         }
         .pf-in:focus { outline: none; border-color: #006241; box-shadow: 0 0 0 3px rgba(0,98,65,0.12); }
+        .pf-spin { animation: pf-spin 0.8s linear infinite; }
+        @keyframes pf-spin { to { transform: rotate(1turn); } }
+        @media (prefers-reduced-motion: reduce) { .pf-spin { animation-duration: 1.6s; } }
       `}</style>
     </div>
   );
