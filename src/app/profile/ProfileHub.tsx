@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import {
   ExternalLink, ChevronRight, Pencil, Wallet, KeyRound, Bell, SlidersHorizontal,
-  ShieldQuestion, LifeBuoy, ScrollText, LogOut, Users, LayoutDashboard,
+  ShieldQuestion, LifeBuoy, ScrollText, LogOut, Users, LayoutDashboard, Trash2,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import ShareButton from "@/app/p/[username]/ShareButton";
@@ -169,6 +169,8 @@ export default function ProfileHub({
         </div>
         <div className="pf-hub-list">
           <Row href="/profile/coming-soon?section=help" icon={<LifeBuoy size={16} />} label="Help &amp; Support" />
+          <Row href="/privacy" icon={<ShieldQuestion size={16} />} label="Privacy Policy" />
+          <Row href="/account-deletion" icon={<Trash2 size={16} />} label="Account Deletion" />
           <Row href="/profile/coming-soon?section=legal" icon={<ScrollText size={16} />} label="Legal" />
         </div>
       </section>

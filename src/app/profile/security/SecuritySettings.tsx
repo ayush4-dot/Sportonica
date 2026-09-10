@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Lock, ShieldAlert } from "lucide-react";
+import { Check, Lock, ShieldAlert, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { deleteMyAccount } from "@/lib/auth/actions";
-import { isActionError } from "@/lib/actionError";
+import { deleteMyAccount } from "@/lib/auth/deleteAccount";
 import { PASSWORD_MIN } from "@/lib/validation/password";
 
 export default function SecuritySettings({ name }: { name: string }) {
@@ -38,21 +37,23 @@ export default function SecuritySettings({ name }: { name: string }) {
   }
 
   // ── Delete account ──
-  const [danger, setDanger] = useState(false);
-  const [ack, setAck] = useState(false);
-  const [typed, setTyped] = useState("");
-  const [delMsg, setDelMsg] = useState<string | null>(null);
-  const canDelete = ack && typed.trim().toUpperCase() === "DELETE";
+  const [armed, setArmed] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [delErr, setDelErr] = useState<string | null>(null);
 
-  function removeAccount() {
-    if (!canDelete) return;
-    setDelMsg(null);
-    startTransition(async () => {
-      const res = await deleteMyAccount();
-      if (isActionError(res)) { setDelMsg(res.message); return; }
-      try { await createClient().auth.signOut(); } catch { /* going home regardless */ }
+  async function deleteAccount() {
+    setDeleting(true);
+    setDelErr(null);
+    const res = await deleteMyAccount();
+    if (res.ok) {
+      try { await createClient().auth.signOut({ scope: "global" }); } catch { /* leaving regardless */ }
+      try { localStorage.clear(); sessionStorage.clear(); } catch { /* private mode */ }
       window.location.href = "/";
-    });
+      return;
+    }
+    setDeleting(false);
+    setArmed(false);
+    setDelErr(res.message);
   }
 
   return (
@@ -84,46 +85,46 @@ export default function SecuritySettings({ name }: { name: string }) {
         </div>
       </div>
 
-      {/* Danger zone */}
-      <div className="pf-card" style={{ borderColor: "rgba(239,68,68,0.35)" }}>
-        <h2 className="pf-card-t" style={{ color: "#dc2626" }}>
-          <ShieldAlert size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} /> Delete account
+      {/* Danger zone — deliberately last, well below "Update password" */}
+      <div className="pf-danger-card">
+        <h2 className="pf-card-t">
+          <ShieldAlert size={16} aria-hidden /> Delete Account
         </h2>
-        <p style={{ fontSize: 12.5, color: "var(--pf-dim)", marginTop: -4 }}>
-          Permanently deletes your account, profile, and play history. Bookings you&apos;ve
-          paid for are not refunded automatically. This can&apos;t be undone.
+        <p>
+          Permanently removes your Sportonica account and personal data, {name}. Upcoming bookings
+          are cancelled; a few records (payments, past bookings) are kept without your name for
+          legal and accounting reasons. This can&apos;t be undone —{" "}
+          <a href="/account-deletion" target="_blank" rel="noopener" style={{ color: "#dc2626", fontWeight: 600 }}>
+            what gets deleted
+          </a>.
         </p>
 
-        {!danger ? (
-          <button className="pf-btn ghost" style={{ marginTop: 14, borderColor: "rgba(239,68,68,0.4)", color: "#dc2626" }}
-            onClick={() => setDanger(true)}>
-            Delete my account
+        {delErr && (
+          <div role="alert" style={{ color: "#dc2626", fontSize: 12.5, margin: "0 0 12px", lineHeight: 1.5 }}>
+            {delErr}
+          </div>
+        )}
+
+        {!armed ? (
+          <button type="button" className="pf-danger-btn" onClick={() => { setDelErr(null); setArmed(true); }}>
+            Delete Account
           </button>
         ) : (
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, cursor: "pointer" }}>
-              <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>I understand this permanently deletes my Sportonica account, {name}.</span>
-            </label>
-
-            <div style={{ marginTop: 14 }}>
-              <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--pf-dim)", marginBottom: 7 }}>
-                Type <b>DELETE</b> to confirm
-              </label>
-              <input className="pf-in" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" />
-            </div>
-
-            {delMsg && <div style={{ color: "#ef4444", fontSize: 12.5, marginTop: 12 }}>{delMsg}</div>}
-
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button className="pf-btn ghost" onClick={() => { setDanger(false); setAck(false); setTyped(""); setDelMsg(null); }} disabled={pending}>
-                Cancel
-              </button>
-              <button className="pf-btn" style={{ background: "#dc2626", borderColor: "#dc2626" }}
-                onClick={removeAccount} disabled={pending || !canDelete}>
-                {pending ? "Deleting…" : "Permanently delete"}
-              </button>
-            </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="pf-danger-btn"
+              style={{ background: "#dc2626", borderColor: "#dc2626", color: "#fff" }}
+              onClick={deleteAccount}
+              disabled={deleting}
+            >
+              {deleting
+                ? <><Loader2 size={15} className="pf-spin" /> Deleting…</>
+                : "Yes, delete my account"}
+            </button>
+            <button type="button" className="pf-danger-btn" onClick={() => setArmed(false)} disabled={deleting}>
+              Cancel
+            </button>
           </div>
         )}
       </div>
@@ -136,6 +137,9 @@ export default function SecuritySettings({ name }: { name: string }) {
           font-family: inherit; font-size: 14px;
         }
         .pf-in:focus { outline: none; border-color: #006241; box-shadow: 0 0 0 3px rgba(0,98,65,0.12); }
+        .pf-spin { animation: pf-spin 0.8s linear infinite; }
+        @keyframes pf-spin { to { transform: rotate(1turn); } }
+        @media (prefers-reduced-motion: reduce) { .pf-spin { animation-duration: 1.6s; } }
       `}</style>
     </div>
   );

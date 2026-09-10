@@ -264,3 +264,28 @@
   .pf-hub-logout-wrap { margin-top: 32px; }
   .pf-trustline { margin-top: 40px; }
 }
+
+/* ════════════════════════════════════════════════════════════════
+   Delete-account: destructive card + inline confirm
+   ════════════════════════════════════════════════════════════════ */
+.pf-danger-card {
+  border: 1px solid rgba(220,38,38,0.30);
+  border-radius: 14px;
+  padding: 22px; margin-top: 44px;
+  background: color-mix(in srgb, #dc2626 4%, transparent);
+}
+.pf-danger-card .pf-card-t {
+  color: #dc2626; display: flex; align-items: center; gap: 8px;
+  font-size: 17px; margin-bottom: 10px;
+}
+.pf-danger-card p { font-size: 13px; color: var(--pf-dim); margin: 0 0 18px; line-height: 1.65; }
+.pf-danger-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  min-height: 42px; padding: 0 18px; border-radius: 10px; cursor: pointer;
+  background: transparent; border: 1px solid rgba(220,38,38,0.5);
+  color: #dc2626; font-family: inherit; font-size: 13.5px; font-weight: 700;
+  transition: background .18s, border-color .18s;
+}
+.pf-danger-btn:hover:not(:disabled) { background: rgba(220,38,38,0.10); border-color: #dc2626; }
+.pf-danger-btn:focus-visible { outline: 2px solid #dc2626; outline-offset: 2px; }
+.pf-danger-btn:disabled { opacity: 0.55; cursor: default; }
