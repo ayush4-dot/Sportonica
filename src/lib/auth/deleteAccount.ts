@@ -114,6 +114,31 @@ export async function deleteMyAccount(input: { confirmText: string }): Promise<D
     /* cookies() is writable in a server action; ignore if the runtime disagrees */
   }
 
+  // ── Primary path: the self-serve RPC. `public.delete_own_account()` runs
+  // as the caller (auth.uid()), clears every table that references the user,
+  // and deletes the auth row itself — no service-role key, no support step.
+  // (supabase/auth/delete_own_account.sql) ──
+  const { error: rpcErr } = await sb.rpc("delete_own_account");
+  if (!rpcErr) {
+    await bestEffortStorageCleanup(user.id);
+    inFlight.delete(user.id);
+    return { ok: true };
+  }
+
+  const rpcCode = (rpcErr as { code?: string }).code ?? "";
+  const rpcMissing = /PGRST202|PGRST203/.test(rpcCode)
+    || /could not find the function|does not exist|schema cache/i.test(rpcErr.message);
+
+  if (!rpcMissing) {
+    // The RPC is installed but failed for a real reason — don't paper over it
+    // with the admin API (which would hit the same DB state). Log, generic message.
+    console.error("[deleteMyAccount] delete_own_account failed:", rpcErr.message);
+    inFlight.delete(user.id);
+    return { ok: false, code: "UNKNOWN", message: "We couldn't delete your account right now. Please try again." };
+  }
+
+  // ── Fallback: RPC not installed yet → service-role admin delete. ──
+  console.warn("[deleteMyAccount] delete_own_account RPC missing — using admin API fallback");
   let admin;
   try {
     admin = createServiceClient();
@@ -122,28 +147,17 @@ export async function deleteMyAccount(input: { confirmText: string }): Promise<D
     return {
       ok: false,
       code: "UNAVAILABLE",
-      message: `Account deletion isn't available right now. Email ${SUPPORT_EMAIL} and we'll remove your account.`,
+      message: "Account deletion is temporarily unavailable. Please try again in a few minutes.",
     };
   }
 
-  // Best-effort: clear the user's uploaded avatars (avatars/<uid>/…).
-  try {
-    const { data: files } = await admin.storage.from("avatars").list(user.id);
-    if (files?.length) {
-      await admin.storage.from("avatars").remove(files.map((f) => `${user.id}/${f.name}`));
-    }
-  } catch (e) {
-    console.error("[deleteMyAccount] avatar cleanup failed:", e instanceof Error ? e.message : e);
-  }
+  await bestEffortStorageCleanup(user.id, admin);
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) {
     const raw = `${error.message} ${(error as { code?: string }).code ?? ""}`.toLowerCase();
-    console.error("[deleteMyAccount] deleteUser failed:", error.message);
+    console.error("[deleteMyAccount] admin deleteUser failed:", error.message);
     inFlight.delete(user.id);
-
-    // Foreign-key violation — another table still references this user with
-    // RESTRICT/NO ACTION. Expected until the Phase 2 RPC lands.
     if (raw.includes("23503") || raw.includes("foreign key") || raw.includes("still referenced") || raw.includes("violates")) {
       return {
         ok: false,
@@ -151,13 +165,29 @@ export async function deleteMyAccount(input: { confirmText: string }): Promise<D
         message: `We couldn't finish deleting your account automatically. Email ${SUPPORT_EMAIL} and we'll complete it for you.`,
       };
     }
-    return { ...safeActionErrorResult(error) };
+    return safeActionErrorResult(error);
   }
 
-  // Success — the auth user (and, via cascade, the profile row) is gone. All
-  // refresh tokens for this user are now revoked by GoTrue.
   inFlight.delete(user.id);
   return { ok: true };
+}
+
+// Remove the user's uploaded files. Needs a service-role client; when one
+// isn't available the `delete_own_account()` RPC has already nulled the
+// storage rows' owner, so at worst a few blobs are left orphaned.
+async function bestEffortStorageCleanup(
+  userId: string,
+  admin?: ReturnType<typeof createServiceClient>,
+): Promise<void> {
+  try {
+    const client = admin ?? createServiceClient();
+    const { data: files } = await client.storage.from("avatars").list(userId);
+    if (files?.length) {
+      await client.storage.from("avatars").remove(files.map((f) => `${userId}/${f.name}`));
+    }
+  } catch (e) {
+    console.error("[deleteMyAccount] storage cleanup skipped:", e instanceof Error ? e.message : e);
+  }
 }
 
 function safeActionErrorResult(error: unknown): DeleteAccountResult {
