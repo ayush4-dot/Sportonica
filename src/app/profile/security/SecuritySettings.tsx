@@ -1,14 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Check, Lock, ShieldAlert } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { deleteMyAccount } from "@/lib/auth/actions";
-import { isActionError } from "@/lib/actionError";
 import { PASSWORD_MIN } from "@/lib/validation/password";
+import type { DeletionContext } from "@/lib/auth/deleteAccount";
+import DeleteAccountDialog from "./DeleteAccountDialog";
 
-export default function SecuritySettings({ name }: { name: string }) {
+export default function SecuritySettings({
+  name,
+  deletionContext,
+}: {
+  name: string;
+  deletionContext: DeletionContext;
+}) {
   const [pending, startTransition] = useTransition();
+  const router = useRouter();
 
   // ── Change password ──
   const [pw, setPw] = useState("");
@@ -38,22 +46,20 @@ export default function SecuritySettings({ name }: { name: string }) {
   }
 
   // ── Delete account ──
-  const [danger, setDanger] = useState(false);
-  const [ack, setAck] = useState(false);
-  const [typed, setTyped] = useState("");
-  const [delMsg, setDelMsg] = useState<string | null>(null);
-  const canDelete = ack && typed.trim().toUpperCase() === "DELETE";
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogStep, setDialogStep] = useState<"warning" | "ready">("warning");
 
-  function removeAccount() {
-    if (!canDelete) return;
-    setDelMsg(null);
-    startTransition(async () => {
-      const res = await deleteMyAccount();
-      if (isActionError(res)) { setDelMsg(res.message); return; }
-      try { await createClient().auth.signOut(); } catch { /* going home regardless */ }
-      window.location.href = "/";
-    });
-  }
+  // Coming back from the Google re-auth round trip lands here with ?reauth=1.
+  // Re-open the dialog straight at the final confirmation step; the server
+  // still independently checks that the session is freshly authenticated.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("reauth") === "1") {
+      setDialogStep("ready");
+      setDialogOpen(true);
+      router.replace("/profile/security");
+    }
+  }, [router]);
 
   return (
     <div style={{ maxWidth: 640 }}>
@@ -84,49 +90,29 @@ export default function SecuritySettings({ name }: { name: string }) {
         </div>
       </div>
 
-      {/* Danger zone */}
-      <div className="pf-card" style={{ borderColor: "rgba(239,68,68,0.35)" }}>
-        <h2 className="pf-card-t" style={{ color: "#dc2626" }}>
-          <ShieldAlert size={15} style={{ verticalAlign: "-2px", marginRight: 6 }} /> Delete account
+      {/* Danger zone — deliberately last, well below "Update password" */}
+      <div className="pf-danger-card">
+        <h2 className="pf-card-t">
+          <ShieldAlert size={16} aria-hidden /> Delete Account
         </h2>
-        <p style={{ fontSize: 12.5, color: "var(--pf-dim)", marginTop: -4 }}>
-          Permanently deletes your account, profile, and play history. Bookings you&apos;ve
-          paid for are not refunded automatically. This can&apos;t be undone.
+        <p>
+          Permanently remove your Sportonica account and associated personal data. Future
+          bookings are cancelled, and some records are anonymised rather than deleted where
+          they must be kept for legal or accounting reasons. This can&apos;t be undone.
         </p>
-
-        {!danger ? (
-          <button className="pf-btn ghost" style={{ marginTop: 14, borderColor: "rgba(239,68,68,0.4)", color: "#dc2626" }}
-            onClick={() => setDanger(true)}>
-            Delete my account
-          </button>
-        ) : (
-          <div style={{ marginTop: 16 }}>
-            <label style={{ display: "flex", gap: 9, alignItems: "flex-start", fontSize: 13, cursor: "pointer" }}>
-              <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} style={{ marginTop: 2 }} />
-              <span>I understand this permanently deletes my Sportonica account, {name}.</span>
-            </label>
-
-            <div style={{ marginTop: 14 }}>
-              <label style={{ display: "block", fontSize: 12.5, fontWeight: 600, color: "var(--pf-dim)", marginBottom: 7 }}>
-                Type <b>DELETE</b> to confirm
-              </label>
-              <input className="pf-in" value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="DELETE" />
-            </div>
-
-            {delMsg && <div style={{ color: "#ef4444", fontSize: 12.5, marginTop: 12 }}>{delMsg}</div>}
-
-            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-              <button className="pf-btn ghost" onClick={() => { setDanger(false); setAck(false); setTyped(""); setDelMsg(null); }} disabled={pending}>
-                Cancel
-              </button>
-              <button className="pf-btn" style={{ background: "#dc2626", borderColor: "#dc2626" }}
-                onClick={removeAccount} disabled={pending || !canDelete}>
-                {pending ? "Deleting…" : "Permanently delete"}
-              </button>
-            </div>
-          </div>
-        )}
+        <button type="button" className="pf-danger-btn" onClick={() => { setDialogStep("warning"); setDialogOpen(true); }}>
+          Delete Account
+        </button>
       </div>
+
+      <DeleteAccountDialog
+        key={dialogOpen ? `${dialogStep}-open` : "closed"}
+        open={dialogOpen}
+        initialStep={dialogStep}
+        onClose={() => setDialogOpen(false)}
+        ctx={deletionContext}
+        name={name}
+      />
 
       <style>{`
         .pf-in {
