@@ -102,11 +102,30 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
     return Math.max(0, landing - 1);
   });
 
+  // A round with a lot of matches (Round of 32, say) needs a lot of
+  // vertical room to keep every card readably spaced — but that means
+  // the shared coordinate space every round sits in is that tall too,
+  // so a later round with only one or two matches (Semifinal, Final)
+  // ends up floating far down an otherwise-empty column. Vertically
+  // centering on whichever round is current — not just paging left to
+  // right — is what actually fixes that, instead of merely capping the
+  // container and leaving the emptiness to scroll through.
+  function centerYFor(ri: number): number {
+    const ms = byRound[ri];
+    if (!ms || ms.length === 0) return 0;
+    const ys = ms.map((m) => positions.get(m.id)!);
+    return (Math.min(...ys) + Math.max(...ys)) / 2;
+  }
+
   // The state above only tracks *which* round is "current" — it doesn't
   // by itself move the scroll container. Apply it once, before paint,
-  // so the board actually opens there instead of always at round 0.
+  // so the board actually opens there (both horizontally and vertically
+  // centered on it) instead of always at round 0's top-left.
   useLayoutEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollLeft = round * colStep;
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollLeft = round * colStep;
+    el.scrollTop = Math.max(0, centerYFor(round) - el.clientHeight / 2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -116,7 +135,10 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
   function goToRound(target: number) {
     const clamped = Math.min(Math.max(target, 0), rounds.length - 1);
     setRound(clamped);
-    scrollRef.current?.scrollTo({ left: clamped * colStep, behavior: "smooth" });
+    const el = scrollRef.current;
+    if (!el) return;
+    const top = Math.max(0, centerYFor(clamped) - el.clientHeight / 2);
+    el.scrollTo({ left: clamped * colStep, top, behavior: "smooth" });
   }
 
   function onScroll() {
@@ -145,10 +167,11 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
         <div className="brk-board" style={{ height, width: rounds.length * CARD_W + (rounds.length - 1) * ROUND_GAP }}>
           {byRound.map((ms, ri) => (
             <div key={ri} className="brk-col" style={{ width: CARD_W, left: ri * (CARD_W + ROUND_GAP) }}>
-              {ms.map((m) => (
+              {ms.map((m, i) => (
                 <MatchCard
                   key={m.id} match={m} team={team} y={positions.get(m.id)!}
                   isFinal={ri === rounds.length - 1}
+                  delayMs={Math.min(i * 30, 240)}
                   onClick={onMatchClick ? () => onMatchClick(m) : undefined}
                 />
               ))}
@@ -178,11 +201,12 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
   );
 }
 
-function MatchCard({ match: m, team, y, isFinal, onClick }: {
+function MatchCard({ match: m, team, y, isFinal, delayMs = 0, onClick }: {
   match: TournamentMatch;
   team: (id: string | null) => TournamentTeam | undefined;
   y: number;
   isFinal: boolean;
+  delayMs?: number;
   onClick?: () => void;
 }) {
   const a = team(m.team_a_id);
@@ -194,7 +218,7 @@ function MatchCard({ match: m, team, y, isFinal, onClick }: {
   return (
     <div
       className={`brk-card${isFinal ? " final" : ""}${onClick ? " clickable" : ""}`}
-      style={{ top: y - CARD_H / 2 }}
+      style={{ top: y - CARD_H / 2, animationDelay: `${delayMs}ms` }}
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
       onClick={onClick}
@@ -257,8 +281,23 @@ const BRACKET_CSS = `
 .brk-nav.prev { left: -4px; }
 .brk-nav.next { right: -4px; }
 
-.brk-scroll { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding: 0 20px; }
-.brk-heads { display: flex; gap: 64px; margin-bottom: 16px; }
+/* Capped and internally scrollable (both axes) rather than however
+   tall the tallest round happens to be — a Round-of-32 column needs a
+   lot of vertical room to stay readable, but that shouldn't force the
+   whole page to scroll past a screenful of empty space just to reach
+   Semifinal/Final, which only have one or two cards. goToRound() keeps
+   whichever round is current vertically centered inside this box. */
+.brk-scroll {
+  overflow: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; padding: 0 20px;
+  max-height: 68vh; scroll-behavior: smooth;
+}
+@media (min-width: 900px) { .brk-scroll { max-height: 580px; } }
+.brk-heads {
+  display: flex; gap: 64px; margin-bottom: 16px; position: sticky; top: 0; left: 0; z-index: 3;
+  padding-top: 2px; background: rgba(20,23,30,0.55); backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+[data-theme="paper"] .brk-heads { background: rgba(255,255,255,0.78); }
 .brk-head {
   flex-shrink: 0; font-size: 15px; font-weight: 700; letter-spacing: -0.2px;
   padding-bottom: 10px; border-bottom: 1px solid rgba(242,237,230,0.12);
@@ -270,8 +309,11 @@ const BRACKET_CSS = `
 .brk-conn-path { fill: none; stroke: currentColor; stroke-width: 1.5; opacity: 0.16; }
 .brk-conn-path.decided { opacity: 0.28; }
 
+@keyframes brkCardIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
 .brk-card {
   position: absolute; left: 0; width: 100%; height: 104px; box-sizing: border-box;
+  animation: brkCardIn .32s cubic-bezier(.22,1,.36,1) backwards;
   padding: 10px 12px 8px; border-radius: 14px;
   background: rgba(242,237,230,0.035); border: 1px solid rgba(242,237,230,0.09);
   display: flex; flex-direction: column; gap: 6px;
