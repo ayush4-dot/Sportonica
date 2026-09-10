@@ -64,6 +64,24 @@ function layout(knockout: TournamentMatch[]) {
         positions.set(m.id, i * spacing + spacing / 2);
       }
     });
+
+    // A hand-built round can mix tree-averaged matches (fed by
+    // next_match_id from the previous round) with ones that have no
+    // feeder and fall back to their own index — those two sources
+    // don't know about each other, so two matches can land close
+    // enough to overlap. Enforce a minimum rowStep gap within the
+    // round, processed round-by-round so later rounds average off
+    // these already-resolved positions rather than the raw ones.
+    if (ri > 0 && ms.length > 1) {
+      const sorted = [...ms].sort((a, b) => positions.get(a.id)! - positions.get(b.id)!);
+      let prevY: number | null = null;
+      for (const m of sorted) {
+        let y = positions.get(m.id)!;
+        if (prevY !== null && y - prevY < rowStep) y = prevY + rowStep;
+        positions.set(m.id, y);
+        prevY = y;
+      }
+    }
   });
 
   const height = Math.max(
