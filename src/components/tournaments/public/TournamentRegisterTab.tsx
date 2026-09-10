@@ -8,13 +8,14 @@ import {
 } from "lucide-react";
 import {
   registerTeam, setManagerPlays, getTeamRoster, addTeamGuestPlayer, removeTeamGuestPlayer,
-  updateTeamPlayerGuest, uploadTeamLogo,
+  updateTeamPlayerGuest, uploadTeamLogo, listRaceCategories, setTeamRaceCategory,
 } from "@/lib/tournaments/actions";
 import { createClient } from "@/lib/supabase/client";
 import { getCachedUser } from "@/lib/supabase/authCache";
 import { isActionError } from "@/lib/actionError";
+import { getSportKind } from "@/lib/sports";
 import PaymentStep from "@/components/payments/PaymentStep";
-import { type Tournament, type TournamentTeam } from "@/lib/tournaments/types";
+import { type Tournament, type TournamentTeam, type TournamentRaceCategory } from "@/lib/tournaments/types";
 
 type RosterPlayer = {
   id: string; user_id: string | null; role: string; name: string; username: string | null;
@@ -101,6 +102,23 @@ export default function TournamentRegisterTab({
   const openSlots = tournament.max_teams == null ? null : Math.max(0, tournament.max_teams - confirmedCount);
   const regOpen = tournament.status === "registration_open";
   const paid = tournament.fee > 0;
+  const isIndividualRace = getSportKind(tournament.sport) === "individual_race";
+
+  const [raceCategories, setRaceCategories] = useState<TournamentRaceCategory[]>([]);
+  useEffect(() => {
+    if (!isIndividualRace) return;
+    listRaceCategories(tournament.id).then((res) => { if (!isActionError(res)) setRaceCategories(res); });
+  }, [isIndividualRace, tournament.id]);
+
+  function pickCategory(categoryId: string) {
+    if (!team) return;
+    setErr(null);
+    startTransition(async () => {
+      const res = await setTeamRaceCategory(team.id, categoryId || null);
+      if (isActionError(res)) { setErr(res.message); return; }
+      setTeam(res);
+    });
+  }
 
   useEffect(() => {
     if (!team) return;
@@ -267,7 +285,7 @@ export default function TournamentRegisterTab({
     <div className="rgt-hero">
       <div className="rgt-hero-badge"><Trophy size={18} /></div>
       <div className="rgt-hero-main">
-        <div className="rgt-hero-eyebrow">{tournament.sport} · Team registration</div>
+        <div className="rgt-hero-eyebrow">{tournament.sport} · {isIndividualRace ? "Individual entry" : "Team registration"}</div>
         <h2 className="rgt-hero-title">{tournament.name}</h2>
       </div>
       <div className="rgt-hero-facts">
@@ -376,6 +394,9 @@ export default function TournamentRegisterTab({
               {paid && <div><span>Registration fee</span><b>{rs(tournament.fee)} · paid</b></div>}
             </div>
           </div>
+          {isIndividualRace && raceCategories.length > 0 && (
+            <RaceCategoryPicker team={team} categories={raceCategories} regOpen={regOpen} pending={pending} onPick={pickCategory} />
+          )}
           <RosterCard
             team={team} roster={roster} tournament={tournament} managerOnRoster={managerOnRoster}
             regOpen={regOpen} onRemove={removePlayer} onRosterChanged={refetchRoster}
@@ -417,6 +438,10 @@ export default function TournamentRegisterTab({
 
           {team.status === "verification_pending" && (
             <div className="rgt-note"><ShieldCheck size={15} /> Payment submitted — the organiser is verifying it. You&apos;ll be confirmed once it&apos;s approved.</div>
+          )}
+
+          {isIndividualRace && raceCategories.length > 0 && (
+            <RaceCategoryPicker team={team} categories={raceCategories} regOpen={regOpen} pending={pending} onPick={pickCategory} />
           )}
 
           <RosterCard
@@ -469,6 +494,30 @@ function Stepper({ active, paid }: { active: number; paid: boolean }) {
           <span className="rgt-step-lbl">{s}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// ── Race category picker (Running) ──────────────────────────────────
+function RaceCategoryPicker({ team, categories, regOpen, pending, onPick }: {
+  team: TournamentTeam;
+  categories: TournamentRaceCategory[];
+  regOpen: boolean;
+  pending: boolean;
+  onPick: (categoryId: string) => void;
+}) {
+  return (
+    <div className="rgt-card">
+      <div className="rgt-step-t" style={{ marginBottom: 8 }}>Race category</div>
+      <select
+        className="rgt-in" value={team.category_id ?? ""} disabled={!regOpen || pending}
+        onChange={(e) => onPick(e.target.value)}
+      >
+        <option value="">Pick a category…</option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}{c.distance_label ? ` — ${c.distance_label}` : ""}</option>
+        ))}
+      </select>
     </div>
   );
 }

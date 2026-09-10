@@ -11,6 +11,8 @@ import type {
   TournamentMatch, TournamentAnnouncement, TournamentStanding, WalkinMember,
   TournamentMatchPlayerStat, PlayerScorecard, TournamentPlayerStatRow, TournamentAwards,
   MatchAuditEntry, TournamentManager,
+  TournamentCricketPlayerStat, TournamentCricketStatRow,
+  TournamentRaceCategory, TournamentRaceResult, RaceResultRow, RaceResultStatus,
 } from "./types";
 
 async function requireUser() {
@@ -1120,4 +1122,137 @@ export async function postTournamentAnnouncement(tournamentId: string, title: st
   const { data, error } = await sb.rpc("post_tournament_announcement", { p_tournament_id: tournamentId, p_title: title, p_body: body ?? null });
   if (error) return actionError(friendlyTournamentError(error.message));
   return data as TournamentAnnouncement;
+}
+
+// ── Cricket (see RUN_ME_cricket_scoring.sql) ────────────────────────
+
+// Runs/wickets/overs replace goals as the score, and the winner is
+// always organiser-picked (unlike recordMatchResult()'s computed
+// winner) — a chase completed early, a no-result, or a tie can't be
+// told apart from two run totals alone.
+export async function recordCricketResult(
+  matchId: string,
+  runsA: number, wicketsA: number | null, oversA: number | null,
+  runsB: number, wicketsB: number | null, oversB: number | null,
+  winnerTeamId?: string,
+  toss?: { winnerTeamId: string; decision: "bat" | "bowl" },
+  targetRuns?: number,
+  confirmCascade?: boolean,
+): Promise<TournamentMatch | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("record_cricket_result", {
+    p_match_id: matchId, p_runs_a: runsA, p_wickets_a: wicketsA, p_overs_a: oversA,
+    p_runs_b: runsB, p_wickets_b: wicketsB, p_overs_b: oversB,
+    p_toss_winner_team_id: toss?.winnerTeamId ?? null, p_toss_decision: toss?.decision ?? null,
+    p_target_runs: targetRuns ?? null, p_winner_team_id: winnerTeamId ?? null,
+    p_confirm_cascade: confirmCascade ?? false,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentMatch;
+}
+
+export async function getMatchCricketStats(matchId: string): Promise<TournamentCricketPlayerStat[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.from("tournament_cricket_player_stats").select("*").eq("match_id", matchId);
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentCricketPlayerStat[];
+}
+
+export async function recordCricketPlayerStats(
+  matchId: string,
+  stats: {
+    team_player_id: string; runs: number; balls_faced: number; fours: number; sixes: number;
+    is_out: boolean; dismissal_type?: string; overs_bowled: number; runs_conceded: number;
+    wickets: number; maidens: number; catches: number; run_outs: number; stumpings: number; is_mom: boolean;
+  }[]
+): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("record_cricket_player_stats", { p_match_id: matchId, p_stats: stats });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+export async function getTournamentCricketStats(tournamentId: string): Promise<TournamentCricketStatRow[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("get_tournament_cricket_stats", { p_tournament_id: tournamentId });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentCricketStatRow[];
+}
+
+// ── Running: race categories & results (see RUN_ME_race_categories_results.sql) ──
+
+export async function listRaceCategories(tournamentId: string): Promise<TournamentRaceCategory[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb
+    .from("tournament_race_categories").select("*").eq("tournament_id", tournamentId)
+    .order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+  if (error) return actionError(error.message);
+  return (data ?? []) as TournamentRaceCategory[];
+}
+
+export async function createRaceCategory(
+  tournamentId: string, name: string, distanceLabel?: string, startTime?: string, genderRule?: string, sortOrder?: number,
+): Promise<TournamentRaceCategory | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("create_race_category", {
+    p_tournament_id: tournamentId, p_name: name, p_distance_label: distanceLabel || null,
+    p_start_time: startTime || null, p_gender_rule: genderRule || null, p_sort_order: sortOrder ?? 0,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as TournamentRaceCategory;
+}
+
+export async function updateRaceCategory(
+  categoryId: string, name: string, distanceLabel?: string, startTime?: string, genderRule?: string, sortOrder?: number,
+): Promise<TournamentRaceCategory | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("update_race_category", {
+    p_category_id: categoryId, p_name: name, p_distance_label: distanceLabel || null,
+    p_start_time: startTime || null, p_gender_rule: genderRule || null, p_sort_order: sortOrder ?? 0,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentRaceCategory;
+}
+
+export async function deleteRaceCategory(categoryId: string): Promise<void | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { error } = await sb.rpc("delete_race_category", { p_category_id: categoryId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+}
+
+// Runner-facing: pick/change which category they're entered in. Also
+// usable by an organizer/admin (enforced in the DB).
+export async function setTeamRaceCategory(teamId: string, categoryId: string | null): Promise<TournamentTeam | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("set_team_race_category", { p_team_id: teamId, p_category_id: categoryId });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  return data as TournamentTeam;
+}
+
+export async function recordRaceResult(
+  teamId: string, tournamentId: string, finishTime: string | null, status: RaceResultStatus, bibNumber?: string, notes?: string,
+): Promise<TournamentRaceResult | ActionError> {
+  const { sb, user } = await requireUser();
+  if (!user) return actionError("UNAUTHORIZED");
+  const { data, error } = await sb.rpc("record_race_result", {
+    p_team_id: teamId, p_finish_time: finishTime, p_status: status,
+    p_bib_number: bibNumber || null, p_notes: notes || null,
+  });
+  if (error) return actionError(friendlyTournamentError(error.message));
+  revalidatePath(`/tournaments/${tournamentId}`);
+  return data as TournamentRaceResult;
+}
+
+// Public, ranked per category — no login required, same as fixtures/scores.
+export async function getRaceResults(tournamentId: string): Promise<RaceResultRow[] | ActionError> {
+  const sb = await createClient();
+  const { data, error } = await sb.rpc("get_race_results", { p_tournament_id: tournamentId });
+  if (error) return actionError(error.message);
+  return (data ?? []) as RaceResultRow[];
 }

@@ -142,6 +142,9 @@ export interface TournamentTeam {
   contact_person_name: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  // Running only (getSportKind(tournament.sport) === "individual_race")
+  // — which race category this team-of-one registrant is running.
+  category_id: string | null;
   created_at: string;
 }
 
@@ -185,6 +188,16 @@ export interface TournamentMatch {
   score_a_pens: number | null;
   score_b_pens: number | null;
   winner_team_id: string | null;
+  // Cricket only (getSportKind(tournament.sport) === "cricket") — null
+  // for every other sport. score_a/score_b double as runs for a cricket
+  // match; these carry the rest of the scorecard.
+  wickets_a: number | null;
+  wickets_b: number | null;
+  overs_a: number | null;
+  overs_b: number | null;
+  toss_winner_team_id: string | null;
+  toss_decision: "bat" | "bowl" | null;
+  target_runs: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -283,6 +296,87 @@ export interface PlayerScorecard {
   matches_played: number;
   tournaments_played: number;
   mom_count: number;
+}
+
+// ── Cricket (parallel to TournamentMatchPlayerStat, used instead of it
+// when getSportKind(tournament.sport) === "cricket") ─────────────────
+export interface TournamentCricketPlayerStat {
+  id: string;
+  match_id: string;
+  team_player_id: string;
+  runs: number;
+  balls_faced: number;
+  fours: number;
+  sixes: number;
+  is_out: boolean;
+  dismissal_type: string | null;
+  overs_bowled: number;
+  runs_conceded: number;
+  wickets: number;
+  maidens: number;
+  catches: number;
+  run_outs: number;
+  stumpings: number;
+  is_mom: boolean;
+}
+
+export interface TournamentCricketStatRow {
+  team_player_id: string;
+  player_name: string;
+  team_id: string;
+  team_name: string;
+  runs: number;
+  balls_faced: number;
+  fours: number;
+  sixes: number;
+  wickets: number;
+  overs_bowled: number;
+  catches: number;
+  mom_count: number;
+}
+
+// ── Running (used when getSportKind(tournament.sport) === "individual_race") ──
+export interface TournamentRaceCategory {
+  id: string;
+  tournament_id: string;
+  name: string;
+  distance_label: string | null;
+  start_time: string | null;
+  gender_rule: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export const RACE_RESULT_STATUS = ["finished", "dnf", "dns", "dsq"] as const;
+export type RaceResultStatus = (typeof RACE_RESULT_STATUS)[number];
+export const RACE_RESULT_STATUS_LABELS: Record<RaceResultStatus, string> = {
+  finished: "Finished", dnf: "DNF", dns: "DNS", dsq: "DSQ",
+};
+
+export interface TournamentRaceResult {
+  id: string;
+  tournament_id: string;
+  team_id: string;
+  category_id: string | null;
+  bib_number: string | null;
+  // "HH:MM:SS" (Postgres interval, stringified) or null if not finished.
+  finish_time: string | null;
+  status: RaceResultStatus;
+  notes: string | null;
+  recorded_at: string;
+}
+
+// One ranked row from get_race_results() — already sorted/ranked
+// per-category server-side.
+export interface RaceResultRow {
+  category_id: string | null;
+  category_name: string;
+  rank: number;
+  team_id: string;
+  runner_name: string;
+  bib_number: string | null;
+  finish_time: string | null;
+  status: RaceResultStatus;
 }
 
 // Everything create_tournament()/update_tournament_draft() accept — sent

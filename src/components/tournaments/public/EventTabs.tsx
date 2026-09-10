@@ -4,28 +4,30 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType } from
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, ChevronRight, LogIn, Phone, ClipboardList,
+  LayoutGrid, Table2, GitBranch, CalendarDays, BarChart3, Users, X, Star, ChevronRight, LogIn, Phone, ClipboardList, ListOrdered,
 } from "lucide-react";
-import { getTeamRosterPublic } from "@/lib/tournaments/actions";
+import { getTeamRosterPublic, getRaceResults } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
 import { useProfile } from "@/lib/hooks/useProfile";
+import { getSportKind } from "@/lib/sports";
 import {
   FORMAT_LABELS,
   type Tournament, type TournamentTeam, type TournamentMatch,
-  type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards,
+  type TournamentStanding, type TournamentPlayerStatRow, type TournamentAwards, type RaceResultRow,
 } from "@/lib/tournaments/types";
 import TournamentRegisterTab from "./TournamentRegisterTab";
 import DayFixturesShareButton from "./DayFixturesShareButton";
+import BracketBoard from "../BracketBoard";
 import "./event-tabs.css";
 
 const KTM = "Asia/Kathmandu";
 const NOT_FOR_SINGLE_EVENT = new Set(["Table", "Knockout", "Fixtures", "Player Stats"]);
-const TABS = ["Overview", "Register", "Table", "Knockout", "Fixtures", "Player Stats", "Teams"] as const;
+const TABS = ["Overview", "Register", "Table", "Knockout", "Fixtures", "Player Stats", "Results", "Teams"] as const;
 type Tab = (typeof TABS)[number];
 
 const TAB_ICON: Record<Tab, ComponentType<{ size?: number }>> = {
   Overview: LayoutGrid, Register: ClipboardList, Table: Table2, Knockout: GitBranch, Fixtures: CalendarDays,
-  "Player Stats": BarChart3, Teams: Users,
+  "Player Stats": BarChart3, Results: ListOrdered, Teams: Users,
 };
 
 const tabSlug = (t: Tab) => t.toLowerCase().replace(/\s+/g, "-");
@@ -63,6 +65,7 @@ export default function EventTabs({
   const hasKnockout = matches.some((m) => m.stage === "knockout");
   const hasStandings = tournament.format === "league" || tournament.format === "group_knockout";
   const isSingleEvent = tournament.format === "single_event";
+  const isIndividualRace = getSportKind(tournament.sport) === "individual_race";
   // Hide the Register tab once the tournament is well underway with no
   // team of your own to manage — nothing to do there.
   const showRegister =
@@ -74,6 +77,7 @@ export default function EventTabs({
     if (t === "Table" && !hasStandings) return false;
     if (t === "Knockout" && !hasKnockout) return false;
     if (t === "Register" && !showRegister) return false;
+    if (t === "Results" && !isIndividualRace) return false;
     return true;
   });
   // Always hydrate starting on Overview, then flip to the deep-linked tab
@@ -197,6 +201,7 @@ export default function EventTabs({
       {activeTab === "Player Stats" && (
         authLoading ? null : user ? <PlayerStatsTab rows={playerStats} teams={teams} /> : <SignInGate what="the player stats" pathname={pathname} />
       )}
+      {activeTab === "Results" && <ResultsTab tournamentId={tournament.id} />}
       {activeTab === "Teams" && (
         authLoading ? null : user ? <TeamsTab teams={confirmedTeams} playerStats={playerStats} /> : <SignInGate what="the teams and squads" pathname={pathname} />
       )}
@@ -362,24 +367,7 @@ function TableTab({
   );
 }
 
-// ── Knockout — round switcher + match list ─────────────────────────
-const MATCH_H = 108;
-
-// "Quarterfinal" -> "QF", "Round of 16" -> "R16", anything unrecognised
-// falls back to initials — a per-card label distinguishing matches
-// within the same round, on top of the round's own column header.
-function roundShortCode(label: string): string {
-  const l = label.toLowerCase();
-  if (l.includes("final") && !l.includes("semi") && !l.includes("quarter")) return "F";
-  if (l.includes("semi")) return "SF";
-  if (l.includes("quarter")) return "QF";
-  const roundOf = l.match(/round of\s*(\d+)/);
-  if (roundOf) return `R${roundOf[1]}`;
-  const words = label.split(/\s+/).filter(Boolean);
-  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
-  return words.map((w) => w[0]).join("").toUpperCase().slice(0, 3);
-}
-
+// ── Knockout — premium multi-round bracket board ────────────────────
 function matchStatusPill(m: TournamentMatch): { label: string; cls: string; live?: boolean } | null {
   if (m.status === "live") return { label: "Live", cls: "live", live: true };
   if (m.status === "scheduled") return { label: "Scheduled", cls: "scheduled" };
@@ -395,81 +383,15 @@ function matchWhen(m: TournamentMatch): string {
   return m.court_label ? `${when} · ${m.court_label}` : when;
 }
 
-// Which statuses count as "decided" — used to pick the round a viewer
-// lands on by default (see KnockoutTab).
-const KO_DONE = new Set(["completed", "walkover", "cancelled"]);
-
-function matchCode(ms: TournamentMatch[], i: number): string {
-  return ms.length > 1 ? `${roundShortCode(ms[i].round_label)}${i + 1}` : roundShortCode(ms[i].round_label);
-}
-
 function KnockoutTab({ matches, teams }: { matches: TournamentMatch[]; teams: TournamentTeam[] }) {
   const [selected, setSelected] = useState<TournamentMatch | null>(null);
   const team = (id: string | null) => (id ? teams.find((t) => t.id === id) : undefined);
-  const knockout = [...matches].filter((m) => m.stage === "knockout").sort((a, b) => a.created_at.localeCompare(b.created_at));
-
-  const rounds = [...new Set(knockout.map((m) => m.round))].sort((a, b) => a - b);
-  const byRound = rounds.map((r) => knockout.filter((m) => m.round === r));
-
-  // Land on whichever round still has something undecided (the round
-  // you'd actually want to check), not always round 1 — falls back to
-  // the last round once everything's finished.
-  const [activeRound, setActiveRound] = useState(() => {
-    const i = byRound.findIndex((ms) => ms.some((m) => !KO_DONE.has(m.status)));
-    return i === -1 ? byRound.length - 1 : i;
-  });
-
-  if (knockout.length === 0) return <div className="ev2-empty">No knockout matches added yet.</div>;
-  const safeActiveRound = Math.min(Math.max(activeRound, 0), byRound.length - 1);
 
   return (
     <div>
-      {/* One round switcher + a single vertical list, on every screen
-          size — no full multi-column bracket tree to discover by
-          scrolling sideways; every match in the picked round is just
-          there. Matches are added by hand (no auto-generated pairing
-          tree), so there's no guaranteed relationship between a
-          round's matches and the round before it anyway — a tree of
-          connector lines would be claiming a precision the data can't
-          back up. */}
-      <div className="ev2-bracket-rounds">
-        <div className="ev2-bracket-round-chips">
-          {byRound.map((ms, r) => (
-            <button key={r} className={`ev2-bracket-chip ${r === safeActiveRound ? "on" : ""}`} onClick={() => setActiveRound(r)}>
-              {ms[0]?.round_label}
-            </button>
-          ))}
-        </div>
-        <div className="ev2-bracket-list">
-          {byRound[safeActiveRound].map((m, i) => (
-            <BracketMatchCard key={m.id} match={m} team={team} code={matchCode(byRound[safeActiveRound], i)} onClick={() => setSelected(m)} />
-          ))}
-        </div>
-      </div>
-
+      <BracketBoard matches={matches} team={team} onMatchClick={setSelected} emptyLabel="No knockout matches added yet." />
       {selected && <MatchDetailModal match={selected} team={team} onClose={() => setSelected(null)} />}
     </div>
-  );
-}
-
-function BracketMatchCard({ match: m, code, team, onClick }: {
-  match: TournamentMatch; code: string; team: (id: string | null) => TournamentTeam | undefined; onClick: () => void;
-}) {
-  const pill = matchStatusPill(m);
-  const decided = m.winner_team_id != null;
-  return (
-    <button type="button" className={`ev2-bracket-match ${m.round_label === "Final" ? "final" : ""}`} style={{ minHeight: MATCH_H }} onClick={onClick}>
-      <div className="ev2-bracket-match-head">
-        <span className="ev2-bracket-code">{code}</span>
-        {pill && <span className={`ev2-bracket-pill ${pill.cls}`}>{pill.live && <i className="ev2-live-dot" />}{pill.label}</span>}
-        {m.status === "walkover" && <span className="ev2-bracket-pill walkover">Walkover</span>}
-      </div>
-      <BracketSlot team={team(m.team_a_id)} fallback="TBD"
-        winner={decided && m.winner_team_id === m.team_a_id} decided={decided} score={m.score_a} />
-      <BracketSlot team={team(m.team_b_id)} fallback={m.team_b_id ? "TBD" : m.status === "completed" ? "Bye" : "TBD"}
-        winner={decided && m.winner_team_id === m.team_b_id} decided={decided} score={m.score_b} />
-      <div className="ev2-bracket-meta">{matchWhen(m)}</div>
-    </button>
   );
 }
 
@@ -621,40 +543,117 @@ function FixturesPublicTab({ tournamentId, matches, teams }: {
 }
 
 // ── Player stats leaderboard ────────────────────────────────────
-// Same rank/crest/chip identity as the standings and teams cards —
-// Goals and Yellow cards are the two stats worth a full chip; red
-// cards and MOM are secondary, small inline badges next to the name,
-// only showing up when actually non-zero rather than padding every
-// row with dashes. (Yellow used to be one of those small badges too,
-// alongside an Assists chip — promoted to its own chip and Assists
-// dropped, so it isn't shown twice.)
+// One stat at a time behind its own sub-tab (Goals / Assists / Yellow
+// cards / Red cards), each a plain ranked list — rather than every
+// stat squeezed into chips on one row. Ranked and filtered to players
+// with a non-zero value for whichever stat is active.
+const STAT_TABS = [
+  { key: "goals", label: "Goals" },
+  { key: "assists", label: "Assists" },
+  { key: "yellow_cards", label: "Yellow cards" },
+  { key: "red_cards", label: "Red cards" },
+] as const;
+type StatKey = (typeof STAT_TABS)[number]["key"];
+
 function PlayerStatsTab({ rows, teams }: { rows: TournamentPlayerStatRow[]; teams: TournamentTeam[] }) {
+  const [stat, setStat] = useState<StatKey>("goals");
   if (rows.length === 0) return <div className="ev2-empty">No player stats recorded yet.</div>;
+
+  const activeLabel = STAT_TABS.find((t) => t.key === stat)!.label;
+  const sorted = rows.filter((r) => r[stat] > 0).sort((a, b) => b[stat] - a[stat]);
+
   return (
-    <div className="ev2-standings">
-      {rows.map((r, i) => {
-        const logo = teams.find((t) => t.id === r.team_id)?.logo_url;
-        return (
-          <div key={r.team_player_id} className={`ev2-srow${i < 2 ? " top3" : ""}`}>
-            <span className="ev2-srow-rank">{i + 1}</span>
-            <TeamCrest name={r.player_name} logoUrl={logo} />
-            <div className="ev2-prow-id">
-              <span className="ev2-srow-name">{r.player_name}</span>
-              <span className="ev2-prow-team">{r.team_name}</span>
-            </div>
-            {(r.red_cards > 0 || r.mom_count > 0) && (
-              <div className="ev2-prow-badges">
-                {r.red_cards > 0 && <span className="ev2-prow-badge red">{r.red_cards}</span>}
-                {r.mom_count > 0 && <span className="ev2-prow-badge mom"><Star size={9} fill="currentColor" />{r.mom_count}</span>}
-              </div>
-            )}
-            <div className="ev2-srow-stats">
-              <div className="ev2-schip"><span className="l">Goals</span><span className="v">{r.goals}</span></div>
-              <div className="ev2-schip"><span className="l">Yellow</span><span className="v">{r.yellow_cards}</span></div>
-            </div>
+    <div>
+      <div className="ev2-subtabs">
+        {STAT_TABS.map((t) => (
+          <button key={t.key} className={`ev2-subtab ${stat === t.key ? "on" : ""}`} onClick={() => setStat(t.key)}>
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {sorted.length === 0 ? (
+        <div className="ev2-empty">No {activeLabel.toLowerCase()} recorded yet.</div>
+      ) : (
+        <div className="ev2-standings">
+          <div className="ev2-srow-head">
+            <span className="ev2-srow-head-rank" />
+            <span className="ev2-srow-head-badge" />
+            <span>Player</span>
+            <span className="ev2-srow-head-stat">{activeLabel}</span>
           </div>
-        );
-      })}
+          {sorted.map((r, i) => {
+            const logo = teams.find((t) => t.id === r.team_id)?.logo_url;
+            return (
+              <div key={r.team_player_id} className={`ev2-srow${i < 2 ? " top3" : ""}`}>
+                <span className="ev2-srow-rank">{i + 1}</span>
+                <TeamCrest name={r.player_name} logoUrl={logo} />
+                <div className="ev2-prow-id">
+                  <span className="ev2-srow-name">{r.player_name}</span>
+                  <span className="ev2-prow-team">{r.team_name}</span>
+                </div>
+                <span className="ev2-srow-stat">{r[stat]}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Results (Running — ranked leaderboard per category) ────────────
+function fmtFinishTime(t: string | null): string {
+  if (!t) return "—";
+  const m = t.match(/(\d+):(\d{2}):(\d{2})/);
+  return m ? `${m[1].padStart(2, "0")}:${m[2]}:${m[3]}` : t;
+}
+
+function ResultsTab({ tournamentId }: { tournamentId: string }) {
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<RaceResultRow[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    getRaceResults(tournamentId).then((res) => {
+      if (cancelled) return;
+      if (!isActionError(res)) setRows(res);
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [tournamentId]);
+
+  if (loading) return <div className="ev2-empty">Loading results…</div>;
+  if (rows.length === 0) return <div className="ev2-empty">No results recorded yet.</div>;
+
+  const byCategory = new Map<string, RaceResultRow[]>();
+  for (const r of rows) {
+    if (!byCategory.has(r.category_name)) byCategory.set(r.category_name, []);
+    byCategory.get(r.category_name)!.push(r);
+  }
+
+  return (
+    <div>
+      {[...byCategory.entries()].map(([category, catRows]) => (
+        <div key={category} className="ev2-standings">
+          <div className="ev2-card-t">{category}</div>
+          {catRows.map((r) => (
+            <div key={r.team_id} className={`ev2-srow${r.rank <= 2 && r.status === "finished" ? " top3" : ""}`}>
+              <span className="ev2-srow-rank">{r.status === "finished" ? r.rank : "—"}</span>
+              <TeamCrest name={r.runner_name} />
+              <div className="ev2-prow-id">
+                <span className="ev2-srow-name">{r.runner_name}</span>
+                {r.bib_number && <span className="ev2-prow-team">Bib #{r.bib_number}</span>}
+              </div>
+              <div className="ev2-srow-stats">
+                <div className="ev2-schip">
+                  <span className="l">{r.status === "finished" ? "Time" : "Status"}</span>
+                  <span className="v">{r.status === "finished" ? fmtFinishTime(r.finish_time) : r.status.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

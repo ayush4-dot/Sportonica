@@ -63,3 +63,19 @@ export function resolveSportParam(param: string | null | undefined): string | nu
   const normalized = normalizeSport(param).trim().toLowerCase();
   return SPORT_NAMES.find((s) => s.toLowerCase() === normalized) ?? null;
 }
+
+/**
+ * Tournaments branch on scoring shape, not on the sport name itself —
+ * this is the one place that mapping happens. "team_ball" covers every
+ * sport whose matches are still two-team goals/points-style (the
+ * original, still-default behavior); "cricket" and "individual_race"
+ * get their own scoring/registration/results UI.
+ */
+export type SportKind = "team_ball" | "cricket" | "individual_race";
+
+export function getSportKind(sport: string | null | undefined): SportKind {
+  const normalized = normalizeSport(sport);
+  if (normalized === "Cricket") return "cricket";
+  if (normalized === "Running") return "individual_race";
+  return "team_ball";
+}

@@ -7,9 +7,11 @@ import {
   recordMatchResult, setMatchTime, createMatch, deleteMatch, updateMatchTeams, getMatchAudit,
   getTeamRoster, getMatchPlayerStats, recordMatchPlayerStats,
   generateKnockoutBracket, setTeamSeed, setMatchStatus, regenerateTournamentFixtures,
+  recordCricketResult, getMatchCricketStats, recordCricketPlayerStats,
 } from "@/lib/tournaments/actions";
 import { isActionError } from "@/lib/actionError";
-import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat, MatchAuditEntry } from "@/lib/tournaments/types";
+import { getSportKind, type SportKind } from "@/lib/sports";
+import type { Tournament, TournamentTeam, TournamentMatch, TournamentMatchPlayerStat, TournamentCricketPlayerStat, MatchAuditEntry } from "@/lib/tournaments/types";
 
 const inputStyle: React.CSSProperties = {
   padding: "5px 8px", borderRadius: 8, border: "1px solid rgba(242,237,230,0.15)",
@@ -83,6 +85,7 @@ export default function FixturesTab({
   const [mode, setMode] = useState<"choose" | "manual" | "auto">("choose");
   const [regenMsg, setRegenMsg] = useState<string | null>(null);
   const errRef = useRef<HTMLDivElement | null>(null);
+  const sportKind = getSportKind(tournament.sport);
 
   // The error banner sits at the top of a card that can scroll for a
   // while (many rounds/matches) — an action taken far down the list
@@ -217,7 +220,11 @@ export default function FixturesTab({
                 {ms.map((m) => (
                   <MatchRow
                     key={m.id} match={m} teams={teams} matches={matches} teamName={teamName} pending={pending}
+                    sportKind={sportKind}
                     onResult={(a, b, winnerId, et, pens, confirmCascade) => run(() => recordMatchResult(m.id, a, b, winnerId, et, pens, confirmCascade))}
+                    onCricketResult={(runsA, wicketsA, oversA, runsB, wicketsB, oversB, winnerId, toss, targetRuns, confirmCascade) =>
+                      run(() => recordCricketResult(m.id, runsA, wicketsA, oversA, runsB, wicketsB, oversB, winnerId, toss, targetRuns, confirmCascade))
+                    }
                     onRecordStats={() => setRecordingStats(m)}
                     onSetTime={(startsAt, endsAt, courtLabel, notes) => run(() => setMatchTime(m.id, startsAt, endsAt, courtLabel, notes))}
                     onSetStatus={(status) => run(() => setMatchStatus(m.id, status))}
@@ -238,14 +245,23 @@ export default function FixturesTab({
       )}
 
       {recordingStats && (
-        <MatchPlayerStatsModal
-          match={recordingStats}
-          teamName={teamName}
-          yellowCardFine={tournament.yellow_card_fine}
-          redCardFine={tournament.red_card_fine}
-          onClose={() => setRecordingStats(null)}
-          onSaved={() => { setRecordingStats(null); router.refresh(); }}
-        />
+        sportKind === "cricket" ? (
+          <CricketPlayerStatsModal
+            match={recordingStats}
+            teamName={teamName}
+            onClose={() => setRecordingStats(null)}
+            onSaved={() => { setRecordingStats(null); router.refresh(); }}
+          />
+        ) : (
+          <MatchPlayerStatsModal
+            match={recordingStats}
+            teamName={teamName}
+            yellowCardFine={tournament.yellow_card_fine}
+            redCardFine={tournament.red_card_fine}
+            onClose={() => setRecordingStats(null)}
+            onSaved={() => { setRecordingStats(null); router.refresh(); }}
+          />
+        )
       )}
     </div>
   );
@@ -474,14 +490,21 @@ const STATUS_LABEL: Record<SettableStatus, string> = {
   unscheduled: "Unscheduled", scheduled: "Scheduled", live: "Live", postponed: "Postponed", cancelled: "Cancelled",
 };
 
-function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, onSetTime, onSetStatus, onUpdateTeams, onDelete, pending }: {
+function MatchRow({ match, teams, matches, teamName, sportKind, onResult, onCricketResult, onRecordStats, onSetTime, onSetStatus, onUpdateTeams, onDelete, pending }: {
   match: TournamentMatch;
   teams: TournamentTeam[];
   matches: TournamentMatch[];
   teamName: (id: string | null) => string;
+  sportKind: SportKind;
   onResult: (
     a: number | null, b: number | null, winnerId?: string,
     extraTime?: { scoreA: number; scoreB: number }, penalties?: { scoreA: number; scoreB: number },
+    confirmCascade?: boolean
+  ) => void;
+  onCricketResult: (
+    runsA: number, wicketsA: number | null, oversA: number | null,
+    runsB: number, wicketsB: number | null, oversB: number | null,
+    winnerId?: string, toss?: { winnerTeamId: string; decision: "bat" | "bowl" }, targetRuns?: number,
     confirmCascade?: boolean
   ) => void;
   onRecordStats: () => void;
@@ -716,6 +739,35 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
           ) : null
         ) : !bothSet ? (
           <span className="tc-dim" style={{ fontSize: 12 }}>Waiting for teams</span>
+        ) : sportKind === "cricket" ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+            <CricketScoreEntry match={match} teamName={teamName} pending={pending} onSave={onCricketResult} confirmCascadeIfNeeded={confirmCascadeIfNeeded} />
+            {match.team_a_id && match.team_b_id && (
+              <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="tc-dim" style={{ fontSize: 11 }}>Or record a walkover:</span>
+                <button
+                  className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
+                  onClick={() => {
+                    if (!window.confirm(`Record a walkover win for ${teamName(match.team_a_id)}? No score is recorded and this can't be undone.`)) return;
+                    if (!confirmCascadeIfNeeded(match.team_a_id)) return;
+                    onResult(null, null, match.team_a_id!, undefined, undefined, true);
+                  }}
+                >
+                  {teamName(match.team_a_id)} wins
+                </button>
+                <button
+                  className="tc-btn" disabled={pending} style={{ padding: "6px 8px", fontSize: 11.5 }}
+                  onClick={() => {
+                    if (!window.confirm(`Record a walkover win for ${teamName(match.team_b_id)}? No score is recorded and this can't be undone.`)) return;
+                    if (!confirmCascadeIfNeeded(match.team_b_id)) return;
+                    onResult(null, null, match.team_b_id!, undefined, undefined, true);
+                  }}
+                >
+                  {teamName(match.team_b_id)} wins
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
             <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
@@ -823,6 +875,118 @@ function MatchRow({ match, teams, matches, teamName, onResult, onRecordStats, on
         )}
       </td>
     </tr>
+  );
+}
+
+// Cricket score entry — runs/wickets/overs per side, a toss, and an
+// explicit organiser-picked winner instead of one computed from the two
+// run totals (a chase completed early, a no-result, or a tie can't be
+// told apart from runs_a/runs_b alone the way a goals-based score can).
+function CricketScoreEntry({ match, teamName, pending, onSave, confirmCascadeIfNeeded }: {
+  match: TournamentMatch;
+  teamName: (id: string | null) => string;
+  pending: boolean;
+  onSave: (
+    runsA: number, wicketsA: number | null, oversA: number | null,
+    runsB: number, wicketsB: number | null, oversB: number | null,
+    winnerId?: string, toss?: { winnerTeamId: string; decision: "bat" | "bowl" }, targetRuns?: number,
+    confirmCascade?: boolean
+  ) => void;
+  confirmCascadeIfNeeded: (winnerId: string | null) => boolean;
+}) {
+  const [runsA, setRunsA] = useState(match.score_a?.toString() ?? "");
+  const [wicketsA, setWicketsA] = useState(match.wickets_a?.toString() ?? "");
+  const [oversA, setOversA] = useState(match.overs_a?.toString() ?? "");
+  const [runsB, setRunsB] = useState(match.score_b?.toString() ?? "");
+  const [wicketsB, setWicketsB] = useState(match.wickets_b?.toString() ?? "");
+  const [oversB, setOversB] = useState(match.overs_b?.toString() ?? "");
+  const [tossWinner, setTossWinner] = useState(match.toss_winner_team_id ?? "");
+  const [tossDecision, setTossDecision] = useState<"bat" | "bowl">(match.toss_decision ?? "bat");
+  const [targetRuns, setTargetRuns] = useState(match.target_runs?.toString() ?? "");
+  const [winner, setWinner] = useState(match.winner_team_id ?? "");
+  const done = DONE.has(match.status);
+  const canSave = runsA !== "" && runsB !== "";
+
+  function save() {
+    if (!confirmCascadeIfNeeded(winner || null)) return;
+    onSave(
+      Number(runsA), wicketsA === "" ? null : Number(wicketsA), oversA === "" ? null : Number(oversA),
+      Number(runsB), wicketsB === "" ? null : Number(wicketsB), oversB === "" ? null : Number(oversB),
+      winner || undefined,
+      tossWinner ? { winnerTeamId: tossWinner, decision: tossDecision } : undefined,
+      targetRuns === "" ? undefined : Number(targetRuns),
+      true,
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ display: "flex", gap: 12, alignItems: "flex-end", flexWrap: "wrap" }}>
+        {[
+          { label: teamName(match.team_a_id), runs: runsA, setRuns: setRunsA, wickets: wicketsA, setWickets: setWicketsA, overs: oversA, setOvers: setOversA },
+          { label: teamName(match.team_b_id), runs: runsB, setRuns: setRunsB, wickets: wicketsB, setWickets: setWicketsB, overs: oversB, setOvers: setOversB },
+        ].map((side, i) => (
+          <div key={i} style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <span className="tc-dim" style={{ fontSize: 10.5 }}>{side.label}</span>
+            <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              <input
+                type="number" placeholder="Runs" value={side.runs} onChange={(e) => side.setRuns(e.target.value)}
+                style={{ ...inputStyle, width: 60 }} aria-label={`${side.label} runs`}
+              />
+              <span className="tc-dim">/</span>
+              <input
+                type="number" placeholder="Wkts" min={0} max={10} value={side.wickets} onChange={(e) => side.setWickets(e.target.value)}
+                style={{ ...inputStyle, width: 55 }} aria-label={`${side.label} wickets`}
+              />
+              <span className="tc-dim">in</span>
+              <input
+                type="number" placeholder="Overs" step={0.1} value={side.overs} onChange={(e) => side.setOvers(e.target.value)}
+                style={{ ...inputStyle, width: 60 }} aria-label={`${side.label} overs`}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="tc-dim" style={{ fontSize: 10.5 }}>Toss won by</span>
+          <select value={tossWinner} onChange={(e) => setTossWinner(e.target.value)} style={{ ...inputStyle, width: 140 }}>
+            <option value="">—</option>
+            {match.team_a_id && <option value={match.team_a_id}>{teamName(match.team_a_id)}</option>}
+            {match.team_b_id && <option value={match.team_b_id}>{teamName(match.team_b_id)}</option>}
+          </select>
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="tc-dim" style={{ fontSize: 10.5 }}>Elected to</span>
+          <select value={tossDecision} onChange={(e) => setTossDecision(e.target.value as "bat" | "bowl")} style={{ ...inputStyle, width: 90 }}>
+            <option value="bat">Bat</option>
+            <option value="bowl">Bowl</option>
+          </select>
+        </label>
+        <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="tc-dim" style={{ fontSize: 10.5 }}>Target (optional)</span>
+          <input
+            type="number" placeholder="Runs" value={targetRuns} onChange={(e) => setTargetRuns(e.target.value)}
+            style={{ ...inputStyle, width: 80 }} aria-label="Target runs"
+          />
+        </label>
+      </div>
+
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+        <label style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <span className="tc-dim" style={{ fontSize: 10.5 }}>Winner (or leave blank for no result / tie)</span>
+          <select value={winner} onChange={(e) => setWinner(e.target.value)} style={{ ...inputStyle, width: 200 }}>
+            <option value="">No result / tie</option>
+            {match.team_a_id && <option value={match.team_a_id}>{teamName(match.team_a_id)}</option>}
+            {match.team_b_id && <option value={match.team_b_id}>{teamName(match.team_b_id)}</option>}
+          </select>
+        </label>
+        <button className="tc-btn primary" disabled={pending || !canSave} style={{ padding: "6px 10px", alignSelf: "flex-end" }} onClick={save}>
+          {done ? "Update score" : "Save score"}
+        </button>
+      </div>
+    </div>
   );
 }
 
@@ -979,6 +1143,175 @@ function MatchPlayerStatsModal({
               <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, fontSize: 13, fontWeight: 700 }}>
                 Total fines: {money(totalFine)}
               </div>
+            )}
+          </div>
+        )}
+
+        {err && <div className="tc-err" style={{ marginTop: 14 }}>{err}</div>}
+        <button className="tc-btn primary" style={{ marginTop: 18, width: "100%", justifyContent: "center" }} disabled={pending || loading} onClick={submit}>
+          {pending ? "Saving…" : "Save stats"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Cricket's stat sheet — batting (runs/balls/4s/6s/out) and bowling
+// (overs/runs conceded/wickets/maidens) instead of goals/assists/cards.
+// Same roster-fetch/team-tab/MOM shape as MatchPlayerStatsModal, backed
+// by tournament_cricket_player_stats instead of tournament_match_player_stats.
+function CricketPlayerStatsModal({
+  match, teamName, onClose, onSaved,
+}: {
+  match: TournamentMatch;
+  teamName: (id: string | null) => string;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [loading, setLoading] = useState(true);
+  const [roster, setRoster] = useState<RosterPlayer[]>([]);
+  const [teamTab, setTeamTab] = useState<"a" | "b">("a");
+  const [statTab, setStatTab] = useState<"bat" | "bowl">("bat");
+  const [runs, setRuns] = useState<Record<string, string>>({});
+  const [balls, setBalls] = useState<Record<string, string>>({});
+  const [fours, setFours] = useState<Record<string, string>>({});
+  const [sixes, setSixes] = useState<Record<string, string>>({});
+  const [isOut, setIsOut] = useState<Record<string, boolean>>({});
+  const [oversBowled, setOversBowled] = useState<Record<string, string>>({});
+  const [runsConceded, setRunsConceded] = useState<Record<string, string>>({});
+  const [wickets, setWickets] = useState<Record<string, string>>({});
+  const [maidens, setMaidens] = useState<Record<string, string>>({});
+  const [mom, setMom] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      match.team_a_id ? getTeamRoster(match.team_a_id) : Promise.resolve([]),
+      match.team_b_id ? getTeamRoster(match.team_b_id) : Promise.resolve([]),
+      getMatchCricketStats(match.id),
+    ]).then(([a, b, stats]) => {
+      if (cancelled) return;
+      const rosterA = (isActionError(a) ? [] : a).map((p) => ({ ...p, team: "a" as const }));
+      const rosterB = (isActionError(b) ? [] : b).map((p) => ({ ...p, team: "b" as const }));
+      setRoster([...rosterA, ...rosterB]);
+      if (!isActionError(stats)) {
+        const r: Record<string, string> = {}, bl: Record<string, string> = {}, f: Record<string, string> = {}, s: Record<string, string> = {};
+        const o: Record<string, boolean> = {};
+        const ob: Record<string, string> = {}, rc: Record<string, string> = {}, w: Record<string, string> = {}, m: Record<string, string> = {};
+        let mvp: string | null = null;
+        for (const st of stats as TournamentCricketPlayerStat[]) {
+          r[st.team_player_id] = String(st.runs);
+          bl[st.team_player_id] = String(st.balls_faced);
+          f[st.team_player_id] = String(st.fours);
+          s[st.team_player_id] = String(st.sixes);
+          o[st.team_player_id] = st.is_out;
+          ob[st.team_player_id] = String(st.overs_bowled);
+          rc[st.team_player_id] = String(st.runs_conceded);
+          w[st.team_player_id] = String(st.wickets);
+          m[st.team_player_id] = String(st.maidens);
+          if (st.is_mom) mvp = st.team_player_id;
+        }
+        setRuns(r); setBalls(bl); setFours(f); setSixes(s); setIsOut(o);
+        setOversBowled(ob); setRunsConceded(rc); setWickets(w); setMaidens(m);
+        setMom(mvp);
+      }
+      setLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [match.id, match.team_a_id, match.team_b_id]);
+
+  function submit() {
+    setErr(null);
+    startTransition(async () => {
+      const stats = roster.map((p) => ({
+        team_player_id: p.id,
+        runs: Number(runs[p.id]) || 0,
+        balls_faced: Number(balls[p.id]) || 0,
+        fours: Number(fours[p.id]) || 0,
+        sixes: Number(sixes[p.id]) || 0,
+        is_out: !!isOut[p.id],
+        overs_bowled: Number(oversBowled[p.id]) || 0,
+        runs_conceded: Number(runsConceded[p.id]) || 0,
+        wickets: Number(wickets[p.id]) || 0,
+        maidens: Number(maidens[p.id]) || 0,
+        catches: 0,
+        run_outs: 0,
+        stumpings: 0,
+        is_mom: p.id === mom,
+      }));
+      const res = await recordCricketPlayerStats(match.id, stats);
+      if (isActionError(res)) { setErr(res.message); return; }
+      onSaved();
+    });
+  }
+
+  return (
+    <div className="tc-scrim" onClick={onClose}>
+      <div className="tc-modal" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <h3 style={{ margin: 0, fontFamily: "'Inter',sans-serif", fontSize: 18, fontWeight: 800 }}>Player stats</h3>
+          <button aria-label="Close" onClick={onClose} style={{ background: "none", border: "none", color: "inherit", opacity: 0.6, cursor: "pointer", width: 36, height: 36, display: "grid", placeItems: "center" }}><X size={18} /></button>
+        </div>
+        <div className="tc-dim" style={{ fontSize: 12.5, marginBottom: 16 }}>
+          {teamName(match.team_a_id)} {match.score_a}/{match.wickets_a ?? "-"} ({match.overs_a ?? "-"}) — {teamName(match.team_b_id)} {match.score_b}/{match.wickets_b ?? "-"} ({match.overs_b ?? "-"})
+        </div>
+
+        {loading ? (
+          <div className="tc-empty">Loading roster…</div>
+        ) : roster.length === 0 ? (
+          <div className="tc-empty">Neither team has a roster to record stats for.</div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+              {match.team_a_id && match.team_b_id && (
+                <>
+                  <button className={`tc-btn ${teamTab === "a" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }} onClick={() => setTeamTab("a")}>
+                    {teamName(match.team_a_id)} <span style={{ opacity: 0.7, marginLeft: 4 }}>{roster.filter((p) => p.team === "a").length}</span>
+                  </button>
+                  <button className={`tc-btn ${teamTab === "b" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }} onClick={() => setTeamTab("b")}>
+                    {teamName(match.team_b_id)} <span style={{ opacity: 0.7, marginLeft: 4 }}>{roster.filter((p) => p.team === "b").length}</span>
+                  </button>
+                </>
+              )}
+              <span style={{ flex: 1 }} />
+              <button className={`tc-btn ${statTab === "bat" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }} onClick={() => setStatTab("bat")}>Batting</button>
+              <button className={`tc-btn ${statTab === "bowl" ? "primary" : ""}`} style={{ padding: "7px 12px", fontSize: 12.5 }} onClick={() => setStatTab("bowl")}>Bowling</button>
+            </div>
+
+            {statTab === "bat" ? (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 55px 55px 50px 50px 50px 45px", gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 470 }}>
+                  <div>Player</div><div>Runs</div><div>Balls</div><div>4s</div><div>6s</div><div>Out</div><div>MOM</div>
+                </div>
+                {roster.filter((p) => !match.team_b_id || p.team === teamTab).map((p) => (
+                  <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 55px 55px 50px 50px 50px 45px", gap: 8, alignItems: "center", padding: "6px 0", minWidth: 470 }}>
+                    <div style={{ fontSize: 13.5 }}>{p.name}</div>
+                    <input type="number" min={0} value={runs[p.id] ?? ""} onChange={(e) => setRuns((r) => ({ ...r, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} runs`} />
+                    <input type="number" min={0} value={balls[p.id] ?? ""} onChange={(e) => setBalls((b) => ({ ...b, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} balls faced`} />
+                    <input type="number" min={0} value={fours[p.id] ?? ""} onChange={(e) => setFours((f) => ({ ...f, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 45 }} aria-label={`${p.name} fours`} />
+                    <input type="number" min={0} value={sixes[p.id] ?? ""} onChange={(e) => setSixes((s) => ({ ...s, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 45 }} aria-label={`${p.name} sixes`} />
+                    <input type="checkbox" checked={!!isOut[p.id]} onChange={(e) => setIsOut((o) => ({ ...o, [p.id]: e.target.checked }))} style={{ justifySelf: "start", width: 18, height: 18 }} aria-label={`${p.name} is out`} />
+                    <input type="radio" name="mom" checked={mom === p.id} onChange={() => setMom(p.id)} style={{ justifySelf: "start", width: 18, height: 18 }} aria-label={`${p.name} is man of the match`} />
+                  </div>
+                ))}
+              </>
+            ) : (
+              <>
+                <div style={{ display: "grid", gridTemplateColumns: "1.4fr 55px 60px 55px 55px", gap: 8, fontSize: 11, fontWeight: 700, opacity: 0.6, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 6, minWidth: 400 }}>
+                  <div>Player</div><div>Overs</div><div>Runs</div><div>Wkts</div><div>Maidens</div>
+                </div>
+                {roster.filter((p) => !match.team_b_id || p.team === teamTab).map((p) => (
+                  <div key={p.id} style={{ display: "grid", gridTemplateColumns: "1.4fr 55px 60px 55px 55px", gap: 8, alignItems: "center", padding: "6px 0", minWidth: 400 }}>
+                    <div style={{ fontSize: 13.5 }}>{p.name}</div>
+                    <input type="number" min={0} step={0.1} value={oversBowled[p.id] ?? ""} onChange={(e) => setOversBowled((o) => ({ ...o, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} overs bowled`} />
+                    <input type="number" min={0} value={runsConceded[p.id] ?? ""} onChange={(e) => setRunsConceded((r) => ({ ...r, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 55 }} aria-label={`${p.name} runs conceded`} />
+                    <input type="number" min={0} value={wickets[p.id] ?? ""} onChange={(e) => setWickets((w) => ({ ...w, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} wickets`} />
+                    <input type="number" min={0} value={maidens[p.id] ?? ""} onChange={(e) => setMaidens((m) => ({ ...m, [p.id]: e.target.value }))} style={{ ...inputStyle, width: 50 }} aria-label={`${p.name} maidens`} />
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}

@@ -229,6 +229,40 @@
 .ev2-prow-badge.mom { background: rgba(255,193,7,0.14); color: #ffc107; }
 .ev2-mom-star { color: #ffc107; }
 
+/* One-stat-at-a-time leaderboard (Goals / Assists / Yellow / Red as
+   their own sub-tabs) instead of every stat squeezed into chips on one
+   row — a plain underline tab strip, distinct from the pill-style main
+   ev2-tabbar above it so the two levels read as nested, not siblings. */
+.ev2-subtabs {
+  display: flex; gap: 22px; margin: 4px 0 16px; overflow-x: auto; -ms-overflow-style: none; scrollbar-width: none;
+  border-bottom: 1px solid rgba(242,237,230,0.12);
+}
+.ev2-subtabs::-webkit-scrollbar { display: none; }
+[data-theme="paper"] .ev2-subtabs { border-bottom-color: rgba(20,23,30,0.1); }
+.ev2-subtab {
+  position: relative; flex-shrink: 0; padding: 0 1px 12px; background: none; border: none; color: inherit;
+  font-family: inherit; font-size: 14px; font-weight: 700; opacity: 0.5; cursor: pointer; white-space: nowrap;
+  transition: opacity .15s ease;
+}
+.ev2-subtab:hover { opacity: 0.8; }
+.ev2-subtab.on { opacity: 1; }
+.ev2-subtab.on::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; border-radius: 2px;
+  background: #3b82f6;
+}
+
+.ev2-srow-head {
+  display: flex; align-items: center; gap: 12px; padding: 0 16px 8px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; opacity: 0.5;
+}
+.ev2-srow-head-rank { width: 18px; flex-shrink: 0; }
+.ev2-srow-head-badge { width: 38px; flex-shrink: 0; }
+.ev2-srow-head-stat { margin-left: auto; }
+.ev2-srow-stat {
+  margin-left: auto; flex-shrink: 0; font-family: 'Inter', sans-serif; font-size: 19px; font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
 /* ── Teams ── */
 .ev2-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .ev2-team-card {
