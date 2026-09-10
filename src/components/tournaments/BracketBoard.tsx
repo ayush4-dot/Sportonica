@@ -41,22 +41,68 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
     const landing = i === -1 ? Math.max(0, byRound.length - 1) : i;
     return Math.max(0, landing - 1);
   });
+  const safeRound = Math.min(Math.max(round, 0), rounds.length - 1);
 
-  function stepWidth(): number {
+  // Every column sits in the same horizontal "row" (that's what makes
+  // them scroll together), and any layout mode that puts boxes side by
+  // side — flex, inline-block, grid, doesn't matter — sizes that row to
+  // its TALLEST member, full stop. A 1-match Final column was rendering
+  // inside a row exactly as tall as an off-screen 8-match Round-of-32
+  // column, leaving a slab of dead space below its own cards. Rather
+  // than fight that (there's no way to opt one sibling out of a shared
+  // line box), the wrapper around .brk-track clips down to *only* the
+  // active column's own measured height, transitioning smoothly when
+  // it changes — every other column is still full height underneath,
+  // just cropped out of view along with its unused space.
+  // Below 720px, .brk-col is 100% width — exactly one column is ever
+  // visible, so only that one should count. At/above 720px it's a
+  // fixed 320px and more than one sits side by side (see the media
+  // query below), so its immediate neighbors need to be considered
+  // too or one of them would end up clipped or under-sized next to
+  // whichever column is "active". Matching that same 720px breakpoint
+  // here keeps this in sync with the CSS deciding how many columns are
+  // actually on screen, rather than guessing.
+  const [viewportHeight, setViewportHeight] = useState<number | undefined>(undefined);
+  function measureViewport(atRound: number) {
     const track = trackRef.current;
-    const col = track?.children[0] as HTMLElement | undefined;
-    if (!track || !col) return 0;
-    const gap = parseFloat(getComputedStyle(track).columnGap || "0");
-    return col.getBoundingClientRect().width + gap;
+    if (!track) return;
+    const multiColumn = window.innerWidth >= 720;
+    const indices = multiColumn ? [atRound - 1, atRound, atRound + 1] : [atRound];
+    const heights = indices
+      .map((i) => track.children[i] as HTMLElement | undefined)
+      .filter((el): el is HTMLElement => !!el)
+      .map((el) => el.getBoundingClientRect().height);
+    if (heights.length) setViewportHeight(Math.max(...heights));
   }
 
+  function stepWidth(): number {
+    const col = trackRef.current?.children[0] as HTMLElement | undefined;
+    if (!col) return 0;
+    const marginRight = parseFloat(getComputedStyle(col).marginRight || "0");
+    return col.getBoundingClientRect().width + marginRight;
+  }
+
+  // Mount-only — sets the initial scroll position to match the landing
+  // round. Deliberately not re-run per round change: goToRound() below
+  // already drives scrollLeft itself for programmatic navigation, and a
+  // manual swipe (onScroll -> setRound) must never have its in-progress
+  // scroll position forced back by this, or the gesture would fight it.
   useLayoutEffect(() => {
-    if (trackRef.current) trackRef.current.scrollLeft = round * stepWidth();
+    if (trackRef.current) trackRef.current.scrollLeft = safeRound * stepWidth();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-measure whenever the active round changes, however it changed
+  // (goToRound, a manual swipe settling via onScroll, or the initial
+  // mount) — this is the one that keeps the clip height honest.
+  useLayoutEffect(() => {
+    measureViewport(safeRound);
+    function onResize() { measureViewport(safeRound); }
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [safeRound]);
+
   if (knockout.length === 0) return <div className="brk-empty">{emptyLabel}</div>;
-  const safeRound = Math.min(Math.max(round, 0), rounds.length - 1);
 
   function goToRound(target: number) {
     const clamped = Math.min(Math.max(target, 0), rounds.length - 1);
@@ -94,24 +140,26 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
           <ChevronRight size={16} />
         </button>
       </div>
-      <div className="brk-track" ref={trackRef} onScroll={onScroll}>
-        {byRound.map((ms, ri) => (
-          <div key={ri} className="brk-col">
-            <div className="brk-col-head">{ms[0]?.round_label ?? `Round ${rounds[ri]}`}</div>
-            <div className="brk-col-list">
-              {ms.map((m, i) => (
-                <MatchCard
-                  key={m.id} match={m} team={team}
-                  isFinal={ri === rounds.length - 1}
-                  delayMs={Math.min(i * 35, 260)}
-                  fallbackA={tbdLabel(byRound, ri, m.id, "a")}
-                  fallbackB={tbdLabel(byRound, ri, m.id, "b")}
-                  onClick={onMatchClick ? () => onMatchClick(m) : undefined}
-                />
-              ))}
+      <div className="brk-viewport" style={viewportHeight != null ? { height: viewportHeight } : undefined}>
+        <div className="brk-track" ref={trackRef} onScroll={onScroll}>
+          {byRound.map((ms, ri) => (
+            <div key={ri} className="brk-col">
+              <div className="brk-col-head">{ms[0]?.round_label ?? `Round ${rounds[ri]}`}</div>
+              <div className="brk-col-list">
+                {ms.map((m, i) => (
+                  <MatchCard
+                    key={m.id} match={m} team={team}
+                    isFinal={ri === rounds.length - 1}
+                    delayMs={Math.min(i * 35, 260)}
+                    fallbackA={tbdLabel(byRound, ri, m.id, "a")}
+                    fallbackB={tbdLabel(byRound, ri, m.id, "b")}
+                    onClick={onMatchClick ? () => onMatchClick(m) : undefined}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -260,35 +308,43 @@ const BRACKET_CSS = `
 .brk-nav:active { transform: scale(0.96); }
 .brk-nav:disabled { opacity: 0.3; cursor: default; pointer-events: none; transform: none; }
 
-/* align-items: flex-start (not center) is load-bearing — centering
-   would vertically align every column against the row's shared cross-
-   axis size, which is set by the TALLEST column even when that round
-   isn't the one currently scrolled into view. A short Semifinal column
-   centered against an off-screen, much taller Round-of-16 column reads
-   as "huge empty gap before anything shows up" — this is that same
-   empty-space bug in a new shape, just from flexbox instead of the
-   pixel-position math it replaced. Top-aligning columns makes every
-   round's height independent of every other round's.
-   Only overflow-x here, deliberately — a vertically-capped inner
-   scroll (tried, then reverted) fights the page's own scroll on
-   mobile: touch scroll on a nested container with a horizontal
-   scroll-snap axis too is unreliable about which one actually
-   captures the gesture, so "scroll down to see more matches" was
-   landing on the outer page instead. A big Round-of-32 column just
-   makes the page a little longer to scroll past, same as any other
-   long page section — normal, not a bug. */
+/* .brk-track's columns sit side by side so they can scroll together —
+   but ANY layout mode that puts boxes side by side (flex, inline-block,
+   grid, table, doesn't matter which) sizes that shared row to its
+   TALLEST member. There's no way to opt one sibling out of that on its
+   own, so a 1-match Final column was rendering inside a row exactly as
+   tall as an off-screen 8-match Round-of-32 column, leaving a slab of
+   dead space below its own cards regardless of which layout mode drew
+   it. .brk-viewport (wrapping .brk-track, JS-measured in the component)
+   is what actually fixes it: it clips down to just the *active*
+   column's own height, transitioning smoothly when that changes, while
+   every other column keeps its full height underneath, cropped out of
+   view along with its unused space.
+   That wrapper uses overflow:hidden, not overflow-y:auto/scroll — a
+   real vertically-scrollable nested region was tried here once and
+   fights the page's own scroll on mobile (a nested scroll container
+   sharing an axis with the track's horizontal scroll-snap is
+   unreliable about which one actually captures a touch gesture), so
+   "scroll down to see more matches" ended up scrolling the outer page
+   straight past the bracket instead. Since the wrapper's height always
+   matches whichever column is actually active, there's never anything
+   left over to scroll inside it in the first place — a tall active
+   round (Round of 32) just gets a tall wrapper, not a scrollbar. */
+.brk-viewport { overflow: hidden; transition: height .32s cubic-bezier(.22,1,.36,1); }
+
 .brk-track {
-  display: flex; align-items: flex-start; gap: 24px; overflow-x: auto;
+  white-space: nowrap; overflow-x: auto;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory;
   padding: 4px 24px 4px; scroll-behavior: smooth;
 }
 .brk-track::-webkit-scrollbar { display: none; }
 
 .brk-col {
-  flex: 0 0 100%; scroll-snap-align: start; display: flex; flex-direction: column;
+  display: inline-block; vertical-align: top; white-space: normal; width: 100%;
+  margin-right: 24px; scroll-snap-align: start;
   animation: brkColIn .3s ease both;
 }
-@media (min-width: 720px) { .brk-col { flex: 0 0 320px; } }
+@media (min-width: 720px) { .brk-col { width: 320px; } }
 @keyframes brkColIn { from { opacity: 0; } to { opacity: 1; } }
 
 .brk-col-head {
@@ -393,6 +449,7 @@ const BRACKET_CSS = `
    (see .brk-col above), so any side padding here would leave the next
    card's edge visibly bleeding in, cut off mid-text. */
 @media (max-width: 719px) {
-  .brk-track { padding: 0; gap: 0; }
+  .brk-track { padding: 0; }
+  .brk-col { margin-right: 0; }
 }
 `;
