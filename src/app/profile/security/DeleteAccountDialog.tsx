@@ -173,6 +173,16 @@ export default function DeleteAccountDialog({
       });
   }
 
+  const back =
+    step === "confirm" ? () => { setError(null); setStep("warning"); }
+    : step === "reauth" ? () => { setError(null); setStep("confirm"); }
+    : null;
+
+  const title =
+    step === "done" ? "Account deleted"
+    : step === "error" ? "Couldn't delete account"
+    : "Delete your account?";
+
   return (
     <div
       className="pf-modal-backdrop"
@@ -187,14 +197,16 @@ export default function DeleteAccountDialog({
         aria-describedby={descId}
       >
         <div className="pf-modal-head">
-          <span className="pf-modal-icon" aria-hidden>
-            <ShieldAlert size={19} />
-          </span>
-          <h2 id={titleId} className="pf-modal-title">
-            {step === "done" ? "Account deleted" : step === "error" ? "Deletion failed" : "Delete your account?"}
-          </h2>
+          {back && !busy ? (
+            <button type="button" className="pf-modal-nav" onClick={back} aria-label="Back">
+              <ArrowLeft size={17} />
+            </button>
+          ) : (
+            <span className="pf-modal-icon" aria-hidden><ShieldAlert size={18} /></span>
+          )}
+          <h2 id={titleId} className="pf-modal-title">{title}</h2>
           {dismissable && (
-            <button type="button" className="pf-modal-x" onClick={close} aria-label="Close dialog">
+            <button type="button" className="pf-modal-nav pf-modal-x" onClick={close} aria-label="Close dialog">
               <X size={18} />
             </button>
           )}
@@ -205,50 +217,52 @@ export default function DeleteAccountDialog({
 
           {step === "confirm" && (
             <>
-              <span className="pf-modal-badge"><TriangleAlert size={12} /> Permanent</span>
+              <span className="pf-modal-badge"><TriangleAlert size={11} aria-hidden /> Permanent</span>
               <p>
-                To confirm account deletion, type <strong>{CONFIRM_WORD}</strong> below.
+                Type{" "}<strong>{CONFIRM_WORD}</strong>{" "}to confirm. Your account can&apos;t be
+                recovered afterwards.
               </p>
-              <label className="pf-modal-label" htmlFor={`${titleId}-confirm`}>
-                Confirmation
-              </label>
-              <input
-                id={`${titleId}-confirm`}
-                className="pf-modal-input"
-                value={typed}
-                onChange={(e) => setTyped(e.target.value)}
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                placeholder={CONFIRM_WORD}
-                aria-describedby={`${titleId}-confirm-hint`}
-              />
-              <p id={`${titleId}-confirm-hint`} className="pf-modal-note" style={{ marginTop: 10 }}>
-                This can&apos;t be undone. Your account can&apos;t be recovered afterwards.
-              </p>
+              <div className="pf-modal-field">
+                <label className="pf-modal-label" htmlFor={`${titleId}-confirm`}>Confirmation</label>
+                <input
+                  id={`${titleId}-confirm`}
+                  className={`pf-modal-input${confirmValid ? " ok" : ""}`}
+                  value={typed}
+                  onChange={(e) => setTyped(e.target.value)}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  spellCheck={false}
+                  placeholder={CONFIRM_WORD}
+                />
+                {confirmValid && (
+                  <span className="pf-modal-check" aria-hidden><Check size={17} /></span>
+                )}
+              </div>
             </>
           )}
 
           {step === "reauth" && (
             <>
-              <span className="pf-modal-badge"><TriangleAlert size={12} /> Permanent</span>
-              <p>For your security, confirm it&apos;s you to finish deleting your account.</p>
+              <span className="pf-modal-badge"><TriangleAlert size={11} aria-hidden /> Permanent</span>
               {ctx.hasPassword ? (
                 <>
-                  <label className="pf-modal-label" htmlFor={`${titleId}-pw`}>Your password</label>
-                  <input
-                    id={`${titleId}-pw`}
-                    className="pf-modal-input"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    onKeyDown={(e) => { if (e.key === "Enter") submitPasswordReauth(); }}
-                  />
+                  <p>Enter your password to confirm it&apos;s you.</p>
+                  <div className="pf-modal-field">
+                    <label className="pf-modal-label" htmlFor={`${titleId}-pw`}>Password</label>
+                    <input
+                      id={`${titleId}-pw`}
+                      className="pf-modal-input plain"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      autoComplete="current-password"
+                      onKeyDown={(e) => { if (e.key === "Enter") submitPasswordReauth(); }}
+                    />
+                  </div>
                 </>
               ) : (
-                <p className="pf-modal-note">
-                  You sign in with Google. You&apos;ll be sent to Google to confirm, then brought
+                <p>
+                  You sign in with Google. Continue to confirm with Google, then you&apos;ll come
                   right back here to finish.
                 </p>
               )}
@@ -257,11 +271,11 @@ export default function DeleteAccountDialog({
 
           {step === "ready" && (
             <>
-              <span className="pf-modal-badge"><TriangleAlert size={12} /> Permanent</span>
+              <span className="pf-modal-badge"><TriangleAlert size={11} aria-hidden /> Permanent</span>
               <p className="pf-modal-status">
-                <Check size={18} className="pf-modal-ok" aria-hidden /> It&apos;s you — identity confirmed.
+                <Check size={17} className="pf-modal-ok" aria-hidden /> Identity confirmed.
               </p>
-              <p>Deleting your account is permanent and can&apos;t be undone. Continue?</p>
+              <p>This permanently deletes your account and can&apos;t be undone.</p>
             </>
           )}
 
@@ -273,8 +287,8 @@ export default function DeleteAccountDialog({
 
           {step === "done" && (
             <p className="pf-modal-status" role="status" aria-live="polite">
-              <Check size={18} className="pf-modal-ok" aria-hidden /> Your account has been deleted
-              successfully. Signing you out…
+              <Check size={18} className="pf-modal-ok" aria-hidden /> Your account has been deleted.
+              Signing you out…
             </p>
           )}
 
@@ -293,75 +307,65 @@ export default function DeleteAccountDialog({
           )}
         </div>
 
-        {/* ── Footers ── */}
+        {/* ── Footers: destructive/primary action first, then the quiet exit ── */}
         {step === "warning" && (
           <div className="pf-modal-foot">
-            <button type="button" className="pf-btn ghost" onClick={close}>Cancel</button>
-            <button type="button" className="pf-btn" onClick={() => setStep("confirm")}>Continue</button>
+            <button type="button" className="pf-mbtn primary" onClick={() => setStep("confirm")}>Continue</button>
+            <button type="button" className="pf-mbtn quiet" onClick={close}>Cancel</button>
           </div>
         )}
 
         {step === "confirm" && (
-          <>
-            <div className="pf-modal-foot">
-              <button type="button" className="pf-btn ghost" onClick={close}>Cancel</button>
-              <button
-                type="button"
-                className="pf-btn danger"
-                disabled={!confirmValid}
-                onClick={() => setStep("reauth")}
-              >
-                Permanently Delete Account
-              </button>
-            </div>
-            <button type="button" className="pf-modal-back" onClick={() => setStep("warning")}>
-              <ArrowLeft size={13} /> Back
+          <div className="pf-modal-foot">
+            <button
+              type="button"
+              className="pf-mbtn danger"
+              disabled={!confirmValid}
+              onClick={() => { setError(null); setStep("reauth"); }}
+            >
+              Permanently Delete Account
             </button>
-          </>
+            <button type="button" className="pf-mbtn quiet" onClick={close}>Cancel</button>
+          </div>
         )}
 
         {step === "reauth" && (
-          <>
-            <div className="pf-modal-foot">
-              <button type="button" className="pf-btn ghost" onClick={close} disabled={busy}>Cancel</button>
-              {ctx.hasPassword ? (
-                <button
-                  type="button"
-                  className="pf-btn danger"
-                  disabled={busy || !password}
-                  onClick={submitPasswordReauth}
-                >
-                  {busy ? "Verifying…" : "Permanently Delete Account"}
-                </button>
-              ) : (
-                <button type="button" className="pf-btn danger" disabled={busy} onClick={startGoogleReauth}>
-                  {busy ? "Opening Google…" : "Re-authenticate with Google"}
-                </button>
-              )}
-            </div>
-            <button type="button" className="pf-modal-back" onClick={() => setStep("confirm")} disabled={busy}>
-              <ArrowLeft size={13} /> Back
-            </button>
-          </>
+          <div className="pf-modal-foot">
+            {ctx.hasPassword ? (
+              <button
+                type="button"
+                className="pf-mbtn danger"
+                disabled={busy || !password}
+                onClick={submitPasswordReauth}
+              >
+                {busy ? "Verifying…" : "Permanently Delete Account"}
+              </button>
+            ) : (
+              <button type="button" className="pf-mbtn danger" disabled={busy} onClick={startGoogleReauth}>
+                {busy ? "Opening Google…" : "Continue with Google"}
+              </button>
+            )}
+            <button type="button" className="pf-mbtn quiet" onClick={close} disabled={busy}>Cancel</button>
+          </div>
         )}
 
         {step === "ready" && (
           <div className="pf-modal-foot">
-            <button type="button" className="pf-btn ghost" onClick={close}>Cancel</button>
-            <button type="button" className="pf-btn danger" disabled={busy} onClick={runDelete}>
+            <button type="button" className="pf-mbtn danger" disabled={busy} onClick={runDelete}>
               Permanently Delete Account
             </button>
+            <button type="button" className="pf-mbtn quiet" onClick={close}>Cancel</button>
           </div>
         )}
 
         {step === "error" && (
           <div className="pf-modal-foot">
-            <button type="button" className="pf-btn ghost" onClick={close}>Close</button>
             {error?.includes("session has expired") ? (
-              <Link className="pf-btn" href="/login?redirect=/profile/security">Sign in again</Link>
+              <Link className="pf-mbtn primary" href="/login?redirect=/profile/security">Sign in again</Link>
             ) : (
-              <button type="button" className="pf-btn danger" onClick={() => setStep("confirm")}>Try again</button>
+              <button type="button" className="pf-mbtn danger" onClick={() => setStep("confirm")}>Try again</button>
             )}
+            <button type="button" className="pf-mbtn quiet" onClick={close}>Close</button>
           </div>
         )}
       </div>
