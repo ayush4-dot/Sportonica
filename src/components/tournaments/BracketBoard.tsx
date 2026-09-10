@@ -11,15 +11,13 @@ const KTM = "Asia/Kathmandu";
 // phones (swipe/tap through Round of 16 -> Quarterfinal -> ...),
 // several fixed-width columns side by side with native horizontal
 // scroll on desktop. Every column is plain top-to-bottom flow (no
-// computed pixel positions), and shorter columns are centered against
-// the tallest one purely with `align-items: center` on the row — a
-// deliberate step back from a literal connector-line bracket tree,
-// which needed exact per-match coordinates to draw correctly and kept
-// producing edge cases (huge dead space around a 1-match Final column,
-// two matches landing on top of each other) that a plain vertical list
-// structurally can't. Same card tokens as the rest of the tournament
-// page (ev2-card/ev2-srow/ev2-status-pill) so it still reads as part
-// of the page rather than a separately-themed panel.
+// computed pixel positions, no literal connector-line tree) — that
+// structurally rules out the whole class of bugs a coordinate-based
+// bracket kept producing (dead space around a 1-match Final column,
+// two matches landing on top of each other, a nested scroll fighting
+// the page's own). Same card tokens as the rest of the tournament page
+// (ev2-card/ev2-srow/ev2-status-pill) so it still reads as part of the
+// page rather than a separately-themed panel.
 export default function BracketBoard({ matches, team, onMatchClick, emptyLabel = "No knockout matches added yet." }: {
   matches: TournamentMatch[];
   team: (id: string | null) => TournamentTeam | undefined;
@@ -77,12 +75,25 @@ export default function BracketBoard({ matches, team, onMatchClick, emptyLabel =
   return (
     <div className="brk">
       <style>{BRACKET_CSS}</style>
-      <button className="brk-nav prev" aria-label="Previous round" disabled={safeRound === 0} onClick={() => goToRound(safeRound - 1)}>
-        <ChevronLeft size={16} />
-      </button>
-      <button className="brk-nav next" aria-label="Next round" disabled={safeRound === rounds.length - 1} onClick={() => goToRound(safeRound + 1)}>
-        <ChevronRight size={16} />
-      </button>
+      <div className="brk-toolbar">
+        <button className="brk-nav prev" aria-label="Previous round" disabled={safeRound === 0} onClick={() => goToRound(safeRound - 1)}>
+          <ChevronLeft size={16} />
+        </button>
+        {rounds.length > 1 && (
+          <div className="brk-dots" role="tablist" aria-label="Round">
+            {rounds.map((r, ri) => (
+              <button
+                key={r} className={`brk-dot${ri === safeRound ? " on" : ""}`}
+                role="tab" aria-selected={ri === safeRound} aria-label={byRound[ri][0]?.round_label ?? `Round ${r}`}
+                onClick={() => goToRound(ri)}
+              />
+            ))}
+          </div>
+        )}
+        <button className="brk-nav next" aria-label="Next round" disabled={safeRound === rounds.length - 1} onClick={() => goToRound(safeRound + 1)}>
+          <ChevronRight size={16} />
+        </button>
+      </div>
       <div className="brk-track" ref={trackRef} onScroll={onScroll}>
         {byRound.map((ms, ri) => (
           <div key={ri} className="brk-col">
@@ -231,24 +242,23 @@ function BracketRow({ team: t, fallback, score, pens, winner, loser }: {
 // top of it — adapts to both the site's default (dark) look and the
 // "paper" (cream) theme, same as everything around it.
 const BRACKET_CSS = `
-.brk { position: relative; font-family: 'Inter', system-ui, sans-serif; color: inherit; padding: 4px 0; }
+.brk { font-family: 'Inter', system-ui, sans-serif; color: inherit; padding: 4px 0; }
 .brk-empty { text-align: center; padding: 50px 20px; opacity: 0.55; font-size: 13.5px; }
 
-/* Pinned level with the round header, not vertically centered on the
-   whole card list — centering put them wherever the middle of however
-   many cards happened to be, which could land squarely on top of a
-   card's score. */
+/* A real toolbar row (prev / round dots / next), not buttons floating
+   absolutely over the card list — static flex layout can't drift out
+   of alignment with whatever's rendering underneath it, which the
+   floating version repeatedly did as the column contents changed. */
+.brk-toolbar { display: flex; align-items: center; justify-content: center; gap: 18px; margin-bottom: 20px; }
 .brk-nav {
-  position: absolute; top: 4px; z-index: 5;
-  width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center;
+  flex-shrink: 0; width: 32px; height: 32px; border-radius: 999px; display: grid; place-items: center;
   background: rgba(242,237,230,0.06); border: 1px solid rgba(242,237,230,0.14); color: inherit; cursor: pointer;
-  transition: background .15s ease, border-color .15s ease;
+  transition: background .15s ease, border-color .15s ease, transform .15s cubic-bezier(.22,1,.36,1);
 }
 [data-theme="paper"] .brk-nav { background: #fff; border-color: rgba(20,23,30,0.14); box-shadow: 0 1px 4px rgba(20,23,30,0.06); }
-.brk-nav:hover { background: rgba(0,135,90,0.14); border-color: rgba(0,135,90,0.4); }
-.brk-nav:disabled { opacity: 0.3; cursor: default; pointer-events: none; }
-.brk-nav.prev { left: -4px; }
-.brk-nav.next { right: -4px; }
+.brk-nav:hover { background: rgba(0,135,90,0.14); border-color: rgba(0,135,90,0.4); transform: scale(1.08); }
+.brk-nav:active { transform: scale(0.96); }
+.brk-nav:disabled { opacity: 0.3; cursor: default; pointer-events: none; transform: none; }
 
 /* align-items: flex-start (not center) is load-bearing — centering
    would vertically align every column against the row's shared cross-
@@ -270,7 +280,7 @@ const BRACKET_CSS = `
 .brk-track {
   display: flex; align-items: flex-start; gap: 24px; overflow-x: auto;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory;
-  padding: 0 40px; scroll-behavior: smooth;
+  padding: 4px 24px 4px; scroll-behavior: smooth;
 }
 .brk-track::-webkit-scrollbar { display: none; }
 
@@ -283,26 +293,44 @@ const BRACKET_CSS = `
 
 .brk-col-head {
   font-size: 15px; font-weight: 800; letter-spacing: -0.2px; text-align: center;
-  padding-bottom: 12px; margin-bottom: 14px; border-bottom: 1px solid rgba(242,237,230,0.12);
+  padding-bottom: 14px; margin-bottom: 16px; position: relative;
 }
-[data-theme="paper"] .brk-col-head { border-bottom-color: rgba(20,23,30,0.1); }
-.brk-col-list { display: flex; flex-direction: column; gap: 12px; }
+.brk-col-head::after {
+  content: ""; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+  width: 28px; height: 3px; border-radius: 999px; background: #00875a; opacity: 0.55;
+}
+.brk-col-list { display: flex; flex-direction: column; gap: 14px; }
+
+/* Round-progress dots — a compact "3 of 5" without spelling it out,
+   doubles as a direct jump-to-round control alongside the arrows. */
+.brk-dots { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.brk-dot {
+  width: 7px; height: 7px; border-radius: 999px; padding: 0; border: none; cursor: pointer;
+  background: rgba(128,128,128,0.3); transition: all .2s cubic-bezier(.22,1,.36,1);
+}
+.brk-dot:hover { background: rgba(0,135,90,0.5); }
+.brk-dot.on { width: 20px; background: #00875a; }
 
 @keyframes brkCardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
 .brk-card {
-  box-sizing: border-box; padding: 14px 16px 12px; border-radius: 16px;
+  box-sizing: border-box; padding: 15px 17px 13px; border-radius: 16px;
   background: rgba(242,237,230,0.035); border: 1px solid rgba(242,237,230,0.09);
-  display: flex; flex-direction: column; gap: 10px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12);
+  display: flex; flex-direction: column; gap: 11px;
   animation: brkCardIn .34s cubic-bezier(.22,1,.36,1) both;
-  transition: background .15s ease, border-color .15s ease, transform .15s ease;
+  transition: background .15s ease, border-color .15s ease, transform .18s cubic-bezier(.22,1,.36,1), box-shadow .18s ease;
 }
-[data-theme="paper"] .brk-card { background: #fff; border-color: rgba(20,23,30,0.08); box-shadow: 0 1px 4px rgba(20,23,30,0.05); }
+[data-theme="paper"] .brk-card { background: #fff; border-color: rgba(20,23,30,0.07); box-shadow: 0 1px 3px rgba(20,23,30,0.05); }
 .brk-card.clickable { cursor: pointer; }
-.brk-card.clickable:hover { border-color: rgba(0,135,90,0.35); transform: translateY(-2px); }
+.brk-card.clickable:hover {
+  border-color: rgba(0,135,90,0.35); transform: translateY(-2px);
+  box-shadow: 0 10px 24px -8px rgba(0,0,0,0.28);
+}
+[data-theme="paper"] .brk-card.clickable:hover { box-shadow: 0 10px 24px -10px rgba(0,98,65,0.22); }
 .brk-card.final {
-  border-color: rgba(0,135,90,0.4); box-shadow: 0 0 0 1px rgba(0,135,90,0.12);
-  padding: 18px 18px 16px; gap: 12px;
+  border-color: rgba(0,135,90,0.45); box-shadow: 0 0 0 1px rgba(0,135,90,0.14), 0 8px 28px -12px rgba(0,135,90,0.3);
+  padding: 20px 20px 17px; gap: 13px;
 }
 .brk-final-head {
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -333,15 +361,17 @@ const BRACKET_CSS = `
 .brk-live-dot { width: 5px; height: 5px; border-radius: 999px; background: #E5484D; animation: brkpulse 1.4s infinite; }
 @keyframes brkpulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
 
-.brk-row { display: flex; align-items: center; gap: 10px; min-width: 0; opacity: 0.55; }
+.brk-row { display: flex; align-items: center; gap: 10px; min-width: 0; opacity: 0.55; transition: opacity .2s ease; }
 .brk-crest {
   width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
   display: grid; place-items: center; font-size: 12px; font-weight: 800;
-  background: rgba(0,135,90,0.14); border: 1px solid rgba(0,135,90,0.28); color: #00875a;
+  background: linear-gradient(155deg, rgba(0,135,90,0.22), rgba(0,135,90,0.08));
+  border: 1px solid rgba(0,135,90,0.28); color: #00875a;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.12);
 }
 .brk-crest img { width: 100%; height: 100%; object-fit: cover; }
 .brk-team-name {
-  flex: 1 1 auto; min-width: 0; font-size: 14.5px; font-weight: 600;
+  flex: 1 1 auto; min-width: 0; font-size: 14.5px; font-weight: 600; letter-spacing: -0.1px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .brk-vs { flex-shrink: 0; font-size: 12px; font-weight: 700; opacity: 0.4; }
@@ -349,9 +379,10 @@ const BRACKET_CSS = `
 .brk-row.pending .brk-crest { background: rgba(128,128,128,0.14); border-color: rgba(128,128,128,0.24); color: inherit; opacity: 0.6; }
 .brk-score {
   flex-shrink: 0; font-variant-numeric: tabular-nums; font-size: 15px; font-weight: 700;
-  display: flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 9px;
+  display: flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 9px;
+  transition: background .2s ease;
 }
-.brk-score.win { background: rgba(0,135,90,0.12); }
+.brk-score.win { background: linear-gradient(155deg, rgba(0,135,90,0.18), rgba(0,135,90,0.09)); }
 .brk-row.win { opacity: 1; }
 .brk-row.win .brk-team-name { font-weight: 800; }
 .brk-row.win .brk-score { font-weight: 800; color: #00875a; }
@@ -360,17 +391,8 @@ const BRACKET_CSS = `
 
 /* Below the desktop breakpoint a column is the full viewport width
    (see .brk-col above), so any side padding here would leave the next
-   card's edge visibly bleeding in, cut off mid-text — no side padding
-   on mobile; the nav buttons instead float on top of the card edges
-   (blurred backdrop so they stay legible over whatever's under them)
-   rather than living in a reserved gutter. */
+   card's edge visibly bleeding in, cut off mid-text. */
 @media (max-width: 719px) {
   .brk-track { padding: 0; gap: 0; }
-  .brk-nav {
-    background: rgba(242,237,230,0.5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
-  }
-  [data-theme="paper"] .brk-nav { background: rgba(255,255,255,0.75); }
-  .brk-nav.prev { left: 8px; }
-  .brk-nav.next { right: 8px; }
 }
 `;
