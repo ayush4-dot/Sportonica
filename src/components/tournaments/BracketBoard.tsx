@@ -1,7 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Trophy } from "lucide-react";
 import type { TournamentMatch, TournamentTeam } from "@/lib/tournaments/types";
 
 const DONE_STATUSES = new Set(["completed", "walkover", "cancelled"]);
@@ -147,21 +147,48 @@ function MatchCard({ match: m, team, isFinal, delayMs = 0, fallbackA = "TBD", fa
   // outcome, not a pending slot — takes priority over "Winner of ...".
   const resolvedFallbackB = !m.team_b_id && m.status === "completed" ? "Bye" : fallbackB;
 
+  const cardProps = {
+    className: `brk-card${isFinal ? " final" : ""}${onClick ? " clickable" : ""}`,
+    style: { animationDelay: `${delayMs}ms` },
+    role: onClick ? ("button" as const) : undefined,
+    tabIndex: onClick ? 0 : undefined,
+    onClick,
+    onKeyDown: onClick ? (e: React.KeyboardEvent) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined,
+  };
+
+  const rowA = <BracketRow team={a} fallback={fallbackA} score={m.score_a} pens={m.score_a_pens} winner={decided && m.winner_team_id === m.team_a_id} loser={decided && m.winner_team_id !== m.team_a_id && !!m.team_a_id} />;
+  const rowB = <BracketRow team={b} fallback={resolvedFallbackB} score={m.score_b} pens={m.score_b_pens} winner={decided && m.winner_team_id === m.team_b_id} loser={decided && m.winner_team_id !== m.team_b_id && !!m.team_b_id} />;
+
+  // The Final gets its own hero treatment — a trophy label up top, "VS"
+  // between the two rows instead of stacked plainly, and (once decided)
+  // a restrained "Champion" caption under the already-highlighted
+  // winner row. No confetti, no fake champion before it's actually won.
+  if (isFinal) {
+    return (
+      <div {...cardProps}>
+        <div className="brk-final-head"><Trophy size={15} /><span>Final</span></div>
+        <div className="brk-card-head">
+          <span className="brk-date">{cardDate(m)}</span>
+          <span className={`brk-badge ${badge.cls}`}>{badge.cls === "live" && <i className="brk-live-dot" />}{badge.label}</span>
+        </div>
+        {rowA}
+        <div className="brk-final-vs">VS</div>
+        {rowB}
+        {decided && (
+          <div className="brk-champion"><Trophy size={13} /><span>Champion</span></div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={`brk-card${isFinal ? " final" : ""}${onClick ? " clickable" : ""}`}
-      style={{ animationDelay: `${delayMs}ms` }}
-      role={onClick ? "button" : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={onClick}
-      onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
-    >
+    <div {...cardProps}>
       <div className="brk-card-head">
         <span className="brk-date">{cardDate(m)}</span>
         <span className={`brk-badge ${badge.cls}`}>{badge.cls === "live" && <i className="brk-live-dot" />}{badge.label}</span>
       </div>
-      <BracketRow team={a} fallback={fallbackA} score={m.score_a} pens={m.score_a_pens} winner={decided && m.winner_team_id === m.team_a_id} loser={decided && m.winner_team_id !== m.team_a_id && !!m.team_a_id} />
-      <BracketRow team={b} fallback={resolvedFallbackB} score={m.score_b} pens={m.score_b_pens} winner={decided && m.winner_team_id === m.team_b_id} loser={decided && m.winner_team_id !== m.team_b_id && !!m.team_b_id} />
+      {rowA}
+      {rowB}
     </div>
   );
 }
@@ -232,16 +259,19 @@ const BRACKET_CSS = `
    empty-space bug in a new shape, just from flexbox instead of the
    pixel-position math it replaced. Top-aligning columns makes every
    round's height independent of every other round's.
-   max-height + its own overflow-y keeps that tallest column (and, with
-   it, this widget's overall height — which the nav buttons position
-   against) bounded, instead of a big Round-of-32 column stretching the
-   whole panel and dragging the nav buttons down with it. */
+   Only overflow-x here, deliberately — a vertically-capped inner
+   scroll (tried, then reverted) fights the page's own scroll on
+   mobile: touch scroll on a nested container with a horizontal
+   scroll-snap axis too is unreliable about which one actually
+   captures the gesture, so "scroll down to see more matches" was
+   landing on the outer page instead. A big Round-of-32 column just
+   makes the page a little longer to scroll past, same as any other
+   long page section — normal, not a bug. */
 .brk-track {
-  display: flex; align-items: flex-start; gap: 24px; overflow-x: auto; overflow-y: auto;
+  display: flex; align-items: flex-start; gap: 24px; overflow-x: auto;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; scroll-snap-type: x mandatory;
-  padding: 0 40px; scroll-behavior: smooth; max-height: 66vh;
+  padding: 0 40px; scroll-behavior: smooth;
 }
-@media (min-width: 720px) { .brk-track { max-height: 560px; } }
 .brk-track::-webkit-scrollbar { display: none; }
 
 .brk-col {
@@ -270,7 +300,25 @@ const BRACKET_CSS = `
 [data-theme="paper"] .brk-card { background: #fff; border-color: rgba(20,23,30,0.08); box-shadow: 0 1px 4px rgba(20,23,30,0.05); }
 .brk-card.clickable { cursor: pointer; }
 .brk-card.clickable:hover { border-color: rgba(0,135,90,0.35); transform: translateY(-2px); }
-.brk-card.final { border-color: rgba(0,135,90,0.4); box-shadow: 0 0 0 1px rgba(0,135,90,0.12); }
+.brk-card.final {
+  border-color: rgba(0,135,90,0.4); box-shadow: 0 0 0 1px rgba(0,135,90,0.12);
+  padding: 18px 18px 16px; gap: 12px;
+}
+.brk-final-head {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: 12px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #00875a;
+}
+.brk-final-vs { text-align: center; font-size: 11px; font-weight: 800; letter-spacing: .08em; opacity: 0.4; }
+.brk-card.final .brk-row { gap: 12px; }
+.brk-card.final .brk-crest { width: 34px; height: 34px; font-size: 14px; }
+.brk-card.final .brk-team-name { font-size: 16px; }
+.brk-card.final .brk-score { font-size: 17px; }
+/* Restrained — a small caption under the already-highlighted winner
+   row, not a second oversized banner or any confetti/animation. */
+.brk-champion {
+  display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 2px;
+  font-size: 11px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: #00875a;
+}
 
 .brk-card-head { display: flex; align-items: center; justify-content: space-between; }
 .brk-date { font-size: 11.5px; font-weight: 600; opacity: 0.55; }
