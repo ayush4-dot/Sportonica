@@ -99,10 +99,23 @@
 @keyframes drift  { from { transform: translate(0,0) scale(1); } to { transform: translate(80px,60px) scale(1.08); } }
 @keyframes drift2 { from { transform: translate(0,0) scale(1); } to { transform: translate(-70px,-50px) scale(1.1); } }
 
+/* The brand lockup is a link home. Keep it looking like plain text —
+   just a gentle lift + brighter mark on hover. */
 .auth-brand {
   position: relative; z-index: 2;
-  display: flex; align-items: center; gap: 13px;
+  display: inline-flex; align-items: center; gap: 13px;
+  width: max-content;
+  color: inherit; text-decoration: none;
+  border-radius: 12px;
   opacity: 0; animation: rise 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards;
+  transition: transform .25s cubic-bezier(.22,1,.36,1), opacity .25s ease;
+}
+.auth-brand:hover { transform: translateY(-1px); }
+.auth-brand:hover .auth-brand-mark { filter: drop-shadow(0 0 24px rgba(52,211,153,0.7)); }
+.auth-brand:active { transform: translateY(0); }
+.auth-brand:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(10,143,95,0.35);
 }
 .auth-brand-mark {
   width: 42px; height: 42px; object-fit: contain;
@@ -415,16 +428,25 @@
 
 @keyframes rise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
+/* The mobile brand lockup only exists once the atmosphere panel drops. */
+.auth-brand-mobile { display: none; }
+
 /* ── Responsive ── */
 @media (max-width: 860px) {
   .auth { grid-template-columns: 1fr; }
   .auth-stage { display: none; }
   /* keep the atmosphere behind the card on mobile */
   .auth-form-wrap { padding: 40px 16px; }
+  /* the logo returns above the card so home is always one tap away */
+  .auth-brand-mobile {
+    display: flex; justify-content: center;
+    width: 100%; margin-bottom: 26px;
+  }
 }
 @media (max-width: 640px) {
   .auth-form-wrap { padding: 28px 14px; }
   .auth-card { padding: 28px 20px 24px; }
+  .auth-brand-mobile { margin-bottom: 22px; }
 }
 
 /* ── Reduced motion: static, legible, no glow churn ── */
@@ -470,9 +492,13 @@
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
-[data-theme="paper"] .auth-brand-mark {
+[data-theme="paper"] .auth-brand-mark,
+[data-theme="paper"] .auth-brand:hover .auth-brand-mark {
   filter: none;
   animation: none;
+}
+[data-theme="paper"] .auth-brand:focus-visible {
+  box-shadow: 0 0 0 3px rgba(10,143,95,0.28);
 }
 [data-theme="paper"] .auth-tagline h2 em {
   background: linear-gradient(120deg, var(--sodium-2), var(--sodium));
