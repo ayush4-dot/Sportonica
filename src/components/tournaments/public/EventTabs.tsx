@@ -513,25 +513,23 @@ function FixturesPublicTab({ tournamentId, matches, teams }: {
                 <div className="ev2-fixture-time">
                   {m.starts_at ? new Date(m.starts_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: KTM }) : "TBD"}
                 </div>
-                <div className="ev2-fixture-teams">
-                  <span className="ev2-fixture-side">
-                    <TeamCrest name={teamAName} logoUrl={team(m.team_a_id)?.logo_url} size="sm" />
-                    <span className="ev2-fixture-name">{teamAName}</span>
-                  </span>
-                  <span className="ev2-fixture-mid">
-                    {m.status === "walkover" ? (
-                      <span className="score wo">W/O</span>
-                    ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
-                      <span className="score">{m.score_a} – {m.score_b}</span>
-                    ) : live ? (
-                      <span className="live"><i className="ev2-live-dot" />Live</span>
-                    ) : <span className="vs">vs</span>}
-                  </span>
-                  <span className="ev2-fixture-side">
-                    <TeamCrest name={teamBName} logoUrl={team(m.team_b_id)?.logo_url} size="sm" />
-                    <span className="ev2-fixture-name">{teamBName}</span>
-                  </span>
-                </div>
+                <span className="ev2-fixture-team ev2-fixture-team-left">
+                  <TeamCrest name={teamAName} logoUrl={team(m.team_a_id)?.logo_url} size="sm" />
+                  <span className="ev2-fixture-name">{teamAName}</span>
+                </span>
+                <span className="ev2-fixture-mid">
+                  {m.status === "walkover" ? (
+                    <span className="score wo">W/O</span>
+                  ) : m.status === "completed" && m.score_a !== null && m.score_b !== null ? (
+                    <span className="score">{m.score_a} – {m.score_b}</span>
+                  ) : live ? (
+                    <span className="live"><i className="ev2-live-dot" />Live</span>
+                  ) : <span className="vs">vs</span>}
+                </span>
+                <span className="ev2-fixture-team ev2-fixture-team-right">
+                  <span className="ev2-fixture-name">{teamBName}</span>
+                  <TeamCrest name={teamBName} logoUrl={team(m.team_b_id)?.logo_url} size="sm" />
+                </span>
                 <div className="ev2-fixture-round">{m.round_label}</div>
               </div>
             );
