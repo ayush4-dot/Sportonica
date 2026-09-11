@@ -190,14 +190,15 @@
 }
 .ev2-fixture-date:first-child { margin-top: 0; }
 .ev2-fixture-date .fx-share-btn { text-transform: none; letter-spacing: normal; opacity: 1; }
-/* Fixed grid: [time][left team][score][right team][round] — every
-   row uses the exact same column widths regardless of team-name
-   length, so the score stays the one true center anchor and both
-   team blocks stay mirror images of each other. */
+/* Grid: [time][left team][score][right team][round], always one row.
+   Team columns are minmax(0,1fr) — flexible, but never allowed to
+   grow the row or wrap; they only ever give width to or take width
+   from each other and truncate their own name text. Time/score/round
+   are fixed so the score stays a true, never-moving center anchor. */
 .ev2-fixture {
   display: grid;
-  grid-template-columns: 44px 150px 58px 150px 90px;
-  align-items: center; column-gap: 12px; padding: 12px 16px; border-radius: 13px; margin-bottom: 8px;
+  grid-template-columns: 44px minmax(0, 1fr) 64px minmax(0, 1fr) 84px;
+  align-items: center; column-gap: 10px; padding: 12px 16px; border-radius: 13px; margin-bottom: 8px;
   background: rgba(242,237,230,0.035); border: 1px solid rgba(242,237,230,0.08);
   transition: border-color .2s, background .2s;
 }
@@ -215,18 +216,18 @@
    logo on the right, so truncation reads correctly either way. */
 .ev2-fixture-team-left .ev2-fixture-name { text-align: right; }
 .ev2-fixture-team-right .ev2-fixture-name { text-align: left; }
-.ev2-fixture-mid { display: flex; align-items: center; justify-content: center; }
+.ev2-fixture-mid { display: flex; align-items: center; justify-content: center; min-width: 0; overflow: hidden; }
 .ev2-fixture-mid .vs { opacity: 0.35; font-weight: 600; font-size: 12.5px; }
 .ev2-fixture-mid .score {
   font-variant-numeric: tabular-nums; font-family: 'Inter', sans-serif; font-weight: 800; font-size: 15px;
-  white-space: nowrap; min-width: 44px; text-align: center; padding: 3px 10px; border-radius: 8px; background: rgba(0,135,90,0.1);
+  white-space: nowrap; min-width: 0; text-align: center; padding: 3px 8px; border-radius: 8px; background: rgba(0,135,90,0.1);
 }
 .ev2-fixture-mid .score.wo { font-size: 11px; letter-spacing: .04em; background: rgba(217,119,6,0.12); color: #d97706; }
 .ev2-fixture-mid .live {
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 10.5px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; color: #E5484D;
 }
-.ev2-fixture-round { font-size: 11px; opacity: 0.55; text-align: right; }
+.ev2-fixture-round { font-size: 11px; opacity: 0.55; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Player stats ── */
 .ev2-prow-id { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
@@ -438,24 +439,27 @@
 /* Touch feedback — no hover state on a phone. */
 .ev2-bracket-match:active { transform: scale(0.98); border-color: rgba(0,98,65,0.5); }
 
-/* The fixture row's own breakpoint is wider than the rest of this
-   file's — its fixed desktop columns (492px of tracks alone) don't
-   fit a single-column layout below ~620px, well above where every
-   other ev2-* component still has room to stay at full size. */
+/* The fixture row never restructures or wraps at any width — only
+   the fixed non-team columns (time/score/round) shrink as the
+   viewport narrows, which hands the freed-up space straight to the
+   minmax(0,1fr) team columns. Structure stays identical throughout;
+   this is tuning, not a breakpoint switch. */
 @media (max-width: 620px) {
-  /* Round label drops to its own full-width row (grid-column spans
-     everything below) instead of shrinking the team columns — the
-     score stays the fixed center anchor at every width down to a
-     phone screen, never squeezed to make room for it inline. */
-  .ev2-fixture { grid-template-columns: 28px 92px 48px 92px; padding: 10px 12px; column-gap: 6px; row-gap: 2px; }
-  .ev2-fixture-time { font-size: 10.5px; }
-  .ev2-fixture-team { font-size: 12.5px; gap: 6px; }
-  .ev2-fixture-mid .score { font-size: 12.5px; padding: 3px 6px; min-width: 0; }
-  .ev2-fixture-mid .score.wo { font-size: 10px; }
-  .ev2-fixture-round { grid-column: 1 / -1; text-align: left; font-size: 10px; opacity: 0.4; padding-left: 38px; margin-top: -2px; }
+  .ev2-fixture { grid-template-columns: 36px minmax(0, 1fr) 56px minmax(0, 1fr) 70px; column-gap: 8px; }
+  .ev2-fixture-time { font-size: 11px; }
+  .ev2-fixture-team { font-size: 12.5px; gap: 7px; }
+  .ev2-fixture-mid .score { font-size: 13px; padding: 3px 7px; }
+  .ev2-fixture-mid .score.wo { font-size: 10.5px; }
+  .ev2-fixture-round { font-size: 10px; }
 }
 
 @media (max-width: 480px) {
+  .ev2-fixture { grid-template-columns: 28px minmax(0, 1fr) 48px minmax(0, 1fr) 52px; padding: 10px 10px; column-gap: 6px; }
+  .ev2-fixture-time { font-size: 10px; }
+  .ev2-fixture-team { font-size: 11.5px; gap: 5px; }
+  .ev2-fixture-mid .score { font-size: 11.5px; padding: 2px 5px; }
+  .ev2-fixture-mid .score.wo { font-size: 9px; letter-spacing: 0; }
+  .ev2-fixture-round { font-size: 9px; }
   .ev2-card { padding: 16px; margin-bottom: 12px; }
   .ev2-card-t { font-size: 15px; }
   .ev2-stats { gap: 10px; margin-bottom: 14px; }
