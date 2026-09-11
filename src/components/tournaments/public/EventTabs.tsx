@@ -527,9 +527,9 @@ function FixturesPublicTab({ tournamentId, matches, teams }: {
                       <span className="live"><i className="ev2-live-dot" />Live</span>
                     ) : <span className="vs">vs</span>}
                   </span>
-                  <span className="ev2-fixture-side reverse">
-                    <span className="ev2-fixture-name">{teamBName}</span>
+                  <span className="ev2-fixture-side">
                     <TeamCrest name={teamBName} logoUrl={team(m.team_b_id)?.logo_url} size="sm" />
+                    <span className="ev2-fixture-name">{teamBName}</span>
                   </span>
                 </div>
                 <div className="ev2-fixture-round">{m.round_label}</div>

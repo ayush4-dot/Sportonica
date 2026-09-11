@@ -198,10 +198,9 @@
 .ev2-fixture:hover { border-color: rgba(0,135,90,0.28); }
 [data-theme="paper"] .ev2-fixture { background: #fff; border-color: rgba(20,23,30,0.07); }
 .ev2-fixture-time { font-size: 12px; font-weight: 700; opacity: 0.6; width: 44px; flex-shrink: 0; }
-.ev2-fixture-teams { flex: 0 1 420px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13.5px; min-width: 0; }
-.ev2-fixture-side { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; }
-.ev2-fixture-side.reverse { justify-content: flex-start; }
-.ev2-fixture-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ev2-fixture-teams { flex: 0 1 auto; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13.5px; min-width: 0; }
+.ev2-fixture-side { flex: 0 1 150px; display: flex; align-items: center; gap: 9px; min-width: 0; }
+.ev2-fixture-name { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .ev2-fixture-mid { flex-shrink: 0; display: flex; align-items: center; justify-content: center; min-width: 46px; }
 .ev2-fixture-mid .vs { opacity: 0.35; font-weight: 600; font-size: 12.5px; }
 .ev2-fixture-mid .score {
@@ -437,7 +436,7 @@
   .ev2-fixture-time { width: 34px; font-size: 10.5px; }
   .ev2-fixture-round { width: auto; text-align: left; font-size: 10px; flex-basis: 100%; order: 3; opacity: 0.4; padding-left: 42px; margin-top: -2px; }
   .ev2-fixture-teams { font-size: 12.5px; gap: 6px; }
-  .ev2-fixture-name { max-width: 84px; }
+  .ev2-fixture-side { flex-basis: 108px; }
   .ev2-table th, .ev2-table td { padding: 9px 8px; font-size: 12.5px; }
 
   .ev2-tab { padding: 10px 14px; font-size: 13px; }
