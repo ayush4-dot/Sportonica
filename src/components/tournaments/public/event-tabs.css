@@ -198,7 +198,7 @@
 .ev2-fixture:hover { border-color: rgba(0,135,90,0.28); }
 [data-theme="paper"] .ev2-fixture { background: #fff; border-color: rgba(20,23,30,0.07); }
 .ev2-fixture-time { font-size: 12px; font-weight: 700; opacity: 0.6; width: 44px; flex-shrink: 0; }
-.ev2-fixture-teams { flex: 1; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13.5px; min-width: 0; }
+.ev2-fixture-teams { flex: 0 1 420px; display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 13.5px; min-width: 0; }
 .ev2-fixture-side { flex: 1; display: flex; align-items: center; justify-content: flex-end; gap: 9px; min-width: 0; }
 .ev2-fixture-side.reverse { justify-content: flex-start; }
 .ev2-fixture-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
