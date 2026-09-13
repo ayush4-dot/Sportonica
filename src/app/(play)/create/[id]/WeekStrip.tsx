@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { getDaySlots } from "@/lib/play/availability";
+import { getWeekFreeCounts } from "@/lib/play/availability";
 
 const KTM_TZ = "Asia/Kathmandu";
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -31,22 +31,18 @@ export default function WeekStrip({
   const [freeByDay, setFreeByDay] = useState<Record<string, number>>({});
 
   // Availability fills in behind the scenes — the strip shows instantly.
+  // One batched call covering all 10 days (see getWeekFreeCounts) rather
+  // than 10 separate full-availability round trips.
   useEffect(() => {
     if (!courtId) return;
     let cancelled = false;
     (async () => {
-      const results = await Promise.all(
-        list.slice(0, 10).map(async (d) => {
-          const key = iso(d);
-          try {
-            const slots = await getDaySlots(courtId, key, durationMins);
-            return [key, slots.filter((s) => s.available).length] as const;
-          } catch {
-            return [key, -1] as const;
-          }
-        })
-      );
-      if (!cancelled) setFreeByDay(Object.fromEntries(results));
+      try {
+        const counts = await getWeekFreeCounts(courtId, list.slice(0, 10).map(iso), durationMins);
+        if (!cancelled) setFreeByDay(counts);
+      } catch {
+        if (!cancelled) setFreeByDay(Object.fromEntries(list.slice(0, 10).map((d) => [iso(d), -1])));
+      }
     })();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps

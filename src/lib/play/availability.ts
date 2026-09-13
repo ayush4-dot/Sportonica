@@ -87,6 +87,40 @@ async function fetchBusy(
   return fromRows(bookings, blocks);
 }
 
+// Same as fetchBusy, but for an arbitrary multi-day range in one shot — used
+// by getWeekFreeCounts(). The fast (service-role) path queries the whole
+// range at once; court_busy_slots() only takes a single day, so the RPC/RLS
+// fallback paths still go through fetchBusy() once per date (only reached
+// when the service role isn't configured).
+async function fetchBusyRange(
+  sb: Awaited<ReturnType<typeof createClient>>,
+  courtId: string,
+  rangeStart: string,
+  rangeEnd: string,
+  dateStrs: string[],
+): Promise<BusyRow[]> {
+  const cols = "starts_at, ends_at, state, payment_status, source, created_at";
+  try {
+    const admin = createServiceClient();
+    const [{ data: bookings, error: bErr }, { data: blocks }] = await Promise.all([
+      admin.from("court_bookings").select(cols)
+        .eq("court_id", courtId).gte("starts_at", rangeStart).lte("starts_at", rangeEnd),
+      admin.from("court_blocks").select("starts_at, ends_at")
+        .eq("court_id", courtId).gte("starts_at", rangeStart).lte("starts_at", rangeEnd),
+    ]);
+    if (!bErr) return fromRows(bookings, blocks);
+  } catch {
+    /* service role not configured — fall through */
+  }
+
+  const perDay = await Promise.all(
+    dateStrs.map((d) =>
+      fetchBusy(sb, courtId, d, `${d}T00:00:00${KTM_OFFSET}`, `${d}T23:59:59${KTM_OFFSET}`),
+    ),
+  );
+  return perDay.flat();
+}
+
 export interface Slot {
   /** minutes from midnight, e.g. 17:30 → 1050 */
   mins: number;
@@ -102,6 +136,71 @@ const STEP = 30;        // minute granularity
 function label(mins: number) {
   const h = Math.floor(mins / 60), m = mins % 60;
   return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function toMins(t: string) {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + (m || 0);
+}
+
+// en-GB with hour12:false gives a stable "HH:MM" in the target zone.
+function ktmMinutes(iso: string) {
+  const t = new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu",
+  });
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+
+function ktmDateStrOf(iso: string) {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+}
+
+function rangeOf(s: string, e: string): [number, number] {
+  const a = ktmMinutes(s);
+  let b = ktmMinutes(e);
+  if (b <= a) b = 24 * 60;          // ran past midnight — clamp to end of day
+  return [a, b];
+}
+
+// Schemas vary — some have is_closed, some mark closure by null times.
+function parseHours(row: Record<string, unknown> | null | undefined) {
+  const closed = Boolean(row?.is_closed ?? row?.closed ?? false);
+  const openRaw = (row?.open_time ?? row?.opens_at ?? null) as string | null;
+  const closeRaw = (row?.close_time ?? row?.closes_at ?? null) as string | null;
+  if (!row || closed || !openRaw || !closeRaw) return null;
+  const open = toMins(openRaw);
+  const close = toMins(closeRaw);
+  if (!(close > open)) return null;
+  return { open, close };
+}
+
+function buildSlots(
+  open: number,
+  close: number,
+  durationMins: number,
+  busy: [number, number][],
+  isToday: boolean,
+  nowMins: number,
+): Slot[] {
+  const out: Slot[] = [];
+  for (let t = open; t + durationMins <= close; t += STEP) {
+    const end = t + durationMins;
+    const overlaps = busy.some(([bs, be]) => t < be && end > bs);
+    const past = isToday && t <= nowMins + 30;   // need 30 min lead time
+    out.push({
+      mins: t, label: label(t),
+      available: !overlaps && !past,
+      reason: overlaps ? "booked" : past ? "past" : undefined,
+    });
+  }
+  return out;
+}
+
+function nowKtmMins() {
+  const t = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" });
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
 }
 
 /**
@@ -133,40 +232,12 @@ export async function getDaySlots(
     return [];
   }
 
-  // Schemas vary — some have is_closed, some mark closure by null times.
-  const row = hours as Record<string, unknown> | null;
-  const closed = Boolean(row?.is_closed ?? row?.closed ?? false);
-  const openRaw = (row?.open_time ?? row?.opens_at ?? null) as string | null;
-  const closeRaw = (row?.close_time ?? row?.closes_at ?? null) as string | null;
-
   // Closed that day, or hours never set → nothing bookable.
-  if (!row || closed || !openRaw || !closeRaw) return [];
+  const parsed = parseHours(hours as Record<string, unknown> | null);
+  if (!parsed) return [];
 
-  const toMins = (t: string) => {
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + (m || 0);
-  };
-  const open = toMins(openRaw);
-  const close = toMins(closeRaw);
-  if (!(close > open)) return [];
-
-  // Busy ranges, in minutes from midnight (Kathmandu), with their kind.
-  const busy: [number, number][] = [];
-  const ktmMinutes = (iso: string) => {
-    // en-GB with hour12:false gives a stable "HH:MM" in the target zone.
-    const t = new Date(iso).toLocaleTimeString("en-GB", {
-      hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu",
-    });
-    const [h, m] = t.split(":").map(Number);
-    return h * 60 + m;
-  };
-  const rangeOf = (s: string, e: string): [number, number] => {
-    const a = ktmMinutes(s);
-    let b = ktmMinutes(e);
-    if (b <= a) b = 24 * 60;          // ran past midnight — clamp to end of day
-    return [a, b];
-  };
-  busyRows.forEach((b) => busy.push(rangeOf(b.starts_at, b.ends_at)));
+  // Busy ranges, in minutes from midnight (Kathmandu).
+  const busy: [number, number][] = busyRows.map((b) => rangeOf(b.starts_at, b.ends_at));
 
   // "Now" in Kathmandu minutes, for hiding past slots today. en-CA's
   // combined date+time format is "YYYY-MM-DD, HH:MM:SS" — a comma-space,
@@ -175,29 +246,67 @@ export async function getDaySlots(
   // one wrong and one NaN) and made this comparison always false: no
   // slot was ever actually excluded as "past", for anyone, at any time.
   // Two separate, single-purpose locale calls (date-only, time-only) sidestep
-  // the combined format entirely — same approach as ktmMinutes() below.
+  // the combined format entirely — same approach as ktmMinutes() above.
   const todayKtm = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
   const isToday = todayKtm === dateStr;
-  const nowMins = isToday
-    ? (() => {
-        const t = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "Asia/Kathmandu" });
-        const [h, m] = t.split(":").map(Number);
-        return h * 60 + m;
-      })()
-    : -1;
+  const nowMins = isToday ? nowKtmMins() : -1;
 
-  const out: Slot[] = [];
-  for (let t = open; t + durationMins <= close; t += STEP) {
-    const end = t + durationMins;
-    const overlaps = busy.some(([bs, be]) => t < be && end > bs);
-    const past = isToday && t <= nowMins + 30;   // need 30 min lead time
+  return buildSlots(parsed.open, parsed.close, durationMins, busy, isToday, nowMins);
+}
 
-    out.push({
-      mins: t,
-      label: label(t),
-      available: !overlaps && !past,
-      reason: overlaps ? "booked" : past ? "past" : undefined,
-    });
+/**
+ * Free-slot counts for several days at once (the week strip's per-day
+ * dots) — a single pair of DB round trips covering the whole range,
+ * instead of calling getDaySlots() once per day (which was firing up to
+ * 10 separate full availability fetches, each with its own court_hours +
+ * bookings/blocks queries, just to render some dots).
+ */
+export async function getWeekFreeCounts(
+  courtId: string,
+  dateStrs: string[],
+  durationMins: number,
+): Promise<Record<string, number>> {
+  if (dateStrs.length === 0) return {};
+  const sb = await createClient();
+
+  const dows = Array.from(
+    new Set(dateStrs.map((d) => new Date(`${d}T12:00:00${KTM_OFFSET}`).getUTCDay())),
+  );
+  const sorted = [...dateStrs].sort();
+  const rangeStart = `${sorted[0]}T00:00:00${KTM_OFFSET}`;
+  const rangeEnd = `${sorted[sorted.length - 1]}T23:59:59${KTM_OFFSET}`;
+
+  const [{ data: hoursRows, error: hoursErr }, busyRows] = await Promise.all([
+    sb.from("court_hours").select("*").eq("court_id", courtId).in("dow", dows),
+    fetchBusyRange(sb, courtId, rangeStart, rangeEnd, dateStrs),
+  ]);
+  if (hoursErr || !hoursRows) {
+    console.error("[availability] court_hours range query failed:", hoursErr?.message);
+    return Object.fromEntries(dateStrs.map((d) => [d, -1]));
+  }
+
+  const hoursByDow = new Map<number, Record<string, unknown>>();
+  for (const row of hoursRows as Record<string, unknown>[]) hoursByDow.set(Number(row.dow), row);
+
+  const busyByDate = new Map<string, [number, number][]>();
+  for (const b of busyRows) {
+    const day = ktmDateStrOf(b.starts_at);
+    const arr = busyByDate.get(day);
+    if (arr) arr.push(rangeOf(b.starts_at, b.ends_at));
+    else busyByDate.set(day, [rangeOf(b.starts_at, b.ends_at)]);
+  }
+
+  const todayKtm = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Kathmandu" });
+  const nowMins = nowKtmMins();
+
+  const out: Record<string, number> = {};
+  for (const d of dateStrs) {
+    const dow = new Date(`${d}T12:00:00${KTM_OFFSET}`).getUTCDay();
+    const parsed = parseHours(hoursByDow.get(dow));
+    if (!parsed) { out[d] = 0; continue; }
+    const isToday = d === todayKtm;
+    const slots = buildSlots(parsed.open, parsed.close, durationMins, busyByDate.get(d) ?? [], isToday, nowMins);
+    out[d] = slots.filter((s) => s.available).length;
   }
   return out;
 }
